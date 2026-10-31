@@ -1,0 +1,14 @@
+# Docker kullanılmayan kurulum için: saatlik şifreli yedek. Sırlar EnvironmentFile'dan (0600, root:viadent).
+[Unit]
+Description=VİADENT şifreli yedek
+After=network-online.target postgresql.service
+# Başarısızlık → viadent-alert@ birimi (ör. e-posta/izleme webhook'u; kurulumda tanımlanır)
+OnFailure=viadent-alert@%n.service
+
+[Service]
+Type=oneshot
+User=viadent
+WorkingDirectory=/opt/viadent/db
+EnvironmentFile=/etc/viadent/viadent.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/backup-cli.js backup

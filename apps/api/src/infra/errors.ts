@@ -1,0 +1,126 @@
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from "@nestjs/common";
+import type { Request, Response } from "express";
+import { ZodError } from "zod";
+import { zodFieldErrors, type ApiError } from "@viadent/contracts";
+import { isConnectionError } from "@viadent/db";
+
+/** Güvenli, sözleşmeli hata. Mesaj kullanıcıya gösterilebilir olmalı (SQL/token/hasta verisi içermez). */
+export class AppError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly code: string,
+    message: string,
+    public readonly fieldErrors?: Record<string, string>,
+    public readonly details?: unknown,
+  ) {
+    super(message);
+  }
+}
+
+export const Errors = {
+  unauthenticated: () => new AppError(401, "UNAUTHENTICATED", "Oturum bulunamadı veya süresi doldu. Lütfen yeniden giriş yapın."),
+  forbidden: () => new AppError(403, "FORBIDDEN", "Bu işlem için yetkiniz yok."),
+  notFound: (what = "Kayıt") => new AppError(404, "NOT_FOUND", `${what} bulunamadı.`),
+  versionConflict: () => new AppError(409, "VERSION_CONFLICT", "Kayıt siz düzenlerken değişti. Güncel hâlini yükleyip tekrar deneyin."),
+  validation: (fieldErrors: Record<string, string>, message = "Lütfen işaretli alanları düzeltin.") =>
+    new AppError(422, "VALIDATION_FAILED", message, fieldErrors),
+};
+
+export function parse<T>(schema: { safeParse(v: unknown): { success: true; data: T } | { success: false; error: ZodError } }, value: unknown): T {
+  const r = schema.safeParse(value);
+  if (!r.success) throw Errors.validation(zodFieldErrors(r.error));
+  return r.data;
+}
+
+const FINANCE_ERRORS: Record<string, [number, string, string]> = {
+  allocation_exceeds_payment: [409, "ALLOCATION_EXCEEDS_PAYMENT", "Dağıtım, ödemenin kullanılabilir tutarını aşıyor. Sayfayı yenileyip kalan tutara göre tekrar deneyin."],
+  allocation_exceeds_receivable: [409, "ALLOCATION_EXCEEDS_RECEIVABLE", "Dağıtım, alacağın açık bakiyesini aşıyor. Sayfayı yenileyip tekrar deneyin."],
+  allocation_patient_mismatch: [422, "VALIDATION_FAILED", "Ödeme ve alacak aynı hastaya ait olmalı."],
+  allocation_receivable_cancelled: [409, "RECEIVABLE_NOT_ACTIVE", "İptal edilmiş alacağa dağıtım yapılamaz."],
+  allocation_reverse_invalid: [409, "ALLOCATION_REVERSE_INVALID", "Ters kayıt yalnız aynı ödeme ve alacaktaki bir dağıtım için yapılabilir."],
+  allocation_reverse_exceeds: [409, "ALLOCATION_REVERSE_EXCEEDS", "Ters kayıt, dağıtımın kalan tutarını aşıyor."],
+  refund_exceeds_payment: [409, "REFUND_EXCEEDS_PAYMENT", "İade, ödemenin iade edilebilir tutarını aşıyor."],
+  refund_requires_deallocation: [409, "REFUND_REQUIRES_DEALLOCATION", "İade için önce dağıtımın ters kaydı gerekir."],
+  receivable_has_allocations: [409, "RECEIVABLE_HAS_ALLOCATIONS", "Dağıtımı olan alacak iptal edilemez; önce dağıtım ters kayda alınmalı."],
+  commission_reverse_rate_mismatch: [409, "COMMISSION_RATE_SNAPSHOT", "Prim ters kaydı orijinal oranla yapılmalı."],
+  payout_exceeds_accrued: [409, "PAYOUT_EXCEEDS_ACCRUED", "Prim ödemesi, hekimin ödenmemiş net tahakkukunu aşıyor."],
+  reversal_mismatch: [409, "REVERSAL_INVALID", "Ters kayıt orijinal kaydın tam tersi olmalı (aynı tutar, hesap ve kalem)."],
+  reversal_of_reversal: [409, "REVERSAL_INVALID", "Ters kayıt yeniden ters çevrilemez; yeni kayıt girin."],
+  stock_negative: [409, "STOCK_INSUFFICIENT", "Stok yetersiz: bu hareket bakiyeyi eksiye düşürür. Önce giriş veya sayım kaydedin."],
+  stock_lot_required: [422, "VALIDATION_FAILED", "Bu kalem lot takiplidir; lot seçin."],
+  stock_lot_not_tracked: [422, "VALIDATION_FAILED", "Bu kalem lot takipli değil; lot seçmeyin."],
+  stock_lot_mismatch: [422, "VALIDATION_FAILED", "Lot bu kaleme ait değil."],
+  lab_invalid_transition: [409, "LAB_INVALID_TRANSITION", "İş emri bu aşamadan istenen aşamaya geçemez."],
+  lab_order_immutable: [409, "IMMUTABLE_RECORD", "İş emrinin hastası ve numarası değiştirilemez."],
+  lab_supplier_locked: [409, "LAB_SUPPLIER_LOCKED", "Gönderilmiş iş emrinin laboratuvarı değiştirilemez; iptal edip yeni iş emri açın."],
+};
+
+interface PgError { code?: string; constraint?: string; message?: string }
+
+@Catch()
+export class ApiExceptionFilter implements ExceptionFilter {
+  private readonly log = new Logger("api");
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    const res = host.switchToHttp().getResponse<Response>();
+    const req = host.switchToHttp().getRequest<Request>();
+    const correlation_id = (req as Request & { correlationId?: string }).correlationId;
+    let status = 500;
+    let body: ApiError = { code: "INTERNAL", message: "Beklenmeyen bir hata oluştu. Tekrar deneyin; sürerse destekle paylaşın.", correlation_id };
+
+    const pg = exception as PgError;
+    if (exception instanceof AppError) {
+      status = exception.status;
+      body = { code: exception.code, message: exception.message, field_errors: exception.fieldErrors, details: exception.details, correlation_id };
+    } else if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      body = { code: status === 404 ? "NOT_FOUND" : "HTTP_ERROR", message: status === 404 ? "Adres bulunamadı." : "İstek işlenemedi.", correlation_id };
+    } else if (pg?.code === "22021" || pg?.code === "22P02" || pg?.code === "22001" || pg?.code === "22008" || pg?.code === "22003") {
+      // Veri biçimi hataları (geçersiz bayt dizisi, metin/sayı/tarih biçimi, taşma): istemci hatasıdır, 500 değil. İkinci savunma;
+      // birincisi gövde temizliği ve şema doğrulaması.
+      status = 422;
+      body = { code: "VALIDATION_FAILED", message: "Girdi biçimi geçersiz.", correlation_id };
+    } else if ((exception as { type?: string })?.type === "entity.too.large") {
+      // body-parser sınırı (Express ara katmanı, Nest istisnası değil)
+      status = 413;
+      body = { code: "PAYLOAD_TOO_LARGE", message: "İstek gövdesi çok büyük.", correlation_id };
+    } else if ((exception as { type?: string })?.type === "entity.parse.failed") {
+      status = 400;
+      body = { code: "MALFORMED_JSON", message: "İstek gövdesi okunamadı.", correlation_id };
+    } else if (pg?.code === "23P01" && pg.constraint === "work_schedules_no_overlap") {
+      status = 422;
+      body = { code: "VALIDATION_FAILED", message: "Aynı güne ait çalışma blokları çakışıyor.", field_errors: { blocks: "Bloklar çakışmamalı." }, correlation_id };
+    } else if (pg?.code === "23P01") {
+      status = 409;
+      const resource = pg.constraint?.includes("chair") ? "koltuk" : "hekim";
+      body = { code: "APPOINTMENT_CONFLICT", message: `Seçilen saatte ${resource} dolu. Başka bir saat veya ${resource} seçin.`, details: { resource }, correlation_id };
+    } else if (pg?.code === "23505") {
+      status = 409;
+      body = { code: "UNIQUE_CONFLICT", message: "Aynı bilgilerle başka bir kayıt mevcut.", correlation_id };
+    } else if (pg?.code === "23514" && pg.message?.includes("birth_date_in_future")) {
+      status = 422;
+      body = { code: "VALIDATION_FAILED", message: "Doğum tarihi gelecekte olamaz.", field_errors: { birthDate: "Doğum tarihi gelecekte olamaz." }, correlation_id };
+    } else if (pg?.code === "23514" && FINANCE_ERRORS[(pg.message ?? "").trim()]) {
+      // Finans tutar sınırı DB tetikleyicisinden (API kontrolü atlatılsa ya da eşzamanlı istek gelse bile).
+      const [st, code, message] = FINANCE_ERRORS[(pg.message ?? "").trim()]!;
+      status = st;
+      body = { code, message, correlation_id };
+    } else if (pg?.code === "55000" && /_(not_draft|frozen|invalid_transition|immutable|closed|not_scanned)/.test(pg.message ?? "")) {
+      // DB değişmezlik tetikleyicisi (API kontrolünün arkasındaki ikinci savunma).
+      status = 409;
+      body = { code: "IMMUTABLE_RECORD", message: "Bu kayıt kilitli (teklif/kabul/yayın, finans hareketi, onaylı şablon veya üretilmiş belge) ve değiştirilemez; düzeltme yeni sürüm veya ters kayıtla yapılır.", correlation_id };
+    } else if (pg?.code === "40001" || pg?.code === "40P01") {
+      status = 409;
+      body = { code: "RETRY", message: "Eşzamanlı bir işlem nedeniyle kaydedilemedi. Tekrar deneyin.", correlation_id };
+    } else if (isConnectionError(exception)) {
+      // Veritabanı bağlantısı kesildi (yeniden başlatma/failover; QA-006): geçici durum, sahte başarı yok.
+      status = 503;
+      body = { code: "SERVICE_UNAVAILABLE", message: "Veritabanı bağlantısı geçici olarak kesildi. Lütfen birkaç saniye sonra tekrar deneyin.", correlation_id };
+    }
+    if (status >= 500) {
+      // Yalnız hata türü/kodu loglanır; istek gövdesi ve parametreler (hasta verisi) loglanmaz.
+      this.log.error(`${correlation_id} ${req.method} ${req.route?.path ?? "?"} ${pg?.code ?? ""} ${(exception as Error)?.name ?? ""}: ${(exception as Error)?.message?.slice(0, 200) ?? ""}`);
+    }
+    res.status(status).json(body);
+  }
+}

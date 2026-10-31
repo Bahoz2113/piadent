@@ -1,0 +1,313 @@
+{
+ "base": "http://127.0.0.1:4100",
+ "runs": 5,
+ "at": "2026-10-27T17:44:23.373Z",
+ "results": [
+  {
+   "name": "ajanda-gun",
+   "p50": 30,
+   "p95": 336,
+   "rows": 500
+  },
+  {
+   "name": "ajanda-hafta",
+   "p50": 225,
+   "p95": 231,
+   "rows": 3500
+  },
+  {
+   "name": "ajanda-hafta-2021",
+   "p50": 174,
+   "p95": 305,
+   "rows": 3500
+  },
+  {
+   "name": "gelir-gider (30g)",
+   "p50": 27,
+   "p95": 38,
+   "rows": 1,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "gelir-gider (366g)",
+   "p50": 22,
+   "p95": 27,
+   "rows": 1,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "nakit-hareketleri (30g)",
+   "p50": 23,
+   "p95": 35,
+   "rows": 3,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "nakit-hareketleri (366g)",
+   "p50": 16,
+   "p95": 16,
+   "rows": 3,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "aylik-ciro (30g)",
+   "p50": 28,
+   "p95": 33,
+   "rows": 1,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "aylik-ciro (731g)",
+   "p50": 29,
+   "p95": 44,
+   "rows": 1,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "borc-bakiye (30g)",
+   "p50": 9366,
+   "p95": 10335,
+   "rows": 2000,
+   "truncated": true,
+   "status": 200
+  },
+  {
+   "name": "prim (30g)",
+   "p50": 62,
+   "p95": 94,
+   "rows": 1,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "prim (366g)",
+   "p50": 60,
+   "p95": 64,
+   "rows": 1,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "online-odeme (30g)",
+   "p50": 14,
+   "p95": 20,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "online-odeme (366g)",
+   "p50": 12,
+   "p95": 13,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "tedavi (30g)",
+   "p50": 21,
+   "p95": 28,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "tedavi (366g)",
+   "p50": 24,
+   "p95": 44,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "aylik-islem (30g)",
+   "p50": 26,
+   "p95": 34,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "aylik-islem (731g)",
+   "p50": 22,
+   "p95": 26,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "plan (30g)",
+   "p50": 18,
+   "p95": 38,
+   "rows": 1,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "plan (366g)",
+   "p50": 14,
+   "p95": 25,
+   "rows": 1,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "hekim-hasta (30g)",
+   "p50": 81,
+   "p95": 86,
+   "rows": 28,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "hekim-hasta (366g)",
+   "p50": 340,
+   "p95": 440,
+   "rows": 28,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "randevu (30g)",
+   "p50": 29,
+   "p95": 35,
+   "rows": 28,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "randevu (366g)",
+   "p50": 142,
+   "p95": 156,
+   "rows": 28,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "kontrol (30g)",
+   "p50": 13,
+   "p95": 16,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "kontrol (366g)",
+   "p50": 10,
+   "p95": 11,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "laboratuvar (30g)",
+   "p50": 19,
+   "p95": 29,
+   "rows": 3,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "laboratuvar (366g)",
+   "p50": 12,
+   "p95": 17,
+   "rows": 3,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "mesaj (30g)",
+   "p50": 11,
+   "p95": 12,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "mesaj (366g)",
+   "p50": 9,
+   "p95": 15,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "onam (30g)",
+   "p50": 11,
+   "p95": 14,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "onam (366g)",
+   "p50": 9,
+   "p95": 12,
+   "rows": 0,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "stok (30g)",
+   "p50": 10,
+   "p95": 14,
+   "rows": 3,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "cari (30g)",
+   "p50": 11,
+   "p95": 17,
+   "rows": 3,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "cari (366g)",
+   "p50": 11,
+   "p95": 12,
+   "rows": 3,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "log (30g)",
+   "p50": 30,
+   "p95": 39,
+   "rows": 1149,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "log (92g)",
+   "p50": 34,
+   "p95": 58,
+   "rows": 1149,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "isletme (30g)",
+   "p50": 1918,
+   "p95": 1976,
+   "rows": 9,
+   "truncated": false,
+   "status": 200
+  },
+  {
+   "name": "isletme (366g)",
+   "p50": 1858,
+   "p95": 1910,
+   "rows": 9,
+   "truncated": false,
+   "status": 200
+  }
+ ]
+}

@@ -1,0 +1,285 @@
+{
+ "runId": "qa-20261031-1706-0309309-tur1",
+ "revision": "0309309c0b0be55892b4aee936d6d7fb2f440e97",
+ "at": "2026-10-31T14:22:57.193Z",
+ "round": 1,
+ "environment": "environment.md",
+ "inventory": "inventory.md",
+ "inventoryComplete": true,
+ "fullRegression": true,
+ "requiredIds": [
+  "V01",
+  "V02",
+  "V03",
+  "V04",
+  "V05",
+  "V06",
+  "P01",
+  "P02",
+  "P03",
+  "R01",
+  "R02",
+  "R03",
+  "R04",
+  "R05",
+  "R06",
+  "R07"
+ ],
+ "profiles": [
+  {
+   "name": "http",
+   "status": "PASS",
+   "evidence": "evidence/http-summary.json"
+  },
+  {
+   "name": "chromium-desktop",
+   "status": "PASS",
+   "evidence": "evidence/R04-R05-e2e.log"
+  },
+  {
+   "name": "chromium-mobile-emulation",
+   "status": "PASS",
+   "evidence": "evidence/R04-R05-e2e.log"
+  },
+  {
+   "name": "cli",
+   "status": "PASS",
+   "evidence": "evidence/V06-reconcile.txt"
+  },
+  {
+   "name": "physical-mobile-device",
+   "status": "NA",
+   "reason": "Web ürünü; fiziksel cihaz bu ortamda yok. Pilot klinikte gerçek telefonla ayrıca doğrulanmalı (insan)."
+  },
+  {
+   "name": "android-apk",
+   "status": "NA",
+   "reason": "Ürün APK üretmiyor (PWA/web)."
+  },
+  {
+   "name": "ios",
+   "status": "NA",
+   "reason": "iOS test ortamı yok; ürün web."
+  },
+  {
+   "name": "vscode-extension",
+   "status": "NA",
+   "reason": "Ürün VS Code uzantısı değil."
+  }
+ ],
+ "cases": [
+  {
+   "id": "V01",
+   "status": "PASS",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "evidence": "evidence/V01-http.json",
+   "extraEvidence": [
+    "evidence/masaustu-V01-b-tenant.jpg",
+    "evidence/mobil-V01-b-tenant.jpg"
+   ],
+   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu · masaustu: B hasta sayfası sızıntı=false, arama satırı 0 · mobil: B hasta sayfası sızıntı=false, arama satırı 0"
+  },
+  {
+   "id": "V02",
+   "status": "PASS",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "evidence": "evidence/V02-http.json",
+   "extraEvidence": [
+    "evidence/masaustu-V02-tedavi.jpg",
+    "evidence/mobil-V02-tedavi.jpg"
+   ],
+   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true · masaustu: diş 16 görünür=true, işlem metni=true, düzeltme izi=true · mobil: diş 16 görünür=true, işlem metni=true, düzeltme izi=true"
+  },
+  {
+   "id": "V03",
+   "status": "PASS",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "evidence": "evidence/V03-http.json",
+   "extraEvidence": [
+    "evidence/masaustu-V03-ajanda.jpg",
+    "evidence/mobil-V03-ajanda.jpg"
+   ],
+   "summary": "eşzamanlı yanıtlar 201/409; 13:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT · masaustu: 18.12.2026 13:00 ajandada randevu bloğu 1 (metin eşleşmesi 2); API: 1 · mobil: 18.12.2026 13:00 ajandada randevu bloğu 1 (metin eşleşmesi 1); API: 1"
+  },
+  {
+   "id": "V04",
+   "status": "PASS",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "evidence": "evidence/V04-http.json",
+   "extraEvidence": [
+    "evidence/masaustu-V04-finans.jpg",
+    "evidence/mobil-V04-finans.jpg"
+   ],
+   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201) · masaustu: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true · mobil: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true"
+  },
+  {
+   "id": "V05",
+   "status": "FAIL",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "evidence": "evidence/V05-http.json",
+   "extraEvidence": [
+    "evidence/masaustu-V05-gecmis-sekreter.jpg",
+    "evidence/mobil-V05-gecmis-sekreter.jpg"
+   ],
+   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 2, finans: 2 · masaustu: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=true (API: 2 olay) · mobil: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=true (API: 2 olay)",
+   "bugs": [
+    "QA-001",
+    "QA-002"
+   ]
+  },
+  {
+   "id": "V06",
+   "status": "PASS",
+   "profiles": [
+    "cli"
+   ],
+   "evidence": "evidence/V06-reconcile.txt",
+   "extraEvidence": [
+    "evidence/V06-restore-verify.json"
+   ],
+   "summary": "yedek → viadent_qa_restore; restore-verify differences=[]; 16 sütunlu bağımsız mutabakat (sayımlar, ödeme/alacak/dağıtım toplamları, hasta-dosya ilişkisi 5/0 sahipsiz, yetkiler, 84 politika, 70 FORCE RLS) iki DB'de EŞLEŞTİ"
+  },
+  {
+   "id": "P01",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.397Z",
+   "profile": "http",
+   "evidence": "evidence/P01-http.json",
+   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true",
+   "profiles": [
+    "http"
+   ]
+  },
+  {
+   "id": "P02",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.514Z",
+   "profile": "http",
+   "evidence": "evidence/P02-http.json",
+   "summary": "28 deneme, 0 beklenmedik",
+   "profiles": [
+    "http"
+   ]
+  },
+  {
+   "id": "P03",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.629Z",
+   "profile": "http",
+   "evidence": "evidence/P03-http.json",
+   "summary": "8 kontrol, 0 beklenmedik",
+   "profiles": [
+    "http"
+   ]
+  },
+  {
+   "id": "R01",
+   "status": "PASS",
+   "profiles": [
+    "cli"
+   ],
+   "evidence": "evidence/R01-api-tests.log",
+   "summary": "API vitest 19 dosya / 254 test geçti"
+  },
+  {
+   "id": "R02",
+   "status": "PASS",
+   "profiles": [
+    "cli"
+   ],
+   "evidence": "evidence/R02-contracts.log",
+   "summary": "contracts 15 test geçti"
+  },
+  {
+   "id": "R03",
+   "status": "PASS",
+   "profiles": [
+    "cli"
+   ],
+   "evidence": "evidence/R03-web-unit.log",
+   "summary": "web birim 14 test geçti"
+  },
+  {
+   "id": "R04",
+   "status": "PASS",
+   "profiles": [
+    "chromium-desktop"
+   ],
+   "evidence": "evidence/R04-R05-e2e.log",
+   "summary": "Playwright masaüstü 41 geçti, 0 hata (toplam 74 geçti / 8 bilinçli atlama, 4,1 dk)"
+  },
+  {
+   "id": "R05",
+   "status": "PASS",
+   "profiles": [
+    "chromium-mobile-emulation"
+   ],
+   "evidence": "evidence/R04-R05-e2e.log",
+   "summary": "Playwright telefon-360 (Pixel 5) 33 geçti, 0 hata"
+  },
+  {
+   "id": "R06",
+   "status": "PASS",
+   "profiles": [
+    "cli"
+   ],
+   "evidence": "evidence/R06-typecheck-audit.log",
+   "summary": "typecheck exit 0; pnpm audit --prod: bilinen açık yok"
+  },
+  {
+   "id": "R07",
+   "status": "PASS",
+   "profiles": [
+    "cli"
+   ],
+   "evidence": "evidence/R07-rls.txt",
+   "summary": "69 tenant tablosunun 69'u FORCE RLS; viadent_app superuser/BYPASSRLS yok; DELETE yetkisi yalnız 5 finans-dışı tabloda (taslak/şablon/throttle, belgeli); alloc_check 0"
+  }
+ ],
+ "bugs": [
+  {
+   "id": "QA-001",
+   "severity": "S1",
+   "state": "OPEN",
+   "title": "Sağlık yetkisi olmayan roller hasta geçmişinde odontogram bulgu/tanı olaylarını görüyor",
+   "evidence": "evidence/V05-http.json",
+   "cases": [
+    "V05"
+   ]
+  },
+  {
+   "id": "QA-002",
+   "severity": "S3",
+   "state": "OPEN",
+   "title": "VİA İz ekranında ham eylem kodları (Türkçe etiket yok)",
+   "evidence": "evidence/masaustu-V05-gecmis-sekreter.jpg",
+   "cases": [
+    "V05"
+   ]
+  }
+ ],
+ "notes": [
+  "Harness'ın ilk iki koşusundaki başarısızlıklar test ortamı hatasıydı (yanıt sarmalı, önceki koşu randevularıyla çakışma, tanı şeması) — ürün kusuru değil; evidence/http-summary-tur1.json ilk ham koşu kaydıdır.",
+  "V04 ürün kuralı: ödeme borçla otomatik karışmaz; 300 ₺ tahsilat açıkça alacağa dağıtıldı; iade için önce dağıtım ters kaydı gerekir (ürün sözleşmesi) — gözlenen davranış sözleşmeyle uyumlu."
+ ]
+}

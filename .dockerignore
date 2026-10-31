@@ -1,0 +1,14 @@
+# Sırlar ve yerel durum imaja girmez
+.env
+.env.*
+!.env.example
+.demo-credentials
+.backups
+.storage
+**/node_modules
+**/dist
+**/.next
+**/test-results
+**/playwright-report
+**/*.tsbuildinfo
+.git

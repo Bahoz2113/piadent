@@ -1,0 +1,8 @@
+# Alarm şablonu: başarısız birimin adını izleme sistemine iletir. ALERT_WEBHOOK_URL kurulumda tanımlanır (sır içerir, EnvironmentFile).
+[Unit]
+Description=VİADENT alarm: %i başarısız
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/viadent/alert.env
+ExecStart=/bin/sh -c 'curl -fsS -m 10 -X POST -H "content-type: application/json" -d "{\"birim\":\"%i\",\"durum\":\"basarisiz\"}" "$ALERT_WEBHOOK_URL"'

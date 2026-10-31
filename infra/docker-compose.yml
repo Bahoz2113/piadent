@@ -1,0 +1,18 @@
+# Yalnız yerel geliştirme içindir. Üretim kurulumu değildir.
+services:
+  postgres:
+    image: postgres:16.10
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-viadent_local_admin}
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - viadent_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  viadent_pg: {}

@@ -1,0 +1,86 @@
+# PİA-DENT tek sunuculu pilot kurulumu ÖRNEĞİ (Görev 8). Gözden geçirilmeden üretimde kullanmayın:
+#  - Sırlar ./secrets/*.env dosyalarından gelir (git dışı, 0600; tercihen secret manager'dan üretilir). Bu dosyada sır yok.
+#  - Veritabanı yalnız iç ağda; dışarı yalnız ters vekil (Caddy, otomatik TLS) açılır.
+#  - Yedekler ayrı birime yazılır; birimi sunucu dışına kopyalayın (3-2-1). Geri yükleme doğrulaması günlük çalışır.
+#  - API iki süreç (giriş sınırlayıcısı ve oturumlar veritabanında olduğu için güvenli).
+name: viadent
+
+x-app-env: &app-env
+  NODE_ENV: production
+  TRUST_PROXY: "1"                      # tek ters vekil (Caddy) arkasında
+  STORAGE_DIR: /data/storage
+  VIADENT_EXTERNAL_SEND_ENABLED: "false"
+  VIADENT_REQUIRE_MFA_ROLES: "clinic_admin,finance"
+
+services:
+  db:
+    image: postgres:16.10-bookworm
+    restart: unless-stopped
+    env_file: ./secrets/postgres.env      # POSTGRES_PASSWORD (yönetici)
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [internal]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U postgres"], interval: 5s, timeout: 3s, retries: 20 }
+
+  # Tek seferlik: roller + migration (her sürümde, API'den önce). Bkz. docs/runbook-deploy-rollback.md §2
+  migrate:
+    image: viadent/ops:${VIADENT_VERSION:?sürüm gerekli}
+    env_file: ./secrets/viadent.env
+    environment: { NODE_ENV: production }
+    command: ["sh", "-c", "node dist/roles.js && node dist/migrate.js"]
+    depends_on: { db: { condition: service_healthy } }
+    networks: [internal]
+    restart: "no"
+
+  api:
+    image: viadent/api:${VIADENT_VERSION}
+    restart: unless-stopped
+    env_file: ./secrets/viadent.env
+    environment: { <<: *app-env, VIADENT_VERSION: "${VIADENT_VERSION}" }
+    volumes: [storage:/data/storage]
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    networks: [internal]
+    deploy: { replicas: 2 }
+
+  worker:
+    image: viadent/worker:${VIADENT_VERSION}
+    restart: unless-stopped
+    env_file: ./secrets/viadent.env
+    environment: { <<: *app-env, CLAMD_HOST: clamav }
+    volumes: [storage:/data/storage]
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    networks: [internal]
+
+  web:
+    image: viadent/web:${VIADENT_VERSION}   # API_INTERNAL_URL=http://api:4000 ile derlenmiş olmalı
+    restart: unless-stopped
+    environment: { NODE_ENV: production }
+    depends_on: [api]
+    networks: [internal]
+
+  clamav:
+    image: clamav/clamav:1.4
+    restart: unless-stopped
+    networks: [internal]
+
+  proxy:
+    image: caddy:2.8
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment: { VIADENT_DOMAIN: "${VIADENT_DOMAIN:?alan adı gerekli}" }
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy:/data]
+    depends_on: [web]
+    networks: [internal]
+
+  # Saatlik şifreli yedek + günlük izole geri yükleme doğrulaması. Hata → çıkış kodu ≠ 0 → konteyner günlüğü + izleme alarmı.
+  backup:
+    image: viadent/ops:${VIADENT_VERSION}
+    restart: unless-stopped
+    env_file: ./secrets/viadent.env
+    environment: { NODE_ENV: production, STORAGE_DIR: /data/storage, BACKUP_DIR: /backups, BACKUP_KEEP: "48" }
+    volumes: [storage:/data/storage:ro, backups:/backups]
+    command: ["sh", "/app/backup-loop.sh"]
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    networks: [internal]
+
+volumes: { pgdata: {}, storage: {}, backups: {}, caddy: {} }
+networks: { internal: {} }

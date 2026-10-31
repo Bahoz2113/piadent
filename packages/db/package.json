@@ -1,0 +1,27 @@
+{
+  "name": "@viadent/db",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "roles": "tsx src/roles.ts",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
+    "reset": "tsx src/reset.ts",
+    "typecheck": "tsc --noEmit -p .",
+    "backup": "tsx src/backup-cli.ts backup",
+    "restore-verify": "tsx src/backup-cli.ts restore-verify",
+    "rotate-keys": "tsx src/rotate-keys.ts",
+    "encrypt-ids": "tsx src/encrypt-ids.ts"
+  },
+  "dependencies": {
+    "@viadent/contracts": "workspace:*",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

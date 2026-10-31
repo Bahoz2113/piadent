@@ -1,0 +1,83 @@
+# PİA-DENT sürekli entegrasyon (Görev 8). Her push/PR: bağımlılık taraması, tip kontrolü, birim + gerçek PostgreSQL
+# entegrasyon testleri, üretim derlemesi, derlenmiş API/worker ile uçtan uca (Playwright) testler, imaj derlemesi.
+# Sırlar: koşu başına rastgele üretilir (scripts/ci-env.sh); depoda veya günlükte sır yok. Veriler yalnız sentetik.
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions: { contents: read }
+concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16.10
+        env: { POSTGRES_PASSWORD: ci-admin-only }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      PW_CHROMIUM_PATH: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.28.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.22.0, cache: pnpm }
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client-16 || sudo apt-get install -y postgresql-client
+      - run: pnpm install --frozen-lockfile
+      - name: Bağımlılık taraması (bilinen açık → başarısız)
+        run: pnpm audit
+      - name: .env (rastgele, yalnız bu koşu)
+        run: ADMIN_PW=ci-admin-only sh scripts/ci-env.sh > .env
+      - run: pnpm db:roles && pnpm db:migrate && pnpm db:seed
+      - run: pnpm typecheck
+      - name: Birim + entegrasyon testleri (gerçek PostgreSQL)
+        run: pnpm test
+      - name: Üretim derlemesi
+        run: pnpm build:server && pnpm --filter @viadent/web exec next build
+      - name: Derlenmiş API/worker + web'i başlat
+        run: |
+          set -a; . ./.env; set +a
+          (cd apps/api && NODE_ENV=production node dist/main.js > ../../api.log 2>&1 &)
+          (cd apps/worker && NODE_ENV=production node dist/main.js > ../../worker.log 2>&1 &)
+          (cd apps/web && npx next start -p 3000 > ../../web.log 2>&1 &)
+          for i in $(seq 1 60); do curl -fs http://127.0.0.1:4000/api/v1/health/ready && curl -fs -o /dev/null http://127.0.0.1:3000/giris && break; sleep 1; done
+      - name: Yedek → izole geri yükleme doğrulaması (AT-17)
+        run: pnpm db:backup && pnpm db:restore-verify
+      - name: Uçtan uca testler (Playwright)
+        run: |
+          pnpm --filter @viadent/web exec playwright install --with-deps chromium
+          set -a; . ./.env; set +a
+          cd apps/web && E2E_PASSWORD="$VIADENT_DEMO_PASSWORD" npx playwright test
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gunlukler-ve-izler
+          path: |
+            api.log
+            worker.log
+            web.log
+            apps/web/test-results
+          retention-days: 7
+
+  image:
+    runs-on: ubuntu-24.04
+    needs: test
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: İmajları derle (yayınlama yok)
+        run: |
+          for t in api worker web ops; do
+            docker buildx build -f infra/docker/Dockerfile --target "$t" -t "viadent/$t:ci-${GITHUB_SHA::12}" --load .
+          done
+      - name: İmaj içinde sır yok
+        run: |
+          for t in api worker web ops; do
+            ! docker run --rm --entrypoint sh "viadent/$t:ci-${GITHUB_SHA::12}" -c 'ls -a /app | grep -E "^\.env$|demo-credentials"'
+          done

@@ -1,0 +1,33 @@
+{
+  "product": "VİADENT",
+  "lockedAt": "2026-10-31T17:10:00+03:00",
+  "requiredIds": ["V01","V02","V03","V04","V05","V06","P01","P02","P03","R01","R02","R03","R04","R05","R06","R07"],
+  "profiles": [
+    { "name": "http", "required": true },
+    { "name": "chromium-desktop", "required": true },
+    { "name": "chromium-mobile-emulation", "required": true },
+    { "name": "cli", "required": true },
+    { "name": "physical-mobile-device", "required": false },
+    { "name": "android-apk", "required": false },
+    { "name": "ios", "required": false },
+    { "name": "vscode-extension", "required": false }
+  ],
+  "cases": {
+    "V01": "Kayıt gizliliği: B kliniği kullanıcısı A'nın hastasına API/arama/dosya/dışa aktarımda erişemez; A'nın akışı çalışır.",
+    "V02": "Odontogram: 16 numaralı dişe yüzey+bulgu+tanı+işlem; yeniden açınca aynı; başka hasta/diş değişmedi.",
+    "V03": "Randevu yarışı: aynı hekim aynı saat iki oturumdan eşzamanlı; tek kayıt, diğerine açık 409; takvim ve API aynı.",
+    "V04": "Çift tahsilat: 1.000 ₺ borca 300 ₺; aynı idempotency anahtarıyla eşzamanlı tekrar; tek makbuz, tek kasa hareketi, 700 ₺ bakiye; iade izi.",
+    "V05": "Klinik geçmiş: hekim işlem düzeltir; önce/sonra + zaman + kullanıcı geçmişte; sekreter düzeltemez (403); API+UI.",
+    "V06": "Geri yükleme: yedek → ayrı DB; kayıt sayıları, tutar toplamı, hasta-belge ilişkisi, yetkiler eşleşir.",
+    "P01": "Tahsilat tutarı sınır değerleri (boş, 0, negatif, 0,01, 999,99, 1000, 1000,01; virgül/nokta/fazla basamak; dağıtım>ödeme). Reddedilen işlem kasa hareketi üretmez.",
+    "P02": "Randevu alanları ve filtreler: durum enum tek tek, geçersiz değer, gün/ay sınırı, süre sınırları, saat biçimi, çakışma.",
+    "P03": "Kimlik: yanlış parola, oturumsuz istek, CSRF başlığı yok, çıkış sonrası erişim, rol ihlali (sekreter→finans).",
+    "R01": "API testleri (vitest, gerçek PostgreSQL).",
+    "R02": "contracts paket testleri.",
+    "R03": "web birim testleri.",
+    "R04": "Playwright E2E masaüstü (Chromium).",
+    "R05": "Playwright E2E mobil emülasyon.",
+    "R06": "typecheck + pnpm audit (prod).",
+    "R07": "RLS kapsamı / dağıtım tutarlılığı (tüm tenant tabloları FORCE RLS; app rolünde DELETE/BYPASSRLS yok)."
+  }
+}

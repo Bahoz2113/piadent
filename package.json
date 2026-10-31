@@ -1,0 +1,37 @@
+{
+  "name": "viadent",
+  "private": true,
+  "version": "0.1.0",
+  "description": "PİA-DENT — diş klinikleri için çok kiracılı klinik ERP",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12 <23"
+  },
+  "scripts": {
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:roles": "pnpm --filter @viadent/db run roles",
+    "db:migrate": "pnpm --filter @viadent/db run migrate",
+    "db:seed": "pnpm --filter @viadent/db run seed",
+    "db:reset": "pnpm --filter @viadent/db run reset",
+    "dev:api": "pnpm --filter @viadent/api run dev",
+    "dev:web": "pnpm --filter @viadent/web run dev",
+    "dev:worker": "pnpm --filter @viadent/worker run dev",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r --workspace-concurrency=1 run test",
+    "build": "pnpm -r run build",
+    "db:backup": "pnpm --filter @viadent/db run backup",
+    "db:restore-verify": "pnpm --filter @viadent/db run restore-verify",
+    "db:rotate-keys": "pnpm --filter @viadent/db run rotate-keys",
+    "build:server": "node scripts/build-server.mjs",
+    "db:encrypt-ids": "pnpm --filter @viadent/db run encrypt-ids"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.23 <9",
+      "multer": ">=2.5.0 <3"
+    }
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

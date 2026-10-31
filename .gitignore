@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+.env
+.env.local
+.demo-credentials
+coverage/
+test-results/
+playwright-report/
+*.log
+.DS_Store
+.storage/
+.backups/
+apps/web/vendor/
+.claude/
+qa-runs/*/evidence/

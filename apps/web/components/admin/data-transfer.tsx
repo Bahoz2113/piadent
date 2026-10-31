@@ -1,0 +1,309 @@
+"use client";
+/**
+ * Yönetim → Veri aktarımı (VD-014). Akış: dosya seç → ön kontrol (dry-run, hiçbir şey yazılmaz) → satırları ve
+ * mutabakatı incele → hatalı satırları CSV olarak indir, düzelt, yeniden yükle → onayla → gerekirse gerekçeyle geri al.
+ * Dışa aktarım: klinik verisinin tamamı açık JSON biçiminde (gerekçeli, denetlenir).
+ */
+import { useEffect, useState } from "react";
+import { Download, FileUp, RotateCcw, ShieldCheck, Upload } from "lucide-react";
+import { APPOINTMENT_STATUS_LABELS, IMPORT_FIELDS, IMPORT_KIND_LABELS, IMPORT_MAX_BYTES, IMPORT_ROW_STATUS_LABELS, extractImportHeaders, formatTRY, mapImportHeaders, type ImportKind } from "@viadent/contracts";
+import { api, ApiFailure, download } from "@/lib/api";
+import { useData } from "@/lib/use-data";
+import { fmtDate, fmtDateTime } from "@/lib/format";
+import { Alert, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
+
+type Notify = (k: "success" | "error", t: string) => void;
+interface Summary {
+  rows: number; valid: number; errors: number; duplicates: number; alreadyImported: number; withWarnings: number; imported?: number; skippedAtCommit?: number;
+  amountSource?: string; amountValid?: string; amountError?: string; amountDuplicate?: string; amountAlreadyImported?: string; amountImported?: string; unparsedAmountRows?: number;
+  unmapped?: string[];
+}
+interface Batch {
+  id: string; kind: ImportKind; format: string; fileName: string; status: "dry_run" | "committed" | "rolled_back"; mapping: Record<string, string>; summary: Summary;
+  createdAt: string; by: string; committedAt: string | null; committedBy: string | null; rolledBackAt: string | null; rollbackReason: string | null; rowsPurgedAt?: string | null; reused?: boolean;
+}
+interface Row { rowNo: number; status: string; errors: { field: string; message: string }[]; warnings: { field: string; message: string }[]; data: Record<string, unknown>; amount: string | null }
+
+const STATUS_BADGE: Record<string, string> = { valid: "badge-success", imported: "badge-success", error: "badge-danger", duplicate: "badge-warning",
+  already_imported: "badge-neutral", skipped: "badge-neutral", rolled_back: "badge-neutral" };
+const BATCH_LABEL: Record<Batch["status"], [string, string]> = { dry_run: ["Ön kontrol", "badge-info"], committed: ["Aktarıldı", "badge-success"], rolled_back: ["Geri alındı", "badge-neutral"] };
+
+export function ImportPanel({ notify }: { notify: Notify }) {
+  const history = useData<{ items: Batch[] }>("/imports");
+  const [kind, setKind] = useState<ImportKind>("patients");
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<ApiFailure | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  // Sütun eşlemesi (ADR-069): dosya seçilince yalnız başlık satırı istemcide okunur; API ile aynı kural (takma adlar) önerilir, kullanıcı değiştirebilir.
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [fieldMap, setFieldMap] = useState<Record<string, string>>({}); // alan anahtarı → dosya başlığı ("" = eşlenmiyor)
+  const [mapOpen, setMapOpen] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    if (!file) { setHeaders([]); setFieldMap({}); return; }
+    void file.slice(0, 64 * 1024).text().then((head) => {
+      if (!alive) return;
+      const hs = extractImportHeaders(head, /\.json$/i.test(file.name) ? "json" : "csv");
+      setHeaders(hs);
+      const auto = mapImportHeaders(kind, hs).mapping; // başlık → alan
+      setFieldMap(Object.fromEntries(IMPORT_FIELDS[kind].map((f) => [f.key, Object.entries(auto).find(([, k]) => k === f.key)?.[0] ?? ""])));
+    });
+    return () => { alive = false; };
+  }, [file, kind]);
+
+  const missingRequired = IMPORT_FIELDS[kind].filter((f) => f.required && !fieldMap[f.key]).map((f) => f.label);
+  const duplicateTargets = Object.values(fieldMap).filter((h, i, a) => h && a.indexOf(h) !== i);
+  // başlık → alan; seçilmeyen başlıklar "" ile açıkça yok sayılır (takma ad eşleşse bile)
+  const explicitMapping = () => { const chosen = Object.fromEntries(Object.entries(fieldMap).filter(([, h]) => h).map(([k, h]) => [h, k])); return Object.fromEntries(headers.map((h) => [h, chosen[h] ?? ""])); };
+
+  async function check() {
+    if (!file || busy) return;
+    if (file.size > IMPORT_MAX_BYTES) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Dosya en çok 5 MB olabilir; parçalara bölün." })); return; }
+    if (missingRequired.length) { setMapOpen(true); setErr(new ApiFailure(422, { code: "IMPORT_MAPPING_INCOMPLETE", message: `Zorunlu sütun eşlenmedi: ${missingRequired.join(", ")}. Aşağıdaki eşlemeden seçin.` })); return; }
+    setBusy(true); setErr(null);
+    try {
+      const content = await file.text();
+      const format = /\.json$/i.test(file.name) ? "json" : "csv";
+      const b = await api<Batch>("/imports", { body: { kind, format, fileName: file.name, content, mapping: explicitMapping() } });
+      notify("success", b.reused ? "Bu dosya daha önce yüklenmiş; mevcut aktarım açıldı (yeni kayıt oluşmaz)." : "Ön kontrol tamam. Hiçbir kayıt henüz yazılmadı.");
+      setOpenId(b.id);
+      await history.reload();
+    } catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="stack">
+      <section className="card card-pad stack">
+        <div>
+          <h2>Önceki sistemden veri aktarımı</h2>
+          <p className="muted small">Önce ön kontrol yapılır: dosya okunur, sütunlar eşlenir, her satır doğrulanır ve mükerrer adaylar aranır — <b>hiçbir kayıt yazılmaz</b>.
+            Sonuçları inceleyip onayladığınızda yalnız geçerli satırlar aktarılır. Aynı dosyayı tekrar yüklemek yeni kayıt oluşturmaz.</p>
+        </div>
+        {err && (
+          <Alert kind="error" title={err.code === "IMPORT_MAPPING_INCOMPLETE" ? "Zorunlu sütunlar bulunamadı" : undefined}>
+            {err.message}
+            {err.code === "IMPORT_MAPPING_INCOMPLETE" && (err.body.details as { headers?: string[] } | undefined)?.headers && (
+              <div className="small" style={{ marginTop: 6 }}>Dosyadaki başlıklar: {(err.body.details as { headers: string[] }).headers.join(", ")}</div>
+            )}
+          </Alert>
+        )}
+        <div className="form-grid">
+          <SelectField label="Aktarım türü" value={kind} onChange={(e) => setKind(e.target.value as ImportKind)}>
+            {(Object.keys(IMPORT_KIND_LABELS) as ImportKind[]).map((k) => <option key={k} value={k}>{IMPORT_KIND_LABELS[k]}</option>)}
+          </SelectField>
+          <div className="field">
+            <label htmlFor="import-file">Dosya (CSV veya JSON, en çok 5 MB)</label>
+            <input id="import-file" className="input" type="file" accept=".csv,.json,text/csv,application/json" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setErr(null); }} />
+          </div>
+        </div>
+        {file && headers.length > 0 && (
+          <details open={mapOpen || missingRequired.length > 0} onToggle={(e) => setMapOpen((e.target as HTMLDetailsElement).open)}>
+            <summary className="small">Sütun eşlemesi — {headers.length} başlık bulundu{missingRequired.length ? `, ${missingRequired.length} zorunlu alan eşlenmedi` : ", zorunlu alanlar tamam"}</summary>
+            <p className="small muted" style={{ marginTop: 6 }}>Her PİA-DENT alanı için dosyadaki sütunu seçin. Öneriler tanınan başlıklardan gelir; eşlenmeyen dosya sütunları yok sayılır.</p>
+            <div className="table-wrap" tabIndex={0}><table className="table" style={{ marginTop: 8 }}>
+              <thead><tr><th>PİA-DENT alanı</th><th>Dosyadaki sütun</th></tr></thead>
+              <tbody>{IMPORT_FIELDS[kind].map((f) => (
+                <tr key={f.key}>
+                  <td>{f.label}{f.required && <span className="req" aria-hidden> *</span>}{f.hint && <div className="small muted">{f.hint}</div>}</td>
+                  <td>
+                    <label className="sr-only" htmlFor={`map-${f.key}`}>{f.label} sütunu</label>
+                    <select id={`map-${f.key}`} className="select" value={fieldMap[f.key] ?? ""} aria-invalid={f.required && !fieldMap[f.key]}
+                      onChange={(e) => { setFieldMap({ ...fieldMap, [f.key]: e.target.value }); setErr(null); }}>
+                      <option value="">— Eşlenmiyor —</option>
+                      {headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table></div>
+            {duplicateTargets.length > 0 && <p className="small" style={{ color: "var(--error)" }}>Aynı dosya sütunu birden çok alana seçildi: {[...new Set(duplicateTargets)].join(", ")}</p>}
+            {!!headers.filter((h) => !Object.values(fieldMap).includes(h)).length && <p className="small muted">Yok sayılacak sütunlar: {headers.filter((h) => !Object.values(fieldMap).includes(h)).join(", ")}</p>}
+          </details>
+        )}
+        <details>
+          <summary className="small">Beklenen sütunlar</summary>
+          <table className="table" style={{ marginTop: 8 }}>
+            <thead><tr><th>Alan</th><th>Zorunlu</th><th>Tanınan başlıklar</th><th>Not</th></tr></thead>
+            <tbody>{IMPORT_FIELDS[kind].map((f) => (
+              <tr key={f.key}><td>{f.label}</td><td>{f.required ? "Evet" : "—"}</td><td className="small muted">{f.aliases.slice(0, 5).join(", ")}</td><td className="small">{f.hint ?? ""}</td></tr>
+            ))}</tbody>
+          </table>
+          <p className="small muted">Ayırıcı “;” veya “,” olabilir; Excel'in UTF-8 CSV çıktısı uygundur. Tarih gg.aa.yyyy, tutar 1.250,50 biçiminde yazılabilir.
+            {kind === "opening_balances" && " Açılış bakiyesi için önce hasta kartlarını aktarın."}
+            {kind === "appointment_history" && " Geçmiş randevular için önce hasta kartlarını aktarın; hekim adı Yönetim → Hekimler'deki adla (ya da e-postayla) eşleşmeli; yalnız geçmiş tarihler."}
+            {kind === "treatment_history" && " Geçmiş işlemler için önce hasta kartlarını aktarın; işlem kodu/adı Yönetim → Katalog ile eşleşmeli. Aktarılan işlem alacak üretmez: bedel bilgi amaçlıdır, borç açılış bakiyesiyle aktarılır."}</p>
+        </details>
+        <div><button className="btn btn-primary" disabled={!file || busy || duplicateTargets.length > 0} onClick={() => void check()}><FileUp size={17} aria-hidden />{busy ? "Kontrol ediliyor…" : "Ön kontrol yap"}</button></div>
+      </section>
+
+      {openId && <BatchDetail id={openId} notify={notify} onChange={() => void history.reload()} onClose={() => setOpenId(null)} />}
+
+      <section className="card">
+        <div className="card-head"><h2>Aktarım geçmişi</h2></div>
+        {history.loading && !history.data ? <Loading /> : history.error ? <ErrorState error={history.error} onRetry={history.reload} /> :
+          (history.data!.items.length === 0 ? <EmptyState title="Henüz aktarım yok" /> : (
+            <div className="table-wrap" tabIndex={0}>
+              <table className="table">
+                <thead><tr><th>Dosya</th><th>Tür</th><th>Durum</th><th className="num">Satır</th><th className="num">Geçerli</th><th className="num">Aktarılan</th><th className="desktop-only">Yükleyen</th><th><span className="sr-only">İşlem</span></th></tr></thead>
+                <tbody>{history.data!.items.map((b) => (
+                  <tr key={b.id}>
+                    <td><strong>{b.fileName}</strong><div className="muted small">{fmtDateTime(b.createdAt)}</div></td>
+                    <td>{IMPORT_KIND_LABELS[b.kind]}</td>
+                    <td><span className={`badge ${BATCH_LABEL[b.status][1]}`}>{BATCH_LABEL[b.status][0]}</span></td>
+                    <td className="num">{b.summary.rows}</td><td className="num">{b.summary.valid}</td><td className="num">{b.summary.imported ?? "—"}</td>
+                    <td className="desktop-only">{b.by}</td>
+                    <td style={{ textAlign: "right" }}><button className="btn btn-sm" onClick={() => setOpenId(b.id)}>Aç</button></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          ))}
+      </section>
+    </div>
+  );
+}
+
+function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: Notify; onChange: () => void; onClose: () => void }) {
+  const [filter, setFilter] = useState<string>("");
+  const d = useData<Batch & { rows: Row[] }>(`/imports/${id}${filter ? `?status=${filter}` : ""}`);
+  const [busy, setBusy] = useState(false);
+  const [reason, setReason] = useState("");
+  const [err, setErr] = useState<ApiFailure | null>(null);
+  if (d.loading && !d.data) return <section className="card"><Loading rows={4} /></section>;
+  if (d.error) return <section className="card"><ErrorState error={d.error} onRetry={d.reload} /></section>;
+  const b = d.data!;
+  const s = b.summary;
+  const money = b.kind === "opening_balances" || b.kind === "treatment_history";
+  async function commit() {
+    if (busy) return;
+    if (!window.confirm(`${s.valid} geçerli satır aktarılacak. Hatalı ve mükerrer satırlar atlanır. Devam edilsin mi?`)) return;
+    setBusy(true); setErr(null);
+    try { const r = await api<Batch>(`/imports/${id}/commit`, { body: {} }); notify("success", `${r.summary.imported ?? 0} kayıt aktarıldı.`); await d.reload(); onChange(); }
+    catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
+  }
+  async function rollback() {
+    if (busy) return;
+    setBusy(true); setErr(null);
+    try { await api(`/imports/${id}/rollback`, { body: { reason } }); notify("success", "Aktarım geri alındı; kayıtlar arşivlendi/iptal edildi (silinmedi)."); setReason(""); await d.reload(); onChange(); }
+    catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
+  }
+  // Satır tablosunda gösterilecek sütunlar: türe göre anlamlı 4 alan; aksi halde eşlemedeki ilk 4
+  const PREFERRED: Record<string, string[]> = { patients: ["external_ref", "first_name", "last_name", "birth_date"], opening_balances: ["patient_ref", "amount", "as_of", "description"],
+    appointment_history: ["date", "time", "practitioner_name", "status"], treatment_history: ["date", "procedure_code", "tooth", "amount"] };
+  const mapped = Object.values(b.mapping);
+  const keys = (PREFERRED[b.kind] ?? []).filter((k) => mapped.includes(k) || k === "practitioner_name").length >= 2 ? PREFERRED[b.kind]! : mapped;
+  const cell = (r: Row, k: string): string => {
+    if (k === "amount" && r.amount) return formatTRY(r.amount);
+    if (k === "practitioner_name") return String(r.data.practitioner_name ?? "");
+    if (k === "status" && b.kind === "appointment_history") return APPOINTMENT_STATUS_LABELS[String(r.data.status) as keyof typeof APPOINTMENT_STATUS_LABELS] ?? String(r.data.status ?? "");
+    if (k === "date" || k === "birth_date" || k === "as_of") { const v = r.data[k]; return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? fmtDate(v) : String(v ?? ""); }
+    return String(r.data[k] ?? r.data[`${k}_masked`] ?? r.data[k === "patient_ref" ? "file_no" : k] ?? "");
+  };
+  return (
+    <section className="card" aria-label="Aktarım ayrıntısı">
+      <div className="card-head">
+        <div><h2>{b.fileName}</h2><p className="muted small">{IMPORT_KIND_LABELS[b.kind]} · {BATCH_LABEL[b.status][0]} · {fmtDateTime(b.createdAt)} · {b.by}
+          {b.committedAt && ` · Onay: ${fmtDateTime(b.committedAt)} (${b.committedBy})`}</p></div>
+        <button className="btn btn-sm" onClick={onClose}>Kapat</button>
+      </div>
+      <div className="card-pad stack">
+        {err && <Alert kind="error">{err.message}</Alert>}
+        {b.status === "rolled_back" && <Alert kind="info" title="Geri alındı">{fmtDateTime(b.rolledBackAt)} · {b.rollbackReason}</Alert>}
+        {b.rowsPurgedAt && <Alert kind="info" title="Satır verisi temizlendi">Saklama süresi dolduğu için {fmtDateTime(b.rowsPurgedAt)} tarihinde satırların içeriği silindi. Sayımlar ve mutabakat özeti korunur.</Alert>}
+        <div className="totals" aria-label="Mutabakat">
+          <div className="stat card"><div className="label">Kaynak satır</div><div className="value">{s.rows}</div></div>
+          <div className="stat card"><div className="label">Aktarılabilir</div><div className="value">{s.valid}</div></div>
+          <div className="stat card"><div className="label">Hatalı</div><div className="value">{s.errors}</div></div>
+          <div className="stat card"><div className="label">Mükerrer / aday</div><div className="value">{s.duplicates}</div></div>
+          <div className="stat card"><div className="label">Daha önce aktarılmış</div><div className="value">{s.alreadyImported}</div></div>
+          {s.imported !== undefined && <div className="stat card"><div className="label">Aktarılan</div><div className="value">{s.imported}{s.skippedAtCommit ? ` (+${s.skippedAtCommit} atlandı)` : ""}</div></div>}
+        </div>
+        {money && (
+          <div className="totals" aria-label="Tutar mutabakatı">
+            <div className="stat card"><div className="label">Kaynak toplam</div><div className="value">{formatTRY(s.amountSource)}</div></div>
+            <div className="stat card"><div className="label">Aktarılabilir</div><div className="value">{formatTRY(s.amountValid)}</div></div>
+            <div className="stat card"><div className="label">Hatalı</div><div className="value">{formatTRY(s.amountError)}</div></div>
+            <div className="stat card"><div className="label">Mükerrer</div><div className="value">{formatTRY(s.amountDuplicate)}</div></div>
+            <div className="stat card"><div className="label">Daha önce aktarılmış</div><div className="value">{formatTRY(s.amountAlreadyImported)}</div></div>
+            {s.amountImported !== undefined && <div className="stat card"><div className="label">Aktarılan</div><div className="value">{formatTRY(s.amountImported)}</div></div>}
+          </div>
+        )}
+        {money && !!s.unparsedAmountRows && <p className="small muted">{s.unparsedAmountRows} satırın tutarı okunamadı; kaynak toplama dahil değildir (hatalı satırlarda listelenir).</p>}
+        {!!s.unmapped?.length && <p className="small muted">Eşlenmeyen (yok sayılan) sütunlar: {s.unmapped.join(", ")}</p>}
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          {b.status === "dry_run" && <button className="btn btn-primary" disabled={busy || s.valid === 0} onClick={() => void commit()}><Upload size={17} aria-hidden />{busy ? "Aktarılıyor…" : `${s.valid} satırı aktar`}</button>}
+          {(s.errors > 0 || s.duplicates > 0) && (
+            <button className="btn" onClick={() => void download(`/imports/${id}/errors.csv`, { fallbackName: "aktarim-hatalari.csv" }).catch((e) => setErr(e as ApiFailure))}>
+              <Download size={16} aria-hidden />Hatalı satırları indir (CSV)
+            </button>
+          )}
+        </div>
+        {b.status === "committed" && (
+          <details>
+            <summary className="small">Aktarımı geri al</summary>
+            <div className="stack" style={{ marginTop: 8, maxWidth: 520 }}>
+              <p className="small muted">Yalnız aktarımdan sonra hiç işlem görmemiş kayıtlar geri alınabilir. Hasta kartları arşivlenir, açılış alacakları iptal edilir; hiçbir kayıt silinmez.</p>
+              <TextAreaField label="Gerekçe" required value={reason} onChange={(e) => setReason(e.target.value)} error={err?.fieldErrors.reason} />
+              <div><button className="btn btn-danger" disabled={busy || reason.trim().length < 3} onClick={() => void rollback()}><RotateCcw size={16} aria-hidden />Geri al</button></div>
+            </div>
+          </details>
+        )}
+      </div>
+      <div className="card-head" style={{ borderTop: "1px solid var(--border)" }}>
+        <h3>Satırlar</h3>
+        <select className="select" style={{ width: 210, minHeight: 36 }} aria-label="Satır durumu süzgeci" value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <option value="">Tümü</option>
+          {Object.entries(IMPORT_ROW_STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+      </div>
+      <div className="table-wrap" tabIndex={0}>
+        <table className="table">
+          <thead><tr><th className="num">Satır</th><th>Durum</th>{keys.slice(0, 4).map((k) => <th key={k}>{k === "practitioner_name" ? "Hekim" : (IMPORT_FIELDS[b.kind].find((f) => f.key === k)?.label ?? k)}</th>)}<th>Hata / uyarı</th></tr></thead>
+          <tbody>
+            {b.rows.length === 0 && <tr><td colSpan={7} className="muted">Bu süzgeçte satır yok.</td></tr>}
+            {b.rows.map((r) => (
+              <tr key={r.rowNo}>
+                <td className="num">{r.rowNo}</td>
+                <td><span className={`badge ${STATUS_BADGE[r.status] ?? "badge-neutral"}`}>{IMPORT_ROW_STATUS_LABELS[r.status] ?? r.status}</span></td>
+                {keys.slice(0, 4).map((k) => <td key={k} className="small">{cell(r, k)}</td>)}
+                <td className="small">
+                  {r.errors.map((e, i) => <div key={`e${i}`} style={{ color: "var(--error)" }}>{e.message}</div>)}
+                  {r.warnings.map((w, i) => <div key={`w${i}`} className="muted">{w.message}</div>)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {b.rows.length === 200 && <p className="card-pad small muted">İlk 200 satır gösteriliyor; süzgeçle daraltın veya hatalı satırları CSV olarak indirin.</p>}
+    </section>
+  );
+}
+
+export function ExportPanel({ notify }: { notify: Notify }) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<ApiFailure | null>(null);
+  async function go() {
+    if (busy) return;
+    setBusy(true); setErr(null);
+    try { await download("/exports/clinic", { body: { reason }, fallbackName: "viadent-klinik-disa-aktarim.json" }); notify("success", "Dışa aktarım indirildi ve denetim kaydına yazıldı."); setReason(""); }
+    catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
+  }
+  return (
+    <section className="card card-pad stack" style={{ maxWidth: 760 }}>
+      <div>
+        <h2>Klinik verisini dışa aktar</h2>
+        <p className="muted small">Kliniğinizin tüm kayıtları belgelenmiş, açık bir JSON biçiminde (UTF-8) indirilir: her tablo için satırlar, satır sayısı ve SHA-256 özeti.
+          Verinizi başka bir sisteme taşıyabilirsiniz; kilitlenme yoktur. Parola, oturum, iki adımlı doğrulama ve entegrasyon sırları dışa aktarılmaz;
+          dosya içerikleri (röntgen, belge) ayrı yedekten SHA-256 ile eşlenir.</p>
+      </div>
+      <Alert kind="warning" title="Kişisel ve sağlık verisi içerir">İndirilen dosyayı şifreli bir ortamda saklayın ve yalnız yetkili kişilerle paylaşın. İşlem gerekçesiyle birlikte denetim kaydına yazılır.</Alert>
+      {err && <Alert kind="error">{err.message}</Alert>}
+      <TextField label="Gerekçe" required placeholder="ör. Yıllık arşiv kopyası, sistem değişikliği" value={reason} onChange={(e) => setReason(e.target.value)} error={err?.fieldErrors.reason} />
+      <div><button className="btn btn-primary" disabled={busy || reason.trim().length < 5} onClick={() => void go()}><ShieldCheck size={17} aria-hidden />{busy ? "Hazırlanıyor…" : "Dışa aktar (JSON)"}</button></div>
+    </section>
+  );
+}
