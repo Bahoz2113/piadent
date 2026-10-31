@@ -415,9 +415,39 @@ describe("dayanıklılık", () => {
     const pool = app.get(Db).pool;
     await Promise.all([pool.query("select 1"), pool.query("select 1"), pool.query("select 1")]);
     expect(pool.idleCount).toBeGreaterThan(0);
-    const killed = await adminQuery("select count(pg_terminate_backend(pid))::int as n from pg_stat_activity where application_name = 'viadent-api' and state = 'idle'");
+    // QA-007: yalnız bu test veritabanının bağlantıları; aynı kümedeki başka ortam (canlı demo API) etkilenmez.
+    const killed = await adminQuery("select count(pg_terminate_backend(pid))::int as n from pg_stat_activity where application_name = 'viadent-api' and state = 'idle' and datname = current_database()");
     expect(killed[0].n).toBeGreaterThan(0);
     await new Promise((r) => setTimeout(r, 300));
     expect((await sec.get("/patients?q=a")).status).toBe(200);
   });
+
+  it("QA-006: eşzamanlı trafik sürerken idle ve aktif bağlantılar kesilince süreç yaşar, istekler 200/5xx döner, sonrası 200", async () => {
+    // Havuzdan alınmış (checked-out) ama o an sorgu çalıştırmayan pg istemcisine 57P01 gelirse dinleyicisiz 'error' → uncaughtException.
+    // Süreç düzeyinde yakalayıp sayıyoruz: eski kodda bu sayaç > 0 (vitest koşucusu da "Unhandled error" raporlar).
+    const uncaught: string[] = [];
+    const onUncaught = (e: unknown) => { uncaught.push(String((e as Error)?.message ?? e).slice(0, 120)); };
+    process.on("uncaughtException", onUncaught);
+    try {
+      const N = 24;
+      const inflight = Array.from({ length: N }, () => sec.get("/patients?q=a").then((r) => r.status, () => -1));
+      // İstekler başlasın (bağlantılar alınıp sorgular/transaction adımları sürerken) ve 3 dalga hâlinde hem idle hem aktif bağlantı kesilsin.
+      let killed = 0;
+      for (let i = 0; i < 3; i++) {
+        await new Promise((r) => setTimeout(r, 25));
+        const k = await adminQuery("select count(pg_terminate_backend(pid))::int as n from pg_stat_activity where application_name = 'viadent-api' and datname = current_database()");
+        killed += k[0].n;
+      }
+      expect(killed).toBeGreaterThan(0);
+      const statuses = await Promise.all(inflight);
+      // Sahte başarı yok: her istek ya gerçek 200 ya da 5xx; yanıtsız kalan (-1) istek olmaz.
+      expect(statuses.filter((s) => s !== 200 && !(s >= 500 && s < 600))).toEqual([]);
+      expect(uncaught).toEqual([]);
+      await new Promise((r) => setTimeout(r, 300));
+      expect((await sec.get("/patients?q=a")).status).toBe(200);
+      expect((await request(app.getHttpServer()).get("/api/v1/health/ready")).status).toBe(200);
+    } finally {
+      process.off("uncaughtException", onUncaught);
+    }
+  }, 60_000);
 });

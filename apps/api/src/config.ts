@@ -2,6 +2,8 @@ import { loadEnv, requireEnv } from "@viadent/db";
 
 export interface AppConfig {
   databaseUrl: string;
+  /** pg_stat_activity.application_name (DB_APPLICATION_NAME; varsayılan "viadent-api"). Aynı kümede birden çok API örneğini ayırt etmek için. */
+  dbApplicationName: string;
   port: number;
   sessionTtlHours: number;
   /** Boşta kalma süresi (dk): bu kadar süre istek gelmeyen oturum düşer (klinikte açık bırakılan ekran). 0 = kapalı. */
@@ -23,6 +25,7 @@ export function loadConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   loadEnv();
   return {
     databaseUrl: overrides.databaseUrl ?? requireEnv("DATABASE_URL"),
+    dbApplicationName: overrides.dbApplicationName ?? process.env.DB_APPLICATION_NAME ?? "viadent-api",
     port: overrides.port ?? Number(process.env.API_PORT ?? 4000),
     sessionTtlHours: overrides.sessionTtlHours ?? Number(process.env.SESSION_TTL_HOURS ?? 12),
     sessionIdleMinutes: overrides.sessionIdleMinutes ?? Number(process.env.SESSION_IDLE_MINUTES ?? 90),

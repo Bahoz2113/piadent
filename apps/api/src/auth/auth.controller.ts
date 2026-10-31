@@ -33,11 +33,17 @@ export class AuthController {
         new Promise((_, rej) => setTimeout(() => rej(new Error("zaman aşımı")), 2000)),
       ]);
       void r;
-      return { status: "ready", db: "ok", version: this.config.version };
+      return { status: "ready", db: "ok", version: this.config.version, pool: this.poolState() };
     } catch {
       res.status(503);
-      return { status: "not_ready", db: "unreachable", version: this.config.version };
+      return { status: "not_ready", db: "unreachable", version: this.config.version, pool: this.poolState() };
     }
+  }
+
+  /** Havuz sağlığı (QA-006): bağlantı sayıları ve kesilme sayaçları; kişisel veri içermez. */
+  private poolState() {
+    const p = this.db.pool;
+    return { total: p.totalCount, idle: p.idleCount, waiting: p.waitingCount, clientErrors: this.db.guard.clientErrors, idleErrors: this.db.guard.idleErrors, lastErrorAt: this.db.guard.lastErrorAt };
   }
 
   /** Prometheus metrikleri; METRICS_TOKEN tanımlı değilse uç yok sayılır (404). */

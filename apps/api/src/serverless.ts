@@ -5,7 +5,7 @@
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import pg from "pg";
-import { processIntegrationJobs } from "@viadent/db";
+import { guardPool, processIntegrationJobs } from "@viadent/db";
 import { createApp } from "./bootstrap.js";
 import { loadConfig } from "./config.js";
 import { processOutbox, scanAllTenants } from "../../worker/src/jobs.js";
@@ -26,7 +26,7 @@ async function tick() {
   try {
     const url = process.env.WORKER_DATABASE_URL ?? process.env.DATABASE_URL;
     if (!url) return;
-    workerPool ??= new pg.Pool({ connectionString: url, max: 2, application_name: "viadent-inline-worker" });
+    if (!workerPool) guardPool((workerPool = new pg.Pool({ connectionString: url, max: 2, application_name: "viadent-inline-worker" })), "inline-worker");
     do {
       pending = false;
       for (let i = 0; i < 5; i++) { if ((await processOutbox(workerPool, 25)) + (await processIntegrationJobs(workerPool)) === 0) break; }

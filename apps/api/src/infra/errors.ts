@@ -2,6 +2,7 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from "@n
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { zodFieldErrors, type ApiError } from "@viadent/contracts";
+import { isConnectionError } from "@viadent/db";
 
 /** Güvenli, sözleşmeli hata. Mesaj kullanıcıya gösterilebilir olmalı (SQL/token/hasta verisi içermez). */
 export class AppError extends Error {
@@ -111,6 +112,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (pg?.code === "40001" || pg?.code === "40P01") {
       status = 409;
       body = { code: "RETRY", message: "Eşzamanlı bir işlem nedeniyle kaydedilemedi. Tekrar deneyin.", correlation_id };
+    } else if (isConnectionError(exception)) {
+      // Veritabanı bağlantısı kesildi (yeniden başlatma/failover; QA-006): geçici durum, sahte başarı yok.
+      status = 503;
+      body = { code: "SERVICE_UNAVAILABLE", message: "Veritabanı bağlantısı geçici olarak kesildi. Lütfen birkaç saniye sonra tekrar deneyin.", correlation_id };
     }
     if (status >= 500) {
       // Yalnız hata türü/kodu loglanır; istek gövdesi ve parametreler (hasta verisi) loglanmaz.

@@ -1,5 +1,5 @@
 import pg from "pg";
-import { loadEnv } from "@viadent/db";
+import { guardPool, loadEnv } from "@viadent/db";
 import { processIntegrationJobs } from "@viadent/db";
 import { processOutbox, scanAllTenants } from "./jobs.js";
 
@@ -7,8 +7,11 @@ loadEnv();
 const url = process.env.WORKER_DATABASE_URL ?? process.env.DATABASE_URL;
 if (!url) throw new Error("WORKER_DATABASE_URL tanımlı değil (.env.example)");
 const pool = new pg.Pool({ connectionString: url, max: 4, application_name: "viadent-worker" });
-// Boştaki bağlantı DB tarafından kapatılırsa (yeniden başlatma, failover) süreç çökmez; havuz yeni bağlantı açar.
-pool.on("error", (e) => console.error(`[worker] boşta bağlantı hatası: ${e.message.slice(0, 120)}`));
+// DB bağlantıyı kapatırsa (yeniden başlatma, failover) süreç çökmez: boştaki ve kullanımdaki istemciye dinleyici (QA-006); havuz yeni bağlantı açar.
+guardPool(pool, "worker");
+// Dinleyicisiz hata/ret süreci düşürmesin: kırpılmış mesaj loglanır (parametre/kişisel veri yok), döngü sürer.
+process.on("unhandledRejection", (e) => console.error(`[worker] işlenmemiş ret: ${String((e as Error)?.message ?? e).slice(0, 200)}`));
+process.on("uncaughtException", (e) => console.error(`[worker] yakalanmamış istisna: ${(e as Error)?.name ?? ""} ${String((e as Error)?.message ?? e).slice(0, 200)}`));
 let stopping = false;
 let lastScan = 0;
 
