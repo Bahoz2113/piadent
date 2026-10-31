@@ -126,6 +126,7 @@ export const DayQuery = z.object({ date: isoDate.optional(), from: isoDate.optio
 // ---------------------------------------------------------------- kaynak ve takvim yönetimi
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$|^24:00$/, "Saat ss:dd biçiminde olmalı");
 export const WEEKDAY_LABELS = ["", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"] as const;
+export const WEEKDAY_SHORT = ["", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"] as const;
 
 export const PractitionerUpsert = z.object({
   displayName: trimmed(80).min(2, "Ad en az 2 karakter"),

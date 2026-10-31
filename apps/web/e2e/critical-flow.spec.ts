@@ -11,9 +11,10 @@ async function login(page: Page, email: string) {
   await expect(page.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
 }
 
+/** Mobil emülasyonda tarayıcı taşan sayfayı uzaklaştırır; bu yüzden düzen genişliği proje görünüm alanıyla karşılaştırılır. */
 async function noHorizontalOverflow(page: Page) {
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  expect(overflow, "yatay taşma").toBeLessThanOrEqual(1);
+  const vw = page.viewportSize()!.width;
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), "yatay taşma").toBeLessThanOrEqual(vw + 1);
 }
 
 test("sekreter: hasta oluştur → randevu ver → çakışma reddi → VİA İz", async ({ page }, info) => {
@@ -45,8 +46,11 @@ test("sekreter: hasta oluştur → randevu ver → çakışma reddi → VİA İz
   const day = new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
   await ap.getByRole("textbox", { name: "Tarih", exact: true }).fill(day);
   await ap.getByRole("textbox", { name: "Saat", exact: true }).fill(mobile ? "07:00" : "07:30");
-  await ap.getByLabel("İşlem / neden").fill("Kontrol");
+  await ap.getByLabel("Açıklama").fill("Kontrol");
   await ap.getByRole("button", { name: "Randevuyu kaydet" }).click();
+  // 07:xx çalışma saati dışında: uyarı gösterilir, bilinçli onayla kaydedilir (T05).
+  await expect(ap.getByText("Çalışma saati dışı", { exact: true })).toBeVisible();
+  await ap.getByRole("button", { name: "Çalışma saati dışında yine de kaydet" }).click();
   await expect(page.getByText("Randevu oluşturuldu.")).toBeVisible();
 
   // Aynı hekim/saat ikinci kez → anlamlı çakışma (sunucu kontrolü).
@@ -57,6 +61,7 @@ test("sekreter: hasta oluştur → randevu ver → çakışma reddi → VİA İz
   await ap2.getByRole("textbox", { name: "Tarih", exact: true }).fill(day);
   await ap2.getByRole("textbox", { name: "Saat", exact: true }).fill(mobile ? "07:00" : "07:30");
   await ap2.getByRole("button", { name: "Randevuyu kaydet" }).click();
+  await ap2.getByRole("button", { name: "Çalışma saati dışında yine de kaydet" }).click();
   await expect(ap2.getByText(/dolu/)).toBeVisible();
   await ap2.getByRole("button", { name: "Vazgeç" }).click();
   page.once("dialog", (d) => void d.accept());

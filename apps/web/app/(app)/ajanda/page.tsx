@@ -2,14 +2,13 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, UserPlus } from "lucide-react";
-import { addDays, APPOINTMENT_STATUS_LABELS, APPOINTMENT_TRANSITIONS, CONTACT_OUTCOME_LABELS, type AppointmentStatus } from "@viadent/contracts";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, UserPlus, Ban } from "lucide-react";
+import { addDays, APPOINTMENT_STATUS_LABELS, APPOINTMENT_TRANSITIONS, CONTACT_OUTCOME_LABELS, formatPhone, type AppointmentStatus } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
-import { formatPhone } from "@viadent/contracts";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
-import { fmtLongDay, fmtTime, minutesOfDay, todayIn } from "@/lib/format";
-import type { Appt, Resources } from "@/lib/types";
+import { fmtDateTime, fmtLongDay, fmtTime, minutesOfDay, todayIn } from "@/lib/format";
+import type { AgendaContext, Appt, Resources } from "@/lib/types";
 import { Alert, ContactBadge, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast } from "@/components/ui";
 import { NewPatientDrawer } from "@/components/patient-form";
 
@@ -17,79 +16,162 @@ const DAY_START = 8 * 60;
 const DAY_END = 20 * 60;
 const SLOT = 30;
 const PX_PER_MIN = 48 / SLOT;
+const SHORT_DAYS = ["", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 interface Prefill { date: string; time?: string; practitionerId?: string; chairId?: string; patientId?: string }
+interface Column { key: string; label: string; sub?: string; date: string; practitionerId?: string; chairId?: string; match: (a: Appt) => boolean }
+
+/** ISO haftagünü (1 = Pazartesi). */
+function isoDow(date: string): number {
+  const [y, m, d] = date.split("-").map(Number);
+  return ((new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay() + 6) % 7) + 1;
+}
+const mondayOf = (date: string) => addDays(date, 1 - isoDow(date));
+const localDay = (iso: string, tz: string) => new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(iso));
+const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
 function AgendaInner() {
   const { tz, can } = useSession();
   const params = useSearchParams();
   const router = useRouter();
   const [date, setDate] = useState(params.get("tarih") ?? todayIn(tz));
+  const [view, setView] = useState<"day" | "week">(params.get("gorunum") === "hafta" ? "week" : "day");
   const [mode, setMode] = useState<"practitioner" | "chair">("practitioner");
+  const [weekPrac, setWeekPrac] = useState<string>(params.get("hekim") ?? "");
   const [creating, setCreating] = useState<Prefill | null>(params.get("yeni") === "1" ? { date: params.get("tarih") ?? todayIn(tz), patientId: params.get("hasta") ?? undefined } : null);
   const [selected, setSelected] = useState<Appt | null>(null);
   const toast = useToast();
   const res = useData<Resources>("/resources");
-  const day = useData<{ items: Appt[] }>(`/appointments?date=${date}`);
+  const start = view === "week" ? mondayOf(date) : date;
+  const days = view === "week" ? 7 : 1;
+  const range = useData<{ items: Appt[] }>(`/appointments?from=${start}&days=${days}`);
+  const ctx = useData<AgendaContext>(`/agenda-context?from=${start}&days=${days}`);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 60_000); return () => clearInterval(t); }, []);
-  useEffect(() => { router.replace(`/ajanda?tarih=${date}`, { scroll: false }); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [date]);
+  useEffect(() => {
+    router.replace(`/ajanda?tarih=${date}${view === "week" ? `&gorunum=hafta${weekPrac ? `&hekim=${weekPrac}` : ""}` : ""}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, view, weekPrac]);
+  useEffect(() => { if (!weekPrac && res.data?.practitioners[0]) setWeekPrac(res.data.practitioners[0].id); }, [res.data, weekPrac]);
 
-  const cols = useMemo(() => (mode === "practitioner" ? res.data?.practitioners : res.data?.chairs) ?? [], [mode, res.data]);
-  const items = day.data?.items ?? [];
-  const isToday = date === todayIn(tz);
+  const items = range.data?.items ?? [];
+  const today = todayIn(tz);
   const nowMin = minutesOfDay(new Date(now).toISOString(), tz);
+  const reload = () => { void range.reload(); void ctx.reload(); };
+
+  const cols: Column[] = useMemo(() => {
+    if (!res.data) return [];
+    if (view === "week") {
+      const p = res.data.practitioners.find((x) => x.id === weekPrac) ?? res.data.practitioners[0];
+      if (!p) return [];
+      return Array.from({ length: 7 }, (_, i) => {
+        const d = addDays(start, i);
+        return { key: d, label: `${SHORT_DAYS[isoDow(d)]} ${d.slice(8)}.${d.slice(5, 7)}`, date: d, practitionerId: p.id,
+          match: (a: Appt) => a.practitionerId === p.id && localDay(a.startsAt, tz) === d };
+      });
+    }
+    const list = mode === "practitioner" ? res.data.practitioners : res.data.chairs;
+    return list.map((r) => ({
+      key: r.id, label: r.name, date,
+      ...(mode === "practitioner" ? { practitionerId: r.id } : { chairId: r.id }),
+      match: (a: Appt) => (mode === "practitioner" ? a.practitionerId : a.chairId) === r.id,
+    }));
+  }, [res.data, view, weekPrac, start, date, mode, tz]);
+
+  /** Sütunun o günkü çalışma blokları (hekim için; tanımsızsa null = kısıt yok). */
+  function workBlocks(col: Column) {
+    if (!col.practitionerId || !ctx.data) return null;
+    const all = ctx.data.schedules.filter((s) => s.practitionerId === col.practitionerId);
+    if (!all.length) return null;
+    return all.filter((s) => s.weekday === isoDow(col.date));
+  }
+  function closuresFor(col: Column) {
+    return (ctx.data?.closures ?? []).filter((c) =>
+      (c.scope === "clinic" || (col.practitionerId && c.practitionerId === col.practitionerId) || (col.chairId && c.chairId === col.chairId)) &&
+      localDay(c.startsAt, tz) <= col.date && localDay(new Date(new Date(c.endsAt).getTime() - 1).toISOString(), tz) >= col.date);
+  }
+
+  const title = view === "week"
+    ? `${fmtLongDay(start)} – ${fmtLongDay(addDays(start, 6))}`
+    : fmtLongDay(date);
 
   return (
     <>
       <div className="page-head">
         <div>
           <h1>Ajanda</h1>
-          <p>{fmtLongDay(date)}</p>
+          <p>{title}</p>
         </div>
-        {can("appointment.write") && <button className="btn btn-primary" onClick={() => setCreating({ date })}><Plus size={18} aria-hidden />Randevu ver</button>}
+        {can("appointment.write") && <button className="btn btn-primary" onClick={() => setCreating({ date, practitionerId: view === "week" ? weekPrac : undefined })}><Plus size={18} aria-hidden />Randevu ver</button>}
       </div>
       <div className="agenda-bar">
-        <button className="btn icon-btn" aria-label="Önceki gün" onClick={() => setDate(addDays(date, -1))}><ChevronLeft size={18} /></button>
-        <button className="btn" onClick={() => setDate(todayIn(tz))} aria-pressed={isToday}>Bugün</button>
-        <button className="btn icon-btn" aria-label="Sonraki gün" onClick={() => setDate(addDays(date, 1))}><ChevronRight size={18} /></button>
+        <button className="btn icon-btn" aria-label={view === "week" ? "Önceki hafta" : "Önceki gün"} onClick={() => setDate(addDays(date, view === "week" ? -7 : -1))}><ChevronLeft size={18} /></button>
+        <button className="btn" onClick={() => setDate(today)}>Bugün</button>
+        <button className="btn icon-btn" aria-label={view === "week" ? "Sonraki hafta" : "Sonraki gün"} onClick={() => setDate(addDays(date, view === "week" ? 7 : 1))}><ChevronRight size={18} /></button>
         <label className="sr-only" htmlFor="ag-date">Tarih seç</label>
         <input id="ag-date" type="date" className="input" style={{ width: 170, minHeight: 40 }} value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-        <div className="grow" style={{ flex: 1 }} />
-        <div className="row desktop-only" role="group" aria-label="Görünüm">
-          <button className={`btn btn-sm ${mode === "practitioner" ? "btn-primary" : ""}`} aria-pressed={mode === "practitioner"} onClick={() => setMode("practitioner")}>Hekime göre</button>
-          <button className={`btn btn-sm ${mode === "chair" ? "btn-primary" : ""}`} aria-pressed={mode === "chair"} onClick={() => setMode("chair")}>Koltuğa göre</button>
+        <div style={{ flex: 1 }} />
+        <div className="row" role="group" aria-label="Süre">
+          <button className={`btn btn-sm ${view === "day" ? "btn-primary" : ""}`} aria-pressed={view === "day"} onClick={() => setView("day")}>Gün</button>
+          <button className={`btn btn-sm ${view === "week" ? "btn-primary" : ""}`} aria-pressed={view === "week"} onClick={() => setView("week")}>Hafta</button>
         </div>
+        {view === "day" ? (
+          <div className="row desktop-only" role="group" aria-label="Sütunlar">
+            <button className={`btn btn-sm ${mode === "practitioner" ? "btn-primary" : ""}`} aria-pressed={mode === "practitioner"} onClick={() => setMode("practitioner")}>Hekime göre</button>
+            <button className={`btn btn-sm ${mode === "chair" ? "btn-primary" : ""}`} aria-pressed={mode === "chair"} onClick={() => setMode("chair")}>Koltuğa göre</button>
+          </div>
+        ) : (
+          <label className="row small">
+            <span className="sr-only">Hekim</span>
+            <select className="select" style={{ minHeight: 38, width: 210 }} value={weekPrac} onChange={(e) => setWeekPrac(e.target.value)} aria-label="Haftalık görünüm hekimi">
+              {res.data?.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+        )}
       </div>
 
-      <section className="card" aria-label="Günün randevuları">
-        {(day.loading && !day.data) || (res.loading && !res.data) ? <Loading rows={6} /> : day.error ? <ErrorState error={day.error} onRetry={day.reload} /> : (
+      <section className="card" aria-label="Randevular">
+        {(range.loading && !range.data) || (res.loading && !res.data) ? <Loading rows={6} /> : range.error ? <ErrorState error={range.error} onRetry={reload} /> : (
           <>
-            {/* Masaüstü / tablet: kaynak sütunlu zaman çizelgesi */}
-            <div className="agenda-grid desktop-only" style={{ gridTemplateColumns: `64px repeat(${Math.max(cols.length, 1)}, minmax(200px, 1fr))` }}>
+            <div className={`agenda-grid desktop-only ${view === "week" ? "week" : ""}`} style={{ gridTemplateColumns: `64px repeat(${Math.max(cols.length, 1)}, minmax(${view === "week" ? 130 : 200}px, 1fr))` }}>
               <div className="agenda-times">
                 <div className="agenda-col-head" aria-hidden>&nbsp;</div>
                 {Array.from({ length: (DAY_END - DAY_START) / SLOT }, (_, i) => {
                   const m = DAY_START + i * SLOT;
-                  return <div key={m} className="agenda-time">{m % 60 === 0 ? `${String(m / 60).padStart(2, "0")}:00` : ""}</div>;
+                  return <div key={m} className="agenda-time">{m % 60 === 0 ? hhmm(m) : ""}</div>;
                 })}
               </div>
               {cols.map((c) => {
-                const colItems = items.filter((a) => (mode === "practitioner" ? a.practitionerId : a.chairId) === c.id);
+                const blocks = workBlocks(c);
+                const closed = closuresFor(c);
                 return (
-                  <div key={c.id} className="agenda-col">
-                    <div className="agenda-col-head">{c.name}</div>
+                  <div key={c.key} className="agenda-col">
+                    <div className={`agenda-col-head ${c.date === today && view === "week" ? "is-today" : ""}`}>
+                      {c.label}
+                      {blocks && blocks.length === 0 && <span className="small muted" style={{ display: "block", fontWeight: 400 }}>Çalışma günü değil</span>}
+                    </div>
                     <div style={{ position: "relative" }}>
                       {Array.from({ length: (DAY_END - DAY_START) / SLOT }, (_, i) => {
                         const m = DAY_START + i * SLOT;
-                        const time = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+                        const off = blocks ? !blocks.some((b) => b.start <= m && b.end >= m + SLOT) : false;
+                        const label = `${c.label}, ${hhmm(m)}${off ? " (çalışma saati dışı)" : ""} için randevu ver`;
                         return can("appointment.write") ? (
-                          <button key={m} className="agenda-slot" style={{ display: "block", width: "100%", border: 0, background: "transparent" }}
-                            aria-label={`${c.name}, ${time} için randevu ver`}
-                            onClick={() => setCreating({ date, time, ...(mode === "practitioner" ? { practitionerId: c.id } : { chairId: c.id }) })} />
-                        ) : <div key={m} className="agenda-slot" />;
+                          <button key={m} className={`agenda-slot ${off ? "is-off" : ""}`} style={{ display: "block", width: "100%", border: 0 }} aria-label={label}
+                            onClick={() => setCreating({ date: c.date, time: hhmm(m), practitionerId: c.practitionerId, chairId: c.chairId })} />
+                        ) : <div key={m} className={`agenda-slot ${off ? "is-off" : ""}`} />;
                       })}
-                      {colItems.map((a) => {
+                      {closed.map((cl) => {
+                        const s = localDay(cl.startsAt, tz) < c.date ? DAY_START : Math.max(minutesOfDay(cl.startsAt, tz), DAY_START);
+                        const endDay = localDay(new Date(new Date(cl.endsAt).getTime() - 1).toISOString(), tz);
+                        const e = endDay > c.date ? DAY_END : Math.min(minutesOfDay(cl.endsAt, tz) || DAY_END, DAY_END);
+                        if (e <= s) return null;
+                        return (
+                          <div key={cl.id} className="closure-block" style={{ top: (s - DAY_START) * PX_PER_MIN, height: (e - s) * PX_PER_MIN }} title={cl.reason}>
+                            <Ban size={13} aria-hidden /> <span>Kapalı · {cl.reason}</span>
+                          </div>
+                        );
+                      })}
+                      {items.filter(c.match).map((a) => {
                         const s = Math.max(minutesOfDay(a.startsAt, tz), DAY_START);
                         const e = Math.min(minutesOfDay(a.endsAt, tz) || DAY_END, DAY_END);
                         return (
@@ -100,33 +182,43 @@ function AgendaInner() {
                           </button>
                         );
                       })}
-                      {isToday && nowMin >= DAY_START && nowMin <= DAY_END && <div className="now-line" style={{ top: (nowMin - DAY_START) * PX_PER_MIN }} aria-hidden />}
+                      {c.date === today && nowMin >= DAY_START && nowMin <= DAY_END && <div className="now-line" style={{ top: (nowMin - DAY_START) * PX_PER_MIN }} aria-hidden />}
                     </div>
                   </div>
                 );
               })}
-              {cols.length === 0 && <EmptyState title="Tanımlı kaynak yok">Yönetim bölümünden hekim ve koltuk tanımlanmalı.</EmptyState>}
+              {cols.length === 0 && <EmptyState title="Tanımlı kaynak yok">Yönetim &gt; Hekim ve koltuklar bölümünden tanımlayın.</EmptyState>}
             </div>
-            {/* Telefon: masaüstü takvimini küçültmek yerine gün listesi (Plan §04) */}
+            {/* Telefon: gün listesi (Plan §04) */}
             <div className="mobile-only day-list">
-              {items.length === 0 ? (
-                <EmptyState icon={<CalendarDays size={28} aria-hidden />} title="Bu gün randevu yok" />
-              ) : (
-                <ul className="list" style={{ width: "100%" }}>
-                  {items.map((a) => (
-                    <li key={a.id}>
-                      <button className="appt-row" onClick={() => setSelected(a)}>
-                        <span className="time">{fmtTime(a.startsAt, tz)}</span>
-                        <span style={{ minWidth: 0 }}>
-                          <strong style={{ display: "block" }}>{a.patientName}</strong>
-                          <span className="muted small" style={{ display: "block" }}>{a.practitionerName}{a.chairName ? ` · ${a.chairName}` : ""}</span>
-                          <span className="row" style={{ marginTop: 4 }}><StatusBadge status={a.status} /><ContactBadge outcome={a.contactOutcome} /></span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {Array.from({ length: days }, (_, i) => addDays(start, i)).map((d) => {
+                const dayItems = items.filter((a) => localDay(a.startsAt, tz) === d && (view === "day" || a.practitionerId === weekPrac));
+                const dayClosures = (ctx.data?.closures ?? []).filter((cl) => localDay(cl.startsAt, tz) <= d && localDay(new Date(new Date(cl.endsAt).getTime() - 1).toISOString(), tz) >= d && cl.scope === "clinic");
+                if (view === "week" && dayItems.length === 0 && dayClosures.length === 0) return null;
+                return (
+                  <div key={d}>
+                    {view === "week" && <h3 className="small" style={{ padding: "12px 16px 4px" }}>{fmtLongDay(d)}</h3>}
+                    {dayClosures.map((cl) => <div key={cl.id} style={{ padding: "0 16px 8px" }}><Alert kind="warning">Klinik kapalı: {cl.reason}</Alert></div>)}
+                    {dayItems.length === 0 ? (view === "day" && <EmptyState icon={<CalendarDays size={28} aria-hidden />} title="Bu gün randevu yok" />) : (
+                      <ul className="list" style={{ width: "100%" }}>
+                        {dayItems.map((a) => (
+                          <li key={a.id}>
+                            <button className="appt-row" onClick={() => setSelected(a)}>
+                              <span className="time">{fmtTime(a.startsAt, tz)}</span>
+                              <span style={{ minWidth: 0 }}>
+                                <strong style={{ display: "block" }}>{a.patientName}</strong>
+                                <span className="muted small" style={{ display: "block" }}>{a.practitionerName}{a.chairName ? ` · ${a.chairName}` : ""}</span>
+                                <span className="row" style={{ marginTop: 4 }}><StatusBadge status={a.status} /><ContactBadge outcome={a.contactOutcome} /></span>
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+              {view === "week" && items.filter((a) => a.practitionerId === weekPrac).length === 0 && <EmptyState title="Bu hafta randevu yok" />}
             </div>
           </>
         )}
@@ -134,12 +226,12 @@ function AgendaInner() {
 
       {creating && res.data && (
         <NewAppointment prefill={creating} resources={res.data} onClose={() => setCreating(null)}
-          onCreated={(a) => { setCreating(null); setDate(a.date); toast.show("success", "Randevu oluşturuldu."); void day.reload(); }} />
+          onCreated={(a) => { setCreating(null); setDate(a.date); toast.show("success", "Randevu oluşturuldu."); reload(); }} />
       )}
       {selected && (
         <AppointmentDetail appt={selected} onClose={() => setSelected(null)}
-          onChanged={(msg) => { setSelected(null); toast.show("success", msg); void day.reload(); }}
-          onConflict={(msg) => { setSelected(null); toast.show("error", msg); void day.reload(); }} />
+          onChanged={(msg) => { setSelected(null); toast.show("success", msg); reload(); }}
+          onConflict={(msg) => { setSelected(null); toast.show("error", msg); reload(); }} />
       )}
       {toast.node}
     </>
@@ -151,7 +243,7 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
   const [q, setQ] = useState("");
   const [newPatient, setNewPatient] = useState(false);
   const [f, setF] = useState({
-    date: prefill.date, startTime: prefill.time ?? "09:00", durationMinutes: "30",
+    date: prefill.date, startTime: prefill.time ?? "09:00", durationMinutes: "30", appointmentTypeId: "",
     practitionerId: prefill.practitionerId ?? resources.practitioners[0]?.id ?? "", chairId: prefill.chairId ?? "", reason: "", note: "",
   });
   const [err, setErr] = useState<ApiFailure | null>(null);
@@ -159,16 +251,23 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
   const search = useData<{ items: { id: string; fullName: string; fileNo: number; phone: string | null; birthDate: string | null }[] }>(q.trim().length >= 2 ? `/patients?limit=8&q=${encodeURIComponent(q)}` : null);
   const pre = useData<{ id: string; fullName: string; fileNo: number }>(prefill.patientId ? `/patients/${prefill.patientId}` : null);
   useEffect(() => { if (pre.data && !patient) setPatient(pre.data); }, [pre.data, patient]);
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); if (err?.code === "OUTSIDE_WORKING_HOURS") setErr(null); };
+  const durations = Array.from(new Set([15, 20, 30, 45, 60, 90, 120, Number(f.durationMinutes)])).sort((a, b) => a - b);
 
-  async function save() {
+  function pickType(id: string) {
+    const t = resources.appointmentTypes.find((x) => x.id === id);
+    setF({ ...f, appointmentTypeId: id, durationMinutes: t ? String(t.defaultMinutes) : f.durationMinutes });
+  }
+
+  async function save(allowOutsideHours = false) {
     if (busy) return;
     if (!patient) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Önce hasta seçin.", field_errors: { patientId: "Hasta seçin" } })); return; }
     setBusy(true); setErr(null);
     try {
       await api("/appointments", { body: {
-        patientId: patient.id, practitionerId: f.practitionerId, chairId: f.chairId || undefined, date: f.date, startTime: f.startTime,
-        durationMinutes: Number(f.durationMinutes), reason: f.reason || undefined, note: f.note || undefined,
+        patientId: patient.id, practitionerId: f.practitionerId, chairId: f.chairId || undefined, appointmentTypeId: f.appointmentTypeId || undefined,
+        date: f.date, startTime: f.startTime, durationMinutes: Number(f.durationMinutes), reason: f.reason || undefined, note: f.note || undefined,
+        allowOutsideHours: allowOutsideHours || undefined,
       } });
       onCreated({ date: f.date });
     } catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
@@ -176,11 +275,25 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
 
   if (newPatient) return <NewPatientDrawer initialName={q} onClose={() => setNewPatient(false)} onCreated={(p) => { setPatient(p); setNewPatient(false); }} />;
 
+  const outside = err?.code === "OUTSIDE_WORKING_HOURS";
+  const blocks = (err?.body.details as { blocks?: { start: number; end: number }[] } | undefined)?.blocks ?? [];
   return (
-    <Drawer title="Randevu ver" subtitle="Hekim ve koltuk müsaitliği kayıt anında sunucuda yeniden kontrol edilir." onClose={onClose} dirty={!!patient || !!f.reason}
-      footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy} onClick={() => void save()}>{busy ? "Kaydediliyor…" : "Randevuyu kaydet"}</button></>}>
+    <Drawer title="Randevu ver" subtitle="Müsaitlik, çalışma saati ve kapatmalar kayıt anında sunucuda kontrol edilir." onClose={onClose} dirty={!!patient || !!f.reason}
+      footer={<>
+        <button className="btn" onClick={onClose}>Vazgeç</button>
+        {outside
+          ? <button className="btn btn-primary" disabled={busy} onClick={() => void save(true)}>Çalışma saati dışında yine de kaydet</button>
+          : <button className="btn btn-primary" disabled={busy} onClick={() => void save()}>{busy ? "Kaydediliyor…" : "Randevuyu kaydet"}</button>}
+      </>}>
       <div className="stack">
-        {err && <Alert kind={err.code === "APPOINTMENT_CONFLICT" ? "warning" : "error"} title={err.code === "APPOINTMENT_CONFLICT" ? "Çakışma" : undefined}>{err.message}</Alert>}
+        {err && (outside ? (
+          <Alert kind="warning" title="Çalışma saati dışı">
+            {err.message} {blocks.length ? `O günkü çalışma saatleri: ${blocks.map((b) => `${hhmm(b.start)}–${hhmm(b.end)}`).join(", ")}.` : "Hekim o gün çalışmıyor."} Kayıt yine de yapılırsa geçmişe not düşülür.
+          </Alert>
+        ) : (
+          <Alert kind={err.code === "APPOINTMENT_CONFLICT" || err.code === "RESOURCE_CLOSED" ? "warning" : "error"}
+            title={err.code === "APPOINTMENT_CONFLICT" ? "Çakışma" : err.code === "RESOURCE_CLOSED" ? "Kapalı aralık" : undefined}>{err.message}</Alert>
+        ))}
         {patient ? (
           <div className="alert alert-success" role="status">
             <div style={{ flex: 1 }}><strong>{patient.fullName}</strong>{patient.fileNo ? <span className="small"> · Dosya #{patient.fileNo}</span> : null}</div>
@@ -206,19 +319,23 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
           </div>
         )}
         <div className="form-grid">
+          <SelectField label="İşlem türü" value={f.appointmentTypeId} onChange={(e) => pickType(e.target.value)} hint="Seçilince süre varsayılana ayarlanır." error={err?.fieldErrors.appointmentTypeId}>
+            <option value="">Seçilmedi</option>
+            {resources.appointmentTypes.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.defaultMinutes} dk)</option>)}
+          </SelectField>
           <SelectField label="Hekim" required value={f.practitionerId} onChange={set("practitionerId")} error={err?.fieldErrors.practitionerId}>
             {resources.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </SelectField>
+          <TextField label="Tarih" type="date" required value={f.date} onChange={set("date")} error={err?.fieldErrors.date} />
+          <TextField label="Saat" type="time" required step={300} value={f.startTime} onChange={set("startTime")} error={err?.fieldErrors.startTime} />
+          <SelectField label="Süre" value={f.durationMinutes} onChange={set("durationMinutes")} error={err?.fieldErrors.durationMinutes}>
+            {durations.map((m) => <option key={m} value={m}>{m} dakika</option>)}
           </SelectField>
           <SelectField label="Koltuk" value={f.chairId} onChange={set("chairId")} error={err?.fieldErrors.chairId}>
             <option value="">Seçilmedi</option>
             {resources.chairs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </SelectField>
-          <TextField label="Tarih" type="date" required value={f.date} onChange={set("date")} error={err?.fieldErrors.date} />
-          <TextField label="Saat" type="time" required step={300} value={f.startTime} onChange={set("startTime")} error={err?.fieldErrors.startTime} />
-          <SelectField label="Süre" value={f.durationMinutes} onChange={set("durationMinutes")} error={err?.fieldErrors.durationMinutes}>
-            {[15, 20, 30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m} dakika</option>)}
-          </SelectField>
-          <TextField label="İşlem / neden" value={f.reason} onChange={set("reason")} placeholder="Örn. Kontrol, dolgu" />
+          <TextField label="Açıklama" className="full" value={f.reason} onChange={set("reason")} placeholder="Boşsa işlem türü adı kullanılır" />
           <TextAreaField label="Not" className="full" value={f.note} onChange={set("note")} rows={3} hint="Klinik bilgi yazmayın; idari not içindir." />
         </div>
       </div>

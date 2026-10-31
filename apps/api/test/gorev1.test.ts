@@ -80,7 +80,7 @@ describe("T05 çalışma saatleri", () => {
       .send({ blocks: [{ weekday: 1, start: "09:00", end: "13:00" }, { weekday: 1, start: "12:00", end: "18:00" }] });
     expect(overlap.status).toBe(422);
     expect(overlap.body.message).toMatch(/çakışıyor/);
-    const put = (who: Client, body: unknown) => request(app.getHttpServer()).put(`/api/v1/practitioners/${pid}/schedule`).set("cookie", who.cookie)
+    const put = (who: Client, body: object) => request(app.getHttpServer()).put(`/api/v1/practitioners/${pid}/schedule`).set("cookie", who.cookie)
       .set("x-viadent-request", "1").set("x-viadent-context", who.context).send(body);
     expect((await put(sec, { blocks: [] })).status).toBe(403);
     await put(admin, { blocks: [{ weekday: 7, start: "10:00", end: "14:00" }] }).expect(200);

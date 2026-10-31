@@ -140,7 +140,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
 
 /* ---------------------------------------------------------------- tablolar & listeler */
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; position: relative; }
 table.table { width: 100%; border-collapse: collapse; }
 .table th { text-align: left; font-size: 13px; font-weight: 600; color: var(--text-secondary); padding: 10px var(--s4); border-bottom: 1px solid var(--border); background: var(--surface-muted); }
 .table td { padding: 0 var(--s4); height: 48px; border-bottom: 1px solid var(--border); }
@@ -180,10 +180,11 @@ table.table { width: 100%; border-collapse: collapse; }
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(18, 43, 39, 0.38); z-index: 50; }
 .drawer {
   position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100vw); background: var(--surface); z-index: 51;
-  display: flex; flex-direction: column; box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; box-shadow: var(--shadow-lg); height: 100vh; height: 100dvh;
 }
+.drawer-head, .drawer-foot { flex: none; background: var(--surface); position: relative; z-index: 1; }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; padding: var(--s4) var(--s5); border-bottom: 1px solid var(--border); gap: var(--s3); }
-.drawer-body { padding: var(--s5); overflow-y: auto; flex: 1; }
+.drawer-body { padding: var(--s5); overflow-y: auto; flex: 1 1 auto; min-height: 0; }
 .drawer-foot { padding: var(--s4) var(--s5); border-top: 1px solid var(--border); display: flex; gap: var(--s2); justify-content: flex-end; flex-wrap: wrap; }
 
 /* ---------------------------------------------------------------- VİA Akış */
@@ -192,6 +193,8 @@ table.table { width: 100%; border-collapse: collapse; }
 .flow-icon.k-overdue_checkin { background: var(--warning-bg); color: var(--warning); }
 .flow-icon.k-contact_pending { background: var(--info-bg); color: var(--info); }
 .flow-icon.k-missing_contact { background: var(--accent-surface); color: #8a4423; }
+.flow-icon.k-closure_conflict { background: var(--error-bg); color: var(--error); }
+.flow-icon.k-anamnesis_review { background: var(--info-bg); color: var(--info); }
 .flow-icon.k-follow_up, .flow-icon.k-manual { background: var(--primary-tint); color: var(--brand-primary); }
 .flow-why { color: var(--text-secondary); font-size: 14px; margin-top: 2px; }
 .flow-next { font-size: 14px; margin-top: 6px; display: flex; gap: 6px; }
@@ -219,11 +222,11 @@ table.table { width: 100%; border-collapse: collapse; }
 /* ---------------------------------------------------------------- Ajanda */
 .agenda-bar { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; margin-bottom: var(--s4); }
 .agenda-grid { display: grid; overflow-x: auto; }
-.agenda-col-head { position: sticky; top: 0; background: var(--surface-muted); border-bottom: 1px solid var(--border); padding: var(--s3); font-weight: 600; font-size: 14px; z-index: 2; }
+.agenda-col-head { position: sticky; top: 0; background: var(--surface-muted); border-bottom: 1px solid var(--border); padding: 8px var(--s3); font-weight: 600; font-size: 14px; z-index: 2; height: 56px; overflow: hidden; line-height: 1.3; }
 .agenda-times { border-right: 1px solid var(--border); }
 .agenda-time { height: 48px; font-size: 12px; color: var(--text-secondary); padding: 2px 8px; text-align: right; border-bottom: 1px dashed #e7eee9; }
 .agenda-col { position: relative; border-right: 1px solid var(--border); min-width: 200px; }
-.agenda-slot { height: 48px; border-bottom: 1px dashed #e7eee9; }
+.agenda-slot { height: 48px; border-bottom: 1px dashed #e7eee9; background: transparent; padding: 0; }
 .agenda-slot:hover { background: var(--primary-tint); cursor: pointer; }
 .appt {
   position: absolute; left: 4px; right: 4px; border-radius: 8px; padding: 4px 8px; font-size: 13px; overflow: hidden;
@@ -290,3 +293,29 @@ table.table { width: 100%; border-collapse: collapse; }
 
 .day-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 20px; }
 @media (max-width: 480px) { .day-row { grid-template-columns: 48px minmax(0, 1fr); } .day-row > .badge { grid-column: 2; justify-self: start; } }
+
+/* Görev 1: çalışma saati dışı ve kapatma gösterimi (renk + desen + metin) */
+.agenda-slot.is-off { background: repeating-linear-gradient(135deg, #eef2ef, #eef2ef 4px, #f6f8f6 4px, #f6f8f6 8px); }
+.agenda-col-head.is-today { color: var(--brand-primary); box-shadow: inset 0 -3px 0 var(--brand-primary); }
+.closure-block {
+  position: absolute; left: 2px; right: 2px; z-index: 1; border-radius: 6px; padding: 4px 6px; font-size: 12px; color: #5c3800; overflow: hidden;
+  background: repeating-linear-gradient(45deg, rgba(251, 239, 217, 0.95), rgba(251, 239, 217, 0.95) 6px, rgba(244, 226, 190, 0.95) 6px, rgba(244, 226, 190, 0.95) 12px);
+  border: 1px dashed #c9a462; pointer-events: none; display: flex; gap: 4px; align-items: flex-start;
+}
+.chip-alert { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12.5px; font-weight: 650; background: var(--error-bg); color: var(--error); border: 1px solid #efc2bd; }
+.tri { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden; }
+.tri button { min-height: 36px; padding: 0 12px; border: 0; background: var(--surface); cursor: pointer; font-weight: 600; font-size: 14px; }
+.tri button + button { border-left: 1px solid var(--border-strong); }
+.tri button[aria-pressed="true"].v-yes { background: var(--error-bg); color: var(--error); }
+.tri button[aria-pressed="true"].v-no { background: var(--success-bg); color: var(--success); }
+.tri button[aria-pressed="true"].v-unknown { background: var(--warning-bg); color: var(--warning); }
+.q-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: center; }
+.q-row .detail { grid-column: 1 / -1; }
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+@media (max-width: 900px) { .q-row { grid-template-columns: minmax(0, 1fr); } }
+.agenda-grid.week .agenda-col { min-width: 0; }
+.agenda-grid.week .appt { font-size: 12px; padding: 3px 6px; }
+.nav-account { flex-direction: column; gap: 2px; margin-top: auto; padding: 12px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.08); font-size: 13px; }
+.nav-account span { opacity: 0.85; }
+.nav-account .select { color: var(--text); min-height: 40px; }
+@media (max-width: 900px) { .nav-account + .nav-foot { margin-top: 8px; } }

@@ -155,11 +155,11 @@ export async function seed(connectionString: string, opts: { password?: string; 
               [tenantId, pid, wd, 9 * 60, wd === 6 ? 13 * 60 : 18 * 60]);
           }
         }
-        // Ortak telefonu kullanan 3. ve 4. hasta: anne–çocuk ilişkisi (yasal temsil işareti YOK; kanıt gerektirir).
+        // Ortak telefonu kullanan 3. ve 4. hasta: kardeş ilişkisi (yasal temsil işareti YOK; kanıt gerektirir).
         if (patientIds.length > 4) {
           await c.query(
             `insert into patient_relations(tenant_id, patient_id, related_patient_id, relation, can_receive_info, note, created_by)
-             values ($1,$2,$3,'mother',true,'Sentetik demo ilişkisi',$4)`,
+             values ($1,$2,$3,'sibling',true,'Sentetik demo ilişkisi',$4)`,
             [tenantId, patientIds[4], patientIds[3], creator],
           );
         }

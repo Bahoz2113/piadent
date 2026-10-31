@@ -44,6 +44,18 @@ export function Shell({ children }: { children: ReactNode }) {
         <button className="navlink desktop-only" style={{ background: "none", border: 0, cursor: "pointer", marginTop: 8 }} onClick={() => setCollapsed((c) => !c)} aria-pressed={collapsed}>
           <ChevronsLeft size={19} aria-hidden style={{ transform: collapsed ? "rotate(180deg)" : undefined }} /><span>Menüyü daralt</span>
         </button>
+        <div className="nav-account mobile-only" aria-label="Hesap">
+          <strong>{session.user.fullName}</strong>
+          <span>{active?.roleLabel} · {active?.tenantName}</span>
+          {session.memberships.length > 1 && (
+            <label style={{ display: "block", marginTop: 8 }}>
+              <span className="sr-only">Klinik değiştir</span>
+              <select className="select" value={active?.id} onChange={(e) => void switchTo(e.target.value)} aria-label="Klinik değiştir">
+                {session.memberships.map((m) => <option key={m.id} value={m.id}>{m.tenantName} — {m.roleLabel}</option>)}
+              </select>
+            </label>
+          )}
+        </div>
         <div className="nav-foot brand-text">Demo ortamı · yalnız sentetik veri</div>
       </nav>
       <div className="main">

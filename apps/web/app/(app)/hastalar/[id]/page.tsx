@@ -14,12 +14,18 @@ import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, initials } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast } from "@/components/ui";
 import type { Appt, Task } from "@/lib/types";
+import { RelationsCard } from "@/components/patient/relations";
+import { AnamnesisPanel } from "@/components/patient/anamnesis";
+import { questionLabel } from "@viadent/contracts";
+import { AlertTriangle } from "lucide-react";
 
 interface Patient {
   id: string; fileNo: number; firstName: string; lastName: string; fullName: string; birthDate: string | null; age: number | null;
   gender: keyof typeof GENDER_LABELS | null; nationalIdType: keyof typeof NATIONAL_ID_LABELS | null; nationalId: string | null; phone: string | null; phoneMasked: boolean;
   email: string | null; city: string | null; primaryPractitionerId: string | null; primaryPractitionerName: string | null; referralSource: string | null;
   createdAt: string; updatedAt: string; version: number; nextAppointmentAt: string | null; lastVisitAt: string | null; openTaskCount: number;
+  isMinor: boolean; legalRepresentativeCount: number; relationCount: number;
+  clinical: { criticalFlags: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null;
 }
 interface HistoryItem { id: string; action: string; entityType: string; actorName: string; at: string; changes: Record<string, { from: unknown; to: unknown }> }
 
@@ -49,7 +55,7 @@ function PatientInner() {
   const { id } = useParams<{ id: string }>();
   const params = useSearchParams();
   const { can, tz } = useSession();
-  const [tab, setTab] = useState<TabId>("ozet");
+  const [tab, setTab] = useState<TabId>(() => (TABS.some((t) => t.id === params.get("sekme")) ? (params.get("sekme") as TabId) : "ozet"));
   const [editing, setEditing] = useState(params.get("duzenle") === "1");
   const toast = useToast();
   const patient = useData<Patient>(`/patients/${id}`);
@@ -86,6 +92,14 @@ function PatientInner() {
               <span>Sıradaki randevu: <b>{p.nextAppointmentAt ? fmtDateTime(p.nextAppointmentAt, tz) : "Yok"}</b></span>
               <span>Açık takip: <b>{p.openTaskCount}</b></span>
             </div>
+            {(p.isMinor || (p.clinical && p.clinical.criticalFlags.length > 0) || (p.clinical && p.clinical.anamnesisVersion === null)) && (
+              <div className="row" style={{ marginTop: 8, gap: 6 }} aria-label="Uyarılar">
+                {p.clinical?.criticalFlags.map((f) => <span key={f} className="chip-alert"><AlertTriangle size={13} aria-hidden />{questionLabel(f)}</span>)}
+                {p.clinical && p.clinical.anamnesisVersion !== null && !p.clinical.anamnesisReviewed && <span className="badge badge-warning">Anamnez onay bekliyor</span>}
+                {p.clinical && p.clinical.anamnesisVersion === null && <span className="badge badge-neutral">Anamnez girilmemiş</span>}
+                {p.isMinor && <span className="badge badge-info">18 yaş altı{p.legalRepresentativeCount === 0 ? " · yasal temsilci yok" : ""}</span>}
+              </div>
+            )}
           </div>
           <div className="row actions">
             {can("patient.write") && <button className="btn" onClick={() => setEditing(true)}><Pencil size={16} aria-hidden />Bilgileri düzenle</button>}
@@ -127,6 +141,7 @@ function PatientInner() {
                   <ul className="list">{tasks.data!.items.map((t) => <li key={t.id} style={{ padding: "12px 20px" }}><strong>{t.title}</strong><p className="flow-why">{t.reason}</p></li>)}</ul>
                 )}
               </section>
+              <RelationsCard patientId={p.id} isMinor={p.isMinor} onChanged={() => void patient.reload()} />
               <section className="card card-pad">
                 <h2 style={{ marginBottom: 12 }}>Kimlik ve iletişim</h2>
                 <dl className="kv">
@@ -142,7 +157,12 @@ function PatientInner() {
             </div>
           </div>
         )}
-        {tab === "saglik" && (can("patient.health.read") ? <ClinicalNotes patientId={p.id} canWrite={can("clinical_note.write")} /> : (
+        {tab === "saglik" && (can("patient.health.read") ? (
+          <div className="stack" style={{ gap: 16 }}>
+            <AnamnesisPanel patientId={p.id} onSaved={() => { void patient.reload(); void tasks.reload(); }} />
+            <ClinicalNotes patientId={p.id} canWrite={can("clinical_note.write")} />
+          </div>
+        ) : (
           <div className="card"><EmptyState icon={<Lock size={28} aria-hidden />} title="Sağlık bilgileri rolünüze kapalı">Anamnez ve klinik notlar yalnız yetkili klinik kullanıcılara görünür.</EmptyState></div>
         ))}
         {tab === "gecmis" && <Timeline patientId={p.id} resources={res.data} />}
