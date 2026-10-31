@@ -207,7 +207,7 @@ function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: No
               <tr key={r.rowNo}>
                 <td className="num">{r.rowNo}</td>
                 <td><span className={`badge ${STATUS_BADGE[r.status] ?? "badge-neutral"}`}>{IMPORT_ROW_STATUS_LABELS[r.status] ?? r.status}</span></td>
-                {keys.slice(0, 4).map((k) => <td key={k} className="small">{k === "amount" && r.amount ? formatTRY(r.amount) : String(r.data[k] ?? r.data[k === "patient_ref" ? "file_no" : k] ?? "")}</td>)}
+                {keys.slice(0, 4).map((k) => <td key={k} className="small">{k === "amount" && r.amount ? formatTRY(r.amount) : String(r.data[k] ?? r.data[`${k}_masked`] ?? r.data[k === "patient_ref" ? "file_no" : k] ?? "")}</td>)}
                 <td className="small">
                   {r.errors.map((e, i) => <div key={`e${i}`} style={{ color: "var(--error)" }}>{e.message}</div>)}
                   {r.warnings.map((w, i) => <div key={`w${i}`} className="muted">{w.message}</div>)}

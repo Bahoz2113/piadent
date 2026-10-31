@@ -53,3 +53,20 @@ export function verifyTotp(secretB32: string, code: string, ms = Date.now(), win
 export function otpauthUri(secretB32: string, account: string, issuer = "VİADENT") {
   return `otpauth://totp/${encodeURIComponent(`${issuer}:${account}`)}?secret=${secretB32}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
 }
+
+/** Kurtarma kodları: 8 adet, "xxxx-xxxx-xx" (base32 alfabesi, karışmaya açık harfler yok). Yalnız SHA-256 özeti saklanır. */
+export const RECOVERY_CODE_RE = /^[a-z2-7]{4}-[a-z2-7]{4}-[a-z2-7]{2}$/;
+export function newRecoveryCodes(n = 8): string[] {
+  const out: string[] = [];
+  while (out.length < n) {
+    const raw = base32Encode(randomBytes(10)).toLowerCase().replace(/[01il]/g, "").slice(0, 10);
+    if (raw.length < 10) continue;
+    out.push(`${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 10)}`);
+  }
+  return out;
+}
+/** Büyük/küçük harf, boşluk ve tire farkı gözetmeden kanonik biçim (xxxx-xxxx-xx). */
+export function normalizeRecoveryCode(s: string): string {
+  const raw = s.toLowerCase().replace(/[\s-]/g, "");
+  return raw.length === 10 ? `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8)}` : raw;
+}

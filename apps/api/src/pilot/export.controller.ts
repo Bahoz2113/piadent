@@ -14,6 +14,7 @@ import { Db } from "../infra/db.service.js";
 import { Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
 import { audit } from "../audit/audit.js";
+import { decryptField } from "@viadent/db";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 export const EXPORT_FORMAT = { format: "viadent-export", version: 1 } as const;
@@ -40,6 +41,13 @@ function strip(rows: Record<string, unknown>[], drop: string[]) {
   if (!drop.length) return rows;
   return rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => !drop.includes(k))));
 }
+/** Şifreli kimlik no'yu dışa aktarımda açık değere çevirir (veri taşınabilirliği; işlem gerekçeli ve denetimlidir), şifreli/özet sütunları düşer. */
+function revealNationalId(rows: Record<string, unknown>[]) {
+  return rows.map((r) => {
+    const { national_id_enc, national_id_hmac, ...rest } = r;
+    return { ...rest, national_id: national_id_enc ? decryptField(String(national_id_enc)) : (r.national_id ?? null) };
+  });
+}
 const sha = (rows: unknown) => createHash("sha256").update(JSON.stringify(rows), "utf8").digest("hex");
 
 @Controller()
@@ -56,7 +64,8 @@ export class ExportController {
       const counts: Record<string, number> = {};
       const checksums: Record<string, string> = {};
       for (const [t, drop] of CLINIC_TABLES) {
-        const rows = strip((await c.query(`select * from ${t} order by 1`)).rows, drop);
+        let rows = strip((await c.query(`select * from ${t} order by 1`)).rows, drop);
+        if (t === "patients") rows = revealNationalId(rows);
         tables[t] = rows; counts[t] = rows.length; checksums[t] = sha(rows);
       }
       const users = (await c.query("select u.id, u.full_name, u.email from users u join memberships m on m.user_id = u.id")).rows;
@@ -86,7 +95,7 @@ export class ExportController {
       if (!p) throw Errors.notFound("Hasta");
       const q = async (sql: string) => (await c.query(sql, [pid])).rows;
       const sections: Record<string, unknown[]> = {
-        patient: strip([p], ["search_text", "phone_digits", "tenant_id"]),
+        patient: revealNationalId(strip([p], ["search_text", "phone_digits", "tenant_id"])),
         relations: await q("select * from patient_relations where patient_id = $1 or related_patient_id = $1"),
         appointments: await q("select * from appointments where patient_id = $1 order by starts_at"),
         anamnesis_versions: await q("select * from anamnesis_versions where patient_id = $1 order by version"),

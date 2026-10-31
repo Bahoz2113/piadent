@@ -5,7 +5,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Post, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { MfaCode, PasswordChange, passwordProblem } from "@viadent/contracts";
-import { decryptSecret, encryptSecret, hashPassword, newTotpSecret, otpauthUri, verifyPassword, verifyTotp } from "@viadent/db";
+import { decryptSecret, encryptSecret, hashPassword, hashToken, newRecoveryCodes, newTotpSecret, otpauthUri, verifyPassword, verifyTotp } from "@viadent/db";
 import { clearFails, isLocked, recordFail } from "./rate-limit.js";
 import { NoTenant } from "./decorators.js";
 import { AuthService } from "./auth.service.js";
@@ -35,10 +35,41 @@ export class MfaController {
     await clearFails(this.db.pool, key);
   }
 
+  /** Eski kodlar iptal, 8 yeni kod üretilir; yalnız özetleri saklanır (ADR-058). */
+  private async issueRecoveryCodes(userId: string): Promise<string[]> {
+    const codes = newRecoveryCodes(8);
+    await this.db.pool.query("delete from mfa_recovery_codes where user_id = $1", [userId]);
+    for (const code of codes) await this.db.pool.query("insert into mfa_recovery_codes(user_id, code_hash) values ($1,$2)", [userId, hashToken(code)]);
+    return codes;
+  }
+
+  /** Kalan kurtarma kodu sayısı (kodlar değil). */
+  @NoTenant()
+  @Get("mfa/recovery")
+  async recoveryStatus(@Req() req: Request) {
+    const r = await this.db.pool.query("select count(*) filter (where used_at is null)::int as left, count(*)::int as total from mfa_recovery_codes where user_id = $1", [req.sessionInfo!.userId]);
+    return { left: r.rows[0].left, total: r.rows[0].total };
+  }
+
+  /** Kurtarma kodlarını yenile: güncel TOTP kodu ister (ele geçirilmiş oturum yeni kod üretemez); eskiler geçersiz olur. */
+  @NoTenant()
+  @Post("mfa/recovery/regenerate")
+  @HttpCode(200)
+  async regenerate(@Req() req: Request, @Body() body: unknown) {
+    const { code } = parse(MfaCode, body);
+    const s = req.sessionInfo!;
+    const u = (await this.db.pool.query("select mfa_secret_enc from users where id = $1", [s.userId])).rows[0];
+    if (!u.mfa_secret_enc) throw new AppError(409, "MFA_NOT_ENABLED", "İki adımlı doğrulama kapalı.");
+    await this.guardCode(s.userId, () => verifyTotp(decryptSecret(u.mfa_secret_enc), code) !== null);
+    const recoveryCodes = await this.issueRecoveryCodes(s.userId);
+    await this.auditSelf(req, "mfa.recovery_regenerate");
+    return { recoveryCodes };
+  }
+
   private async required(req: Request) {
     const s = req.sessionInfo!;
     const ms = await this.auth.listMemberships(s.userId);
-    return ms.some((m) => this.config.requireMfaRoles.includes(m.role));
+    return ms.some((m) => this.auth.mfaRequiredFor(m));
   }
 
   @NoTenant()
@@ -72,8 +103,9 @@ export class MfaController {
     let step: number | null = null;
     await this.guardCode(s.userId, () => (step = verifyTotp(decryptSecret(u.mfa_pending_enc), code)) !== null);
     await this.db.pool.query("update users set mfa_secret_enc = mfa_pending_enc, mfa_pending_enc = null, mfa_enabled_at = now(), mfa_last_step = $2 where id = $1", [s.userId, step]);
+    const recoveryCodes = await this.issueRecoveryCodes(s.userId);
     await this.auditSelf(req, "mfa.enable");
-    return { enabled: true };
+    return { enabled: true, recoveryCodes, note: "Kurtarma kodları yalnız şimdi gösterilir; güvenli bir yerde saklayın. Her kod bir kez kullanılır." };
   }
 
   @NoTenant()
@@ -87,6 +119,7 @@ export class MfaController {
     if (!u.mfa_secret_enc) throw new AppError(409, "MFA_NOT_ENABLED", "İki adımlı doğrulama kapalı.");
     await this.guardCode(s.userId, () => verifyTotp(decryptSecret(u.mfa_secret_enc), code) !== null);
     await this.db.pool.query("update users set mfa_secret_enc = null, mfa_enabled_at = null, mfa_last_step = null where id = $1", [s.userId]);
+    await this.db.pool.query("delete from mfa_recovery_codes where user_id = $1", [s.userId]);
     await this.auditSelf(req, "mfa.disable");
     return { enabled: false };
   }

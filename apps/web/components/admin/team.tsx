@@ -7,7 +7,7 @@ import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, Drawer, ErrorState, Loading, SelectField, TextField } from "@/components/ui";
 
-interface Member { id: string; role: Role; roleLabel: string; status: string; fullName: string; email: string; createdAt: string; revokedAt: string | null; isSelf: boolean; mfaEnabled?: boolean }
+interface Member { id: string; role: Role; roleLabel: string; status: string; fullName: string; email: string; createdAt: string; revokedAt: string | null; isSelf: boolean; mfaEnabled?: boolean; expiresAt?: string | null }
 interface Invitation { id: string; email: string; fullName: string; roleLabel: string; expiresAt: string; createdBy: string }
 
 export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: string) => void }) {
@@ -58,7 +58,7 @@ export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: stri
                   <tr key={m.id}>
                     <td><strong>{m.fullName}</strong><div className="muted small">{m.email}</div></td>
                     <td>
-                      {m.status === "active" && !m.isSelf ? (
+                      {m.role === "support" ? <>{m.roleLabel}{m.expiresAt && <div className="muted small">bitiş {fmtDateTime(m.expiresAt)}</div>}</> : m.status === "active" && !m.isSelf ? (
                         <select className="select" style={{ minHeight: 36, width: 170 }} value={m.role} disabled={busy === m.id} aria-label={`${m.fullName} rolü`}
                           onChange={(e) => void act(m.id, () => api(`/team/${m.id}/role`, { body: { role: e.target.value } }), "Rol güncellendi.")}>
                           {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}

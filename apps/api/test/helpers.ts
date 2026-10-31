@@ -27,6 +27,7 @@ export interface Client {
   get(path: string): request.Test;
   post(path: string, body?: unknown): request.Test;
   patch(path: string, body?: unknown): request.Test;
+  put(path: string, body?: unknown): request.Test;
   cookie: string;
   context: string;
   session: any;
@@ -49,6 +50,8 @@ export async function login(app: INestApplication, email: string, password = TES
     post: (path, body) => request(server).post(`/api/v1${path}`).set("cookie", cookie).set("x-viadent-request", "1")
       .set("x-viadent-context", client.context).send((body ?? {}) as object),
     patch: (path, body) => request(server).patch(`/api/v1${path}`).set("cookie", cookie).set("x-viadent-request", "1")
+      .set("x-viadent-context", client.context).send((body ?? {}) as object),
+    put: (path, body) => request(server).put(`/api/v1${path}`).set("cookie", cookie).set("x-viadent-request", "1")
       .set("x-viadent-context", client.context).send((body ?? {}) as object),
   };
   return client;

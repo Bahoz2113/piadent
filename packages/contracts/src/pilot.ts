@@ -55,7 +55,13 @@ export const ImportRollback = z.object({ reason: z.string().trim().min(3, "Gerek
 export const ClinicExport = z.object({ reason: z.string().trim().min(5, "Dışa aktarım gerekçesi gerekli").max(300) });
 
 export const MfaCode = z.object({ code: z.string().trim().regex(/^\d{6}$/, "6 haneli kodu girin") });
-export const MfaLogin = z.object({ challenge: z.string().min(20).max(200), code: z.string().trim().regex(/^\d{6}$/, "6 haneli kodu girin") });
+/** İkinci adım: 6 haneli TOTP veya tek kullanımlık kurtarma kodu (xxxx-xxxx-xx). */
+export const MfaLogin = z.object({ challenge: z.string().min(20).max(200),
+  code: z.string().trim().regex(/^(\d{6}|[A-Za-z2-7]{4}-?[A-Za-z2-7]{4}-?[A-Za-z2-7]{2})$/, "6 haneli kodu veya kurtarma kodunu girin") });
+/** Klinik güvenlik politikası (yönetici): MFA zorunlu roller. */
+export const TenantSecurityPolicy = z.object({ requireMfaRoles: z.array(z.enum(["clinic_admin", "dentist", "secretary", "assistant", "finance", "support"])).max(6) });
+/** Süreli destek erişimi verme (yönetici): var olan kullanıcı e-postası, süre (saat), gerekçe. */
+export const SupportGrant = z.object({ email: z.email("Geçerli bir e-posta girin").max(200), hours: z.number().int().min(1).max(72), reason: z.string().trim().min(10, "Gerekçe en az 10 karakter").max(300) });
 
 /** Parola değişikliği: mevcut parola zorunlu (oturum ele geçirilse bile parola değiştirilemez); MFA açıksa güncel kod da istenir. */
 export const PasswordChange = z.object({

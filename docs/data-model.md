@@ -131,5 +131,8 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 ## Görev 9 (0011_password)
 - `users.password_changed_at`, `users.must_change_password` (geçici parolayla giriş → yalnız Hesabım açık; ADR-056). Oturum boşta kalma süresi şema değişikliği gerektirmez (`sessions.last_seen_at` zaten var).
 
+## Görev 10 (0012_security_hardening)
+- `mfa_recovery_codes` (kullanıcı, SHA-256 özet, kullanıldı) · `tenants.require_mfa_roles text[]` (uygulama rolü yalnız bu sütunu günceller; RLS update politikası) · `patients.national_id_enc` (ADR-052 biçimi) + `national_id_hmac` (HKDF türevi anahtarla, kiracıya bağlı; benzersiz dizin etkin kayıtlarda) + tutarlılık check'leri; düz metin `national_id` geçiş dönemi · `memberships.expires_at`, `grant_reason`; rol listesine `support` (süreli/gerekçesiz olamaz check'i).
+
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).

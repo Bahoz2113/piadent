@@ -70,7 +70,7 @@ export class AuthController {
     const i = parse(MfaLogin, body);
     const r = await this.auth.verifyMfaLogin(i.challenge, i.code);
     this.setCookie(res, r.token, r.expiresAt);
-    return { ok: true };
+    return { ok: true, ...(r.recoveryCodesLeft !== undefined ? { recoveryCodesLeft: r.recoveryCodesLeft } : {}) };
   }
 
   private setCookie(res: Response, token: string, expiresAt: Date) {

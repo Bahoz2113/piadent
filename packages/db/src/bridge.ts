@@ -28,6 +28,8 @@ function keyring(): { current: Buffer; all: Buffer[] } {
   return { current, all: [current, ...old] };
 }
 export function currentKeyId(): string { return keyId(keyring().current); }
+/** Güncel anahtarın kendisi (yalnız türetme için; dışa yazılmaz). */
+export function currentKeyBuffer(): Buffer { return keyring().current; }
 export function encryptSecret(plain: string): string {
   const key = keyring().current;
   const iv = randomBytes(12);

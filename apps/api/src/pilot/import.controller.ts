@@ -9,7 +9,7 @@ import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post, Qu
 import type { Response } from "express";
 import type pg from "pg";
 import {
-  IMPORT_FIELDS, IMPORT_MAX_ROWS, ImportCreate, ImportRollback, csvCell, isValidTckn, localDate, normalizePhone, normalizeSearch, toTitleTr,
+  IMPORT_FIELDS, IMPORT_MAX_ROWS, ImportCreate, ImportRollback, csvCell, isValidTckn, localDate, maskNationalId, normalizePhone, normalizeSearch, toTitleTr,
   fromMinor, toMinor, type ImportKind,
 } from "@viadent/contracts";
 import { Ctx, Require } from "../auth/decorators.js";
@@ -20,6 +20,7 @@ import { audit, enqueue } from "../audit/audit.js";
 import { PatientsService } from "../patients/patients.service.js";
 import { lockAccount } from "../finance/ledger.js";
 import { mapHeaders, parseCsv, parseDate, parseGender, parseJson, parseMoney } from "./parse.js";
+import { decryptField, encryptField, indexHash } from "@viadent/db";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 type C = pg.PoolClient;
@@ -74,7 +75,7 @@ export class ImportController {
         if (v.referral_source) data.referral_source = v.referral_source.slice(0, 120);
         if (v.national_id) {
           if (!isValidTckn(v.national_id)) errors.push({ field: "national_id", message: "T.C. Kimlik No geçersiz (11 hane, kontrol basamakları)" });
-          else { data.national_id_type = "tckn"; data.national_id = v.national_id; }
+          else { data.national_id_type = "tckn"; data.national_id_enc = encryptField(v.national_id); data.national_id_masked = maskNationalId(v.national_id); }
         }
         if (v.external_ref) {
           const prev = seenRef.get(v.external_ref);
@@ -89,7 +90,7 @@ export class ImportController {
           } else {
             const cands = await this.patients.findDuplicates(c, ctx, { firstName: String(data.first_name), lastName: String(data.last_name),
               birthDate: (data.birth_date as string) ?? null, phoneDigits: (data.phone_digits as string) ?? null,
-              nationalIdType: (data.national_id_type as string) ?? undefined, nationalId: (data.national_id as string) ?? undefined });
+              nationalIdType: (data.national_id_type as string) ?? undefined, nationalId: v.national_id || undefined });
             const strong = cands.find((x) => x.kind === "same_identity" || x.kind === "same_person_likely");
             if (strong) {
               status = "duplicate";
@@ -233,7 +234,7 @@ export class ImportController {
     });
     const keys = IMPORT_FIELDS[out.b.kind as ImportKind].map((f) => f.key);
     const lines = [["satir", "durum", "hatalar", ...keys].map(csvCell).join(";")];
-    for (const r of out.rows) lines.push([r.row_no, r.status, (r.errors as RowErr[]).map((e) => `${e.field}: ${e.message}`).join(" | "), ...keys.map((k) => r.data[k] ?? "")].map(csvCell).join(";"));
+    for (const r of out.rows) lines.push([r.row_no, r.status, (r.errors as RowErr[]).map((e) => `${e.field}: ${e.message}`).join(" | "), ...keys.map((k) => r.data[k] ?? r.data[`${k}_masked`] ?? "")].map(csvCell).join(";"));
     res.setHeader("content-type", "text/csv; charset=utf-8");
     res.setHeader("content-disposition", `attachment; filename="viadent-aktarim-hatalari-${bid.slice(0, 8)}.csv"`);
     res.send(`﻿${lines.join("\r\n")}\r\n`);
@@ -256,9 +257,10 @@ export class ImportController {
         const d = r.data as Record<string, string | null>;
         if (b.kind === "patients") {
           // Dry-run'dan sonra değişmiş olabilir: kaynak no ve güçlü mükerrer adaylar yeniden kontrol edilir.
+          const nid = d.national_id_enc ? decryptField(d.national_id_enc) : null;
           const ex = await c.query("select 1 from patients where external_ref = $1 and status = 'active'", [d.external_ref]);
           const cands = ex.rowCount ? [] : await this.patients.findDuplicates(c, ctx, { firstName: d.first_name!, lastName: d.last_name!, birthDate: d.birth_date ?? null,
-            phoneDigits: d.phone_digits ?? null, nationalIdType: d.national_id_type ?? undefined, nationalId: d.national_id ?? undefined });
+            phoneDigits: d.phone_digits ?? null, nationalIdType: d.national_id_type ?? undefined, nationalId: nid ?? undefined });
           if (ex.rowCount || cands.some((x) => x.kind === "same_identity" || x.kind === "same_person_likely")) {
             await c.query("update import_rows set status = 'skipped', warnings = warnings || $2::jsonb where id = $1",
               [r.id, JSON.stringify([{ field: "external_ref", message: "Onay anında mükerrer bulundu; yazılmadı" }])]);
@@ -268,11 +270,11 @@ export class ImportController {
             `insert into tenant_counters(tenant_id, name, value) values ($1,'patient_file_no',1)
              on conflict (tenant_id, name) do update set value = tenant_counters.value + 1 returning value`, [ctx.tenantId])).rows[0].value;
           const p = await c.query(
-            `insert into patients(tenant_id, file_no, first_name, last_name, search_text, birth_date, gender, national_id_type, national_id,
+            `insert into patients(tenant_id, file_no, first_name, last_name, search_text, birth_date, gender, national_id_type, national_id_enc, national_id_hmac,
                phone_e164, phone_digits, email, city, referral_source, external_ref, import_batch_id, created_by)
-             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) returning id`,
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) returning id`,
             [ctx.tenantId, fileNo, d.first_name, d.last_name, normalizeSearch(`${d.first_name} ${d.last_name}`), d.birth_date ?? null, d.gender ?? null,
-             d.national_id_type ?? null, d.national_id ?? null, d.phone_e164 ?? null, d.phone_digits ?? null, d.email ?? null, d.city ?? null,
+             d.national_id_type ?? null, nid ? encryptField(nid) : null, nid ? indexHash(ctx.tenantId, nid) : null, d.phone_e164 ?? null, d.phone_digits ?? null, d.email ?? null, d.city ?? null,
              d.referral_source ?? null, d.external_ref, bid, ctx.userId]);
           await c.query("update import_rows set status = 'imported', target_id = $2 where id = $1", [r.id, p.rows[0].id]);
         } else {

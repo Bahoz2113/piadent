@@ -11,13 +11,13 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (23.10.2026, Görev 9 iç güvenlik denetimi sonrası)
+## Son koşu sonuçları (23.10.2026, Görev 10 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
 | `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması | **14/14 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · `gorev8` 8 · **`gorev9` 9 · `pentest` 12** · `security` 12 | **221/221 geçti** (Vitest 4.1.12) |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + `gorev8` 1 + **`gorev9` 1** senaryo × {1366 px, 360 px} | **50 geçti + 2 bilinçli atlama** (MFA akışı durumlu; yalnız masaüstünde) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · `gorev8` 8 · `gorev9` 9 · `pentest` 12 · **`gorev10` 13** · `security` 12 | **234/234 geçti** (Vitest 4.1.12) |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + `gorev8` 1 + `gorev9` 1 + **`gorev10` 2** senaryo × {1366 px, 360 px} | **53 geçti + 3 bilinçli atlama** (MFA akışı durumlu; yalnız masaüstünde) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
 | `pnpm audit` | tüm bağımlılıklar (üretim + geliştirme) | **0 bilinen açık** |
 | Yedek / geri yükleme | `pnpm db:backup` + `pnpm db:restore-verify` (dev seed ve 100k/1M perf DB) | **fark 0** (ayrıntı `backup-restore.md`) |
 | Performans | 100.024 hasta / 1.000.009 randevu / 50 eşzamanlı kullanıcı | gerçekçi p95 39,6 ms, yoğun p95 201,8 ms, sayfalar ≤ 1,6 sn; doygunlukta p95 565 ms (`performance.md`) |
@@ -75,6 +75,10 @@ CSP başlığında `'strict-dynamic'` var, `'unsafe-inline'` yok; nonce her iste
 `pentest.test.ts` (12): sekreter/hekim/finans sunucu tarafında yetkisiz uçlara 403 ve iz bırakmaz; B yöneticisi A'nın hasta/geçmiş/randevu/dosyasını göremez (404, varlık sızmaz); başka kliniğin üyelik kimliği `x-viadent-context` olarak gönderilince 409; gövdeye `tenant_id` enjekte etmek başka kliniğe yazamaz; çerez yok 401 / CSRF başlığı yok 403 / uydurma çerez 401; erişimi kaldırılan üyelik anında reddedilir; bozuk girdiler (geçersiz UUID, aşırı uzun, dizi yerine metin, negatif/sembolik sayı, geçersiz tarih, yinelenen sorgu parametresi) hiçbir yerde 5xx üretmez ve iç ayrıntı sızdırmaz; aynı e-posta/IP 5 hatadan sonra 429 ve doğru parola da geçmez; aynı idempotency anahtarı farklı tutarla 409; **girdi temizliği**: NUL/ESC 422, yön değiştirme ve sıfır genişlik karakterler kaldırılır, `__proto__` atılır (prototip kirlenmez), sorgu dizesinde kontrol karakteri güvenle yok sayılır, aşırı derin/geniş gövde 422.
 `gorev9.test.ts` (9): parola değişikliği (yanlış mevcut parola 422; doğruysa değişir ve diğer oturumlar kapanır, bu oturum kalır); MFA açıkken kod zorunlu; MFA kurulum kodu 5 yanlış denemeden sonra 429; yönetici sıfırlaması (geçici parola, oturumlar kapanır, ilk girişte klinik uçları 403 `PASSWORD_CHANGE_REQUIRED`, Hesabım açık, değişiklikten sonra normal; kendine yapılamaz); takvimsel geçersiz tarih 422; boşta kalan oturum düşer ve iptal edilir, süre 0 ise düşmez; açık oturumlar listelenir (belirteç yok, bu cihaz işaretli) ve diğerleri kapatılır; parola politikası (yaygın/tekrarlı/ardışık/e-posta içeren reddedilir; politika mesajı mevcut parola doğrulamasından sonra gelir).
 `gorev9.spec.ts` (E2E): yönetici Ekip'te “Parola sıfırla” → geçici parola → kullanıcı onunla girer → Hesabım'a zorlanır (klinik sayfası geri yönlenir) → yaygın parola reddedilir → güçlü parola → Bugün.
+
+### Görev 10 testleri (`gorev10.test.ts`, 13)
+Kimlik no: yeni kayıtta düz metin boş, `v2.<kid>` şifreli, HMAC = beklenen; sekreter (kimlik açma yetkisi) açık, yönetici maskeli; denetimde kimlik yok · HMAC ile arama bulur, kısmi kimlik bulmaz, aynı kimlik 409, başka klinikte aynı kimlik farklı özet ve serbest · içe aktarma şifreli yazar, satır verisinde yalnız maskeli, mükerrer kimlik yakalanır · hasta ve klinik dışa aktarımı açık değeri verir, şifreli/özet sütunları yok · geçiş komutu (önizleme yazmaz → uygula → ikinci önizleme 0 → arama ve okuma çalışır) · anahtar döndürme kimlikleri yeniden şifreler + HMAC yeniler, eski anahtar çıkınca arama çalışır. Kurtarma kodları: 8 kod, biçim, DB'de yalnız özet, kalan 8/8 · büyük harf/tiresiz kodla giriş, kalan 7, denetimde `recovery`, aynı kod 401 · yenileme TOTP ister, eski kodlar geçersiz, yönetici sıfırlaması kodları siler. Klinik politikası: sekreter 403; yönetici MFA'sız kendi rolünü zorunlu yapamaz (409); finans zorunlu → finans kullanıcısı 403 `MFA_ENROLLMENT_REQUIRED`, Hesabım açık; B kliniği etkilenmez; denetim. Destek erişimi: hekim veremez (403), kendine/olmayan kullanıcıya/100 saate 422; verme → listede etkin · destek kullanıcısı: hasta listesi maskeli, klinik içerik yok, yazma uçları 403, finans/ekip 403, VİA İz okunur · süre dolunca üyelik görünmez; erken kaldırma; destek rolü klinik rolüne çevrilemez (409).
+`gorev10.spec.ts` (E2E): etkinleştirmede 8 kurtarma kodu → kaydettim → kurtarma koduyla giriş → Hesabım'da uyarı ve 7/8 → yönetici sıfırlar · Yönetim → Güvenlik: kendi rolü için MFA_SELF_LOCKOUT mesajı, finans politikası kaydı, destek erişimi verme/listede etkin/kaldırma; 360 px'de yatay taşma yok.
 
 ### Güvenlik testleri (`security.test.ts`, 12)
 API başlıkları (nosniff, CSP, X-Frame-Options, no-store, x-powered-by yok) · üretimde HSTS + `HttpOnly; Secure; SameSite=Lax` · CSRF başlığı yoksa 403 · gövde sınırı 413 (genel) / içe aktarma 6 MB'a kadar kabul · hata yanıtında iç ayrıntı yok · yanlış parolada hesap varlığı sızmaz · rol öznitelikleri (app/worker/backup) ve yedek rolünde yalnız SELECT · uygulama rolü DELETE/CREATE/RLS kapatma yapamaz · oturum belirteci bytea özet, webhook sırrı şifreli · `.env.example` değersiz, depoda sır kalıbı yok · hesap başına 20 hatalı girişte 429 (IP değişse de) · `textlike` LEAKPROOF.
@@ -188,6 +192,11 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - Oturumda boşta kalma süresi yoktu; MFA kodunda deneme sınırı yoktu; parola politikası yalnız uzunluktu.
 - Contracts paketinde `.js` uzantılı iç import Next derlemesini kırdı (Görev 9 düzenlemesinde oluştu; tam E2E yakaladı).
 - Test verisi: yeni politika “Sentetik-Parola-123”ü (kullanıcı adında “Sentetik” geçiyor) doğru şekilde reddetti → test parolası değişti.
+
+## Görev 10'da bulunup düzeltilen hatalar
+- Yönetim → Güvenlik ve Hesabım oturum tablosu 360 px'de yatay taşıyordu (kaydırma kabı yoktu) → `table-wrap`; E2E taşma denetimi eklendi.
+- E2E yardımcıda giriş yarışı (çerez yazılmadan gezinme) → giriş sonrası URL beklenir.
+- Test verisi: davetle A kliniğine alınan B hekimi destek hesabı olarak kullanılamazdı (doğru 409) → ayrı sentetik destek hesabı.
 
 ## Çalıştırılmayan / yapılamayan
 - Performans: temel uçlar ve sayfalar 100k/1M/50 kullanıcıda ölçüldü (Görev 7); **raporlar ve haftalık ajanda büyük veriyle ölçülmedi**; ölçüm tek makinede (DB + API + yük üreteci), TLS/internet gecikmesi yok.

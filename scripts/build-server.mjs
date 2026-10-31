@@ -33,7 +33,7 @@ const common = {
 const targets = [
   { pkg: "apps/api", out: "apps/api/dist", entries: { main: "apps/api/src/main.ts" } },
   { pkg: "apps/worker", out: "apps/worker/dist", entries: { main: "apps/worker/src/main.ts" } },
-  { pkg: "packages/db", out: "packages/db/dist", entries: { migrate: "packages/db/src/migrate.ts", roles: "packages/db/src/roles.ts", "backup-cli": "packages/db/src/backup-cli.ts", "rotate-keys": "packages/db/src/rotate-keys.ts" } },
+  { pkg: "packages/db", out: "packages/db/dist", entries: { migrate: "packages/db/src/migrate.ts", roles: "packages/db/src/roles.ts", "backup-cli": "packages/db/src/backup-cli.ts", "rotate-keys": "packages/db/src/rotate-keys.ts", "encrypt-ids": "packages/db/src/encrypt-ids.ts" } },
 ];
 for (const t of targets) {
   rmSync(join(root, t.out), { recursive: true, force: true });

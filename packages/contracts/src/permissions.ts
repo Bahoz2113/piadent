@@ -2,8 +2,11 @@
  * VİADENT varsayılan rol → izin matrisi (Plan §05). Bu tablo SUNUCUDA uygulanır;
  * arayüzde düğme gizlemek yalnız kolaylıktır, güvenlik değildir.
  */
+/** Atanabilir klinik rolleri (davet, rol değişikliği). */
 export const ROLES = ["clinic_admin", "dentist", "secretary", "assistant", "finance"] as const;
-export type Role = (typeof ROLES)[number];
+/** Tüm roller: + `support` — VİADENT destek erişimi; yalnız yönetici tarafından süreli verilir, davetle atanmaz (ADR-061). */
+export const ALL_ROLES = [...ROLES, "support"] as const;
+export type Role = (typeof ALL_ROLES)[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
   clinic_admin: "Klinik yöneticisi",
@@ -11,6 +14,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   secretary: "Sekreterya",
   assistant: "Asistan",
   finance: "Finans",
+  support: "VİADENT destek (süreli, salt okunur)",
 };
 
 export const PERMISSIONS = [
@@ -101,6 +105,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   finance: [...base, "finance.read", "account.read", "payment.write", "payment.refund", "receivable.write", "expense.write", "finance.settings", "patient.identity.unmask", "message.send",
     "integration.read", "integration.approve", "lab.read", "lab.cost", "supplier.manage", "supplier.ledger", "commission.payout", "stock.read",
     "report.analytics", "report.export"],
+  // Destek: teşhis için okuma; sağlık içeriği, kimlik açma, finans/işlem yazma YOK. Her istek denetim izinde (rol görünür).
+  support: ["patient.read", "appointment.read", "task.read", "treatment.read", "audit.read", "audit.clinic", "integration.read", "lab.read", "stock.read", "report.operations"],
 };
 
 export function permissionsFor(role: Role): Set<Permission> {

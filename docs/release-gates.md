@@ -9,8 +9,8 @@ Durum: ✅ kapalı (kanıtlı) · ⚠️ kısmi · ⛔ açık · 🔒 dış eri�
 ## 1. Plan §11 yayın tanımı
 | Kapı | Durum | Kanıt / kalan |
 |---|---|---|
-| Kritik testler geçer | ✅ | API 221/221, E2E 50 (2 bilinçli atlama; **derlenmiş üretim API/worker'ına karşı**), contracts 14, web kontrast 14, typecheck temiz, `next build` (bkz. `verification.md`). AT-01…AT-17, AT-19, AT-20 otomatik testli; AT-18 kısmi (aşağıda) |
-| Açık kritik/yüksek güvenlik bulgusu yok | ⚠️ | İç denetim (Görev 9) 9 bulgu kapattı (1 yüksek: parola değiştirme/sıfırlama yoktu); bilinen açık kritik/yüksek yok; `pnpm audit` 0. **Bağımsız sızma testi yapılmadı** → kapı açık sayılır (`security-review.md` A1) |
+| Kritik testler geçer | ✅ | API 234/234, E2E 53 (3 bilinçli atlama; **derlenmiş üretim API/worker'ına karşı**), contracts 14, web kontrast 14, typecheck temiz, `next build` (bkz. `verification.md`). AT-01…AT-17, AT-19, AT-20 otomatik testli; AT-18 kısmi (aşağıda) |
+| Açık kritik/yüksek güvenlik bulgusu yok | ⚠️ | İç denetim (Görev 9) 9 bulgu kapattı; Görev 10 kimlik no şifreleme, kurtarma kodları, klinik MFA politikası ve destek erişim modelini ekledi; bilinen açık kritik/yüksek yok; `pnpm audit` 0. **Bağımsız sızma testi yapılmadı** → kapı açık sayılır (`security-review.md` A1) |
 | Finans mutabakatı | ✅ (yazılım) / ⛔ (klinik) | AT-06…AT-10, AT-19, rapor toplamı = alt kayıtlar, içe aktarma tutar mutabakatı, yedek-geri yükleme finans toplamları mutabık. **Mali müşavir onayı** (KDV gösterimi, yuvarlama, prim kesinti sırası, iade belgesi) ve pilotta paralel gün sonu mutabakatı yapılmadı |
 | Geri yükleme denenmiş | ✅ (teknik) / ⚠️ (işletim) | İzole geri yükleme + sayım/finans/dosya mutabakatı otomatik (AT-17); 100k hasta/1M randevu 93 sn. RPO ≤ 1 sa için **saatlik zamanlanmış yedek veya WAL arşivleme kurulmadı**; insanlı uçtan uca tatbikat yapılmadı |
 | Zorunlu entegrasyon ve sözleşmeler kapalı | 🔒 | Aşağıda §3. Hedef klinik için hangilerinin **zorunlu** olduğu kararı açık |

@@ -38,13 +38,13 @@ Kapsam: Plan §08 “Teknik güvenlik tabanı” maddeleri + Görev 7'de eklenen
 | A1 | Bağımsız sızma testi yapılmadı | Yüksek (kapı) | Pilot öncesi dış test; kapsam: kimlik/oturum, çapraz klinik, dosya, webhook, içe aktarma |
 | A2 | ~~Hız sınırlayıcı bellek içi~~ → **kapandı (Görev 8)**: PostgreSQL'de paylaşılan sayaç, anahtar özetli (ADR-053); iki uygulama örneğinde aynı kilit testli | — | Genel istek sınırı ters vekilde önerilir |
 | A3 | ~~Tek anahtar, döndürme yok~~ → **kapandı (Görev 8)**: sürümlü anahtar halkası + `db:rotate-keys` (ADR-052), uçtan uca testli | — | KMS/secret manager barındırma kararıyla |
-| A4 | T.C. kimlik no veritabanında şifresiz (RLS + maskeleme var) | Orta | Alan düzeyinde şifreleme + arama için HMAC; yetkili danışmanla risk değerlendirmesi |
+| A4 | ~~T.C. kimlik no şifresiz~~ → **kapandı (Görev 10)**, ADR-059 | — | Düz metin sütunu geçişten sonra kaldırılacak |
 | A5 | ~~CSP `script-src 'unsafe-inline'`~~ → **kapandı (Görev 8)**: nonce + `strict-dynamic`; E2E'de gezinmede CSP ihlali 0 | — | — |
-| A6 | MFA zorunluluğu varsayılan kapalı (yapılandırma) | Orta | Üretim `.env`: `VIADENT_REQUIRE_MFA_ROLES=clinic_admin,finance` — runbook ve kapı listesinde |
+| A6 | ~~MFA zorunluluğu yalnız ortam değişkeniyle~~ → **kapandı (Görev 10)**: klinik politikası (ADR-060); üretimde platform tabanı yine önerilir | — | — |
 | A7 | ~~API/worker tsx ile~~ → **kapandı (Görev 8)**: derlenmiş tek dosya; tam E2E derlenmiş kodla geçti | — | İmajlar CI'da ilk kez derlenmeli |
 | A8 | ~~İçe aktarma satır verisi süresiz~~ → **kısmen kapandı (Görev 8)**: worker 30 gün sonra temizler (ADR-054) | Düşük | Süreyi danışmanla kesinleştirin |
 | A11 | Kilitleme DoS'u (hesap başına 20 hatalı deneme → 15 dk kilit) | Düşük | Kademeli gecikme veya CAPTCHA değerlendirmesi |
-| A9 | Destek erişimi (VİADENT personelinin müşteri verisine erişimi) için rol, onay ve iz yok | Orta | Tanımlanana kadar destek yalnız ekran paylaşımıyla, müşteri oturumunda |
+| A9 | ~~Destek erişim modeli yok~~ → **ilk sürüm kapandı (Görev 10)**: süreli salt okunur `support` rolü (ADR-061) | Düşük | Platform tarafı talep/ikinci onay akışı |
 | A10 | Ekran okuyucuyla elle erişilebilirlik testi yok (AT-18 kısmi) | — | Pilot kontrol listesinde |
 
 ## Görev 8'de ayrıca bulunup düzeltilenler
@@ -74,6 +74,16 @@ Kapsam: tüm API uçları ve DB katmanının kod incelemesi (yetki, kiracı izol
 Doğrulanıp **sorun bulunmayan** alanlar: dinamik SQL yalnız sunucu tarafı sabit listelerden (rapor süzgeçleri, lab durumları, arama sözcükleri parametreli); dosya anahtarı sunucu üretir (yol bileşeni istemciden gelmez), indirme `attachment` + `nosniff`; webhook imzası zamanlama-güvenli karşılaştırma + replay penceresi + tekilleştirme; oturum/davet/MFA belirteçleri özetli; `/session/switch` üyelik sahipliğini doğrular; hata gövdelerinde iç ayrıntı yok; `__proto__` ile prototip kirlenmesi yok; arama limiti ≤ 50; tüm para alanları şema + DB tetikleyicisi; uygulama rolünde DELETE yalnız 3 teknik tabloda.
 
 **Kabul edilen risk:** hesap başına 20 hatalı denemede 15 dk kilit, hedefli kullanıcıyı kısa süre kilitlemek için kötüye kullanılabilir (kilitleme DoS'u). Eşik ve süre bilinçli seçildi; alternatif (kademeli gecikme) sızma testi sonucuna göre değerlendirilecek.
+
+## Görev 10 (23.10.2026) — kapanan açık bulgular
+| # | Bulgu | Durum |
+|---|---|---|
+| A4 | T.C. kimlik no şifresiz | **Kapandı**: alan şifreleme + HMAC dizini, geçiş komutu, anahtar döndürme kapsamında (ADR-059); testli |
+| A6 | MFA zorunluluğu yalnız ortam değişkeniyle | **Kapandı**: klinik politikası + platform tabanı (ADR-060) |
+| A9 | Destek erişim modeli yok | **Kapandı (ilk sürüm)**: süreli, gerekçeli, salt okunur `support` rolü; her adım denetimli (ADR-061). Platform tarafı talep/onay akışı açık |
+| — | MFA kurtarma kodu yok | **Kapandı** (ADR-058) |
+| — | Oturum listesi arayüzü yok | **Kapandı**: Hesabım → Açık oturumlar + diğerlerini kapat |
+| A11 | Kilitleme DoS'u | Açık (kabul edilen risk); kademeli gecikme sızma testi sonucuna göre |
 
 ## Çalıştırılan kontroller
 `pnpm audit` → “No known vulnerabilities found” (23.10.2026). `security.test.ts` 12/12, `gorev7.test.ts` 23/23 (MFA, dışa aktarımda sır yok, çapraz klinik). Depo sır taraması: özel anahtar, AWS/Stripe/Slack/GitHub belirteç kalıpları — 0 bulgu.

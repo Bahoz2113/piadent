@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { isValidTckn } from "@viadent/contracts";
-import { decryptFile, encryptFile, restoreAndVerify, runBackup, totpAt, totpStep } from "@viadent/db";
+import { decryptField, decryptFile, encryptFile, restoreAndVerify, runBackup, totpAt, totpStep } from "@viadent/db";
 import { EMAILS, adminQuery, login, ownerQuery, startApp, type Client } from "./helpers.js";
 import { ADMIN_URL, BACKUP_URL, OWNER_URL, TEST_PASSWORD } from "./env.js";
 
@@ -97,7 +97,7 @@ describe("içe aktarma: dry-run → onay → tekrar çalıştırma (AT-16)", () 
     const r = await admin.post(`/imports/${batch.id}/commit`).expect(200);
     expect(r.body.status).toBe("committed");
     expect(r.body.summary.imported).toBe(3);
-    const ps = await ownerQuery(tenantA, "select external_ref, first_name, national_id, import_batch_id from patients where import_batch_id = $1 order by external_ref", [batch.id]);
+    const ps = (await ownerQuery(tenantA, "select external_ref, first_name, national_id_enc, import_batch_id from patients where import_batch_id = $1 order by external_ref", [batch.id])).map((p) => ({ ...p, national_id: p.national_id_enc ? decryptField(p.national_id_enc) : null }));
     expect(ps.map((p) => p.external_ref)).toEqual([`${run}-1`, `${run}-2`, `${run}-4`]);
     expect(ps[0].national_id).toBe(tc);
     const again = await admin.post(`/imports/${batch.id}/commit`);

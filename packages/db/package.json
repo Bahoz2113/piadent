@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit -p .",
     "backup": "tsx src/backup-cli.ts backup",
     "restore-verify": "tsx src/backup-cli.ts restore-verify",
-    "rotate-keys": "tsx src/rotate-keys.ts"
+    "rotate-keys": "tsx src/rotate-keys.ts",
+    "encrypt-ids": "tsx src/encrypt-ids.ts"
   },
   "dependencies": {
     "@viadent/contracts": "workspace:*",

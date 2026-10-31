@@ -9,6 +9,7 @@ import { CatalogPanel } from "@/components/admin/catalog";
 import { TemplatesPanel } from "@/components/admin/templates";
 import { IntegrationsPanel } from "@/components/admin/integrations";
 import { ExportPanel, ImportPanel } from "@/components/admin/data-transfer";
+import { SecurityPanel } from "@/components/admin/security";
 
 const TABS = [
   { id: "ekip", label: "Ekip ve davet", perm: "team.manage" },
@@ -20,6 +21,7 @@ const TABS = [
   { id: "kopru", label: "Entegrasyonlar (VİA Köprü)", perm: "integration.read" },
   { id: "aktarim", label: "Veri aktarımı", perm: "import.manage" },
   { id: "disa", label: "Dışa aktarım", perm: "export.clinic" },
+  { id: "guvenlik", label: "Güvenlik", perm: "settings.manage" },
 ] as const;
 
 export default function AdminPage() {
@@ -51,6 +53,7 @@ export default function AdminPage() {
             {tab === "kopru" && <IntegrationsPanel notify={toast.show} />}
             {tab === "aktarim" && <ImportPanel notify={toast.show} />}
             {tab === "disa" && <ExportPanel notify={toast.show} />}
+            {tab === "guvenlik" && <SecurityPanel notify={toast.show} />}
           </div>
         </>
       )}

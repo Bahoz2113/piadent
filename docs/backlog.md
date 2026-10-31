@@ -19,6 +19,7 @@ Durum sözlüğü: **tamamlandı** = kabul kriteri sağlandı ve test edildi · 
 | VD-013 Laboratuvar ve prim | **tamamlandı** (ilk kapsam) | Laboratuvar iş emri (aşama/revizyon/maliyet, iş föyü en az veri, VİA Akış), tedarikçi carisi, tedavi bazlı prim + ters prim + prim ödemesi (tahakkuku aşamaz), temel stok (lot/SKT, hareket tabanlı, sayım farkı), 19 rapor (toplam = alt kayıtlar testli) + CSV (Görev 6). Açık: dış laboratuvar portalı, satın alma siparişi, lab maliyetinin primden düşülmesi kuralı, kurum carisi (F6). |
 | VD-014 İçe aktarma ve pilot | **kısmi** (yazılım tarafı tamamlandı; pilot kapıları açık) | Görev 7: hasta + açılış bakiyesi dry-run içe aktarma (AT-16), açık JSON klinik/hasta dışa aktarımı, şifreli yedek + izole geri yükleme doğrulaması (AT-17), TOTP MFA, güvenlik başlıkları/sınırlayıcı, performans ölçümü (100k/1M/50), yayın kapıları, runbook, pilot kontrol listesi. Açık: hukuk/KVKK/sözleşme, barındırma, sızma testi, klinik kabul, randevu/tedavi/ödeme geçmişi aktarımı (kaynak biçim gerekli) — `release-gates.md` |
 | VD-015 Pilot altyapısı | **kısmi** (yazılım tamamlandı; imaj ve CI ilk koşusu bekliyor) | Görev 8 — `deployment.md`. Açık: imajların ilk derlemesi (imaj deposu erişimi), CI ilk koşusu (GitHub deposu), barındırma kurulumu |
+| VD-016 Güvenlik derinleştirme | **kısmi** (Görev 9 + 10 tamamlandı; sızma testi ve kademeli gecikme açık) | ADR-056…061; `security-review.md` |
 
 ## Tamamlanan iş paketi: Görev 1 (22.10.2026)
 Çalışma saatleri (T05), kapatma (T06), işlem türü (T04), hekim/koltuk yönetimi (T14), yakın/veli (H03), sürümlü anamnez (H07), davet ve rol değişikliği (T20), haftalık ajanda. Testler: API 61, E2E 12 (bkz. `verification.md`).
@@ -47,18 +48,19 @@ Derlenmiş üretim çıktısı (esbuild; paket başına dış bağımlılık; ke
 ## Tamamlanan iş paketi: Görev 9 (23.10.2026) — iç güvenlik denetimi (VD-016 kısmi)
 Kod incelemesi + negatif doğrulama testleri; 9 bulgu kapandı (parola değiştirme/sıfırlama yoktu, NUL → 500, görünmez karakterler, boşta kalma süresi, parola politikası, MFA kod deneme sınırı, takvimsel tarih, oturum listesi/kapatma, derleme hatası). ADR-056, 057. Testler: API 221, E2E 50 (+2 bilinçli atlama). `security-review.md` “Görev 9 iç güvenlik denetimi”. **Bağımsız sızma testi hâlâ açık.**
 
+## Tamamlanan iş paketi: Görev 10 (23.10.2026) — VD-016 güvenlik derinleştirme
+MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama + geçiş/döndürme (ADR-059), klinik MFA politikası (ADR-060), süreli salt okunur destek erişimi (ADR-061), Hesabım oturum listesi. Testler: API 234, E2E 53 (+3 bilinçli atlama). Kademeli gecikme ertelendi (kabul edilen risk A11).
+
 ## Sıradaki tek iş paketi
-**Görev 10 (öneri) — VD-016 kalanı:** MFA kurtarma kodları; MFA zorunluluğunun klinik ayarından yönetimi; T.C. kimlik no alan düzeyinde şifreleme + HMAC arama (geçiş migration'ı); VİADENT destek “kırık cam” erişim modeli; Hesabım'da açık oturumlar ekranı (API hazır); kilitleme DoS'una karşı kademeli gecikme. Paralelde ürün sahibi: bağımsız sızma testi firması, barındırma, hukuk/KVKK.
+**Görev 11 (öneri) — Pilot hazırlık kalanları:** düz metin `national_id` sütununun kaldırılması (geçiş migration'ı), destek tarafı talep/ikinci onay akışı, kademeli gecikme, özel tarih seçici (tarayıcı biçimi sorunu), Hasta 360'ta kimlik no gösterim/erişim gerekçesi; ürün sahibi kararları paralelde (sızma testi, barındırma, hukuk).
 
 ## Görev 7'den kalan açık işler
 - Randevu, tedavi, ödeme geçmişi ve dosya aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; eşleme uydurulmaz).
 - İçe aktarmada açık alan eşleme arayüzü (API `mapping` destekliyor; ekran yalnız takma adlarla eşliyor ve eksik sütunu listeliyor).
-- Kurtarma kodları (MFA) — şimdilik yönetici sıfırlaması → Görev 10 önerisi.
-- Tek klinikte MFA zorunluluğunu klinik ayarından açma (şimdilik ortam değişkeni, tüm klinikler) → Görev 10 önerisi.
 - Haftalık ajanda ve raporların büyük veriyle ölçümü; büyük raporların arka plana alınması.
 - WAL arşivleme / PITR değerlendirmesi (RPO ≤ 1 sa).
-- T.C. kimlik no alan düzeyinde şifreleme (risk değerlendirmesiyle).
-- Destek erişim modeli (VİADENT personeli için rol, onay, süre sınırı ve iz).
+- Düz metin `patients.national_id` sütununun kaldırılması (tüm ortamlar `db:encrypt-ids` geçtikten sonra).
+- Destek erişiminde platform tarafı talep ve ikinci onay akışı (klinik tarafı Görev 10'da).
 
 ## Küçük açık işler
 - Laboratuvar: dış laboratuvar kullanıcısı (yalnız atanmış iş), iş emrine dosya/fotoğraf ekleme, laboratuvar maliyetinin hekim priminden düşülmesi kuralı (mali müşavir + klinik sahibi kararı).

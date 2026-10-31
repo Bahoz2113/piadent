@@ -48,12 +48,25 @@ export default function AccountPage() {
     try { await fn(); } catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
   const start = () => run(async () => { setSetup(await api<{ secret: string; otpauthUri: string }>("/me/mfa/setup", { body: {} })); setCode(""); });
+  const [recovery, setRecovery] = useState<string[] | null>(null);
+  const rec = useData<{ left: number; total: number }>("/me/mfa/recovery");
+  const usedRecovery = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("kurtarma") : null;
+  const [regenCode, setRegenCode] = useState("");
   const enable = () => run(async () => {
-    await api("/me/mfa/enable", { body: { code } });
+    const r = await api<{ recoveryCodes: string[] }>("/me/mfa/enable", { body: { code } });
     setSetup(null); setCode("");
+    setRecovery(r.recoveryCodes); // forced akışta da önce kodlar gösterilir; kullanıcı "Kaydettim" deyince devam eder
     toast.show("success", "İki adımlı doğrulama açıldı. Sonraki girişlerde kod istenecek.");
-    if (forced) { window.location.href = "/bugun"; return; }
-    await st.reload();
+    await st.reload(); await rec.reload();
+  });
+  const regenerate = () => run(async () => {
+    const r = await api<{ recoveryCodes: string[] }>("/me/mfa/recovery/regenerate", { body: { code: regenCode } });
+    setRegenCode(""); setRecovery(r.recoveryCodes); await rec.reload();
+  });
+  const sessions = useData<{ items: { id: string; createdAt: string; lastSeenAt: string; current: boolean }[] }>("/me/sessions");
+  const revokeOthers = () => run(async () => {
+    const r = await api<{ revoked: number }>("/me/sessions/revoke-others", { body: {} });
+    toast.show("success", `${r.revoked} oturum kapatıldı.`); await sessions.reload();
   });
   const disable = () => run(async () => {
     await api("/me/mfa/disable", { body: { code } });
@@ -92,9 +105,30 @@ export default function AccountPage() {
         {st.loading && !s ? <Loading /> : st.error ? <ErrorState error={st.error} onRetry={st.reload} /> : s && (
           <>
             {err && <Alert kind="error">{err.message}</Alert>}
-            {s.enabled && !setup && (
+            {usedRecovery !== null && <Alert kind="warning" title="Kurtarma koduyla giriş yaptınız">Kalan kurtarma kodu: <b>{usedRecovery}</b>. Doğrulayıcınıza erişiminiz yoksa yeni cihazda yeniden kurun; kodlar azaldıysa aşağıdan yenileyin.</Alert>}
+            {recovery && (
+              <div className="stack" role="region" aria-label="Kurtarma kodları">
+                <Alert kind="warning" title="Kurtarma kodlarınızı kaydedin — yalnız şimdi gösterilir">Telefonunuza erişemezseniz bu kodlardan biriyle giriş yapabilirsiniz. Her kod bir kez kullanılır. Parola yöneticinizde veya kilitli bir yerde saklayın.</Alert>
+                <div className="card card-pad" style={{ fontFamily: "ui-monospace, monospace", fontSize: 16, columns: 2, maxWidth: 420 }}>
+                  {recovery.map((c) => <div key={c} style={{ padding: "4px 0" }}>{c}</div>)}
+                </div>
+                <div className="row" style={{ gap: 8 }}>
+                  <button className="btn" onClick={() => { void navigator.clipboard?.writeText(recovery.join("\n")); toast.show("success", "Kodlar panoya kopyalandı."); }}>Kopyala</button>
+                  <button className="btn btn-primary" onClick={() => { setRecovery(null); if (forced) window.location.href = "/bugun"; }}>Kodları kaydettim</button>
+                </div>
+              </div>
+            )}
+            {s.enabled && !setup && !recovery && (
               <div className="stack">
-                <p>Açılış: <b>{fmtDateTime(s.enabledAt)}</b></p>
+                <p>Açılış: <b>{fmtDateTime(s.enabledAt)}</b> · Kurtarma kodu: <b>{rec.data ? `${rec.data.left} / ${rec.data.total}` : "…"}</b></p>
+                <details>
+                  <summary className="small">Kurtarma kodlarını yenile</summary>
+                  <div className="stack" style={{ marginTop: 8, maxWidth: 320 }}>
+                    <p className="small muted">Eski kodlar geçersiz olur. Güncel doğrulayıcı kodu gerekir.</p>
+                    <TextField label="6 haneli kod" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={regenCode} onChange={(e) => setRegenCode(e.target.value.replace(/\D/g, ""))} error={err?.fieldErrors.code} />
+                    <div><button className="btn" disabled={busy || regenCode.length !== 6} onClick={() => void regenerate()}>Yeni kodlar üret</button></div>
+                  </div>
+                </details>
                 {!s.required && (
                   <details>
                     <summary className="small">Kapat</summary>
@@ -132,6 +166,20 @@ export default function AccountPage() {
               </div>
             )}
           </>
+        )}
+      </section>
+      <section className="card card-pad stack" style={{ maxWidth: 720, marginTop: 16 }}>
+        <div className="row" style={{ gap: 10, justifyContent: "space-between" }}>
+          <h2>Açık oturumlar</h2>
+          <button className="btn btn-sm" disabled={busy || (sessions.data?.items.length ?? 0) < 2} onClick={() => void revokeOthers()}>Diğer oturumları kapat</button>
+        </div>
+        <p className="muted small">Hesabınıza açık tüm oturumlar. Tanımadığınız bir oturum görürseniz diğerlerini kapatın ve parolanızı değiştirin.</p>
+        {sessions.data && (
+          <div className="table-wrap"><table className="table"><thead><tr><th>Oturum</th><th>Açılış</th><th>Son işlem</th></tr></thead>
+            <tbody>{sessions.data.items.map((x) => (
+              <tr key={x.id}><td>{x.current ? <span className="badge badge-success">Bu cihaz</span> : <span className="badge badge-neutral">Diğer</span>}</td><td>{fmtDateTime(x.createdAt)}</td><td>{fmtDateTime(x.lastSeenAt)}</td></tr>
+            ))}</tbody>
+          </table></div>
         )}
       </section>
       {toast.node}

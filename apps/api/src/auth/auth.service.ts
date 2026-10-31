@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { randomBytes } from "node:crypto";
-import { verifyPassword, DUMMY_HASH, newSessionToken, hashToken, decryptSecret, verifyTotp } from "@viadent/db";
+import { verifyPassword, DUMMY_HASH, newSessionToken, hashToken, decryptSecret, verifyTotp, RECOVERY_CODE_RE, normalizeRecoveryCode } from "@viadent/db";
 import { permissionsFor, ROLE_LABELS, type Role } from "@viadent/contracts";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
@@ -27,6 +27,10 @@ export interface MembershipRow {
   tenantName: string;
   timezone: string;
   role: Role;
+  /** Klinik politikası: bu rollerde MFA zorunlu (tenants.require_mfa_roles; ortam değişkeni platform tabanıdır). */
+  tenantRequireMfaRoles: string[];
+  /** Süreli üyelik (destek erişimi); null = süresiz. */
+  expiresAt: Date | null;
 }
 
 @Injectable()
@@ -62,14 +66,14 @@ export class AuthService {
     return this.startSession(user.id, false);
   }
 
-  private async startSession(userId: string, mfa: boolean) {
+  private async startSession(userId: string, mfa: boolean, method: "totp" | "recovery" | "none" = mfa ? "totp" : "none") {
     const memberships = await this.listMemberships(userId);
     const { token, expiresAt } = await this.createSession(userId, memberships[0]?.id ?? null);
     if (memberships[0]) {
       await this.db.tx({ tenantId: memberships[0].tenantId, userId }, (c) =>
         c.query(
           "insert into audit_events(tenant_id, actor_user_id, actor_membership_id, action, entity_type, changes) values ($1,$2,$3,'session.login','session',$4)",
-          [memberships[0]!.tenantId, userId, memberships[0]!.id, JSON.stringify({ mfa: { from: null, to: mfa } })],
+          [memberships[0]!.tenantId, userId, memberships[0]!.id, JSON.stringify({ mfa: { from: null, to: mfa }, method: { from: null, to: method } })],
         ),
       );
     }
@@ -77,7 +81,7 @@ export class AuthService {
   }
 
   /** İkinci adım: meydan okuma tek kullanımlık, 5 dk, en çok 5 deneme; aynı TOTP adımı tekrar kullanılamaz. */
-  async verifyMfaLogin(challenge: string, code: string): Promise<{ token: string; expiresAt: Date }> {
+  async verifyMfaLogin(challenge: string, code: string): Promise<{ token: string; expiresAt: Date; recoveryCodesLeft?: number }> {
     const ch = (await this.db.pool.query(
       `select c.id, c.user_id, c.attempts, u.mfa_secret_enc, u.mfa_last_step, u.status from mfa_challenges c join users u on u.id = c.user_id
         where c.token_hash = $1 and c.used_at is null and c.expires_at > now()`, [hashToken(challenge)])).rows[0];
@@ -85,6 +89,18 @@ export class AuthService {
     // Deneme hakkı doğrulamadan ÖNCE atomik olarak tüketilir: eşzamanlı tahminler 5 sınırını aşamaz.
     const slot = await this.db.pool.query("update mfa_challenges set attempts = attempts + 1 where id = $1 and attempts < 5 and used_at is null returning attempts", [ch.id]);
     if (!slot.rowCount) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Çok sayıda hatalı kod. Yeniden giriş yapın.");
+    if (!/^\d{6}$/.test(code)) {
+      // Kurtarma kodu: tek kullanımlık; özet eşleşmesi + atomik "kullanıldı" işareti (yarışta yalnız biri geçer). ADR-058
+      const rc = normalizeRecoveryCode(code);
+      if (!RECOVERY_CODE_RE.test(rc)) throw new AppError(401, "MFA_CODE_INVALID", "Doğrulama kodu hatalı veya kullanılmış.");
+      const hit = await this.db.pool.query("update mfa_recovery_codes set used_at = now() where user_id = $1 and code_hash = $2 and used_at is null returning id", [ch.user_id, hashToken(rc)]);
+      if (!hit.rowCount) throw new AppError(401, "MFA_CODE_INVALID", "Doğrulama kodu hatalı veya kullanılmış.");
+      const used = await this.db.pool.query("update mfa_challenges set used_at = now() where id = $1 and used_at is null returning id", [ch.id]);
+      if (!used.rowCount) throw new AppError(401, "MFA_CHALLENGE_INVALID", "Doğrulama süresi doldu. Yeniden giriş yapın.");
+      const left = (await this.db.pool.query("select count(*)::int as n from mfa_recovery_codes where user_id = $1 and used_at is null", [ch.user_id])).rows[0].n as number;
+      const r = await this.startSession(ch.user_id, true, "recovery");
+      return { ...r, recoveryCodesLeft: left };
+    }
     const step = verifyTotp(decryptSecret(ch.mfa_secret_enc), code);
     if (step === null || (ch.mfa_last_step !== null && Number(ch.mfa_last_step) >= step)) {
       throw new AppError(401, "MFA_CODE_INVALID", "Doğrulama kodu hatalı veya kullanılmış.");
@@ -133,29 +149,39 @@ export class AuthService {
   }
 
   /** Üyelik her istekte yeniden doğrulanır: iptal edilen üyelik açık oturumda da hemen etkisizdir (AT-20). */
+  private rowToMembership(m: Record<string, unknown>): MembershipRow {
+    return { id: m.id as string, tenantId: m.tenant_id as string, tenantName: m.tenant_name as string, timezone: m.timezone as string, role: m.role as Role,
+      tenantRequireMfaRoles: (m.require_mfa_roles as string[]) ?? [], expiresAt: (m.expires_at as Date | null) ?? null };
+  }
+
+  /** MFA bu üyelik için zorunlu mu: platform tabanı (ortam) VEYA klinik politikası. */
+  mfaRequiredFor(m: MembershipRow): boolean {
+    return this.config.requireMfaRoles.includes(m.role) || m.tenantRequireMfaRoles.includes(m.role);
+  }
+
   async activeMembership(userId: string, membershipId: string): Promise<MembershipRow | null> {
     return this.db.userTx(userId, async (c) => {
       const r = await c.query(
-        `select m.id, m.tenant_id, m.role, t.name as tenant_name, t.timezone
+        `select m.id, m.tenant_id, m.role, m.expires_at, t.name as tenant_name, t.timezone, t.require_mfa_roles
            from memberships m join tenants t on t.id = m.tenant_id
-          where m.id = $1 and m.user_id = $2 and m.status = 'active' and t.status = 'active'`,
+          where m.id = $1 and m.user_id = $2 and m.status = 'active' and t.status = 'active' and (m.expires_at is null or m.expires_at > now())`,
         [membershipId, userId],
       );
       const m = r.rows[0];
-      return m ? { id: m.id, tenantId: m.tenant_id, tenantName: m.tenant_name, timezone: m.timezone, role: m.role } : null;
+      return m ? this.rowToMembership(m) : null;
     });
   }
 
   async listMemberships(userId: string): Promise<MembershipRow[]> {
     return this.db.userTx(userId, async (c) => {
       const r = await c.query(
-        `select m.id, m.tenant_id, m.role, t.name as tenant_name, t.timezone
+        `select m.id, m.tenant_id, m.role, m.expires_at, t.name as tenant_name, t.timezone, t.require_mfa_roles
            from memberships m join tenants t on t.id = m.tenant_id
-          where m.user_id = $1 and m.status = 'active' and t.status = 'active'
+          where m.user_id = $1 and m.status = 'active' and t.status = 'active' and (m.expires_at is null or m.expires_at > now())
           order by t.name`,
         [userId],
       );
-      return r.rows.map((m) => ({ id: m.id, tenantId: m.tenant_id, tenantName: m.tenant_name, timezone: m.timezone, role: m.role }));
+      return r.rows.map((m) => this.rowToMembership(m));
     });
   }
 
@@ -195,7 +221,7 @@ export class AuthService {
         : null,
       memberships: memberships.map((m) => ({ id: m.id, tenantName: m.tenantName, role: m.role, roleLabel: ROLE_LABELS[m.role] })),
       permissions: active ? [...permissionsFor(active.role)] : [],
-      mfa: { enabled: session.mfaEnabled, required: !!active && this.config.requireMfaRoles.includes(active.role) },
+      mfa: { enabled: session.mfaEnabled, required: !!active && this.mfaRequiredFor(active) },
       mustChangePassword: session.mustChangePassword,
     };
   }

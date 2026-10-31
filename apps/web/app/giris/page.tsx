@@ -18,8 +18,9 @@ export default function LoginPage() {
     setError(null);
     try {
       if (challenge) {
-        await api("/auth/mfa", { body: { challenge, code } });
-        window.location.href = "/bugun";
+        const r = await api<{ ok: boolean; recoveryCodesLeft?: number }>("/auth/mfa", { body: { challenge, code } });
+        // Kurtarma koduyla girildiyse kalan kod sayısı Hesabım'da gösterilir
+        window.location.href = r.recoveryCodesLeft !== undefined ? `/hesabim?kurtarma=${r.recoveryCodesLeft}` : "/bugun";
         return;
       }
       const r = await api<{ ok: boolean; mfaRequired?: boolean; challenge?: string }>("/auth/login", { body: { email, password } });
@@ -53,10 +54,10 @@ export default function LoginPage() {
           {error && <Alert kind="error">{error.message}</Alert>}
           {challenge ? (
             <>
-              <p className="muted">İki adımlı doğrulama açık. Doğrulayıcı uygulamanızdaki 6 haneli kodu girin.</p>
-              <TextField label="Doğrulama kodu" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required autoFocus value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} error={error?.fieldErrors.code} />
-              <button className="btn btn-primary" type="submit" disabled={busy || code.length !== 6} style={{ minHeight: 46 }}>{busy ? "Doğrulanıyor…" : "Doğrula ve giriş yap"}</button>
+              <p className="muted">İki adımlı doğrulama açık. Doğrulayıcı uygulamanızdaki 6 haneli kodu ya da bir kurtarma kodunu girin.</p>
+              <TextField label="Doğrulama kodu" inputMode="text" autoComplete="one-time-code" maxLength={12} required autoFocus value={code}
+                hint="6 hane veya kurtarma kodu (xxxx-xxxx-xx)" onChange={(e) => setCode(e.target.value.replace(/[^0-9A-Za-z-]/g, ""))} error={error?.fieldErrors.code} />
+              <button className="btn btn-primary" type="submit" disabled={busy || !(code.length === 6 || code.replace(/-/g, "").length === 10)} style={{ minHeight: 46 }}>{busy ? "Doğrulanıyor…" : "Doğrula ve giriş yap"}</button>
               <button className="btn btn-ghost" type="button" onClick={() => { setChallenge(null); setCode(""); setError(null); }}>Farklı hesapla giriş yap</button>
               <p className="small muted">Telefonunuzu kaybettiyseniz klinik yöneticiniz doğrulayıcınızı kimliğinizi doğruladıktan sonra sıfırlayabilir.</p>
             </>

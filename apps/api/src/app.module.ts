@@ -13,6 +13,7 @@ import { SchedulingService } from "./scheduling/scheduling.service.js";
 import { ClinicalController } from "./clinical/clinical.controller.js";
 import { TasksController } from "./tasks/tasks.controller.js";
 import { TeamController } from "./team/team.controller.js";
+import { SecurityController } from "./team/security.controller.js";
 import { InvitationsController } from "./team/invitations.controller.js";
 import { ResourcesController } from "./scheduling/resources.controller.js";
 import { RelationsController } from "./patients/relations.controller.js";
@@ -39,7 +40,7 @@ export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController],
+      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, SecurityController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

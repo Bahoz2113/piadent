@@ -10,13 +10,14 @@
 import pg from "pg";
 import { loadEnv, requireEnv } from "./env.js";
 import { currentKeyId, decryptSecret, encryptSecret, needsRotation } from "./bridge.js";
+import { indexHash } from "./field-crypto.js";
 
-export interface RotationReport { keyId: string; apply: boolean; integrationSecrets: number; mfaSecrets: number; mfaPending: number; failed: number; tenants: number }
+export interface RotationReport { keyId: string; apply: boolean; integrationSecrets: number; mfaSecrets: number; mfaPending: number; nationalIds: number; failed: number; tenants: number }
 
 export async function rotateSecrets(url: string, apply: boolean): Promise<RotationReport> {
   const c = new pg.Client({ connectionString: url });
   await c.connect();
-  const rep: RotationReport = { keyId: currentKeyId(), apply, integrationSecrets: 0, mfaSecrets: 0, mfaPending: 0, failed: 0, tenants: 0 };
+  const rep: RotationReport = { keyId: currentKeyId(), apply, integrationSecrets: 0, mfaSecrets: 0, mfaPending: 0, nationalIds: 0, failed: 0, tenants: 0 };
   const rewrite = (blob: string | null) => {
     if (!blob || !needsRotation(blob)) return null;
     try { return encryptSecret(decryptSecret(blob)); } catch { rep.failed++; return null; }
@@ -36,6 +37,15 @@ export async function rotateSecrets(url: string, apply: boolean): Promise<Rotati
         if (apply) await c.query("update integration_connections set webhook_secret_enc = $2 where id = $1", [r.id, nb]);
       }
       rep.integrationSecrets += n;
+      // Kimlik no: şifreli değer yeniden şifrelenir, HMAC dizini yeni anahtarla yeniden hesaplanır (ADR-059)
+      const ids = (await c.query("select id, national_id_enc from patients where national_id_enc is not null for update")).rows;
+      for (const r of ids) {
+        if (!needsRotation(r.national_id_enc)) continue;
+        let plain: string;
+        try { plain = decryptSecret(r.national_id_enc); } catch { rep.failed++; continue; }
+        rep.nationalIds++;
+        if (apply) await c.query("update patients set national_id_enc = $2, national_id_hmac = $3 where id = $1", [r.id, encryptSecret(plain), indexHash(t, plain)]);
+      }
       if (apply && n) {
         await c.query(`insert into audit_events(tenant_id, action, entity_type, changes) values ($1, 'system.secret_key_rotated', 'tenant', $2)`,
           [t, JSON.stringify({ keyId: { from: null, to: rep.keyId }, integrationSecrets: { from: null, to: n } })]);

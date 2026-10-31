@@ -20,7 +20,7 @@ export class TeamController {
   list(@Ctx() ctx: RequestContext) {
     return this.db.tx(ctx, async (c) => {
       const r = await c.query(
-        `select m.id, m.role, m.status, m.created_at, m.revoked_at, u.full_name, u.email, (u.mfa_enabled_at is not null) as mfa
+        `select m.id, m.role, m.status, m.created_at, m.revoked_at, m.expires_at, u.full_name, u.email, (u.mfa_enabled_at is not null) as mfa
            from memberships m join users u on u.id = m.user_id
           where m.tenant_id = $1 order by m.status, u.full_name`,
         [ctx.tenantId],
@@ -29,6 +29,7 @@ export class TeamController {
         items: r.rows.map((m) => ({
           id: m.id, role: m.role as Role, roleLabel: ROLE_LABELS[m.role as Role], status: m.status,
           fullName: m.full_name, email: m.email, createdAt: m.created_at, revokedAt: m.revoked_at, isSelf: m.id === ctx.membershipId, mfaEnabled: m.mfa,
+          expiresAt: m.expires_at, expired: !!m.expires_at && new Date(m.expires_at) <= new Date(),
         })),
       };
     });
@@ -45,6 +46,8 @@ export class TeamController {
       const cur = await c.query("select role from memberships where id = $1 and tenant_id = $2 and status = 'active' for update", [id, ctx.tenantId]);
       if (!cur.rowCount) throw Errors.notFound("Üyelik");
       if (cur.rows[0].role === role) return { ok: true };
+      // Destek üyeliği kalıcı klinik rolüne yükseltilemez (süreli erişim bu yolla kalıcılaşmasın); destek verme Güvenlik sekmesinden.
+      if (cur.rows[0].role === "support") throw new AppError(409, "SUPPORT_ROLE_FIXED", "Destek erişimi klinik rolüne çevrilemez; gerekiyorsa kullanıcıyı davet edin.");
       await c.query("update memberships set role = $2 where id = $1", [id, role]);
       await audit(c, ctx, { action: "membership.role", entityType: "membership", entityId: id, changes: { role: { from: cur.rows[0].role, to: role } } });
       return { ok: true };
@@ -142,6 +145,7 @@ export class TeamController {
       const others = (await this.auth.listMemberships(m.user_id)).filter((x) => x.tenantId !== ctx.tenantId);
       if (others.length) throw new AppError(409, "MFA_RESET_MULTI_CLINIC", "Bu kullanıcı başka bir klinikte de üye; doğrulayıcı sıfırlaması VİADENT destek süreciyle (kimlik doğrulamalı) yapılır.");
       await c.query("update users set mfa_secret_enc = null, mfa_pending_enc = null, mfa_enabled_at = null, mfa_last_step = null where id = $1", [m.user_id]);
+      await this.db.pool.query("delete from mfa_recovery_codes where user_id = $1", [m.user_id]);
       await c.query("update sessions set revoked_at = now() where user_id = $1 and revoked_at is null", [m.user_id]);
       await audit(c, ctx, { action: "mfa.reset", entityType: "membership", entityId: id, changes: { mfa: { from: true, to: false }, reason: { from: null, to: input.reason } } });
       return { ok: true };
