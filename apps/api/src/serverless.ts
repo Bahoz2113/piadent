@@ -4,6 +4,7 @@
  * Dosya deposu geçici diske yazılır (STORAGE_DIR); kalıcı nesne depolama adaptörü ayrı iş (deployment.md §8).
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import pg from "pg";
 import { guardPool, processIntegrationJobs } from "@viadent/db";
@@ -12,7 +13,10 @@ import { loadConfig } from "./config.js";
 import { processOutbox, scanAllTenants } from "../../worker/src/jobs.js";
 
 // Paket CJS olduğundan migrate.ts'in import.meta tabanlı yolu çözülmez; .sql dosyaları fonksiyona `vendor/migrations` olarak eklenir (ADR-078).
-process.env.MIGRATIONS_DIR ||= join(process.cwd(), "vendor", "migrations");
+// Barındırıcıya göre çalışma dizini değişebildiğinden adaylar sırayla denenir; bulunamazsa ilk aday yazılır (hata mesajı yolu söyler).
+const migrationCandidates = [join(process.cwd(), "vendor", "migrations"), join(process.cwd(), "apps/web/vendor/migrations"),
+  join(__dirname, "migrations"), join(__dirname, "vendor", "migrations"), join(__dirname, "..", "vendor", "migrations")];
+process.env.MIGRATIONS_DIR ||= migrationCandidates.find((d) => { try { return existsSync(d) && readdirSync(d).some((f) => f.endsWith(".sql")); } catch { return false; } }) ?? migrationCandidates[0];
 
 type Handler = (req: IncomingMessage, res: ServerResponse) => void;
 let handlerP: Promise<Handler> | null = null;
