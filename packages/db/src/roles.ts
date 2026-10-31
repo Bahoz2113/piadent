@@ -4,8 +4,11 @@
  *  viadent_owner  : tablo sahibi, yalnız migration/seed. Uygulama bu rolle BAĞLANMAZ.
  *  viadent_app    : API rolü. NOSUPERUSER, NOBYPASSRLS, tablo sahibi değil.
  *  viadent_worker : arka plan işçisi. NOBYPASSRLS; yalnız outbox/tenant listesi için ek politika.
+ *  viadent_backup : yalnız yedek (pg_dump) ve geri yükleme doğrulaması. BYPASSRLS + yalnız SELECT; uygulama bu rolle BAĞLANMAZ.
+ *                   Parolası tanımlı değilse rol oluşturulmaz (yedek alınamaz; bkz. docs/ops/backup-restore.md).
  */
 import pg from "pg";
+import { applyDbTuning } from "./db-tuning.js";
 import { loadEnv, requireEnv } from "./env.js";
 
 loadEnv();
@@ -31,6 +34,8 @@ async function main() {
   await ensureRole("viadent_owner", ownerPw, "nosuperuser nocreaterole nocreatedb nobypassrls");
   await ensureRole("viadent_app", appPw, "nosuperuser nocreaterole nocreatedb nobypassrls noinherit");
   await ensureRole("viadent_worker", workerPw, "nosuperuser nocreaterole nocreatedb nobypassrls noinherit");
+  const backupPw = process.env.VIADENT_BACKUP_DB_PASSWORD;
+  if (backupPw) await ensureRole("viadent_backup", backupPw, "nosuperuser nocreaterole nocreatedb bypassrls noinherit");
   const db = await admin.query("select 1 from pg_database where datname = $1", [dbName]);
   if (!db.rowCount) await admin.query(`create database ${dbName} owner viadent_owner`);
   for (const testDb of [`${dbName}_test`]) {
@@ -38,6 +43,7 @@ async function main() {
     if (!t.rowCount) await admin.query(`create database ${testDb} owner viadent_owner`);
   }
   await admin.end();
+  for (const d of [dbName, `${dbName}_test`]) await applyDbTuning(requireEnv("ADMIN_DATABASE_URL"), d);
   console.log(`Roller hazır; veritabanları: ${dbName}, ${dbName}_test`);
 }
 

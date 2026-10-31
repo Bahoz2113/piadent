@@ -82,6 +82,11 @@ Dört göz: onay yetkisi olsa bile **isteği açan kişi kendi isteğini onaylay
 | `report.analytics` — işletme analizi | ✔ | — | — | — | ✔ |
 | `report.export` — CSV (denetlenir) | ✔ | — | — | — | ✔ |
 | `audit.clinic` — klinik geneli LOG | ✔ | — | — | — | — |
+| `import.manage` — içe aktarma: ön kontrol, onay, geri alma (Görev 7) | ✔ | — | — | — | — |
+| `export.clinic` — klinik verisinin tamamını açık JSON olarak dışa aktarma (gerekçeli, denetlenir) | ✔ | — | — | — | — |
+| `export.patient` — hasta verisi (KVKK veri sahibi talebi; sağlık bölümleri ayrıca `patient.health.read`) | ✔ | — | — | — | — |
+
+**İki adımlı doğrulama (Görev 7):** her kullanıcı Hesabım'dan açabilir. `VIADENT_REQUIRE_MFA_ROLES` (ör. `clinic_admin,finance`) listesindeki rollerde MFA'sız oturum klinik uçlarına `403 MFA_ENROLLMENT_REQUIRED` alır; yalnız Hesabım açıktır. MFA sıfırlama `team.manage` ister, gerekçe zorunludur, kendi hesabına ve başka klinikte de üye olan kullanıcıya uygulanamaz.
 
 Hekimin klinik raporlarda yalnız kendi kayıtlarını görmesi sunucuda üyelik → hekim eşlemesiyle uygulanır; istemcinin gönderdiği hekim kimliği ezilir. Laboratuvar maliyeti yetkisiz rollerin yanıtında alan olarak hiç bulunmaz.
 

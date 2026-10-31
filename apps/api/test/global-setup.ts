@@ -1,5 +1,5 @@
 import pg from "pg";
-import { migrate } from "@viadent/db";
+import { applyDbTuning, migrate } from "@viadent/db";
 import { seed } from "../../../packages/db/src/seed.js";
 import { ADMIN_URL, OWNER_URL, TEST_DB, TEST_PASSWORD } from "./env.js";
 
@@ -9,6 +9,7 @@ export default async function setup() {
   await admin.query(`drop database if exists ${TEST_DB} with (force)`);
   await admin.query(`create database ${TEST_DB} owner viadent_owner`);
   await admin.end();
+  await applyDbTuning(ADMIN_URL, TEST_DB); // üretimle aynı katalog ayarı (ADR-047)
   await migrate(OWNER_URL, () => undefined);
   await seed(OWNER_URL, { password: TEST_PASSWORD, quiet: true });
 }

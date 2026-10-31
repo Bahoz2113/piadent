@@ -69,6 +69,9 @@ export const PERMISSIONS = [
   "report.export",           // rapor CSV dışa aktarımı (denetlenir)
   "audit.clinic",            // klinik geneli LOG sorgulama (R15)
   "audit.read",
+  "import.manage",           // içe aktarma: dry-run, onay, geri alma (VD-014)
+  "export.clinic",           // klinik verisinin tamamını açık formatta dışa aktarma (gerekçeli, denetlenir)
+  "export.patient",          // hasta verisi dışa aktarma (KVKK veri sahibi talebi; sağlık bölümleri ayrıca sağlık yetkisi ister)
   "team.manage",
   "schedule.manage",         // hekim/koltuk, çalışma saati, kapatma, işlem türü
   "settings.manage",
@@ -84,7 +87,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     "document.read", "document.revoke", "template.manage", "file.read", "file.delete", "communication.write", "message.send",
     "integration.read", "integration.manage", "integration.approve",
     "lab.read", "lab.write", "lab.cost", "supplier.manage", "supplier.ledger", "stock.read", "stock.write", "stock.manage",
-    "report.operations", "report.clinical", "report.analytics", "report.export", "audit.clinic"],
+    "report.operations", "report.clinical", "report.analytics", "report.export", "audit.clinic",
+    "import.manage", "export.clinic", "export.patient"],
   dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "appointment.write", "audit.read",
     "treatment.write", "treatment.decision", "procedure.complete", "diagnosis.write",
     "document.read", "document.issue", "document.decision", "document.revoke", "file.read", "file.write", "file.delete", "communication.write",

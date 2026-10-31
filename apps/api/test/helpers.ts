@@ -17,9 +17,9 @@ export const EMAILS = {
   multi: "coklu@demo.test",
 } as const;
 
-export async function startApp(): Promise<INestApplication> {
+export async function startApp(overrides: Partial<import("../src/config.js").AppConfig> = {}): Promise<INestApplication> {
   resetRateLimiter();
-  const app = await createApp(loadConfig({ databaseUrl: APP_URL, port: 0 }), { logger: false });
+  const app = await createApp(loadConfig({ databaseUrl: APP_URL, port: 0, ...overrides }), { logger: process.env.DEBUG_API ? undefined : false });
   await app.init();
   return app;
 }

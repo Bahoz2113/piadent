@@ -30,13 +30,16 @@ import { SuppliersController } from "./operations/suppliers.controller.js";
 import { LabController } from "./operations/lab.controller.js";
 import { StockController } from "./operations/stock.controller.js";
 import { ReportsController } from "./reports/reports.controller.js";
+import { ImportController } from "./pilot/import.controller.js";
+import { ExportController } from "./pilot/export.controller.js";
+import { MfaController } from "./auth/mfa.controller.js";
 
 @Module({})
 export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController],
+      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

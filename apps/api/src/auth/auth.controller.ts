@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { LoginInput, SwitchMembershipInput } from "@viadent/contracts";
+import { LoginInput, MfaLogin, SwitchMembershipInput } from "@viadent/contracts";
 import { AuthService } from "./auth.service.js";
 import { NoTenant, Public } from "./decorators.js";
 import { SESSION_COOKIE } from "./auth.guard.js";
@@ -22,15 +22,24 @@ export class AuthController {
   @HttpCode(200)
   async login(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const input = parse(LoginInput, body);
-    const { token, expiresAt } = await this.auth.login(input.email, input.password, req.ip ?? "-");
-    res.cookie(SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: this.config.production,
-      path: "/",
-      expires: expiresAt,
-    });
+    const r = await this.auth.login(input.email, input.password, req.ip ?? "-");
+    if ("mfaChallenge" in r) return { ok: false, mfaRequired: true, challenge: r.mfaChallenge };
+    this.setCookie(res, r.token, r.expiresAt);
     return { ok: true };
+  }
+
+  @Public()
+  @Post("auth/mfa")
+  @HttpCode(200)
+  async mfa(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
+    const i = parse(MfaLogin, body);
+    const r = await this.auth.verifyMfaLogin(i.challenge, i.code);
+    this.setCookie(res, r.token, r.expiresAt);
+    return { ok: true };
+  }
+
+  private setCookie(res: Response, token: string, expiresAt: Date) {
+    res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: "lax", secure: this.config.production, path: "/", expires: expiresAt });
   }
 
   @Public()

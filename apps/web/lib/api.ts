@@ -52,3 +52,22 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
 export function newIdempotencyKey(): string {
   return `w-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 }
+
+/** Dosya indirme (CSV/JSON): sunucu attachment döner; tarayıcıda kaydedilir. POST gövdeli dışa aktarımlar da desteklenir. */
+export async function download(path: string, init: { body?: unknown; fallbackName: string }): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (pageContext) headers["x-viadent-context"] = pageContext;
+  if (init.body !== undefined) { headers["x-viadent-request"] = "1"; headers["content-type"] = "application/json"; }
+  const r = await fetch(`/api/v1${path}`, { method: init.body !== undefined ? "POST" : "GET", headers, credentials: "same-origin",
+    body: init.body !== undefined ? JSON.stringify(init.body) : undefined });
+  if (!r.ok) {
+    const b = await r.json().catch(() => ({ code: "HTTP_ERROR", message: "Dosya indirilemedi." }));
+    throw new ApiFailure(r.status, b);
+  }
+  const blob = await r.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? init.fallbackName;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}

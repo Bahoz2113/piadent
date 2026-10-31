@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
+import { json } from "express";
 import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module.js";
 import type { AppConfig } from "./config.js";
@@ -27,6 +28,8 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean } = 
     req.on("end", () => { if (res.headersSent) return; req.rawBody = Buffer.concat(chunks); req.body = {}; req._body = true; next(); });
     req.on("error", next);
   });
+  // İçe aktarma dosyası JSON gövdede metin olarak gelir (en çok 5 MB + kodlama payı); diğer uçlar 256 KB ile sınırlı.
+  app.use("/api/v1/imports", json({ limit: "6mb" }));
   app.useBodyParser("json", { limit: "256kb" });
   // Dosya içeriği yalnız application/octet-stream ile ve 20 MB + pay sınırıyla kabul edilir (PUT /files/:id/content).
   app.useBodyParser("raw", { type: "application/octet-stream", limit: "21mb" });
@@ -36,6 +39,13 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean } = 
     res.setHeader("x-correlation-id", req.correlationId);
     res.setHeader("cache-control", "no-store");
     res.setHeader("x-content-type-options", "nosniff");
+    // API yalnız JSON/CSV/dosya döner: hiçbir içerik çalıştırılmaz ve çerçeveye alınmaz.
+    // (Dosya içeriği hariç: tarayıcının PDF görüntüleyicisi katı CSP altında açılmaz; o uç attachment/nosniff ile korunur.)
+    if (!/\/files\/[^/]+\/content$/.test(req.path)) res.setHeader("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
+    res.setHeader("x-frame-options", "DENY");
+    res.setHeader("referrer-policy", "no-referrer");
+    res.setHeader("cross-origin-resource-policy", "same-origin");
+    if (config.production) res.setHeader("strict-transport-security", "max-age=31536000; includeSubDomains");
     next();
   });
   app.setGlobalPrefix("api/v1");

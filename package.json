@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "description": "VİADENT — diş klinikleri için çok kiracılı klinik ERP",
   "packageManager": "pnpm@10.28.0",
-  "engines": { "node": ">=22.12 <23" },
+  "engines": {
+    "node": ">=22.12 <23"
+  },
   "scripts": {
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
     "db:roles": "pnpm --filter @viadent/db run roles",
@@ -16,6 +18,13 @@
     "dev:worker": "pnpm --filter @viadent/worker run dev",
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r --workspace-concurrency=1 run test",
-    "build": "pnpm -r run build"
+    "build": "pnpm -r run build",
+    "db:backup": "pnpm --filter @viadent/db run backup",
+    "db:restore-verify": "pnpm --filter @viadent/db run restore-verify"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.23 <9"
+    }
   }
 }

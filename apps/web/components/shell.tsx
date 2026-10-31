@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  BarChart3, Building2, CalendarDays, ChevronsLeft, ClipboardList, LogOut, Menu, Search, Settings2, Stethoscope, Sun, Users, Wallet, RefreshCw,
+  BarChart3, Building2, CalendarDays, ChevronsLeft, ClipboardList, LogOut, Menu, Search, Settings2, Stethoscope, Sun, Users, Wallet, RefreshCw, UserCog,
 } from "lucide-react";
 import { useSession } from "@/lib/session";
 
@@ -78,10 +78,11 @@ export function Shell({ children }: { children: ReactNode }) {
           ) : (
             <span className="row small desktop-only muted"><Building2 size={17} aria-hidden />{active?.tenantName}</span>
           )}
-          <div className="row small desktop-only" style={{ gap: 4, flexDirection: "column", alignItems: "flex-end" }}>
+          <Link href="/hesabim" className="row small desktop-only" style={{ gap: 4, flexDirection: "column", alignItems: "flex-end", color: "inherit", textDecoration: "none" }} title="Hesabım ve güvenlik">
             <strong>{session.user.fullName}</strong>
             <span className="muted">{active?.roleLabel}</span>
-          </div>
+          </Link>
+          <Link href="/hesabim" className="btn btn-ghost icon-btn mobile-only" aria-label="Hesabım ve güvenlik" title="Hesabım"><UserCog size={19} /></Link>
           <button className="btn btn-ghost icon-btn" onClick={() => void logout()} aria-label="Çıkış yap" title="Çıkış yap"><LogOut size={19} /></button>
         </header>
         {contextChanged && (

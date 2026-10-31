@@ -1,0 +1,5 @@
+﻿kaynak_no;tutar;tarih;aciklama
+ESKI-0001;1.250,50;31.12.2025;Önceki sistem açık bakiyesi
+ESKI-0002;300;31.12.2025;
+ESKI-0003;1.250;31.12.2025;Belirsiz biçim (hata örneği)
+ESKI-9999;99,90;31.12.2025;Hasta yok (hata örneği)

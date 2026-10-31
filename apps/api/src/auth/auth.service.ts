@@ -1,10 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { verifyPassword, DUMMY_HASH, newSessionToken, hashToken } from "@viadent/db";
+import { randomBytes } from "node:crypto";
+import { verifyPassword, DUMMY_HASH, newSessionToken, hashToken, decryptSecret, verifyTotp } from "@viadent/db";
 import { permissionsFor, ROLE_LABELS, type Role } from "@viadent/contracts";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
 import { CONFIG, type AppConfig } from "../config.js";
-import { clearFails, isLocked, recordFail } from "./rate-limit.js";
+import { ACCOUNT_MAX_FAILS, clearFails, isLocked, recordFail } from "./rate-limit.js";
 import type { RequestContext } from "../infra/context.js";
 
 
@@ -15,6 +16,7 @@ export interface SessionRow {
   email: string;
   activeMembershipId: string | null;
   lastSeenAt: Date;
+  mfaEnabled: boolean;
 }
 
 export interface MembershipRow {
@@ -29,33 +31,69 @@ export interface MembershipRow {
 export class AuthService {
   constructor(@Inject(Db) private readonly db: Db, @Inject(CONFIG) private readonly config: AppConfig) {}
 
-  async login(email: string, password: string, ip: string): Promise<{ token: string; expiresAt: Date }> {
+  /** Parola doğruysa: MFA kapalıysa oturum; açıksa 5 dk geçerli, 5 denemelik tek kullanımlık meydan okuma döner. */
+  async login(email: string, password: string, ip: string): Promise<{ token: string; expiresAt: Date } | { mfaChallenge: string }> {
     const key = `${email.toLowerCase()}|${ip}`;
-    if (isLocked(key)) {
+    const acct = `acct|${email.toLowerCase()}`;
+    if (isLocked(key) || isLocked(acct, Date.now(), ACCOUNT_MAX_FAILS)) {
       throw new AppError(429, "TOO_MANY_ATTEMPTS", "Çok sayıda hatalı deneme. 15 dakika sonra tekrar deneyin.");
     }
     const u = await this.db.pool.query(
-      "select id, password_hash, status from users where lower(email) = lower($1)",
+      "select id, password_hash, status, mfa_enabled_at from users where lower(email) = lower($1)",
       [email],
     );
     const user = u.rows[0];
     const ok = await verifyPassword(password, user?.password_hash ?? DUMMY_HASH);
     if (!user || !ok || user.status !== "active") {
       recordFail(key);
+      recordFail(acct);
       throw new AppError(401, "INVALID_CREDENTIALS", "E-posta veya parola hatalı.");
     }
     clearFails(key);
-    const memberships = await this.listMemberships(user.id);
-    const { token, expiresAt } = await this.createSession(user.id, memberships[0]?.id ?? null);
+    clearFails(acct);
+    if (user.mfa_enabled_at) {
+      const challenge = randomBytes(32).toString("base64url");
+      await this.db.pool.query("insert into mfa_challenges(user_id, token_hash, expires_at) values ($1,$2, now() + interval '5 minutes')",
+        [user.id, hashToken(challenge)]);
+      return { mfaChallenge: challenge };
+    }
+    return this.startSession(user.id, false);
+  }
+
+  private async startSession(userId: string, mfa: boolean) {
+    const memberships = await this.listMemberships(userId);
+    const { token, expiresAt } = await this.createSession(userId, memberships[0]?.id ?? null);
     if (memberships[0]) {
-      await this.db.tx({ tenantId: memberships[0].tenantId, userId: user.id }, (c) =>
+      await this.db.tx({ tenantId: memberships[0].tenantId, userId }, (c) =>
         c.query(
-          "insert into audit_events(tenant_id, actor_user_id, actor_membership_id, action, entity_type) values ($1,$2,$3,'session.login','session')",
-          [memberships[0]!.tenantId, user.id, memberships[0]!.id],
+          "insert into audit_events(tenant_id, actor_user_id, actor_membership_id, action, entity_type, changes) values ($1,$2,$3,'session.login','session',$4)",
+          [memberships[0]!.tenantId, userId, memberships[0]!.id, JSON.stringify({ mfa: { from: null, to: mfa } })],
         ),
       );
     }
     return { token, expiresAt };
+  }
+
+  /** İkinci adım: meydan okuma tek kullanımlık, 5 dk, en çok 5 deneme; aynı TOTP adımı tekrar kullanılamaz. */
+  async verifyMfaLogin(challenge: string, code: string): Promise<{ token: string; expiresAt: Date }> {
+    const ch = (await this.db.pool.query(
+      `select c.id, c.user_id, c.attempts, u.mfa_secret_enc, u.mfa_last_step, u.status from mfa_challenges c join users u on u.id = c.user_id
+        where c.token_hash = $1 and c.used_at is null and c.expires_at > now()`, [hashToken(challenge)])).rows[0];
+    if (!ch || ch.status !== "active" || !ch.mfa_secret_enc) throw new AppError(401, "MFA_CHALLENGE_INVALID", "Doğrulama süresi doldu. Yeniden giriş yapın.");
+    // Deneme hakkı doğrulamadan ÖNCE atomik olarak tüketilir: eşzamanlı tahminler 5 sınırını aşamaz.
+    const slot = await this.db.pool.query("update mfa_challenges set attempts = attempts + 1 where id = $1 and attempts < 5 and used_at is null returning attempts", [ch.id]);
+    if (!slot.rowCount) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Çok sayıda hatalı kod. Yeniden giriş yapın.");
+    const step = verifyTotp(decryptSecret(ch.mfa_secret_enc), code);
+    if (step === null || (ch.mfa_last_step !== null && Number(ch.mfa_last_step) >= step)) {
+      throw new AppError(401, "MFA_CODE_INVALID", "Doğrulama kodu hatalı veya kullanılmış.");
+    }
+    // Tek kullanım: aynı meydan okuma iki kez oturum açamaz (yarışta yalnız biri used_at'i yazar).
+    const used = await this.db.pool.query("update mfa_challenges set used_at = now() where id = $1 and used_at is null returning id", [ch.id]);
+    if (!used.rowCount) throw new AppError(401, "MFA_CHALLENGE_INVALID", "Doğrulama süresi doldu. Yeniden giriş yapın.");
+    // Aynı kodun iki ayrı meydan okumada eşzamanlı kullanımı: koşullu güncelleme yalnız birine izin verir.
+    const fresh = await this.db.pool.query("update users set mfa_last_step = $2 where id = $1 and (mfa_last_step is null or mfa_last_step < $2) returning id", [ch.user_id, step]);
+    if (!fresh.rowCount) throw new AppError(401, "MFA_CODE_INVALID", "Doğrulama kodu hatalı veya kullanılmış.");
+    return this.startSession(ch.user_id, true);
   }
 
   async createSession(userId: string, membershipId: string | null): Promise<{ token: string; expiresAt: Date }> {
@@ -74,7 +112,7 @@ export class AuthService {
 
   async resolveSession(token: string): Promise<SessionRow | null> {
     const r = await this.db.pool.query(
-      `select s.id, s.user_id, s.active_membership_id, s.last_seen_at, u.full_name, u.email
+      `select s.id, s.user_id, s.active_membership_id, s.last_seen_at, u.full_name, u.email, (u.mfa_enabled_at is not null) as mfa
          from sessions s join users u on u.id = s.user_id
         where s.token_hash = $1 and s.revoked_at is null and s.expires_at > now() and u.status = 'active'`,
       [hashToken(token)],
@@ -84,7 +122,7 @@ export class AuthService {
     if (Date.now() - new Date(s.last_seen_at).getTime() > 5 * 60_000) {
       await this.db.pool.query("update sessions set last_seen_at = now() where id = $1", [s.id]);
     }
-    return { sessionId: s.id, userId: s.user_id, userName: s.full_name, email: s.email, activeMembershipId: s.active_membership_id, lastSeenAt: s.last_seen_at };
+    return { sessionId: s.id, userId: s.user_id, userName: s.full_name, email: s.email, activeMembershipId: s.active_membership_id, lastSeenAt: s.last_seen_at, mfaEnabled: s.mfa };
   }
 
   /** Üyelik her istekte yeniden doğrulanır: iptal edilen üyelik açık oturumda da hemen etkisizdir (AT-20). */
@@ -150,6 +188,7 @@ export class AuthService {
         : null,
       memberships: memberships.map((m) => ({ id: m.id, tenantName: m.tenantName, role: m.role, roleLabel: ROLE_LABELS[m.role] })),
       permissions: active ? [...permissionsFor(active.role)] : [],
+      mfa: { enabled: session.mfaEnabled, required: !!active && this.config.requireMfaRoles.includes(active.role) },
     };
   }
 }

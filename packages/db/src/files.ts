@@ -39,7 +39,7 @@ export class LocalDiskStorage implements StoragePort {
 }
 
 /** Göreli STORAGE_DIR depo köküne (pnpm-workspace.yaml) göre çözülür; API ve worker farklı dizinden çalışsa da aynı depoyu görür. */
-function repoRoot(): string {
+export function repoRoot(): string {
   let d = process.cwd();
   for (let i = 0; i < 6; i++) { if (existsSync(join(d, "pnpm-workspace.yaml"))) return d; const up = dirname(d); if (up === d) break; d = up; }
   return process.cwd();

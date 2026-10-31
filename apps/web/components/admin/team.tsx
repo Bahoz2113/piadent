@@ -7,7 +7,7 @@ import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, Drawer, ErrorState, Loading, SelectField, TextField } from "@/components/ui";
 
-interface Member { id: string; role: Role; roleLabel: string; status: string; fullName: string; email: string; createdAt: string; revokedAt: string | null; isSelf: boolean }
+interface Member { id: string; role: Role; roleLabel: string; status: string; fullName: string; email: string; createdAt: string; revokedAt: string | null; isSelf: boolean; mfaEnabled?: boolean }
 interface Invitation { id: string; email: string; fullName: string; roleLabel: string; expiresAt: string; createdBy: string }
 
 export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: string) => void }) {
@@ -27,6 +27,12 @@ export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: stri
     void act(m.id, () => api(`/team/${m.id}/revoke`, { body: { reason } }), "Erişim kaldırıldı.");
   }
 
+  function resetMfa(m: Member) {
+    const reason = window.prompt(`${m.fullName} kullanıcısının iki adımlı doğrulaması sıfırlanacak; tüm oturumları kapanır ve yeniden kurması gerekir.\n\nKimliğini nasıl doğruladınız? (zorunlu)`);
+    if (!reason || !reason.trim()) return;
+    void act(m.id, () => api(`/team/${m.id}/mfa-reset`, { body: { reason } }), "İki adımlı doğrulama sıfırlandı.");
+  }
+
   return (
     <div className="stack">
       <section className="card">
@@ -37,7 +43,7 @@ export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: stri
         {team.loading && !team.data ? <Loading /> : team.error ? <ErrorState error={team.error} /> : (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Kullanıcı</th><th>Rol</th><th>Durum</th><th className="desktop-only">Eklenme</th><th><span className="sr-only">İşlem</span></th></tr></thead>
+              <thead><tr><th>Kullanıcı</th><th>Rol</th><th>Durum</th><th>İki adımlı</th><th className="desktop-only">Eklenme</th><th><span className="sr-only">İşlem</span></th></tr></thead>
               <tbody>
                 {team.data!.items.map((m) => (
                   <tr key={m.id}>
@@ -51,8 +57,10 @@ export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: stri
                       ) : m.roleLabel}
                     </td>
                     <td>{m.status === "active" ? <span className="badge badge-success">Etkin</span> : <span className="badge badge-neutral">Kaldırıldı {m.revokedAt ? fmtDate(m.revokedAt) : ""}</span>}</td>
+                    <td>{m.mfaEnabled ? <span className="badge badge-success">Açık</span> : <span className="badge badge-neutral">Kapalı</span>}</td>
                     <td className="desktop-only">{fmtDate(m.createdAt)}</td>
                     <td style={{ textAlign: "right" }}>
+                      {m.status === "active" && !m.isSelf && m.mfaEnabled && <button className="btn btn-sm" disabled={busy === m.id} onClick={() => resetMfa(m)} style={{ marginRight: 6 }}>Doğrulayıcıyı sıfırla</button>}
                       {m.status === "active" && !m.isSelf && <button className="btn btn-sm btn-danger" disabled={busy === m.id} onClick={() => revoke(m)}><ShieldOff size={15} aria-hidden />Erişimi kaldır</button>}
                       {m.isSelf && <span className="muted small">Siz</span>}
                     </td>

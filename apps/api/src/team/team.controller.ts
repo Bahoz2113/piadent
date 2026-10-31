@@ -6,19 +6,20 @@ import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
 import { audit } from "../audit/audit.js";
+import { AuthService } from "../auth/auth.service.js";
 
 const mId = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound("Üyelik") });
 
 @Controller("team")
 export class TeamController {
-  constructor(@Inject(Db) private readonly db: Db) {}
+  constructor(@Inject(Db) private readonly db: Db, @Inject(AuthService) private readonly auth: AuthService) {}
 
   @Get()
   @Require("team.manage")
   list(@Ctx() ctx: RequestContext) {
     return this.db.tx(ctx, async (c) => {
       const r = await c.query(
-        `select m.id, m.role, m.status, m.created_at, m.revoked_at, u.full_name, u.email
+        `select m.id, m.role, m.status, m.created_at, m.revoked_at, u.full_name, u.email, (u.mfa_enabled_at is not null) as mfa
            from memberships m join users u on u.id = m.user_id
           where m.tenant_id = $1 order by m.status, u.full_name`,
         [ctx.tenantId],
@@ -26,7 +27,7 @@ export class TeamController {
       return {
         items: r.rows.map((m) => ({
           id: m.id, role: m.role as Role, roleLabel: ROLE_LABELS[m.role as Role], status: m.status,
-          fullName: m.full_name, email: m.email, createdAt: m.created_at, revokedAt: m.revoked_at, isSelf: m.id === ctx.membershipId,
+          fullName: m.full_name, email: m.email, createdAt: m.created_at, revokedAt: m.revoked_at, isSelf: m.id === ctx.membershipId, mfaEnabled: m.mfa,
         })),
       };
     });
@@ -121,6 +122,27 @@ export class TeamController {
       if (!r.rowCount) throw Errors.notFound("Üyelik");
       await audit(c, ctx, { action: "membership.revoke", entityType: "membership", entityId: id,
         changes: { status: { from: "active", to: "revoked" }, ...(input.reason ? { reason: { from: null, to: input.reason } } : {}) } });
+      return { ok: true };
+    });
+  }
+
+  /** Kaybolan doğrulayıcı: yönetici başka bir üyenin MFA'sını sıfırlar; kullanıcının tüm oturumları kapanır, yeniden kurması gerekir. */
+  @Post(":id/mfa-reset")
+  @HttpCode(200)
+  @Require("team.manage")
+  mfaReset(@Ctx() ctx: RequestContext, @Param("id", mId) id: string, @Body() body: unknown) {
+    const input = parse(MembershipRevoke, body ?? {});
+    if (id === ctx.membershipId) throw new AppError(422, "CANNOT_RESET_SELF", "Kendi doğrulayıcınızı Hesabım sayfasından yönetin; sıfırlama başka bir yönetici tarafından yapılır.");
+    if (!input.reason) throw Errors.validation({ reason: "Gerekçe gerekli (kimlik doğrulaması nasıl yapıldı?)." });
+    return this.db.tx(ctx, async (c) => {
+      const m = (await c.query("select user_id from memberships where id = $1 and tenant_id = $2 and status = 'active'", [id, ctx.tenantId])).rows[0];
+      if (!m) throw Errors.notFound("Üyelik");
+      // Kullanıcı başka bir klinikte de üyeyse tek klinik yöneticisi onun hesabının güvenliğini düşüremez (platform destek süreci).
+      const others = (await this.auth.listMemberships(m.user_id)).filter((x) => x.tenantId !== ctx.tenantId);
+      if (others.length) throw new AppError(409, "MFA_RESET_MULTI_CLINIC", "Bu kullanıcı başka bir klinikte de üye; doğrulayıcı sıfırlaması VİADENT destek süreciyle (kimlik doğrulamalı) yapılır.");
+      await c.query("update users set mfa_secret_enc = null, mfa_pending_enc = null, mfa_enabled_at = null, mfa_last_step = null where id = $1", [m.user_id]);
+      await c.query("update sessions set revoked_at = now() where user_id = $1 and revoked_at is null", [m.user_id]);
+      await audit(c, ctx, { action: "mfa.reset", entityType: "membership", entityId: id, changes: { mfa: { from: true, to: false }, reason: { from: null, to: input.reason } } });
       return { ok: true };
     });
   }

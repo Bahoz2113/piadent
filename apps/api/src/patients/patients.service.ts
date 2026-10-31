@@ -174,7 +174,9 @@ export class PatientsService {
       const term = (q ?? "").trim();
       const digits = term.replace(/\D+/g, "");
       const norm = normalizeSearch(term);
-      const tokens = norm ? norm.split(" ").map((t) => `%${t}%`) : [];
+      // Her sözcük ayrı LIKE koşulu: trigram dizini yalnız ayrık koşullarda kullanılır (LIKE ALL(dizi) dizini kullanamaz, ADR-047).
+      const tokens = norm ? norm.split(" ").slice(0, 6).map((t) => `%${t}%`) : [];
+      const tokenSql = tokens.length ? tokens.map((_, k) => `p.search_text like $${8 + k}`).join(" and ") : "false";
       const isNumeric = !!term && /^[\d\s+()-]+$/.test(term);
       const r = await c.query(
         `select ${COLUMNS}, pr.display_name as practitioner_name,
@@ -183,11 +185,12 @@ export class PatientsService {
            from patients p left join practitioners pr on pr.id = p.primary_practitioner_id
           where p.status = 'active' and (
                 $1::boolean is false
-             or ($2::boolean and (p.file_no::text = $3 or (length($3) >= 4 and p.phone_digits like '%' || $3 || '%') or p.national_id = $3))
-             or (not $2::boolean and p.search_text like all ($4::text[])) )
-          order by case when $5 <> '' then similarity(p.search_text, $5) else 0 end desc, p.last_name, p.first_name
+             or ($2::boolean and (p.file_no = $7::bigint or (length($3) >= 7 and p.phone_digits like '%' || $3 || '%') or (length($3) between 4 and 6 and p.phone_digits like '%' || $3) or p.national_id = $3))
+             or (not $2::boolean and ${tokenSql} and cardinality($4::text[]) > 0) )
+          order by case when $2::boolean then (p.file_no = $7::bigint)::int else 0 end desc,
+                   case when $5 <> '' and not $2::boolean then similarity(p.search_text, $5) else 0 end desc, p.last_name, p.first_name
           limit $6`,
-        [!!term, isNumeric, digits, tokens, norm, limit],
+        [!!term, isNumeric, digits, tokens, norm, limit, digits && digits.length <= 15 ? digits : null, ...tokens],
       );
       return r.rows.map((row) => this.present(ctx, row));
     });

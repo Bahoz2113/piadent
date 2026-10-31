@@ -74,6 +74,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       body = { code: status === 404 ? "NOT_FOUND" : "HTTP_ERROR", message: status === 404 ? "Adres bulunamadı." : "İstek işlenemedi.", correlation_id };
+    } else if ((exception as { type?: string })?.type === "entity.too.large") {
+      // body-parser sınırı (Express ara katmanı, Nest istisnası değil)
+      status = 413;
+      body = { code: "PAYLOAD_TOO_LARGE", message: "İstek gövdesi çok büyük.", correlation_id };
+    } else if ((exception as { type?: string })?.type === "entity.parse.failed") {
+      status = 400;
+      body = { code: "MALFORMED_JSON", message: "İstek gövdesi okunamadı.", correlation_id };
     } else if (pg?.code === "23P01" && pg.constraint === "work_schedules_no_overlap") {
       status = 422;
       body = { code: "VALIDATION_FAILED", message: "Aynı güne ait çalışma blokları çakışıyor.", field_errors: { blocks: "Bloklar çakışmamalı." }, correlation_id };

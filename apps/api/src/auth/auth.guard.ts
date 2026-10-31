@@ -5,6 +5,7 @@ import type { Permission } from "@viadent/contracts";
 import { AuthService } from "./auth.service.js";
 import { AppError, Errors } from "../infra/errors.js";
 import { NO_TENANT, PERMS, PUBLIC, WEBHOOK } from "./decorators.js";
+import { CONFIG, type AppConfig } from "../config.js";
 
 export const SESSION_COOKIE = "vd_session";
 const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -15,7 +16,8 @@ const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(@Inject(Reflector) private readonly reflector: Reflector, @Inject(AuthService) private readonly auth: AuthService) {}
+  constructor(@Inject(Reflector) private readonly reflector: Reflector, @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(CONFIG) private readonly config: AppConfig) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const targets = [context.getHandler(), context.getClass()];
@@ -49,6 +51,10 @@ export class AuthGuard implements CanActivate {
       });
     }
 
+    // Politika: bu roller iki adımlı doğrulama kurmadan klinik verisine erişemez (kurulum uçları NoTenant'tır).
+    if (this.config.requireMfaRoles.includes(membership.role) && !session.mfaEnabled) {
+      throw new AppError(403, "MFA_ENROLLMENT_REQUIRED", "Bu rol için iki adımlı doğrulama zorunlu. Hesabım sayfasından kurun.");
+    }
     req.ctx = this.auth.buildContext(session, membership, req.correlationId ?? "-");
     const needed = this.reflector.getAllAndOverride<Permission[]>(PERMS, targets) ?? [];
     for (const p of needed) {

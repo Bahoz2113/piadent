@@ -47,6 +47,14 @@ Parola: `.demo-credentials` dosyasında (veya `.env` içindeki `VIADENT_DEMO_PAS
 
 Sıfırlamak için: `pnpm db:reset && pnpm db:seed`.
 
+### Yedek ve geri yükleme doğrulaması (Görev 7)
+`.env`'de `VIADENT_BACKUP_DB_PASSWORD`, `BACKUP_DATABASE_URL`, `BACKUP_ENCRYPTION_PASSPHRASE` (≥16 karakter) tanımlayıp `pnpm db:roles` çalıştırın. Sonra:
+```bash
+pnpm db:backup                 # şifreli yedek → .backups/ (git dışı)
+pnpm db:restore-verify         # en yeni yedeği izole DB'ye yükler, sayım/finans/dosya mutabakatı, süre; DB'yi siler
+```
+Ayrıntı: `docs/backup-restore.md`. Performans ölçümü: `docs/performance.md`. Yayın kapıları: `docs/release-gates.md`.
+
 ## Test
 ```bash
 pnpm typecheck
@@ -62,6 +70,10 @@ E2E_PASSWORD=<demo parolası> npx playwright test # API + web çalışırken
 - Ajanda: gün ve **hafta** görünümü, mobil gün listesi, DB seviyesinde çakışma engeli, **çalışma saatleri, kapatmalar, işlem türleri**
 - **Sürümlü anamnez** ve hekim onayı (soru seti DEMO), minimum klinik not
 - **VİA Akış** (5 görev türü), **VİA İz** (hasta geçmişi)
+- Sonraki görevler (ayrıntı `docs/handoff.md`): tedavi planı ve odontogram (2), VİA Net finans (3), belge/dosya/iletişim (4), VİA Köprü — yalnız MOCK sağlayıcı (5), laboratuvar/stok/prim/raporlar (6)
+- **Görev 7:** veri aktarımı (ön kontrol → onay → geri alma), açık JSON dışa aktarım (klinik + hasta), iki adımlı doğrulama (TOTP), şifreli yedek + izole geri yükleme doğrulaması, güvenlik başlıkları, 100k hasta / 1M randevu performans ölçümü
+
+**Durum:** sentetik demo. Yayın kapıları (hukuk/KVKK, resmî entegrasyonlar, barındırma, sızma testi, klinik kabulü) açıktır — ürün “satışa hazır” değildir (`docs/release-gates.md`).
 
 Davet bağlantısı e-postayla gönderilmez (sağlayıcı bağlı değil); Yönetim > Ekip'te oluşturulan bağlantıyı kişiye kendiniz iletin.
 

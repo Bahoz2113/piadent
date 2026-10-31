@@ -114,6 +114,14 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 - `stock_items` (kod, ad, birim, kategori, lot takibi, en az seviye; miktar alanı YOK), `stock_lots` (lot no, SKT), `stock_movements` (giriş/kullanım/fire/düzeltme/iade, işaretli miktar, birim maliyet, tedarikçi, hasta + gerçekleşen işlem, gerekçe; eksi stok tetikleyicisi; tam ters kayıt).
 - `cash_movements.source` + `supplier_payment`, `commission_payout`; `tasks.kind` + `lab_overdue`, `lab_review`, `lab_not_ready`, `stock_low`, `lot_expiring`.
 
+## Görev 7 (0008_pilot, 0009_search_perf)
+- `import_batches` — tür (`patients` | `opening_balances`), biçim, dosya adı, **SHA-256** (`unique (tenant_id, kind, file_sha256)` → aynı dosya yeni batch açmaz), durum `dry_run → committed → rolled_back` (check'lerle tutarlı zaman damgaları), eşleme ve özet (jsonb; mutabakat sayıları ve tutarları), onaylayan/geri alan + gerekçe. RLS.
+- `import_rows` — satır no, durum (`valid`, `error`, `duplicate`, `already_imported`, `imported`, `skipped`, `rolled_back`), alan bazında hata/uyarı, normalize veri (kişisel veri; saklama süresi açık), tutar, hedef kayıt. RLS.
+- `patients.external_ref` (önceki sistem numarası; etkin kayıtlarda klinik içinde benzersiz) + `import_batch_id`.
+- `receivables.source` + `opening_balance`; `receivables.import_batch_id` (açılış bakiyesinde zorunlu, DB check).
+- `users.mfa_secret_enc`, `mfa_pending_enc` (şifreli, `VIADENT_SECRET_KEY`), `mfa_enabled_at`, `mfa_last_step` (kod tekrarı engeli); `mfa_challenges` (belirteç SHA-256 bytea, 5 dk, deneme sayısı, tek kullanım) — kullanıcı düzeyi (kiracısız), yalnız uygulama rolü.
+- Yedek rolü `viadent_backup` için şema/tablo/sıra okuma yetkileri ve varsayılan yetkiler (rol varsa).
+- `patients_phone_trgm` (telefon parça/son hane araması). Veritabanı başına katalog ayarı: `textlike` LEAKPROOF (ADR-047; migration değil, süper kullanıcı adımı).
+
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).
-- Görev 7: `import_batch`.

@@ -11,13 +11,16 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (23.10.2026, Görev 6 sonrası)
+## Son koşu sonuçları (23.10.2026, Görev 7 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
 | `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması | **14/14 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 | **157/157 geçti** |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 senaryo × {1366 px, 360 px} | **40/40 geçti** (temiz seed, worker çalışırken) |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · **`gorev7` 23** · **`security` 12** | **192/192 geçti** (Vitest 4.1.12) |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + **`gorev7` 4** senaryo × {1366 px, 360 px} | **47 geçti + 1 bilinçli atlama** (MFA akışı durumlu; yalnız masaüstünde) — temiz seed, worker çalışırken |
+| `pnpm audit` | tüm bağımlılıklar (üretim + geliştirme) | **0 bilinen açık** |
+| Yedek / geri yükleme | `pnpm db:backup` + `pnpm db:restore-verify` (dev seed ve 100k/1M perf DB) | **fark 0** (ayrıntı `backup-restore.md`) |
+| Performans | 100.024 hasta / 1.000.009 randevu / 50 eşzamanlı kullanıcı | gerçekçi p95 39,6 ms, yoğun p95 201,8 ms, sayfalar ≤ 1,6 sn; doygunlukta p95 565 ms (`performance.md`) |
 | Typecheck | contracts, db, api, worker, web | **temiz** |
 | `next build` | üretim derlemesi | **başarılı** |
 
@@ -54,10 +57,19 @@ Yönetici VİA Köprü: kapı KAPALI, WhatsApp/e-Fatura “Erişim bekliyor” v
 ### Görev 6 E2E (`gorev6.spec.ts`, 1366 px + 360 px; worker çalışırken)
 Sekreter hasta kartından iş emri açar (taslak) → hedef tarihle gönderir → iş föyünde “· İş emri N” ve paylaşılmayan bilgi notu → “Kabul et” düğmesi yok, maliyet bölümü yok → teslim alır · hekim Operasyon → “Kabul bekliyor” → revizyon gerekçesiz kaydedilemez → kabul eder, olaylarda “Hekim kabul etti” · asistan eldiven girişi (+3) ve sayım (−1 düzeltme) yapar, hareketlerde “Sayım: sistem …, sayılan … · E2E sayımı”; “Yeni kalem” düğmesi yok · finans gelir–gider → satırdan nakit hareketlerine iner (net eşit) → CSV indirilir (dosya adı) → geri döner; sekreter gelir–gider kartını görmez, laboratuvar raporunda maliyet sütunu ve CSV düğmesi yok · finans prim öder ve ters kayda alır · taşma yok.
 
+### Görev 7 testlerinin kapsadığı kurallar (`gorev7.test.ts`, 23 — gerçek PostgreSQL, uygulama + yedek rolleri, izole geri yükleme)
+İçe aktarma: yalnız yönetici (sekreter/hekim/finans 403) · dry-run hasta yazmaz · Türkçe başlık takma adları, `gg.aa.yyyy`, başlık düzeni, telefon E.164 · alan bazında hatalar (soyad, tarih, cinsiyet, telefon, e-posta, TCKN) · dosya içi aynı kaynak no · hata CSV'si (BOM, `;`, yalnız hatalı satırlar) · **aynı dosya → aynı batch** · onay yalnız geçerli satırları yazar, kaynak no + batch kimliği saklanır, ikinci onay 409, denetim sırası · **farklı dosya + aynı kaynak no → `already_imported`, mükerrer hasta yok** · eksik zorunlu sütun 422 + başlık listesi, açık eşleme · JSON biçimi · çapraz klinik (B, A'nın batch'ini göremez/onaylayamaz; A'nın kaynak no'su B'yi etkilemez) · açılış bakiyesi tutar mutabakatı (`amountSource = valid + error + duplicate`), belirsiz `1.250` hatası, bulunamayan hasta, aynı hasta iki kez · onayda alacak `opening_balance` + batch kimliği, DB toplamı = özet · ikinci aktarımda aynı hastaya ikinci açılış bakiyesi yok · geri alma: gerekçe zorunlu, alacak iptal (silinmez), ikinci geri alma 409 · aktarım sonrası düzenlenmiş hasta varken geri alma 409. Dışa aktarım: gerekçe zorunlu, finans 403, yalnız kendi kliniği, sayım = satır, sır sütunları/parola yok, kullanıcıda yalnız id/ad/e-posta, denetim kaydı · hasta dışa aktarımı yalnız o hasta, sağlık yetkisi yoksa sağlık bölümleri atlanır, başka klinik 404, sekreter 403. MFA: RFC 6238 vektörleri · kurulum/etkinleştirme, sır DB'de açık değil · parola sonrası meydan okuma, çerez yok · yanlış kod 401, kullanılmış kod 401, doğru kod çerez (HttpOnly), aynı meydan okuma tekrar 401, 5 yanlış denemeden sonra 429 · oturum audit'inde `mfa: true` · yönetici sıfırlaması (gerekçe, kendi hesabı değil, sekreter 403, oturumlar kapanır) · çok klinikli kullanıcı 409 · zorunlu rolde MFA'sız klinik ucu 403 `MFA_ENROLLMENT_REQUIRED`, Hesabım açık, zorunlu olmayan rol etkilenmez. Yedek: AES-256-GCM, yanlış parola ve kurcalanmış dosya reddi · **tablo sahibi FORCE RLS nedeniyle döküm alamaz**, yedek rolü alır · gerçek depolanmış dosyayla yedek → izole DB → tablo sayıları, klinik bazında hasta/finans toplamları, dosya özeti mutabık, süreler ölçülür, manifest kişisel veri içermez · geri yüklenen DB'de ≥60 tabloda FORCE RLS ve uygulama rolü bağlamsız 0 hasta görür · kurcalanmış parça geri yüklemeye başlamadan reddedilir.
+
+### Güvenlik testleri (`security.test.ts`, 12)
+API başlıkları (nosniff, CSP, X-Frame-Options, no-store, x-powered-by yok) · üretimde HSTS + `HttpOnly; Secure; SameSite=Lax` · CSRF başlığı yoksa 403 · gövde sınırı 413 (genel) / içe aktarma 6 MB'a kadar kabul · hata yanıtında iç ayrıntı yok · yanlış parolada hesap varlığı sızmaz · rol öznitelikleri (app/worker/backup) ve yedek rolünde yalnız SELECT · uygulama rolü DELETE/CREATE/RLS kapatma yapamaz · oturum belirteci bytea özet, webhook sırrı şifreli · `.env.example` değersiz, depoda sır kalıbı yok · hesap başına 20 hatalı girişte 429 (IP değişse de) · `textlike` LEAKPROOF.
+
+### Görev 7 E2E (`gorev7.spec.ts`, 1366 px + 360 px)
+Yönetim → Veri aktarımı: CSV (BOM) yükle → ön kontrol → mutabakat kutuları (3 / 2) → satır hatası görünür → hata CSV'si indirilir → onay → “2 kayıt aktarıldı” → aynı dosya tekrar “mevcut aktarım açıldı” → hasta aramada tek kayıt; 360 px'de yatay taşma yok · Dışa aktarım: gerekçesiz düğme kapalı → JSON indirilir, sır yok · MFA: Hesabım → karekod + anahtar → kod → etkin; yeni oturumda kod adımı, yanlış kod mesajı, doğru kodla Bugün; yönetici Ekip'te “Açık” → sıfırla → “Kapalı” · Hasta 360 → Veriyi indir (gerekçe) → hasta JSON.
+
 ## Kabul testleri eşlemesi
 | Test | Durum | Kanıt |
 |---|---|---|
-| AT-01 çapraz tenant (hasta ID, geçmiş, randevu, not, arama, randevu bağlama; erişim reddi audit'i) | **geçti** | tenant-isolation.test.ts. Dosya ve export uçları henüz yok → Görev 4/6'da genişletilecek |
+| AT-01 çapraz tenant (hasta ID, geçmiş, randevu, not, arama, randevu bağlama; erişim reddi audit'i) | **geçti** | tenant-isolation.test.ts; dosya (gorev4), içe aktarma batch'i ve hasta dışa aktarımı (gorev7) |
 | AT-02 sekreter API ile klinik not / iade | **geçti** | permissions-session.test.ts (not) + gorev3.test.ts (iade 403, iz bırakmaz) |
 | AT-03 eşzamanlı randevu | **geçti** | 6 eşzamanlı istek → 1 × 201, 5 × 409; koltuk çakışması; `[)` sınırı; iptal kapasite bırakır |
 | AT-04 gelecek doğum tarihi / ortak telefon | **geçti** | API + DB tetikleyicisi + E2E (arayüz mesajı) |
@@ -71,14 +83,15 @@ Sekreter hasta kartından iş emri açar (taslak) → hedef tarihle gönderir �
 | AT-12 SMS teslim sonucu gelmez | **geçti (MOCK)** | gorev4.test.ts + E2E: submitted → unknown, delivered uydurulmaz. gorev5.test.ts: zaman aşımı → unknown → durum sorgusu, teslim yalnız imzalı bildirimle; dead → failed/unknown. Gerçek sağlayıcı erişim bekliyor |
 | AT-13 webhook tekrar/ters sıra/geçersiz imza | **geçti (MOCK sağlayıcı, gerçek HTTP uç)** | gorev5.test.ts: aynı olay → duplicate; ters sıra/geç olay terminal durumu bozmaz; erken bildirim anahtarla eşlenir; geçersiz/eksik imza, eski zaman damgası, yenilenmiş sır 401; bozuk gövde 400; ödeme/iade çift bildirimi tek kayıt + E2E |
 | AT-14 onaydan sonra şablon değişir | **geçti** | gorev4.test.ts (API + doğrudan SQL) |
-| AT-16, AT-17 | açık | Görev 7 |
+| AT-16 içe aktarma tekrar | **geçti** | gorev7.test.ts (aynı dosya → aynı batch; farklı dosya aynı kaynak no → yazılmaz; açılış bakiyesi tekrar yazılmaz; hata satırları + kaynak tutar toplamı uzlaşır) + E2E |
+| AT-17 izole geri yükleme | **geçti (teknik)** | gorev7.test.ts + `pnpm db:restore-verify` (dev ve 100k/1M perf DB): sayım, klinik bazında hasta ve finans toplamları, dosya özeti mutabık; süre ölçüldü (perf DB 93 sn). İnsanlı uçtan uca tatbikat ve saatlik yedek zamanlaması **yapılmadı** |
 | AT-15 klinik değiştirme, eski sekme | **geçti** | eski bağlamla okuma/yazma 409; yeni bağlamda yalnız yeni kliniğin verisi; rol yeni kliniğe göre |
 | AT-18 360 px, klavye, ekran okuyucu | **kısmi** | E2E: 6 ana sayfada 360 px'de yatay taşma yok (ölçüt düzeltildi, aşağıya bkz.), “İçeriğe geç”, dialog erişilebilir adı, durumlar metin+renk, çalışma saati dışı/kapatma desen+metinle. Ekran okuyucuyla elle test ve renk körlüğü simülasyonu **yapılmadı** |
 | AT-19 gece yarısı raporu | **geçti** | gorev3.test.ts (finans özeti) + gorev6.test.ts (nakit hareketleri ve gelir–gider günlük satırı; tüm raporlar aynı klinik günü dönüşümünü kullanır) |
 | AT-20 erişimi kaldırılan kullanıcı | **geçti** (API) | açık oturumla sonraki istek 403 `MEMBERSHIP_REVOKED`; çıkış sonrası 401. Worker kullanıcı adına iş yürütmüyor; dosya erişimi Görev 4 |
 
 ## RLS / güvenlik kontrolleri (geçti)
-Uygulama rolü superuser/BYPASSRLS/tablo sahibi değil · `tenant_id` taşıyan **67 tablonun tamamında** RLS + FORCE (test artık tabloları otomatik keşfediyor; yeni tablo unutulursa kırılır) · bağlamsız sorgu 0 satır · havuzda bağlam sızmıyor · yanlış tenant_id ile INSERT reddediliyor · audit UPDATE/DELETE reddediliyor · istemci gövdesindeki `tenantId` yok sayılıyor · CSRF başlığı zorunlu · token DB'de düz değil · 5 hatalı girişte kilit.
+Uygulama rolü superuser/BYPASSRLS/tablo sahibi değil · `tenant_id` taşıyan **69 tablonun tamamında** RLS + FORCE (test artık tabloları otomatik keşfediyor; yeni tablo unutulursa kırılır) · bağlamsız sorgu 0 satır · havuzda bağlam sızmıyor · yanlış tenant_id ile INSERT reddediliyor · audit UPDATE/DELETE reddediliyor · istemci gövdesindeki `tenantId` yok sayılıyor · CSRF başlığı zorunlu · token DB'de düz değil · 5 hatalı girişte kilit (e-posta+IP) ve hesap başına 20 · geri yüklenen veritabanında da FORCE RLS ve uygulama rolü yetkileri denetlenir (Görev 7).
 
 ## Elle yapılan görsel kontrol
 Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar, Hasta 360, Geçmiş, Ajanda, Yeni hasta çekmecesi incelendi. Bulunan ve düzeltilen hatalar: masaüstünde mobil menü düğmesi görünmesi, 360 px'de aramanın daralması, çekmecenin erişilebilir adının olmaması (E2E yakaladı), telefonun biçimsiz gösterimi.
@@ -128,12 +141,28 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - Olay notlarında ISO tarih (2026-10-27) görünüyordu → gg.aa.yyyy.
 - Rapor kartı metni dikey ortalanıyordu; URL'den açılan raporda tarih alanları boş kalıyordu → düzeltildi.
 
+## Görev 7'de bulunup düzeltilen hatalar
+- **Hasta arama 100.000 hastada tam tablo taraması** (RLS + LEAKPROOF olmayan `LIKE`; ayrıca `LIKE ALL(dizi)` dizin kullanmıyor) → ~110 ms/sorgu, 5 kullanıcıda p95 ~960 ms. Düzeltme: `textlike` LEAKPROOF (db:roles / reset / restore-verify / test kurulumu), sözcük başına ayrı `LIKE` → ~2 ms (ADR-047).
+- Kısa sayısal arama (“0555”) tüm hastalarla eşleşip benzerliğe göre sıralanıyordu → 4–6 hane telefon sonu, ≥7 hane telefon içinde, dosya no sayısal eşitlik; telefon trigram dizini (`0009`).
+- **Geri yüklemede `--no-privileges` GRANT'ları düşürüyordu**: geri yüklenen DB'de uygulama rolü hiçbir tabloyu okuyamazdı (AT-17 testi yakaladı) → yetkiler dökümle taşınıyor; doğrulama uygulama rolü yetkisini ve FORCE RLS'i ayrıca denetliyor.
+- Tablo sahibi rolüyle döküm FORCE RLS nedeniyle başarısız → ayrı `viadent_backup` rolü (ADR-048); testle belgelendi.
+- Manifest ve döküm ayrı anlarda alınıyordu (eşzamanlı yazımda yanlış fark) → `pg_export_snapshot` ile tek snapshot.
+- MFA meydan okuma özeti `text` sütununa bayt olarak yazılıyordu → 500 (`invalid byte sequence`) → `bytea`.
+- İçe aktarma JSON gövdesi genel 256 KB sınırına takılıyordu (5 MB dosya hedefi) → içe aktarma ucuna 6 MB sınır.
+- Gövde sınırı aşımı 500 dönüyordu → 413; bozuk JSON 400.
+- Giriş sınırlayıcısı IP değiştirerek aşılabiliyordu → hesap başına eşik; MFA deneme sayacı ve kod tekrarı yarış koşulları → atomik/koşullu güncellemeler.
+- Çok klinikli kullanıcının MFA'sını tek klinik yöneticisi sıfırlayabiliyordu → yasak.
+- `db:reset` ve test kurulumu veritabanını yeniden oluşturunca LEAKPROOF ayarı kayboluyordu → her ikisi de uyguluyor; testle denetleniyor.
+- Perf verisi md5 tabanlı (v4 olmayan) UUID üretiyordu; API doğru şekilde 422 verdi → üreteç v4 biçimine çevrildi.
+- `pnpm audit`: postcss (next içinde) 2 yüksek + 2 orta, vitest/tinypool 2 kritik + 3 orta → override + Vitest 4.1.12; 0 açık.
+
 ## Çalıştırılmayan / yapılamayan
-- Performans: raporlar sentetik küçük veriyle çalıştırıldı; 100.000 hasta / yıllık hareket hacminde süre **ölçülmedi** (Görev 7).
+- Performans: temel uçlar ve sayfalar 100k/1M/50 kullanıcıda ölçüldü (Görev 7); **raporlar ve haftalık ajanda büyük veriyle ölçülmedi**; ölçüm tek makinede (DB + API + yük üreteci), TLS/internet gecikmesi yok.
+- Bağımsız sızma testi **yapılmadı**. Saatlik zamanlanmış yedek ve insanlı uçtan uca geri yükleme tatbikatı **yapılmadı** (araçlar hazır).
+- Gerçek kaynak sistem dışa aktarım dosyasıyla içe aktarma **denenmedi** (yalnız sentetik).
 - Resmî ürün takip bildirimi yükümlülüğü ve kapsamı doğrulanmadı; stok yalnız iç izlenebilirlik sağlar.
 - **Gerçek sağlayıcı entegrasyonu yok:** SMS, WhatsApp, ödeme kuruluşu, e-Fatura/e-Arşiv/e-SMM, DHBS/e-Nabız, imza/doğrulama için yetkili doküman, sözleşme ve sandbox erişimi bu oturumda yoktu; sandbox testi **yapılmadı**. Tüm Görev 5 testleri MOCK adaptör ve VİADENT'in kendi webhook imza biçimiyle; gerçek sağlayıcı imza biçimi adaptörde ayrıca doğrulanmalı.
 - Gerçek ClamAV (clamd) bu ortamda kurulu değil (imza veritabanı indirilemiyor); yalnız sahte clamd ile protokol sözleşmesi test edildi.
 - Yazdırma penceresi E2E'de açılmadı (tarayıcı diyaloğu otomasyonu kilitler); `printed` kanıt olayı API testinde doğrulandı.
-- Performans hedefi (100.000 hasta, p95 500 ms) **ölçülmedi**.
 - Windows üzerinde kurulum bu oturumda **denenmedi** (geliştirme Linux konteynerde yapıldı); README adımları Docker Desktop + Node 22 + pnpm varsayar.
 - Ekran okuyucu (NVDA/VoiceOver) testi yapılmadı.

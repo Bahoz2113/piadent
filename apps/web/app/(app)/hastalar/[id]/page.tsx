@@ -2,12 +2,12 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { CalendarPlus, History, Lock, NotebookPen, Pencil, FileText, Wallet, Stethoscope, MessageSquare, LayoutList, FlaskConical } from "lucide-react";
+import { CalendarPlus, History, Lock, NotebookPen, Pencil, FileText, Wallet, Stethoscope, MessageSquare, LayoutList, FlaskConical, FileDown } from "lucide-react";
 import {
   APPOINTMENT_STATUS_LABELS, CONTACT_OUTCOME_LABELS, GENDER_LABELS, GENDERS, NATIONAL_ID_LABELS,
   type AppointmentStatus,
 } from "@viadent/contracts";
-import { api, ApiFailure } from "@/lib/api";
+import { api, ApiFailure, download } from "@/lib/api";
 import { formatPhone } from "@viadent/contracts";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
@@ -111,6 +111,12 @@ function PatientInner() {
           </div>
           <div className="row actions">
             {can("patient.write") && <button className="btn" onClick={() => setEditing(true)}><Pencil size={16} aria-hidden />Bilgileri düzenle</button>}
+            {can("export.patient") && <button className="btn" onClick={() => {
+              const reason = window.prompt("Hasta verisi (KVKK veri sahibi talebi) JSON olarak indirilecek ve denetim kaydına yazılacak.\n\nGerekçe (ör. başvuru tarihi/numarası):");
+              if (!reason || reason.trim().length < 5) { if (reason !== null) toast.show("error", "Gerekçe en az 5 karakter olmalı."); return; }
+              void download(`/patients/${p.id}/export`, { body: { reason }, fallbackName: `viadent-hasta-${p.fileNo}.json` })
+                .then(() => toast.show("success", "Hasta verisi indirildi."), (e: ApiFailure) => toast.show("error", e.message));
+            }}><FileDown size={16} aria-hidden />Veriyi indir</button>}
             {can("appointment.write") && <Link className="btn btn-primary" href={`/ajanda?yeni=1&hasta=${p.id}`}><CalendarPlus size={17} aria-hidden />Randevu ver</Link>}
           </div>
         </div>

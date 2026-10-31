@@ -14,3 +14,5 @@ export const WORKER_URL = withDb(process.env.WORKER_DATABASE_URL ?? requireEnv("
 export const ADMIN_URL = requireEnv("ADMIN_DATABASE_URL");
 /** Yalnız test veritabanı için sentetik parola; üretim veya demo ortamında kullanılmaz. */
 export const TEST_PASSWORD = "synthetic-test-only-Pw1";
+/** Yedek rolü (BYPASSRLS, yalnız okuma) test veritabanında. */
+export const BACKUP_URL = process.env.BACKUP_DATABASE_URL ? withDb(process.env.BACKUP_DATABASE_URL, TEST_DB) : null;
