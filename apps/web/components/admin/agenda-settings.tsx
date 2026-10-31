@@ -5,7 +5,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDateTime, todayIn } from "@/lib/format";
-import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField } from "@/components/ui";
+import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
 import { useAdminResources } from "./resources";
 
 export function TypesPanel({ notify }: { notify: (k: "success" | "error", t: string) => void }) {
@@ -116,9 +116,9 @@ function ClosureDrawer({ res, onClose, onSaved }: { res: { practitioners: { id: 
           {f.scope === "practitioner" && <SelectField label="Hekim" value={f.practitionerId} onChange={set("practitionerId")} error={err?.fieldErrors.practitionerId}>{res.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</SelectField>}
           {f.scope === "chair" && <SelectField label="Koltuk" value={f.chairId} onChange={set("chairId")} error={err?.fieldErrors.chairId}>{res.chairs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</SelectField>}
           <div className="form-grid">
-            <TextField label="Başlangıç tarihi" type="date" required value={f.startDate} onChange={set("startDate")} />
+            <DateField label="Başlangıç tarihi" required value={f.startDate} onChange={set("startDate")} />
             <TextField label="Başlangıç saati" type="time" required value={f.startTime} onChange={set("startTime")} hint="Tam gün için 00:00" />
-            <TextField label="Bitiş tarihi" type="date" required value={f.endDate} onChange={set("endDate")} error={err?.fieldErrors.endDate} />
+            <DateField label="Bitiş tarihi" required value={f.endDate} onChange={set("endDate")} error={err?.fieldErrors.endDate} />
             <SelectField label="Bitiş saati" value={f.endTime} onChange={set("endTime")} error={err?.fieldErrors.endTime}>
               <option value="24:00">Gün sonu (24:00)</option>
               {Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`).map((t) => <option key={t} value={t}>{t}</option>)}

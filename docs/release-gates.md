@@ -1,6 +1,6 @@
 # Yayın kapıları (Plan §11 “Yayın tanımı”, §04 “Satış kapısı”) — durum 23.10.2026
 
-> Son güncelleme: 23.10.2026, Görev 8 (pilot altyapı paketi).
+> Son güncelleme: 26.10.2026, Görev 11 (güvenlik kapanışları + tarih alanı).
 >
 > **Karar: VİADENT bugün “tüm kliniklere satışa hazır” DEĞİLDİR.** Yazılımın P0 kapsamı çalışıyor ve testli; ancak resmî entegrasyon, veri işleme ve sözleşme kararları, klinik kullanıcı kabulü ve bağımsız güvenlik testi açık. Mevcut durum yalnız **sentetik demo** ve — aşağıdaki “pilot öncesi” kapıları kapandıktan sonra — **tek hedef klinikte kontrollü pilot** için uygundur. “Tam uyumlu”, “Bakanlık onaylı”, “e-Nabız entegre”, “e-Fatura entegre” ifadeleri kullanılmaz (ADR-051).
 
@@ -9,8 +9,8 @@ Durum: ✅ kapalı (kanıtlı) · ⚠️ kısmi · ⛔ açık · 🔒 dış eri�
 ## 1. Plan §11 yayın tanımı
 | Kapı | Durum | Kanıt / kalan |
 |---|---|---|
-| Kritik testler geçer | ✅ | API 234/234, E2E 53 (3 bilinçli atlama; **derlenmiş üretim API/worker'ına karşı**), contracts 14, web kontrast 14, typecheck temiz, `next build` (bkz. `verification.md`). AT-01…AT-17, AT-19, AT-20 otomatik testli; AT-18 kısmi (aşağıda) |
-| Açık kritik/yüksek güvenlik bulgusu yok | ⚠️ | İç denetim (Görev 9) 9 bulgu kapattı; Görev 10 kimlik no şifreleme, kurtarma kodları, klinik MFA politikası ve destek erişim modelini ekledi; bilinen açık kritik/yüksek yok; `pnpm audit` 0. **Bağımsız sızma testi yapılmadı** → kapı açık sayılır (`security-review.md` A1) |
+| Kritik testler geçer | ✅ | API 241/241, E2E 59 (5 bilinçli atlama; **derlenmiş üretim API/worker'ına karşı**), contracts 14, web kontrast 14, typecheck temiz, `next build` (bkz. `verification.md`). AT-01…AT-17, AT-19, AT-20 otomatik testli; AT-18 kısmi (aşağıda) |
+| Açık kritik/yüksek güvenlik bulgusu yok | ⚠️ | İç denetim (Görev 9) 9 bulgu kapattı; Görev 10 kimlik no şifreleme, kurtarma kodları, klinik MFA politikası ve destek erişim modelini ekledi; Görev 11 düz metin kimlik sütununu kaldırdı, gerekçeli kimlik gösterimi, dört göz ve kademeli gecikme ekledi; bilinen açık kritik/yüksek yok; `pnpm audit` 0 (multer override). **Bağımsız sızma testi yapılmadı** → kapı açık sayılır (`security-review.md` A1) |
 | Finans mutabakatı | ✅ (yazılım) / ⛔ (klinik) | AT-06…AT-10, AT-19, rapor toplamı = alt kayıtlar, içe aktarma tutar mutabakatı, yedek-geri yükleme finans toplamları mutabık. **Mali müşavir onayı** (KDV gösterimi, yuvarlama, prim kesinti sırası, iade belgesi) ve pilotta paralel gün sonu mutabakatı yapılmadı |
 | Geri yükleme denenmiş | ✅ (teknik) / ⚠️ (işletim) | İzole geri yükleme + sayım/finans/dosya mutabakatı otomatik (AT-17); 100k hasta/1M randevu 93 sn. RPO ≤ 1 sa için **saatlik zamanlanmış yedek veya WAL arşivleme kurulmadı**; insanlı uçtan uca tatbikat yapılmadı |
 | Zorunlu entegrasyon ve sözleşmeler kapalı | 🔒 | Aşağıda §3. Hedef klinik için hangilerinin **zorunlu** olduğu kararı açık |
@@ -47,7 +47,7 @@ TLS ⚠️ (Caddy otomatik TLS yapılandırması hazır, sunucu yok) · secret m
 | AT-15 klinik değiştirme | ✅ | permissions-session + E2E |
 | **AT-16 içe aktarma tekrar** | ✅ | gorev7: aynı dosya → aynı batch; farklı dosya aynı kaynak no → yazılmaz; hata satırları + kaynak toplamı uzlaşır; E2E |
 | **AT-17 izole geri yükleme** | ✅ (teknik) | gorev7: sayım + klinik bazında hasta/finans + dosya mutabık, süre ölçülür, kurcalama reddi; perf DB ölçümü |
-| AT-18 360 px + klavye + ekran okuyucu | ⚠️ | 360 px ve klavye E2E; **ekran okuyucuyla elle test yok** |
+| AT-18 360 px + klavye + ekran okuyucu | ⚠️ | 360 px ve klavye E2E (Görev 11: takvim klavye gezinmesi dahil); **ekran okuyucuyla elle test yok** |
 | AT-19 gece yarısı | ✅ | gorev3/gorev6 |
 | AT-20 erişim kaldırma | ✅ | permissions-session (worker + dosya dahil) |
 

@@ -52,15 +52,16 @@ Kod incelemesi + negatif doğrulama testleri; 9 bulgu kapandı (parola değişti
 MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama + geçiş/döndürme (ADR-059), klinik MFA politikası (ADR-060), süreli salt okunur destek erişimi (ADR-061), Hesabım oturum listesi. Testler: API 234, E2E 53 (+3 bilinçli atlama). Kademeli gecikme ertelendi (kabul edilen risk A11).
 
 ## Sıradaki tek iş paketi
-**Görev 11 (öneri) — Pilot hazırlık kalanları:** düz metin `national_id` sütununun kaldırılması (geçiş migration'ı), destek tarafı talep/ikinci onay akışı, kademeli gecikme, özel tarih seçici (tarayıcı biçimi sorunu), Hasta 360'ta kimlik no gösterim/erişim gerekçesi; ürün sahibi kararları paralelde (sızma testi, barındırma, hukuk).
+**Görev 11 — tamamlandı (26.10.2026):** düz metin `national_id` kaldırıldı (0013, ADR-062) · kimlik no gerekçeli gösterim (ADR-063) · destek erişiminde dört göz (0014, ADR-064) · sınırlı kademeli giriş gecikmesi (ADR-065) · `DateField` gg.aa.yyyy + takvim, 18 kullanım (ADR-066) · multer override.
+
+**Görev 12 (öneri) — Pilot operasyon hazırlığı:** WAL arşivleme / PITR değerlendirmesi (RPO ≤ 1 sa; `pg_basebackup` + arşiv komutu, geri yükleme tatbikatı belgesi), “silindi” dosyaların fiziksel imha işi (worker; saklama süresi parametreli), webhook ret sayısı ve giriş kilidi için uyarı metrikleri (`/metrics` sayaçları + alarm eşiği önerileri), içe aktarmada açık alan eşleme ekranı (API `mapping` hazır), ekran okuyucu kontrol listesi için otomatik eksen (axe) taraması E2E'de. Ürün sahibi paralelde: bağımsız sızma testi, barındırma, hukuk/KVKK, imaj deposu + GitHub.
 
 ## Görev 7'den kalan açık işler
 - Randevu, tedavi, ödeme geçmişi ve dosya aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; eşleme uydurulmaz).
 - İçe aktarmada açık alan eşleme arayüzü (API `mapping` destekliyor; ekran yalnız takma adlarla eşliyor ve eksik sütunu listeliyor).
 - Haftalık ajanda ve raporların büyük veriyle ölçümü; büyük raporların arka plana alınması.
 - WAL arşivleme / PITR değerlendirmesi (RPO ≤ 1 sa).
-- Düz metin `patients.national_id` sütununun kaldırılması (tüm ortamlar `db:encrypt-ids` geçtikten sonra).
-- Destek erişiminde platform tarafı talep ve ikinci onay akışı (klinik tarafı Görev 10'da).
+- Destek erişiminde platform tarafı talep **başlatma** akışı (klinik tarafı onay/dört göz Görev 10–11'de tamam).
 
 ## Küçük açık işler
 - Laboratuvar: dış laboratuvar kullanıcısı (yalnız atanmış iş), iş emrine dosya/fotoğraf ekleme, laboratuvar maliyetinin hekim priminden düşülmesi kuralı (mali müşavir + klinik sahibi kararı).

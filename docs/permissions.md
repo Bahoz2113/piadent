@@ -86,7 +86,9 @@ Dört göz: onay yetkisi olsa bile **isteği açan kişi kendi isteğini onaylay
 | `export.clinic` — klinik verisinin tamamını açık JSON olarak dışa aktarma (gerekçeli, denetlenir) | ✔ | — | — | — | — |
 | `export.patient` — hasta verisi (KVKK veri sahibi talebi; sağlık bölümleri ayrıca `patient.health.read`) | ✔ | — | — | — | — |
 
-**Destek rolü (`support`, Görev 10, ADR-061):** yalnız yönetici süreli (≤72 sa) ve gerekçeli verir; salt okunur — `patient.read` (kimlik maskeli), `appointment.read`, `task.read`, `treatment.read`, `audit.read`, `audit.clinic`, `integration.read`, `lab.read`, `stock.read`, `report.operations`. Sağlık içeriği, kimlik açma, finans ve yazma yok; davetle atanamaz, klinik rolüne çevrilemez.
+**Destek rolü (`support`, Görev 10, ADR-061):** yalnız yönetici süreli (≤72 sa) ve gerekçeli verir; salt okunur — `patient.read` (kimlik maskeli), `appointment.read`, `task.read`, `treatment.read`, `audit.read`, `audit.clinic`, `integration.read`, `lab.read`, `stock.read`, `report.operations`. Sağlık içeriği, kimlik açma, finans ve yazma yok; davetle atanamaz, klinik rolüne çevrilemez. **Görev 11 (ADR-064):** klinikte ≥2 etkin yönetici varsa erişim `pending` açılır ve talebi açan dışında bir yönetici (`team.manage`) onaylayana kadar etkisizdir.
+
+**Kimlik no (Görev 11, ADR-063):** `patient.identity.unmask` artık yanıtlarda açık kimlik vermez; yalnız `POST /patients/:id/identity` (gerekçe 5–200) ile, her açma `patient.identity.reveal` denetim kaydıyla.
 
 **İki adımlı doğrulama (Görev 7):** her kullanıcı Hesabım'dan açabilir. `VIADENT_REQUIRE_MFA_ROLES` (ör. `clinic_admin,finance`) listesindeki rollerde MFA'sız oturum klinik uçlarına `403 MFA_ENROLLMENT_REQUIRED` alır; yalnız Hesabım açıktır. Zorunluluk platform tabanı (ortam) ∪ klinik politikası (Yönetim → Güvenlik, `settings.manage`; Görev 10). MFA sıfırlama `team.manage` ister, gerekçe zorunludur, kendi hesabına ve başka klinikte de üye olan kullanıcıya uygulanamaz.
 

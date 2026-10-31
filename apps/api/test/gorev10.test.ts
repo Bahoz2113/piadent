@@ -44,18 +44,24 @@ afterAll(async () => { process.env.VIADENT_SECRET_KEY = K0; delete process.env.V
 describe("T.C. kimlik no: şifreli saklama, HMAC ile arama ve mükerrer kontrolü", () => {
   const id1 = tckn(Date.now() % 50000), id2 = tckn((Date.now() % 50000) + 7777);
   let pid: string;
-  it("yeni kayıtta düz metin sütunu boş, şifreli değer v2.<kid>, HMAC 64 hex; yanıtta sekreter açık / yönetici maskeli görür", async () => {
+  it("yeni kayıtta şifreli değer v2.<kid>, HMAC 64 hex; yanıtta kimlik herkese maskeli, gerekçeli uçtan açık", async () => {
     pid = (await sec.post("/patients", { firstName: "Şifre", lastName: "Deneme", birthDate: "1988-08-08", nationalIdType: "tckn", nationalId: id1 }).expect(201)).body.patient.id;
-    const row = (await ownerQuery(tenantA, "select national_id, national_id_enc, national_id_hmac from patients where id = $1", [pid]))[0];
-    expect(row.national_id).toBeNull();
+    const row = (await ownerQuery(tenantA, "select national_id_enc, national_id_hmac from patients where id = $1", [pid]))[0];
     expect(row.national_id_enc.startsWith(`v2.${currentKeyId()}.`)).toBe(true);
     expect(row.national_id_enc).not.toContain(id1);
     expect(row.national_id_hmac).toMatch(/^[0-9a-f]{64}$/);
     expect(row.national_id_hmac).toBe(indexHash(tenantA, id1));
     expect(decryptField(row.national_id_enc)).toBe(id1);
-    expect((await sec.get(`/patients/${pid}`).expect(200)).body.nationalId).toBe(id1); // sekreterde kimlik açma yetkisi var
-    const masked = (await admin.get(`/patients/${pid}`).expect(200)).body.nationalId as string;
+    // Görev 11 (ADR-063): kimlik no yanıtlarda herkese maskeli; tam değer gerekçeli uçtan
+    const masked = (await sec.get(`/patients/${pid}`).expect(200)).body.nationalId as string;
     expect(masked).not.toBe(id1); expect(masked).toMatch(/[•*]/);
+    expect((await admin.post(`/patients/${pid}/identity`, { reason: "Kimlik doğrulama" })).status).toBe(403); // yöneticide açma yetkisi yok
+    expect((await sec.post(`/patients/${pid}/identity`, { reason: "kısa" })).status).toBe(422);
+    expect((await sec.post(`/patients/${pid}/identity`, { reason: "Resmî evrak için kimlik doğrulaması" }).expect(200)).body.nationalId).toBe(id1);
+    const rev = await ownerQuery(tenantA, "select changes from audit_events where action = 'patient.identity.reveal' and patient_id = $1", [pid]);
+    expect(rev).toHaveLength(1); expect(rev[0].changes.reason.to).toBe("Resmî evrak için kimlik doğrulaması"); expect(JSON.stringify(rev)).not.toContain(id1);
+    const bDent = await login(app, EMAILS.bDentist); // B'de kimlik açma yetkisi olan rol → yine 404 (varlık sızmaz)
+    expect((await bDent.post(`/patients/${pid}/identity`, { reason: "Başka klinik denemesi" })).status).toBe(404);
     // denetim kaydında kimlik maskeli
     const a = await ownerQuery(tenantA, "select changes from audit_events where action = 'patient.create' and entity_id = $1", [pid]);
     expect(JSON.stringify(a)).not.toContain(id1);
@@ -81,8 +87,8 @@ describe("T.C. kimlik no: şifreli saklama, HMAC ile arama ve mükerrer kontrol�
     expect(JSON.stringify(rows)).not.toContain(id2);
     expect(JSON.stringify(rows)).toContain("national_id_masked");
     await admin.post(`/imports/${b.id}/commit`).expect(200);
-    const p = (await ownerQuery(tenantA, "select national_id, national_id_enc, national_id_hmac from patients where external_ref = $1", [`${run}-1`]))[0];
-    expect(p.national_id).toBeNull(); expect(decryptField(p.national_id_enc)).toBe(id2); expect(p.national_id_hmac).toBe(indexHash(tenantA, id2));
+    const p = (await ownerQuery(tenantA, "select national_id_enc, national_id_hmac from patients where external_ref = $1", [`${run}-1`]))[0];
+    expect(decryptField(p.national_id_enc)).toBe(id2); expect(p.national_id_hmac).toBe(indexHash(tenantA, id2));
   });
 
   it("dışa aktarım (hasta ve klinik) kimlik no'yu açık değerle verir, şifreli/özet sütunları taşımaz", async () => {
@@ -94,25 +100,15 @@ describe("T.C. kimlik no: şifreli saklama, HMAC ile arama ve mükerrer kontrol�
     expect(me.national_id).toBe(id1); expect(me.national_id_hmac).toBeUndefined();
   });
 
-  it("geçiş komutu: eski düz metin kayıt şifrelenir, özet üretilir, düz metin boşalır; sonra arama çalışır", async () => {
-    const legacy = tckn((Date.now() % 50000) + 31337);
-    const lp = (await ownerQuery(tenantA, `insert into patients(tenant_id, file_no, first_name, last_name, search_text, national_id_type, national_id, created_by)
-      values ($1, 999990 + (random()*9)::int, 'Eski', 'Kayıt', 'eski kayit', 'tckn', $2, (select id from users limit 1)) returning id`, [tenantA, legacy]))[0].id;
-    expect((await encryptNationalIds(OWNER_URL, false)).rows).toBeGreaterThanOrEqual(1);
-    expect((await ownerQuery(tenantA, "select national_id from patients where id = $1", [lp]))[0].national_id).toBe(legacy); // önizleme yazmadı
-    await encryptNationalIds(OWNER_URL, true);
-    const after = (await ownerQuery(tenantA, "select national_id, national_id_enc, national_id_hmac from patients where id = $1", [lp]))[0];
-    expect(after.national_id).toBeNull(); expect(decryptField(after.national_id_enc)).toBe(legacy); expect(after.national_id_hmac).toBe(indexHash(tenantA, legacy));
+  it("geçiş komutu artık düz metin sütunu olmadığı için 0 satır bildirir (0013 sonrası; sütun varken Görev 10 testinde doğrulanmıştı)", async () => {
     expect((await encryptNationalIds(OWNER_URL, false)).rows).toBe(0);
-    expect((await sec.get(`/patients?q=${legacy}`).expect(200)).body.items.some((x: { id: string }) => x.id === lp)).toBe(true);
-    expect((await sec.get(`/patients/${lp}`).expect(200)).body.nationalId).toBe(legacy);
   });
 
   it("anahtar döndürme kimlik no'ları yeniden şifreler ve özetleri yeniden hesaplar; arama yeni anahtarla çalışır", async () => {
     const K1 = randomBytes(32).toString("base64");
     process.env.VIADENT_SECRET_KEY = K1; process.env.VIADENT_SECRET_KEYS_OLD = K0;
     const rep = await rotateSecrets(OWNER_URL, true);
-    expect(rep.nationalIds).toBeGreaterThanOrEqual(2); expect(rep.failed).toBe(0);
+    expect(rep.nationalIds).toBeGreaterThanOrEqual(1); expect(rep.failed).toBe(0);
     const row = (await ownerQuery(tenantA, "select national_id_enc, national_id_hmac from patients where id = $1", [pid]))[0];
     expect(row.national_id_enc.startsWith(`v2.${currentKeyId()}.`)).toBe(true);
     expect(row.national_id_hmac).toBe(indexHash(tenantA, id1));

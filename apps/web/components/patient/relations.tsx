@@ -7,7 +7,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate } from "@/lib/format";
-import { Alert, Drawer, ErrorState, Loading, SelectField, TextField } from "@/components/ui";
+import { Alert, Drawer, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
 
 interface Relation {
   id: string; direction: "direct" | "inverse"; relationLabel: string; personPatientId: string | null; personName: string; personFileNo: number | null;
@@ -123,7 +123,7 @@ function RelationDrawer({ patientId, onClose, onSaved }: { patientId: string; on
           <>
             <TextField label="Dayanak" required value={f.representationEvidence} onChange={(e) => setF({ ...f, representationEvidence: e.target.value })}
               error={err?.fieldErrors.representationEvidence} hint="Görülen belgeyi açıklayın (örn. nüfus kayıt örneği). Belge yükleme Görev 4'te." />
-            <TextField label="Geçerlilik sonu" type="date" value={f.validUntil} onChange={(e) => setF({ ...f, validUntil: e.target.value })} hint="Örn. vesayet kararı süresi" />
+            <DateField label="Geçerlilik sonu" value={f.validUntil} onChange={(e) => setF({ ...f, validUntil: e.target.value })} hint="Örn. vesayet kararı süresi" />
             <p className="small muted">Kaydeden kullanıcı ve zaman doğrulayan olarak kayda geçer.</p>
           </>
         )}

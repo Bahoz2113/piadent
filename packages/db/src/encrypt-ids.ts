@@ -17,7 +17,9 @@ export async function encryptNationalIds(url: string, apply: boolean): Promise<{
     for (const t of tenants) {
       await c.query("begin");
       await c.query("select set_config('app.tenant_id', $1, true)", [t]);
-      const rows = (await c.query("select id, national_id from patients where national_id is not null for update")).rows;
+      // 0013 sonrası sütun yoktur: komut 0 bildirir (geriye dönük ortamlar için korunur).
+      const hasCol = (await c.query("select 1 from information_schema.columns where table_name = 'patients' and column_name = 'national_id'")).rowCount;
+      const rows = hasCol ? (await c.query("select id, national_id from patients where national_id is not null for update")).rows : [];
       rep.rows += rows.length;
       if (apply) {
         for (const r of rows) {

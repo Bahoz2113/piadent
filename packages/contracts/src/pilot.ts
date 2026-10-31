@@ -71,3 +71,5 @@ export const PasswordChange = z.object({
 }).refine((v) => v.currentPassword !== v.newPassword, { message: "Yeni parola eskisiyle aynı olamaz", path: ["newPassword"] });
 /** Yönetici: üyenin parolasını sıfırlar — tek kullanımlık geçici parola üretilir, kullanıcı ilk girişte değiştirmek zorundadır. */
 export const PasswordReset = z.object({ reason: z.string().trim().min(5, "Gerekçe gerekli").max(300) });
+/** Kimlik numarasını açma gerekçesi (ADR-063). */
+export const IdentityReveal = z.object({ reason: z.string().trim().min(5, "Gerekçe en az 5 karakter").max(200) });

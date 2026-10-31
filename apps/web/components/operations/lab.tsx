@@ -6,7 +6,7 @@ import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
-import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
+import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField, DateField } from "@/components/ui";
 import { parseMoneyInput } from "@/components/finance/money-input";
 
 export interface LabOrder {
@@ -127,7 +127,7 @@ export function NewLabOrderDrawer({ patientId, onClose, onSaved }: { patientId: 
         <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
           <TextField label="Dişler (FDI)" placeholder="16, 17" value={f.teeth} onChange={(e) => setF({ ...f, teeth: e.target.value })} error={err?.fieldErrors.teeth ?? err?.fieldErrors["teeth.0"]} />
           <TextField label="Renk" placeholder="A2" value={f.shade} onChange={(e) => setF({ ...f, shade: e.target.value })} />
-          <TextField label="Hedef teslim" type="date" min={todayIn(tz)} value={f.targetDate} onChange={(e) => setF({ ...f, targetDate: e.target.value })} error={err?.fieldErrors.targetDate} />
+          <DateField label="Hedef teslim" min={todayIn(tz)} value={f.targetDate} onChange={(e) => setF({ ...f, targetDate: e.target.value })} error={err?.fieldErrors.targetDate} />
         </div>
         <TextAreaField label="Teknik talimat (laboratuvara gider)" rows={3} value={f.instructions} onChange={(e) => setF({ ...f, instructions: e.target.value })}
           hint="Yalnız teknik bilgi yazın; tanı, sağlık öyküsü veya iletişim bilgisi yazmayın." />
@@ -184,7 +184,7 @@ export function LabOrderDrawer({ id, onClose, onChanged }: { id: string; onClose
           <div className="card card-pad stack" style={{ gap: 10 }}>
             <strong>{LAB_ACTION_LABELS[action]}</strong>
             {action === "receive" && <p className="small muted">Teslim alındı, kabul demek değildir; hekim prova/kontrol sonrası kabul eder veya revizyon ister.</p>}
-            {needsTarget && <TextField label={action === "revision" ? "Yeni hedef teslim" : "Hedef teslim"} type="date" required value={target} onChange={(e) => setTarget(e.target.value)} error={err?.fieldErrors.targetDate} />}
+            {needsTarget && <DateField label={action === "revision" ? "Yeni hedef teslim" : "Hedef teslim"} required value={target} onChange={(e) => setTarget(e.target.value)} error={err?.fieldErrors.targetDate} />}
             <TextAreaField label={needsNote ? (action === "revision" ? "Revizyon gerekçesi" : "İptal gerekçesi") : "Not (isteğe bağlı)"} required={needsNote} rows={2} value={note} onChange={(e) => setNote(e.target.value)} error={err?.fieldErrors.note} />
             <div className="row" style={{ gap: 8 }}>
               <button className="btn btn-sm" onClick={() => setAction(null)}>Vazgeç</button>

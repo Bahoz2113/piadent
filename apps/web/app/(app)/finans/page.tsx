@@ -9,7 +9,7 @@ import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
-import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, useToast } from "@/components/ui";
+import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, useToast, DateField } from "@/components/ui";
 import { parseMoneyInput } from "@/components/finance/money-input";
 
 const TABS = [
@@ -49,8 +49,8 @@ export default function FinancePage() {
       </div>
       {ranged && (
         <div className="row" style={{ gap: 8, marginBottom: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
-          <TextField label="Başlangıç" type="date" value={from} onChange={(e) => { setFrom(e.target.value); if (e.target.value > to) setTo(e.target.value); }} />
-          <TextField label="Bitiş" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
+          <DateField label="Başlangıç" value={from} onChange={(e) => { setFrom(e.target.value); if (e.target.value > to) setTo(e.target.value); }} />
+          <DateField label="Bitiş" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
           <div className="row" style={{ gap: 6, paddingBottom: 2 }}>
             <button className="btn btn-sm" onClick={() => { setFrom(today); setTo(today); }}>Bugün</button>
             <button className="btn btn-sm" onClick={() => { setFrom(addDays(today, -1)); setTo(addDays(today, -1)); }}>Dün</button>
@@ -423,7 +423,7 @@ function Settings({ notify }: { notify: (k: "success" | "error", t: string) => v
             {Object.entries(COMMISSION_BASIS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </SelectField>
           <TextField label="Oran (%)" inputMode="decimal" value={rule.rate} onChange={(e) => setRule({ ...rule, rate: e.target.value.replace(",", ".") })} error={err?.fieldErrors.rate} />
-          <TextField label="Geçerlilik" type="date" min={todayIn(tz)} value={rule.validFrom} onChange={(e) => setRule({ ...rule, validFrom: e.target.value })} error={err?.fieldErrors.validFrom} />
+          <DateField label="Geçerlilik" min={todayIn(tz)} value={rule.validFrom} onChange={(e) => setRule({ ...rule, validFrom: e.target.value })} error={err?.fieldErrors.validFrom} />
           <TextField label="Not" value={rule.note} onChange={(e) => setRule({ ...rule, note: e.target.value })} />
           <button className="btn btn-primary" disabled={!rule.rate} onClick={() => void run(() => api("/commission-rules", { body: { ...rule, practitionerId: rule.practitionerId || undefined, note: rule.note || undefined } }), "Yeni kural sürümü eklendi.", rules.reload)}>Sürüm ekle</button>
         </div>

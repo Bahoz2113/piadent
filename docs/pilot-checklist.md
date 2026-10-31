@@ -44,7 +44,8 @@ Plan F5: “Seçilmiş klinikte eğitim, paralel kontrol, veri mutabakatı.” H
 
 ## 6. Kabul ve ölçüm
 - ☐ Klinik kullanıcı kabul senaryoları (rol başına 5–8 gerçekçi akış) imzalandı
-- ☐ Tablet ve ekran okuyucuyla elle erişilebilirlik kontrolü (AT-18 kalanı)
+- ☐ Tablet ve ekran okuyucuyla elle erişilebilirlik kontrolü (AT-18 kalanı; tarih alanı takvimi dahil — Görev 11)
+- ☐ Destek erişimi: klinikte ikinci yönetici tanımlı mı (dört göz için; tek yöneticide erişim doğrudan açılır — ADR-064)
 - ☐ Paralel dönem (öneri 2 hafta): her gün sonu tahsilat/kasa toplamı iki sistemde karşılaştırıldı, fark yok veya açıklandı
 - ☐ Pilot ölçümleri için başlangıç değerleri (Plan: kazanım yüzdesi ölçülmeden iddia edilmez)
 - ☑ Performans hedefi sentetik veride ölçüldü (`performance.md`) — üretim topolojisinde tekrar ☐

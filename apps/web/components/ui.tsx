@@ -19,7 +19,7 @@ export function Drawer({ title, subtitle, onClose, children, footer, dirty }: {
     const first = ref.current?.querySelector<HTMLElement>("input, select, textarea, button:not([data-close])");
     first?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); tryClose(); }
+      if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); tryClose(); } // iç açılır pencere (takvim) Esc'i tükettiyse çekmece kapanmaz
       if (e.key === "Tab" && ref.current) {
         const items = [...ref.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex='-1'])")];
         if (!items.length) return;
@@ -175,3 +175,4 @@ export function useToast() {
   const node = toast ? <div className="toast" aria-live="polite"><Alert kind={toast.kind}>{toast.text}</Alert></div> : null;
   return { show: (kind: "success" | "error" | "info", text: string) => setToast({ kind, text }), node };
 }
+export { DateField } from "./date-field";

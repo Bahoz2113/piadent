@@ -6,7 +6,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, todayIn } from "@/lib/format";
-import { Alert, Drawer, ErrorState, Loading, SelectField, TextField } from "@/components/ui";
+import { Alert, Drawer, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
 
 type Notify = (k: "success" | "error", t: string) => void;
 interface Procedure { id: string; code: string; name: string; category: string | null; toothScope: ToothScope; defaultMinutes: number | null; active: boolean }
@@ -134,7 +134,7 @@ function NewTariffDrawer({ copyFrom, onClose, onSaved }: { copyFrom?: Tariff; on
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}
         <TextField label="Ad" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} error={err?.fieldErrors.name} />
-        <TextField label="Geçerlilik başlangıcı" type="date" required value={f.validFrom} onChange={(e) => setF({ ...f, validFrom: e.target.value })} error={err?.fieldErrors.validFrom} />
+        <DateField label="Geçerlilik başlangıcı" required value={f.validFrom} onChange={(e) => setF({ ...f, validFrom: e.target.value })} error={err?.fieldErrors.validFrom} />
         <SelectField label="Kapsam" value={f.practitionerId} onChange={(e) => setF({ ...f, practitionerId: e.target.value })} hint="Hekime özel tarife, aynı tarihteki genel tarifeye göre önceliklidir.">
           <option value="">Tüm hekimler</option>
           {res.data?.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

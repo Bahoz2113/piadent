@@ -27,7 +27,8 @@
   },
   "pnpm": {
     "overrides": {
-      "postcss": ">=8.5.23 <9"
+      "postcss": ">=8.5.23 <9",
+      "multer": ">=2.5.0 <3"
     }
   },
   "devDependencies": {

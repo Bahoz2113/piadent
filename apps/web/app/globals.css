@@ -396,3 +396,24 @@ tr.drill:hover td { background: var(--primary-tint); }
   .totals .stat { padding: var(--s3); }
   .totals .stat .value { font-size: 16px; }
 }
+
+/* ---------------------------------------------------------------- tarih alanı (ADR-066: gg.aa.yyyy + takvim) */
+.date-field { position: relative; }
+.date-field-row { display: flex; gap: 6px; align-items: stretch; }
+.date-field-row .input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
+.date-field-btn { flex: none; width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); }
+.date-field-btn:hover { background: var(--primary-tint); }
+.date-field.compact .input, .date-field.compact .date-field-btn { min-height: 40px; }
+.date-pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 60; width: 296px; max-width: calc(100vw - 32px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: var(--s3); }
+.date-pop-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s2); }
+.date-pop-head .btn-icon { min-height: 36px; width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.date-grid-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.date-dow { text-align: center; font-size: 12px; color: var(--text-secondary); padding: 4px 0; font-weight: 600; }
+.date-day { min-height: 36px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; font: inherit; font-size: 14px; cursor: pointer; }
+.date-day:hover:not(:disabled) { background: var(--primary-tint); }
+.date-day:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.date-day.is-today { border-color: var(--brand-accent); }
+.date-day.is-selected { background: var(--brand-primary); color: #fff; font-weight: 600; }
+.date-day:disabled { color: var(--text-secondary); opacity: .45; cursor: not-allowed; }
+.date-day.is-empty { pointer-events: none; }
+.date-pop-foot { display: flex; gap: var(--s2); justify-content: flex-end; margin-top: var(--s2); }

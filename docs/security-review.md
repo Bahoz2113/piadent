@@ -38,13 +38,13 @@ Kapsam: Plan §08 “Teknik güvenlik tabanı” maddeleri + Görev 7'de eklenen
 | A1 | Bağımsız sızma testi yapılmadı | Yüksek (kapı) | Pilot öncesi dış test; kapsam: kimlik/oturum, çapraz klinik, dosya, webhook, içe aktarma |
 | A2 | ~~Hız sınırlayıcı bellek içi~~ → **kapandı (Görev 8)**: PostgreSQL'de paylaşılan sayaç, anahtar özetli (ADR-053); iki uygulama örneğinde aynı kilit testli | — | Genel istek sınırı ters vekilde önerilir |
 | A3 | ~~Tek anahtar, döndürme yok~~ → **kapandı (Görev 8)**: sürümlü anahtar halkası + `db:rotate-keys` (ADR-052), uçtan uca testli | — | KMS/secret manager barındırma kararıyla |
-| A4 | ~~T.C. kimlik no şifresiz~~ → **kapandı (Görev 10)**, ADR-059 | — | Düz metin sütunu geçişten sonra kaldırılacak |
+| A4 | ~~T.C. kimlik no şifresiz~~ → **kapandı (Görev 10)**, ADR-059; düz metin sütunu kaldırıldı (Görev 11, ADR-062); tam değer yalnız gerekçeli ve denetimli (ADR-063) | — | — |
 | A5 | ~~CSP `script-src 'unsafe-inline'`~~ → **kapandı (Görev 8)**: nonce + `strict-dynamic`; E2E'de gezinmede CSP ihlali 0 | — | — |
 | A6 | ~~MFA zorunluluğu yalnız ortam değişkeniyle~~ → **kapandı (Görev 10)**: klinik politikası (ADR-060); üretimde platform tabanı yine önerilir | — | — |
 | A7 | ~~API/worker tsx ile~~ → **kapandı (Görev 8)**: derlenmiş tek dosya; tam E2E derlenmiş kodla geçti | — | İmajlar CI'da ilk kez derlenmeli |
 | A8 | ~~İçe aktarma satır verisi süresiz~~ → **kısmen kapandı (Görev 8)**: worker 30 gün sonra temizler (ADR-054) | Düşük | Süreyi danışmanla kesinleştirin |
-| A11 | Kilitleme DoS'u (hesap başına 20 hatalı deneme → 15 dk kilit) | Düşük | Kademeli gecikme veya CAPTCHA değerlendirmesi |
-| A9 | ~~Destek erişim modeli yok~~ → **ilk sürüm kapandı (Görev 10)**: süreli salt okunur `support` rolü (ADR-061) | Düşük | Platform tarafı talep/ikinci onay akışı |
+| A11 | Kilitleme DoS'u (hesap başına 20 hatalı deneme → 15 dk kilit) | Düşük (kabul) | **Azaltıldı (Görev 11)**: 3. hatadan itibaren sınırlı kademeli gecikme (ADR-065). Kilit eşiği korunur; CAPTCHA bilinçli eklenmedi |
+| A9 | ~~Destek erişim modeli yok~~ → **kapandı (Görev 10)**: süreli salt okunur `support` rolü (ADR-061); **ikinci onay (dört göz) eklendi (Görev 11, ADR-064)** | Düşük | Platform tarafı talep başlatma akışı (pilot sonrası) |
 | A10 | Ekran okuyucuyla elle erişilebilirlik testi yok (AT-18 kısmi) | — | Pilot kontrol listesinde |
 
 ## Görev 8'de ayrıca bulunup düzeltilenler
@@ -85,5 +85,14 @@ Doğrulanıp **sorun bulunmayan** alanlar: dinamik SQL yalnız sunucu tarafı sa
 | — | Oturum listesi arayüzü yok | **Kapandı**: Hesabım → Açık oturumlar + diğerlerini kapat |
 | A11 | Kilitleme DoS'u | Açık (kabul edilen risk); kademeli gecikme sızma testi sonucuna göre |
 
+## Görev 11 (26.10.2026) — kapanışlar
+| # | Bulgu | Durum |
+|---|---|---|
+| A4 (kalan) | Düz metin kimlik no sütunu geçiş döneminde duruyordu | **Kapandı**: 0013 sütunu kaldırır, düz satır kalmışsa durur (ADR-062) |
+| — | Kimlik no izinli kullanıcıya her yanıtta açık dönüyordu | **Kapandı**: herkese maskeli; gerekçeli açma + `patient.identity.reveal` denetimi (ADR-063); çapraz klinik 404 testli |
+| A9 (kalan) | Destek erişimi tek yönetici kararıyla açılıyordu | **Kapandı**: ≥2 yöneticili klinikte `pending` + başka yöneticinin onayı; açan onaylayamaz (409), yabancı klinik 404, hekim 403 (ADR-064) |
+| A11 | Kilitleme DoS'u | **Azaltıldı**: sınırlı kademeli gecikme; süre ölçen test (ADR-065) |
+| — | `pnpm audit`: multer < 2.5.0 (platform-express'in dolaylı bağımlılığı; dosya yükleme bu kütüphaneyle yapılmıyor) — DoS | **Kapandı**: pnpm override `multer >=2.5.0 <3`; audit temiz |
+
 ## Çalıştırılan kontroller
-`pnpm audit` → “No known vulnerabilities found” (23.10.2026). `security.test.ts` 12/12, `gorev7.test.ts` 23/23 (MFA, dışa aktarımda sır yok, çapraz klinik). Depo sır taraması: özel anahtar, AWS/Stripe/Slack/GitHub belirteç kalıpları — 0 bulgu.
+`pnpm audit` → “No known vulnerabilities found” (26.10.2026; multer override sonrası). `security.test.ts` 12/12, `gorev7.test.ts` 23/23 (MFA, dışa aktarımda sır yok, çapraz klinik). Depo sır taraması: özel anahtar, AWS/Stripe/Slack/GitHub belirteç kalıpları — 0 bulgu.

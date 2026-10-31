@@ -6,7 +6,7 @@ import { formatTRY, type ColumnType, type Drill, type ReportColumn, type ReportD
 import { api, ApiFailure, getPageContext } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fmtDate, fmtDateTime } from "@/lib/format";
-import { Alert, EmptyState, ErrorState, Loading, SelectField, TextField } from "@/components/ui";
+import { Alert, EmptyState, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
 
 interface Catalog {
   reports: (ReportDef & { ownOnly: boolean })[]; canExport: boolean; today: string;
@@ -142,8 +142,8 @@ export default function ReportsPage() {
               {def.filters.map((f) => {
                 if (f.kind === "range") return (
                   <div key="range" className="row" style={{ gap: 8 }}>
-                    <TextField label="Başlangıç" type="date" value={params.from ?? ""} onChange={(e) => setParams({ ...params, from: e.target.value })} />
-                    <TextField label="Bitiş" type="date" value={params.to ?? ""} onChange={(e) => setParams({ ...params, to: e.target.value })} />
+                    <DateField label="Başlangıç" value={params.from ?? ""} onChange={(e) => setParams({ ...params, from: e.target.value })} />
+                    <DateField label="Bitiş" value={params.to ?? ""} onChange={(e) => setParams({ ...params, to: e.target.value })} />
                   </div>);
                 const opts: [string, string][] = f.kind === "practitioner" ? [...(def.ownOnly ? [] : [["", "Tümü"] as [string, string]]), ...cat.options.practitioners.map((p) => [p.id, p.name] as [string, string])]
                   : f.kind === "procedure" ? [["", "Tümü"], ...cat.options.procedures.map((p) => [p.id, p.name] as [string, string])]

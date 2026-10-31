@@ -18,7 +18,7 @@ export const EMAILS = {
 
 export async function startApp(overrides: Partial<import("../src/config.js").AppConfig> = {}, opts: { keepThrottle?: boolean } = {}): Promise<INestApplication> {
   if (!opts.keepThrottle) await resetRateLimiter();
-  const app = await createApp(loadConfig({ databaseUrl: APP_URL, port: 0, ...overrides }), { logger: process.env.DEBUG_API ? undefined : false });
+  const app = await createApp(loadConfig({ databaseUrl: APP_URL, port: 0, loginBackoffMaxMs: 0, ...overrides }), { logger: process.env.DEBUG_API ? undefined : false });
   await app.init();
   return app;
 }

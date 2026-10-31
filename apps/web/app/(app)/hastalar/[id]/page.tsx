@@ -12,7 +12,7 @@ import { formatPhone } from "@viadent/contracts";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, initials } from "@/lib/format";
-import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast } from "@/components/ui";
+import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast, DateField } from "@/components/ui";
 import type { Appt, Task } from "@/lib/types";
 import { RelationsCard } from "@/components/patient/relations";
 import { AnamnesisPanel } from "@/components/patient/anamnesis";
@@ -66,6 +66,14 @@ function PatientInner() {
   const [tab, setTab] = useState<TabId>(() => (TABS.some((t) => t.id === params.get("sekme")) ? (params.get("sekme") as TabId) : "ozet"));
   const [editing, setEditing] = useState(params.get("duzenle") === "1");
   const toast = useToast();
+  const [revealed, setRevealed] = useState<string | null>(null);
+  // Kimlik no varsayılan maskeli; tam değer gerekçeyle açılır ve denetim kaydına yazılır (ADR-063).
+  async function reveal() {
+    const reason = window.prompt("Kimlik numarasını görme gerekçeniz (denetim kaydına yazılır):");
+    if (!reason) return;
+    try { setRevealed((await api<{ nationalId: string }>(`/patients/${id}/identity`, { body: { reason } })).nationalId); }
+    catch (e) { toast.show("error", (e as ApiFailure).message); }
+  }
   const patient = useData<Patient>(`/patients/${id}`);
   const appts = useData<{ items: Appt[] }>(`/patients/${id}/appointments`);
   const tasks = useData<{ items: Task[] }>(`/tasks?patientId=${id}`);
@@ -161,7 +169,8 @@ function PatientInner() {
                 <dl className="kv">
                   <dt>Doğum tarihi</dt><dd>{fmtDate(p.birthDate)}</dd>
                   <dt>Cinsiyet</dt><dd>{p.gender ? GENDER_LABELS[p.gender] : "Belirtilmedi"}</dd>
-                  <dt>Kimlik belgesi</dt><dd>{p.nationalIdType ? `${NATIONAL_ID_LABELS[p.nationalIdType]}: ${p.nationalId}` : "Belirtilmedi"}</dd>
+                  <dt>Kimlik belgesi</dt><dd>{p.nationalIdType ? <>{NATIONAL_ID_LABELS[p.nationalIdType]}: {revealed ?? p.nationalId}
+                    {can("patient.identity.unmask") && !revealed && <button className="btn btn-sm btn-ghost" style={{ marginLeft: 6 }} onClick={() => void reveal()}>Göster</button>}</> : "Belirtilmedi"}</dd>
                   <dt>E-posta</dt><dd>{p.email ?? "Belirtilmedi"}</dd>
                   <dt>Şehir</dt><dd>{p.city ?? "Belirtilmedi"}</dd>
                   <dt>Nereden duydu</dt><dd>{p.referralSource ?? "Belirtilmedi"}</dd>
@@ -327,7 +336,7 @@ function EditPatient({ p, practitioners, onClose, onSaved }: { p: Patient; pract
         <div className="form-grid">
           <TextField label="Ad" required value={f.firstName} onChange={set("firstName")} error={err?.fieldErrors.firstName} />
           <TextField label="Soyad" required value={f.lastName} onChange={set("lastName")} error={err?.fieldErrors.lastName} />
-          <TextField label="Doğum tarihi" type="date" value={f.birthDate} onChange={set("birthDate")} error={err?.fieldErrors.birthDate} />
+          <DateField label="Doğum tarihi" value={f.birthDate} onChange={set("birthDate")} error={err?.fieldErrors.birthDate} />
           <SelectField label="Cinsiyet" value={f.gender} onChange={set("gender")}>
             <option value="">Seçilmedi</option>{GENDERS.map((g) => <option key={g} value={g}>{GENDER_LABELS[g]}</option>)}
           </SelectField>

@@ -6,7 +6,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
-import { Alert, Drawer, EmptyState, TextField } from "@/components/ui";
+import { Alert, Drawer, EmptyState, TextField, DateField } from "@/components/ui";
 
 interface FollowUp { id: string; dueDate: string; reason: string; status: string; cancelReason: string | null; practitioner: string | null; by: string; appointmentAt: string | null }
 
@@ -50,7 +50,7 @@ export function FollowUpsCard({ patientId }: { patientId: string }) {
           footer={<><button className="btn" onClick={() => setAdding(false)}>Vazgeç</button><button className="btn btn-primary" onClick={() => void save()}>Kaydet</button></>}>
           <div className="stack">
             {err && <Alert kind="error">{err.message}</Alert>}
-            <TextField label="Kontrol tarihi" type="date" required min={addDays(todayIn(tz), 1)} value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} error={err?.fieldErrors.dueDate} />
+            <DateField label="Kontrol tarihi" required min={addDays(todayIn(tz), 1)} value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} error={err?.fieldErrors.dueDate} />
             <TextField label="Gerekçe" required value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} error={err?.fieldErrors.reason} />
           </div>
         </Drawer>

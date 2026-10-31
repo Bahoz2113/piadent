@@ -36,7 +36,8 @@ test("veri aktarımı: CSV ön kontrol → hatalı satır görünür → onay �
   await page.goto("/yonetim?sekme=aktarim");
   await expect(page.getByRole("heading", { name: "Önceki sistemden veri aktarımı" })).toBeVisible();
   const run = randomUUID().slice(0, 6).toUpperCase();
-  const tag = run.replace(/[0-9]/g, (d) => "ABCDEFGHIJ"[Number(d)]!).toLowerCase(); // her çalıştırmada benzersiz soyad (mükerrer aday olmasın)
+  // her çalıştırmada benzersiz soyad (mükerrer aday olmasın); 'i'/'I' dışlanır: ad normalizasyonu Türkçe büyük/küçük (I→ı) uygular, metin eşleşmesi bozulurdu
+  const tag = run.replace(/[0-9]/g, (d) => "ABCDEFGHJK"[Number(d)]!).toLowerCase();
   const last = `Aktarım${tag[0]!.toUpperCase()}${tag.slice(1)}`;
   const csv = `Kaynak_No;Adı;Soyadı;Doğum Tarihi;Telefon\r\n${run}-1;Deniz;${last};03.04.1990;\r\n${run}-2;Bora;;99.99.1990;\r\n${run}-3;Ece;${last};;\r\n`;
   await page.getByLabel(/^Dosya/).setInputFiles({ name: `e2e-${run}.csv`, mimeType: "text/csv", buffer: Buffer.from(`﻿${csv}`) });

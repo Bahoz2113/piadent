@@ -5,7 +5,7 @@ import { permissionsFor, ROLE_LABELS, type Role } from "@viadent/contracts";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
 import { CONFIG, type AppConfig } from "../config.js";
-import { ACCOUNT_MAX_FAILS, clearFails, isLocked, recordFail } from "./rate-limit.js";
+import { ACCOUNT_MAX_FAILS, clearFails, isLocked, recordFail, backoffMs, failCount } from "./rate-limit.js";
 import type { RequestContext } from "../infra/context.js";
 
 
@@ -53,6 +53,9 @@ export class AuthService {
     if (!user || !ok || user.status !== "active") {
       await recordFail(this.db.pool, key);
       await recordFail(this.db.pool, acct);
+      // Kademeli gecikme: hesap sayacına göre, sınırlı (A11 — kilit eşiğinden önce tahmin hızını düşürür)
+      const wait = backoffMs(await failCount(this.db.pool, acct), this.config.loginBackoffMaxMs);
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
       throw new AppError(401, "INVALID_CREDENTIALS", "E-posta veya parola hatalı.");
     }
     await clearFails(this.db.pool, key);

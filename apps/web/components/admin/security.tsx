@@ -9,11 +9,11 @@ import { Alert, ErrorState, Loading, SelectField, TextAreaField, TextField } fro
 
 type Notify = (k: "success" | "error", t: string) => void;
 interface Policy { requireMfaRoles: string[]; platformRequireMfaRoles: string[]; roles: { id: string; label: string }[] }
-interface Grant { id: string; email: string; fullName: string; createdAt: string; expiresAt: string; revokedAt: string | null; reason: string; active: boolean }
+interface Grant { id: string; email: string; fullName: string; createdAt: string; expiresAt: string; revokedAt: string | null; reason: string; active: boolean; status: "pending" | "active" | "revoked"; createdBy: string | null; approvedBy: string | null; canApprove: boolean }
 
 export function SecurityPanel({ notify }: { notify: Notify }) {
   const pol = useData<Policy>("/security/policy");
-  const grants = useData<{ items: Grant[] }>("/security/support-grants");
+  const grants = useData<{ items: Grant[]; fourEyes: boolean }>("/security/support-grants");
   const [sel, setSel] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<ApiFailure | null>(null);
@@ -28,9 +28,15 @@ export function SecurityPanel({ notify }: { notify: Notify }) {
   async function grant() {
     setBusy(true); setErr(null);
     try {
-      await api("/security/support-grants", { body: { email: g.email, hours: Number(g.hours), reason: g.reason } });
-      notify("success", "Destek erişimi verildi; süre dolunca kendiliğinden kapanır."); setG({ email: "", hours: "4", reason: "" }); await grants.reload();
+      const r = await api<{ status: string }>("/security/support-grants", { body: { email: g.email, hours: Number(g.hours), reason: g.reason } });
+      notify("success", r.status === "pending" ? "Destek talebi açıldı; başka bir yönetici onaylayınca etkinleşir." : "Destek erişimi verildi; süre dolunca kendiliğinden kapanır."); setG({ email: "", hours: "4", reason: "" }); await grants.reload();
     } catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
+  }
+  async function approve(id: string) {
+    setBusy(true);
+    try { await api(`/security/support-grants/${id}/approve`, { body: {} }); notify("success", "Destek erişimi onaylandı ve etkinleşti."); await grants.reload(); }
+    catch (e) { notify("error", (e as ApiFailure).message); }
+    finally { setBusy(false); }
   }
   async function revoke(id: string) {
     const reason = window.prompt("Destek erişimi erken sonlandırılacak. Gerekçe (isteğe bağlı):");
@@ -73,7 +79,8 @@ export function SecurityPanel({ notify }: { notify: Notify }) {
           </SelectField>
           <TextAreaField className="full" label="Gerekçe (destek talebi / sorun)" required value={g.reason} onChange={(e) => setG({ ...g, reason: e.target.value })} error={err?.fieldErrors.reason} />
         </div>
-        <div><button className="btn" disabled={busy || !g.email || g.reason.trim().length < 10} onClick={() => void grant()}>Destek erişimi ver</button></div>
+        <div><button className="btn" disabled={busy || !g.email || g.reason.trim().length < 10} onClick={() => void grant()}>Destek erişimi ver</button>
+          {grants.data?.fourEyes && <span className="muted small" style={{ marginLeft: 12 }}>Dört göz kuralı: klinikte birden fazla yönetici var; talep ikinci bir yöneticinin onayıyla etkinleşir.</span>}</div>
         {grants.data && grants.data.items.length > 0 && (
           <div className="table-wrap"><table className="table"><thead><tr><th>Hesap</th><th>Gerekçe</th><th>Bitiş</th><th>Durum</th><th /></tr></thead>
             <tbody>{grants.data.items.map((x) => (
@@ -81,8 +88,12 @@ export function SecurityPanel({ notify }: { notify: Notify }) {
                 <td><strong>{x.fullName}</strong><div className="muted small">{x.email}</div></td>
                 <td className="small">{x.reason}</td>
                 <td className="small">{fmtDateTime(x.expiresAt)}</td>
-                <td>{x.active ? <span className="badge badge-success">Etkin</span> : <span className="badge badge-neutral">{x.revokedAt ? "Kaldırıldı" : "Süresi doldu"}</span>}</td>
-                <td style={{ textAlign: "right" }}>{x.active && <button className="btn btn-sm btn-danger" disabled={busy} onClick={() => void revoke(x.id)}>Kaldır</button>}</td>
+                <td>{x.status === "pending" && new Date(x.expiresAt) > new Date() ? <span className="badge badge-warning" title={x.createdBy ? `Talep: ${x.createdBy}` : undefined}>Onay bekliyor</span> : x.active ? <span className="badge badge-success" title={x.approvedBy ? `Onaylayan: ${x.approvedBy}` : undefined}>Etkin</span> : <span className="badge badge-neutral">{x.revokedAt ? "Kaldırıldı" : "Süresi doldu"}</span>}</td>
+                <td style={{ textAlign: "right" }}>
+                  {x.canApprove && new Date(x.expiresAt) > new Date() && <button className="btn btn-sm" disabled={busy} onClick={() => void approve(x.id)}>Onayla</button>}
+                  {x.status === "pending" && !x.canApprove && new Date(x.expiresAt) > new Date() && <span className="muted small">Başka bir yönetici onaylamalı</span>}
+                  {x.active && <button className="btn btn-sm btn-danger" disabled={busy} onClick={() => void revoke(x.id)}>Kaldır</button>}
+                </td>
               </tr>
             ))}</tbody>
           </table></div>

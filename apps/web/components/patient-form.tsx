@@ -1,4 +1,5 @@
 "use client";
+import { DateField } from "@/components/ui";
 import { useState } from "react";
 import { GENDERS, GENDER_LABELS, NATIONAL_ID_LABELS, NATIONAL_ID_TYPES } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
@@ -86,7 +87,7 @@ export function NewPatientDrawer({ onClose, onCreated, initialName }: { onClose:
         <div className="form-grid">
           <TextField label="Ad" required value={f.firstName} onChange={set("firstName")} error={errors.firstName} autoComplete="off" />
           <TextField label="Soyad" required value={f.lastName} onChange={set("lastName")} error={errors.lastName} autoComplete="off" />
-          <TextField label="Doğum tarihi" type="date" max={todayIn(tz)} value={f.birthDate} onChange={set("birthDate")} error={errors.birthDate} hint="Bilinmiyorsa boş bırakın." />
+          <DateField label="Doğum tarihi" max={todayIn(tz)} value={f.birthDate} onChange={set("birthDate")} error={errors.birthDate} hint="Bilinmiyorsa boş bırakın." />
           <SelectField label="Cinsiyet" value={f.gender} onChange={set("gender")}>
             <option value="">Seçilmedi</option>
             {GENDERS.map((g) => <option key={g} value={g}>{GENDER_LABELS[g]}</option>)}

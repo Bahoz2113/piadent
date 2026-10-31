@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Patch, Post, Query } from "@nestjs/common";
-import { PatientCreate, PatientSearchQuery, PatientUpdate } from "@viadent/contracts";
+import { IdentityReveal, PatientCreate, PatientSearchQuery, PatientUpdate } from "@viadent/contracts";
 import { PatientsService } from "./patients.service.js";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Errors, parse } from "../infra/errors.js";
@@ -37,6 +37,15 @@ export class PatientsController {
     const p = await this.patients.get(ctx, id);
     if (!p) throw Errors.notFound("Hasta");
     return p;
+  }
+
+  /** Kimlik numarasını gerekçeyle göster (denetimli). */
+  @Post(":id/identity")
+  @HttpCode(200)
+  @Require("patient.identity.unmask")
+  reveal(@Ctx() ctx: RequestContext, @Param("id", uuidPipe) id: string, @Body() body: unknown) {
+    const { reason } = parse(IdentityReveal, body);
+    return this.patients.revealIdentity(ctx, id, reason);
   }
 
   @Patch(":id")

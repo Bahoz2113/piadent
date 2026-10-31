@@ -30,3 +30,16 @@ export async function recordFail(pool: pg.Pool, key: string): Promise<void> {
 export async function clearFails(pool: pg.Pool, key: string): Promise<void> {
   await pool.query("delete from auth_throttle where key_hash = $1", [h(key)]);
 }
+
+export async function failCount(pool: pg.Pool, key: string): Promise<number> {
+  const r = await pool.query("select fail_count from auth_throttle where key_hash = $1 and first_at > now() - make_interval(secs => $2)", [h(key), WINDOW_SECONDS]);
+  return r.rows[0]?.fail_count ?? 0;
+}
+
+/** Kademeli gecikme (ADR-065): 3. hatadan itibaren (n-2)×400 ms, üst sınır maxMs. Kilide gelmeden tahmin hızını düşürür; üst sınır kilitleme DoS'unu büyütmez. */
+export const BACKOFF_STEP_MS = 400;
+export const BACKOFF_FROM_FAIL = 3;
+export function backoffMs(fails: number, maxMs: number): number {
+  if (maxMs <= 0 || fails < BACKOFF_FROM_FAIL) return 0;
+  return Math.min((fails - BACKOFF_FROM_FAIL + 1) * BACKOFF_STEP_MS, maxMs);
+}

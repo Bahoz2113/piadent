@@ -20,15 +20,13 @@ export interface DuplicateCandidate {
   reason: string;
 }
 
-// national_id (düz metin) yalnız geçiş dönemi: yeni kayıtlar national_id_enc + national_id_hmac ile yazılır (ADR-059).
-const COLUMNS = `p.id, p.file_no, p.first_name, p.last_name, p.birth_date, p.gender, p.national_id_type, p.national_id, p.national_id_enc,
+// Kimlik no yalnız şifreli (national_id_enc) + HMAC dizini (ADR-059); düz metin sütunu 0013 ile kaldırıldı.
+const COLUMNS = `p.id, p.file_no, p.first_name, p.last_name, p.birth_date, p.gender, p.national_id_type, p.national_id_enc,
   p.phone_e164, p.email, p.city, p.preferred_language, p.primary_practitioner_id, p.referral_source, p.status,
   p.created_at, p.updated_at, p.version`;
 
-/** Şifreli sütun varsa çözer; geçiş döneminde düz metin sütunu okunur. */
-function plainNationalId(r: { national_id?: string | null; national_id_enc?: string | null }): string | null {
-  if (r.national_id_enc) return decryptField(r.national_id_enc);
-  return r.national_id ?? null;
+function plainNationalId(r: { national_id_enc?: string | null }): string | null {
+  return r.national_id_enc ? decryptField(r.national_id_enc) : null;
 }
 
 function ageOn(birth: string | null, today: string): number | null {
@@ -57,7 +55,8 @@ export class PatientsService {
       age: ageOn(r.birth_date, today),
       gender: r.gender,
       nationalIdType: r.national_id_type,
-      nationalId: unmask ? plainNationalId(r) : maskNationalId(plainNationalId(r)),
+      // Kimlik no yanıtlarda her zaman maskeli; tam değer yalnız gerekçeli, denetimli ayrı uçtan (ADR-063). Telefon işletim gereği açık kalır.
+      nationalId: maskNationalId(plainNationalId(r)),
       phone: unmask ? r.phone_e164 : maskPhone(r.phone_e164),
       phoneMasked: !unmask && !!r.phone_e164,
       email: r.email,
@@ -97,21 +96,20 @@ export class PatientsService {
     const name = normalizeSearch(`${input.firstName} ${input.lastName}`);
     const r = await c.query(
       `select id, file_no, first_name, last_name, birth_date, phone_e164,
-              ((national_id_hmac is not null and national_id_hmac = $7) or (national_id is not null and national_id_type = $1 and national_id = $2)) as same_id,
-              search_text = $3 as same_name,
-              similarity(search_text, $3) as sim,
-              ($4::date is not null and birth_date = $4::date) as same_birth,
-              ($5::text is not null and phone_digits = $5) as same_phone
+              (national_id_hmac is not null and national_id_hmac = $1) as same_id,
+              search_text = $2 as same_name,
+              similarity(search_text, $2) as sim,
+              ($3::date is not null and birth_date = $3::date) as same_birth,
+              ($4::text is not null and phone_digits = $4) as same_phone
          from patients
-        where status = 'active' and ($6::uuid is null or id <> $6::uuid)
-          and ( ($7::text is not null and national_id_hmac = $7) or ($2::text is not null and national_id_type = $1 and national_id = $2)
-             or ($4::date is not null and birth_date = $4::date and search_text % $3)
-             or ($5::text is not null and phone_digits = $5)
-             or search_text = $3 )
+        where status = 'active' and ($5::uuid is null or id <> $5::uuid)
+          and ( ($1::text is not null and national_id_hmac = $1)
+             or ($3::date is not null and birth_date = $3::date and search_text % $2)
+             or ($4::text is not null and phone_digits = $4)
+             or search_text = $2 )
         order by same_id desc, sim desc
         limit 10`,
-      [input.nationalIdType ?? null, input.nationalId ?? null, name, input.birthDate ?? null, input.phoneDigits ?? null, excludeId ?? null,
-       input.nationalId ? indexHash(ctx.tenantId, input.nationalId) : null],
+      [input.nationalId ? indexHash(ctx.tenantId, input.nationalId) : null, name, input.birthDate ?? null, input.phoneDigits ?? null, excludeId ?? null],
     );
     const unmask = has(ctx, "patient.identity.unmask");
     return r.rows.map((x) => {
@@ -195,7 +193,7 @@ export class PatientsService {
            from patients p left join practitioners pr on pr.id = p.primary_practitioner_id
           where p.status = 'active' and (
                 $1::boolean is false
-             or ($2::boolean and (p.file_no = $7::bigint or (length($3) >= 7 and p.phone_digits like '%' || $3 || '%') or (length($3) between 4 and 6 and p.phone_digits like '%' || $3) or ($8::text is not null and p.national_id_hmac = $8) or p.national_id = $3))
+             or ($2::boolean and (p.file_no = $7::bigint or (length($3) >= 7 and p.phone_digits like '%' || $3 || '%') or (length($3) between 4 and 6 and p.phone_digits like '%' || $3) or ($8::text is not null and p.national_id_hmac = $8)))
              or (not $2::boolean and ${tokenSql} and cardinality($4::text[]) > 0) )
           order by case when $2::boolean then (p.file_no = $7::bigint)::int else 0 end desc,
                    case when $5 <> '' and not $2::boolean then similarity(p.search_text, $5) else 0 end desc, p.last_name, p.first_name
@@ -204,6 +202,18 @@ export class PatientsService {
          isNumeric && digits.length === 11 ? indexHash(ctx.tenantId, digits) : null, ...tokens],
       );
       return r.rows.map((row) => this.present(ctx, row));
+    });
+  }
+
+  /** Tam kimlik no: gerekçe zorunlu, her açma denetim kaydına yazılır (hasta bazlı iz, VİA İz'de görünür). */
+  async revealIdentity(ctx: RequestContext, id: string, reason: string) {
+    return this.db.tx(ctx, async (c) => {
+      const r = await c.query("select national_id_type, national_id_enc from patients where id = $1", [id]);
+      if (!r.rowCount) throw Errors.notFound("Hasta");
+      const row = r.rows[0];
+      await audit(c, ctx, { action: "patient.identity.reveal", entityType: "patient", entityId: id, patientId: id,
+        changes: { reason: { from: null, to: reason }, field: { from: null, to: "national_id" } } });
+      return { nationalIdType: row.national_id_type, nationalId: plainNationalId(row) };
     });
   }
 

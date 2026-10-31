@@ -6,7 +6,7 @@ import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
-import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
+import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField, DateField } from "@/components/ui";
 import { minor, money, parseMoneyInput } from "./money-input";
 import { OnlinePayments, ProviderRefundDrawer } from "./online-payments";
 
@@ -390,7 +390,7 @@ function ReceivableDrawer({ patientId, onClose, onSaved }: { patientId: string; 
           <option value="">Yok</option>
           {res.data?.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </SelectField>
-        <TextField label="Vade" type="date" value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} />
+        <DateField label="Vade" value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} />
       </div>
     </Drawer>
   );

@@ -10,7 +10,7 @@ import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDateTime, fmtLongDay, fmtTime, minutesOfDay, todayIn } from "@/lib/format";
 import type { AgendaContext, Appt, Resources } from "@/lib/types";
-import { Alert, ContactBadge, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast } from "@/components/ui";
+import { Alert, ContactBadge, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast, DateField } from "@/components/ui";
 import { NewPatientDrawer } from "@/components/patient-form";
 
 const DAY_START = 8 * 60;
@@ -109,8 +109,7 @@ function AgendaInner() {
         <button className="btn icon-btn" aria-label={view === "week" ? "Önceki hafta" : "Önceki gün"} onClick={() => setDate(addDays(date, view === "week" ? -7 : -1))}><ChevronLeft size={18} /></button>
         <button className="btn" onClick={() => setDate(today)}>Bugün</button>
         <button className="btn icon-btn" aria-label={view === "week" ? "Sonraki hafta" : "Sonraki gün"} onClick={() => setDate(addDays(date, view === "week" ? 7 : 1))}><ChevronRight size={18} /></button>
-        <label className="sr-only" htmlFor="ag-date">Tarih seç</label>
-        <input id="ag-date" type="date" className="input" style={{ width: 170, minHeight: 40 }} value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+        <DateField id="ag-date" label="Tarih seç" hideLabel className="compact" style={{ width: 200 }} value={date} today={today} onChange={(e) => e.target.value && setDate(e.target.value)} />
         <div style={{ flex: 1 }} />
         <div className="row" role="group" aria-label="Süre">
           <button className={`btn btn-sm ${view === "day" ? "btn-primary" : ""}`} aria-pressed={view === "day"} onClick={() => setView("day")}>Gün</button>
@@ -327,7 +326,7 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
           <SelectField label="Hekim" required value={f.practitionerId} onChange={set("practitionerId")} error={err?.fieldErrors.practitionerId}>
             {resources.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </SelectField>
-          <TextField label="Tarih" type="date" required value={f.date} onChange={set("date")} error={err?.fieldErrors.date} />
+          <DateField label="Tarih" required value={f.date} onChange={set("date")} error={err?.fieldErrors.date} />
           <TextField label="Saat" type="time" required step={300} value={f.startTime} onChange={set("startTime")} error={err?.fieldErrors.startTime} />
           <SelectField label="Süre" value={f.durationMinutes} onChange={set("durationMinutes")} error={err?.fieldErrors.durationMinutes}>
             {durations.map((m) => <option key={m} value={m}>{m} dakika</option>)}

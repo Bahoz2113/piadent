@@ -133,6 +133,7 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 
 ## Görev 10 (0012_security_hardening)
 - `mfa_recovery_codes` (kullanıcı, SHA-256 özet, kullanıldı) · `tenants.require_mfa_roles text[]` (uygulama rolü yalnız bu sütunu günceller; RLS update politikası) · `patients.national_id_enc` (ADR-052 biçimi) + `national_id_hmac` (HKDF türevi anahtarla, kiracıya bağlı; benzersiz dizin etkin kayıtlarda) + tutarlılık check'leri; düz metin `national_id` geçiş dönemi · `memberships.expires_at`, `grant_reason`; rol listesine `support` (süreli/gerekçesiz olamaz check'i).
+- **Görev 11:** `0013` düz metin `patients.national_id` kaldırıldı (düz satır kalmışsa migration durur; tutarlılık check'i tür ↔ şifreli değer) · `0014` `memberships.status` ∈ {pending, active, revoked} (`pending` yalnız `support`), `created_by`, `approved_by`, `approved_at` (dört göz, ADR-064).
 
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).

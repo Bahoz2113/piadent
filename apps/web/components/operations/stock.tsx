@@ -6,7 +6,7 @@ import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime } from "@/lib/format";
-import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
+import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField, DateField } from "@/components/ui";
 import { parseMoneyInput } from "@/components/finance/money-input";
 
 interface Lot { id: string; lotNo: string; expiry: string | null; balance: string; expired: boolean; expiringSoon: boolean }
@@ -141,7 +141,7 @@ function StockOpDrawer({ op, item, onClose, onSaved }: { op: Op; item: Item; onC
           <TextField label={`Miktar (${STOCK_UNIT_LABELS[item.unit]})`} required inputMode="decimal" value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} error={err?.fieldErrors.quantity} />
           {item.trackLots && <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
             <TextField label="Lot no" required value={f.lotNo} onChange={(e) => setF({ ...f, lotNo: e.target.value })} error={err?.fieldErrors.lotNo} />
-            <TextField label="Son kullanma" type="date" value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} /></div>}
+            <DateField label="Son kullanma" value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} /></div>}
           <SelectField label="Tedarikçi (isteğe bağlı)" value={f.supplierId} onChange={(e) => setF({ ...f, supplierId: e.target.value })}>
             <option value="">—</option>{sups.data?.items.filter((s) => s.active).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </SelectField>
