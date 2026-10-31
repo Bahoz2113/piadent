@@ -1,7 +1,7 @@
 export * from "./password.js";
 export * from "./context.js";
 export * from "./pool-guard.js";
-export { migrate } from "./migrate.js";
+export { migrate, setMigrationSource } from "./migrate.js";
 export { loadEnv, requireEnv } from "./env.js";
 export * from "./via-akis.js";
 export * from "./files.js";

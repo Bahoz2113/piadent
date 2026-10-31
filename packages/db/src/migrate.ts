@@ -10,6 +10,21 @@ import { loadEnv, requireEnv } from "./env.js";
 // Tembel çözümleme: CJS paketlerde (serverless) import.meta boştur; migrate çağrılmadıkça yol hesaplanmaz.
 const migrationsDir = () => process.env.MIGRATIONS_DIR || join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
+/**
+ * Gömülü migration kaynağı: serverless paketinde (CJS, dosya sistemi yok) .sql içerikleri derleme sırasında
+ * bundle'a gömülür ve burada kaydedilir. Tanımlıysa diskten okuma yapılmaz (ADR-078).
+ */
+let embedded: Record<string, string> | null = null;
+export function setMigrationSource(files: Record<string, string>): void {
+  embedded = Object.keys(files).length ? files : null;
+}
+/** Uygulanacak migration'lar: gömülü kaynak varsa ondan, yoksa diskten (ad sırasına göre). */
+function migrationFiles(): { name: string; sql: string }[] {
+  if (embedded) return Object.keys(embedded).filter((f) => f.endsWith(".sql")).sort().map((name) => ({ name, sql: embedded![name]! }));
+  const dir = migrationsDir();
+  return readdirSync(dir).filter((f) => f.endsWith(".sql")).sort().map((name) => ({ name, sql: readFileSync(join(dir, name), "utf8") }));
+}
+
 export async function migrate(connectionString: string, log = console.log): Promise<string[]> {
   const client = new pg.Client({ connectionString });
   await client.connect();
@@ -20,9 +35,7 @@ export async function migrate(connectionString: string, log = console.log): Prom
     const done = new Map(
       (await client.query("select name, checksum from schema_migrations")).rows.map((r) => [r.name, r.checksum]),
     );
-    const dir = migrationsDir();
-    for (const file of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) {
-      const sql = readFileSync(join(dir, file), "utf8");
+    for (const { name: file, sql } of migrationFiles()) {
       const sum = createHash("sha256").update(sql).digest("hex");
       if (done.has(file)) {
         if (done.get(file) !== sum) throw new Error(`Uygulanmış migration değişmiş: ${file}. Yeni migration ekleyin.`);
