@@ -11,7 +11,7 @@ import { audit } from "../audit/audit.js";
 const taskId = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound("Görev") });
 const ListQuery = z.object({ status: z.enum(["open", "closed"]).default("open"), patientId: z.uuid().optional() });
 
-/** VİA Akış: neden, sorumlu ve sonraki adımı belli tek iş listesi. */
+/** PİA Akış: neden, sorumlu ve sonraki adımı belli tek iş listesi. */
 @Controller()
 export class TasksController {
   constructor(@Inject(Db) private readonly db: Db) {}

@@ -1,6 +1,6 @@
 # İçe aktarma sözleşmesi (VD-014, AT-16)
 
-Önceki sistemden VİADENT'e veri taşımanın teknik sözleşmesi. Ekran: **Yönetim → Veri aktarımı** (yalnız klinik yöneticisi, `import.manage`). API: `POST /imports`, `GET /imports[/:id]`, `GET /imports/:id/errors.csv`, `POST /imports/:id/commit`, `POST /imports/:id/rollback`.
+Önceki sistemden PİA-DENT'e veri taşımanın teknik sözleşmesi. Ekran: **Yönetim → Veri aktarımı** (yalnız klinik yöneticisi, `import.manage`). API: `POST /imports`, `GET /imports[/:id]`, `GET /imports/:id/errors.csv`, `POST /imports/:id/commit`, `POST /imports/:id/rollback`.
 
 > Gerçek hasta verisi yalnız yetkili klinikten, veri işleme sözleşmesi imzalandıktan sonra alınır. Rakip sistem hesabına bağlanılmaz, oradan veri çekilmez; klinik kendi dışa aktarımını verir.
 
@@ -36,7 +36,7 @@ Sınırlar: en çok **5 MB** ve **20.000 satır** (büyük dosyayı parçalara b
 ### Açılış bakiyeleri (`opening_balances`)
 | Alan | Zorunlu | Başlıklar | Kural |
 |---|---|---|---|
-| Kaynak hasta no **veya** VİADENT dosya no | biri | kaynak_no / dosya_no | Hasta önce aktarılmış olmalı |
+| Kaynak hasta no **veya** PİA-DENT dosya no | biri | kaynak_no / dosya_no | Hasta önce aktarılmış olmalı |
 | Borç tutarı (₺) | evet | tutar, bakiye, borc | `1250,50`, `1250.50`, `1.250,50`, `1,250.50`; **`1.250` belirsiz → hata** (binlik mi ondalık mı bilinmez); sıfır aktarılmaz; eksi (avans) bu sürümde aktarılmaz |
 | Bakiye tarihi | evet | tarih, bakiye_tarihi | vade tarihi olur; gelecekte olamaz |
 | Açıklama | – | aciklama, not | varsayılan “Açılış bakiyesi (önceki sistemden aktarım)” |
@@ -47,22 +47,22 @@ Açılış bakiyesi **hayali geçmiş işlem üretmez**: kaynağı `opening_bala
 | Alan | Zorunlu | Başlıklar | Kural |
 |---|---|---|---|
 | Kaynak randevu no | – | randevu_no, appointment_id | Tekrar aktarımda mükerrer kaydı önler; yoksa hasta + hekim + başlangıç zamanı eşleşmesi kullanılır |
-| Kaynak hasta no **veya** VİADENT dosya no | biri | kaynak_no / dosya_no | Hasta önce aktarılmış olmalı |
+| Kaynak hasta no **veya** PİA-DENT dosya no | biri | kaynak_no / dosya_no | Hasta önce aktarılmış olmalı |
 | Tarih | evet | tarih, randevu_tarihi | gg.aa.yyyy; **yalnız geçmiş** (bugün ve sonrası ajandadan girilir) |
 | Saat | evet | saat, baslangic | SS:DD (24 saat), klinik saat dilimi |
 | Süre (dk) | – | sure, dakika | 5–720 tam sayı; boşsa 30 |
-| Hekim | evet | hekim, doktor | VİADENT'teki hekim adı (unvanlı/unvansız: “Dt. Elif Aras” / “Elif Aras”) ya da kullanıcı e-postası; birden çok eşleşme hata |
+| Hekim | evet | hekim, doktor | PİA-DENT'teki hekim adı (unvanlı/unvansız: “Dt. Elif Aras” / “Elif Aras”) ya da kullanıcı e-postası; birden çok eşleşme hata |
 | Durum | – | durum | geldi / gelmedi / iptal (İngilizce karşılıkları da tanınır); boşsa geldi |
 | Sebep / işlem | – | sebep, islem | Serbest metin; **tedavi, işlem ya da finans kaydı üretmez** |
 | Not | – | not | Serbest metin |
 
-Kurallar: hekimin aynı zaman aralığında başka randevusu varsa (DB'de ya da dosyada) satır hatalıdır (çakışma); iptal satırları kapasite tutmaz. Onayda `completed` randevu `completed_at = bitiş`, iptal randevu “Önceki sistemden aktarıldı (iptal)” gerekçesiyle yazılır; VİA Akış görevi üretilmez. **Geri alma silmez**: randevu “Aktarım geri alındı: <gerekçe>” ile iptal edilir, kaynak no korunur ve aynı kaynak no yeniden aktarılabilir; randevu sonradan düzenlenmiş ya da işlem/not/laboratuvar/kontrol bağlanmışsa geri alma reddedilir.
+Kurallar: hekimin aynı zaman aralığında başka randevusu varsa (DB'de ya da dosyada) satır hatalıdır (çakışma); iptal satırları kapasite tutmaz. Onayda `completed` randevu `completed_at = bitiş`, iptal randevu “Önceki sistemden aktarıldı (iptal)” gerekçesiyle yazılır; PİA Akış görevi üretilmez. **Geri alma silmez**: randevu “Aktarım geri alındı: <gerekçe>” ile iptal edilir, kaynak no korunur ve aynı kaynak no yeniden aktarılabilir; randevu sonradan düzenlenmiş ya da işlem/not/laboratuvar/kontrol bağlanmışsa geri alma reddedilir.
 
 ### Geçmiş işlemler (`treatment_history`, Görev 14 — ADR-075)
 | Alan | Zorunlu | Başlıklar | Kural |
 |---|---|---|---|
 | Kaynak işlem no | – | islem_no, procedure_id | Tekrar aktarımda mükerrer önler; yoksa hasta + işlem + tarih + hekim + diş eşleşmesi |
-| Kaynak hasta no **veya** VİADENT dosya no | biri | kaynak_no / dosya_no | Hasta önce aktarılmış olmalı |
+| Kaynak hasta no **veya** PİA-DENT dosya no | biri | kaynak_no / dosya_no | Hasta önce aktarılmış olmalı |
 | İşlem tarihi | evet | tarih, islem_tarihi | gg.aa.yyyy; yalnız geçmiş; saat 12:00 klinik saat dilimi |
 | İşlem | evet | islem, kod, islem_adi | Katalog **kodu** (DOL-01) ya da tam **adı**; eşleşmeyen/çoklu eşleşen satır hatalı |
 | Diş (FDI) | – | dis, fdi | 11–48; diş düzeyinde işlemde boşsa uyarı, ağız düzeyinde yazılır |

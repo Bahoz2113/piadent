@@ -9,10 +9,10 @@
 **Veri aktarımı.** Sıra: hasta kartları → geçmiş randevular → geçmiş işlemler → açılış bakiyeleri. Dosyayı seçin, **Sütun eşlemesi**'nde tanınmayan başlıkları elle eşleyin, Ön kontrol (hiçbir şey yazılmaz) → hatalı satırları CSV indirip düzeltin → "N satırı aktar" → gerekirse gerekçeyle geri al. Aynı dosya tekrar yeni kayıt açmaz.
 ![Veri aktarımı](img/44-yonetim-veri-aktarimi.jpg)
 
-**Güvenlik.** MFA zorunlu roller; süreli destek erişimi (ikinci yönetici onaylar); **VİA Akış eşikleri** (geciken geliş dk, eksik iletişim penceresi, plan randevu süresi, teklif yanıt süresi).
+**Güvenlik.** MFA zorunlu roller; süreli destek erişimi (ikinci yönetici onaylar); **PİA Akış eşikleri** (geciken geliş dk, eksik iletişim penceresi, plan randevu süresi, teklif yanıt süresi).
 ![Güvenlik](img/45-yonetim-guvenlik.jpg)
 
-**Entegrasyonlar (VİA Köprü).** SMS ve online ödeme yalnız MOCK; gerçek sağlayıcı sözleşmesi olmadan hiçbir mesaj gitmez, para hareket etmez. Dört göz onayı gereken işler burada bekler.
+**Entegrasyonlar (PİA Köprü).** SMS ve online ödeme yalnız MOCK; gerçek sağlayıcı sözleşmesi olmadan hiçbir mesaj gitmez, para hareket etmez. Dört göz onayı gereken işler burada bekler.
 
 **Raporlar.** Klinik işletme analizi → metrikten kaynak rapora iniş; CSV yalnız yönetici/finans.
 ![Raporlar](img/47-raporlar-isletme.jpg)

@@ -1,6 +1,6 @@
 /**
  * Diş modeli — FDI (ISO 3950) iki haneli numaralama. Bu, uluslararası standart numaralamadır;
- * çizim ve ekran VİADENT'e özgüdür. Yüzeyler: M (meziyal), D (distal), O (okluzal, arka dişler) /
+ * çizim ve ekran PİA-DENT'e özgüdür. Yüzeyler: M (meziyal), D (distal), O (okluzal, arka dişler) /
  * I (insizal, ön dişler), B (bukkal/vestibül), L (lingual/palatinal).
  */
 export const PERMANENT_TEETH: readonly string[] = [1, 2, 3, 4].flatMap((q) => [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `${q}${n}`));

@@ -550,7 +550,7 @@ const log: Runner = async (a) => {
       patient: x.patient_ref ?? "", fields: x.fields ?? "", ...(x.patient_id ? { _drill: { patientId: x.patient_id, tab: "gecmis" } } : {}) })),
     totals: { count: t.n, actors: t.actors },
     totalLabels: { count: ["Olay", "int"], actors: ["Kullanıcı", "int"] },
-    notes: ["Değer içerikleri (tutar, metin, kimlik) gösterilmez; yalnız değişen alan adları. Hasta ayrıntısı için VİA İz (hasta → Geçmiş)."],
+    notes: ["Değer içerikleri (tutar, metin, kimlik) gösterilmez; yalnız değişen alan adları. Hasta ayrıntısı için PİA İz (hasta → Geçmiş)."],
     truncated,
   };
 };

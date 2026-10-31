@@ -16,7 +16,7 @@ const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const maskEmail = (e: string) => e.replace(/^(.).*(@.*)$/, "$1***$2");
 
 /**
- * İletişim tercihi (amaç × kanal, yalnız eklenen geçmiş), mesaj (gönderim ≠ teslim, AT-12), kontrol (Akış E) ve VİA Hazır.
+ * İletişim tercihi (amaç × kanal, yalnız eklenen geçmiş), mesaj (gönderim ≠ teslim, AT-12), kontrol (Akış E) ve PİA Hazır.
  * Aydınlatma, iletişim izni ve tıbbi onam ayrı kavramlardır; tek “KVKK onaylı” kutusu yoktur (Plan Akış D).
  */
 @Controller()
@@ -146,7 +146,7 @@ export class CareController {
     });
   }
 
-  // ------------------------------------------------------------ VİA Hazır
+  // ------------------------------------------------------------ PİA Hazır
   @Get("appointments/:id/readiness")
   @Require("appointment.read")
   readiness(@Ctx() ctx: RequestContext, @Param("id", id) aid: string) {

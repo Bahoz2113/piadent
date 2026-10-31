@@ -1,4 +1,4 @@
--- VİADENT 0006 (Görev 5): VİA Köprü — sağlayıcı bağlantıları, dış işler (outbound job), denemeler, doğrulanmış webhook olayları,
+-- PİA-DENT 0006 (Görev 5): PİA Köprü — sağlayıcı bağlantıları, dış işler (outbound job), denemeler, doğrulanmış webhook olayları,
 -- online ödeme isteği. Sağlayıcı kabulü (transport) ile işin nihai sonucu (outcome) ayrı tutulur; aynı webhook iki etki doğurmaz.
 -- Gerçek sağlayıcı sözleşmesi/test erişimi yok: yalnız açık etiketli MOCK adaptör (ADR-037).
 
@@ -175,6 +175,6 @@ grant update on messages to viadent_worker;
 
 -- Görev 4'ten kalan kuyruktaki MOCK mesajlar (outbox yolu kaldırıldı): sessizce gönderilmiş sayılmaz, iptal edilir.
 alter table messages no force row level security;
-update messages set status = 'cancelled', status_reason = 'VİA Köprü geçişi: kuyruktaki mesaj iptal edildi; yeniden gönderin', status_at = now() where status = 'queued';
+update messages set status = 'cancelled', status_reason = 'PİA Köprü geçişi: kuyruktaki mesaj iptal edildi; yeniden gönderin', status_at = now() where status = 'queued';
 alter table messages force row level security;
-update outbox_events set status = 'done', processed_at = now(), last_error = 'VİA Köprü geçişi: integration_jobs kullanılır' where topic = 'message.send' and status in ('pending','processing');
+update outbox_events set status = 'done', processed_at = now(), last_error = 'PİA Köprü geçişi: integration_jobs kullanılır' where topic = 'message.send' and status in ('pending','processing');

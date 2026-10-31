@@ -70,7 +70,7 @@ test("pilot günü provası: veri taşıma → randevu → tedavi görünümü �
   if (await outside.isVisible().catch(() => false)) await outside.click();
   await expect(sec.getByText("Randevu oluşturuldu.")).toBeVisible();
   await sec.goto(`${url.split("?")[0]}?sekme=finans`);
-  await expect(sec.getByRole("heading", { name: "Hesap · VİA Net" })).toBeVisible();
+  await expect(sec.getByRole("heading", { name: "Hesap · PİA Net" })).toBeVisible();
   await sec.getByRole("button", { name: "Tahsilat al" }).click();
   const d = sec.getByRole("dialog", { name: "Tahsilat al" });
   await d.getByLabel("Tutar (₺)").fill("200,00");

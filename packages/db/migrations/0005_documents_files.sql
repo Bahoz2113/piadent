@@ -1,6 +1,6 @@
--- VİADENT 0005 (Görev 4): belge türü / şablon sürümü / hasta belgesi / onay isteği / kanıt olayı (ayrı kavramlar),
+-- PİA-DENT 0005 (Görev 4): belge türü / şablon sürümü / hasta belgesi / onay isteği / kanıt olayı (ayrı kavramlar),
 -- özel depoda dosya (yükleme ≠ seçme, tarama bitmeden erişim yok), amaç bazlı iletişim tercihi, mesaj (teslim ≠ gönderim),
--- kontrol (follow-up) ve VİA Hazır ziyaret hazırlığı kuralları.
+-- kontrol (follow-up) ve PİA Hazır ziyaret hazırlığı kuralları.
 -- Hukuki not: hiçbir tablo veya durum "elektronik imza" iddiası taşımaz; kabul yöntemi kaydedilen olgudur (ADR-033).
 
 -- ================================================================ belge türü ve şablon
@@ -302,7 +302,7 @@ create table follow_ups (
 );
 create index follow_ups_open_idx on follow_ups (tenant_id, status, due_date);
 
--- ================================================================ VİA Hazır: ziyaret hazırlığı kuralları (yetkili klinik tanımlar)
+-- ================================================================ PİA Hazır: ziyaret hazırlığı kuralları (yetkili klinik tanımlar)
 create table readiness_rules (
   id                uuid primary key default gen_random_uuid(),
   tenant_id         uuid not null references tenants(id),
@@ -354,7 +354,7 @@ end $$;
 grant select, insert, update on document_types, template_versions, patient_documents, consent_requests, file_assets,
   messages, follow_ups, readiness_rules to viadent_app;
 grant select, insert on templates, evidence_events, file_access_events, communication_preferences, delivery_events, readiness_exceptions to viadent_app;
--- Worker: tarama, mesaj gönderimi (mock), süre aşımı ve VİA Akış/Hazır görevleri.
+-- Worker: tarama, mesaj gönderimi (mock), süre aşımı ve PİA Akış/Hazır görevleri.
 grant select, update on file_assets, messages, consent_requests, follow_ups to viadent_worker;
 grant select, insert on file_access_events, delivery_events, evidence_events to viadent_worker;
 grant select on patient_documents, document_types, communication_preferences, readiness_rules, readiness_exceptions to viadent_worker;

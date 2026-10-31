@@ -1,4 +1,4 @@
-/** AT-03 (eşzamanlı çift rezervasyon), AT-04 (doğum tarihi / ortak telefon), hasta ve randevu kuralları, VİA Akış. */
+/** AT-03 (eşzamanlı çift rezervasyon), AT-04 (doğum tarihi / ortak telefon), hasta ve randevu kuralları, PİA Akış. */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import pg from "pg";
@@ -138,7 +138,7 @@ describe("AT-04 doğum tarihi ve ortak aile telefonu", () => {
   });
 });
 
-describe("Hasta arama, güncelleme ve VİA İz", () => {
+describe("Hasta arama, güncelleme ve PİA İz", () => {
   it("Türkçe karakterden bağımsız arama ve dosya no / telefon ile bulma", async () => {
     await sec.post("/patients", { firstName: "Şükrü", lastName: "Işıklı", phone: "05550008877" }).expect(201);
     const byName = (await sec.get("/patients?q=sukru%20isikli").expect(200)).body.items;
@@ -165,7 +165,7 @@ describe("Hasta arama, güncelleme ve VİA İz", () => {
   });
 });
 
-describe("VİA Akış", () => {
+describe("PİA Akış", () => {
   it("aynı olay için ikinci yenilemede görev tekrar oluşmaz", async () => {
     await sec.post("/via-akis/refresh").expect(200);
     const second = (await sec.post("/via-akis/refresh").expect(200)).body;

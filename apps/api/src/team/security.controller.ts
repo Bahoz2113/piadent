@@ -67,7 +67,7 @@ export class SecurityController {
     const i = parse(SupportGrant, body);
     return this.db.tx(ctx, async (c) => {
       const u = (await c.query("select id, status from users where lower(email) = lower($1)", [i.email])).rows[0];
-      if (!u || u.status !== "active") throw Errors.validation({ email: "Bu e-postayla etkin bir kullanıcı yok. Destek hesabı önce VİADENT tarafından açılmalıdır." });
+      if (!u || u.status !== "active") throw Errors.validation({ email: "Bu e-postayla etkin bir kullanıcı yok. Destek hesabı önce PİA-DENT tarafından açılmalıdır." });
       if (u.id === ctx.userId) throw new AppError(422, "CANNOT_GRANT_SELF", "Kendinize destek erişimi veremezsiniz.");
       const existing = (await c.query("select id, role, status from memberships where user_id = $1 and tenant_id = $2", [u.id, ctx.tenantId])).rows[0];
       if (existing && existing.status === "active" && existing.role !== "support") throw new AppError(409, "ALREADY_MEMBER", "Bu kullanıcı zaten kliniğin üyesi; destek erişimi gerekmez.");
@@ -91,7 +91,7 @@ export class SecurityController {
     });
   }
 
-  /** VİA Akış eşikleri (ADR-073). */
+  /** PİA Akış eşikleri (ADR-073). */
   @Get("akis")
   @Require("settings.manage")
   akis(@Ctx() ctx: RequestContext) {

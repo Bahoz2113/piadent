@@ -1,5 +1,5 @@
 /**
- * VİA Köprü — dış sağlayıcı katmanı (port/adapter). Worker ve API ortak kullanır.
+ * PİA Köprü — dış sağlayıcı katmanı (port/adapter). Worker ve API ortak kullanır.
  *  - Sağlayıcı kabulü (transport: accepted/rejected/unknown/dead) ile işin nihai sonucu (outcome) ayrıdır.
  *  - Sağlayıcı çağrısı DB transaction'ı dışında yapılır: önce iş "sending" işaretlenir, sonra sonuç ayrı transaction'da yazılır.
  *  - Zaman aşımı = sonuç bilinmiyor: kör yeniden gönderim yerine aynı idempotency anahtarıyla durum sorgusu (mutabakat).
@@ -294,8 +294,8 @@ async function sideEffectFailed(c: pg.PoolClient, tenantId: string, j: JobRow, r
 async function deadTask(c: pg.PoolClient, tenantId: string, j: JobRow, reason: string) {
   await c.query(
     `insert into tasks(tenant_id, kind, source_type, source_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
-     values ($1,'integration_dead','integration_job',$2::uuid,'integration_dead:' || $2::text,'Dış işlem başarısız (VİA Köprü)',$3,
-             'VİA Köprü ekranında hatayı inceleyin; sağlayıcı düzeldiyse yeniden deneyin veya gerekçeyle iptal edin.','clinic_admin', now())
+     values ($1,'integration_dead','integration_job',$2::uuid,'integration_dead:' || $2::text,'Dış işlem başarısız (PİA Köprü)',$3,
+             'PİA Köprü ekranında hatayı inceleyin; sağlayıcı düzeldiyse yeniden deneyin veya gerekçeyle iptal edin.','clinic_admin', now())
      on conflict (tenant_id, dedupe_key) where status in ('open','in_progress','blocked') do nothing`,
     [tenantId, j.id, `${j.operation}: ${reason}`.slice(0, 400)]);
 }

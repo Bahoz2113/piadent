@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
-/** Görev 5 — VİA Köprü (MOCK sağlayıcı). Worker çalışır durumda olmalıdır: `pnpm dev:worker`. */
+/** Görev 5 — PİA Köprü (MOCK sağlayıcı). Worker çalışır durumda olmalıdır: `pnpm dev:worker`. */
 const PASSWORD = process.env.E2E_PASSWORD ?? "";
 test.skip(!PASSWORD, "E2E_PASSWORD (sentetik demo parolası) tanımlı değil");
 const SHOTS = process.env.E2E_SHOTS_DIR;
@@ -26,7 +26,7 @@ async function until(page: Page, check: () => Promise<boolean>, reload: () => Pr
   throw new Error("Worker işi zamanında işlemedi");
 }
 
-test("VİA Köprü: erişim bekleyen bağlantılar dürüstçe gösterilir; dış gönderim kapısı kapalı", async ({ page }, info) => {
+test("PİA Köprü: erişim bekleyen bağlantılar dürüstçe gösterilir; dış gönderim kapısı kapalı", async ({ page }, info) => {
   await login(page, "yonetici@demo-yesil.test");
   await bridge(page);
   await expect(page.getByText("KAPALI", { exact: true })).toBeVisible();

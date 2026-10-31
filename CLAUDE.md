@@ -1,4 +1,4 @@
-# VİADENT — geliştirici talimatları
+# PİA-DENT — geliştirici talimatları
 
 Yeni oturumda önce oku: `docs/handoff.md`, `docs/decisions.md`, `docs/backlog.md`, `git diff`. Tamamlanmış işi yeniden kurma.
 

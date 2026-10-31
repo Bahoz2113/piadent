@@ -73,7 +73,7 @@ export interface ScannerPort { scan(data: Buffer, declaredType: string): Promise
 const EICAR = "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
 
 /**
- * Temel tarayıcı (VİADENT, "basic-1"): EICAR test imzası, çalıştırılabilir/komut dosyası başlıkları, beyan/gerçek tür uyuşmazlığı,
+ * Temel tarayıcı (PİA-DENT, "basic-1"): EICAR test imzası, çalıştırılabilir/komut dosyası başlıkları, beyan/gerçek tür uyuşmazlığı,
  * PDF içinde etkin içerik (JavaScript, Launch, gömülü dosya). TAM ANTİVİRÜS DEĞİLDİR — üretimde ClamAV (clamd) zorunludur (ADR-034).
  */
 export class BasicScanner implements ScannerPort {

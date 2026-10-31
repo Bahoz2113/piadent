@@ -1,4 +1,4 @@
-// VİADENT rapor + haftalık ajanda ölçümü (yalnız sentetik perf veritabanına karşı). Bağımlılık yok: Node 22 fetch.
+// PİA-DENT rapor + haftalık ajanda ölçümü (yalnız sentetik perf veritabanına karşı). Bağımlılık yok: Node 22 fetch.
 // Kullanım: BASE=http://127.0.0.1:4100 PASSWORD=<parola> node scripts/perf/reports.mjs
 // Her rapor: son 30 gün ve rapor izninin verdiği en uzun aralık (maxDays) için ardışık 5 koşu; p50/p95 ms, satır sayısı, kesildi mi.
 const BASE = process.env.BASE ?? "http://127.0.0.1:4100";

@@ -34,7 +34,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <nav className="sidenav" aria-label="Ana gezinme">
         <div className="brand">
           <span className="brand-mark" aria-hidden>V</span>
-          <span className="brand-text">VİADENT<small>Kliniğin akışı, tek yerde.</small></span>
+          <span className="brand-text">PİA-DENT<small>Kliniğin akışı, tek yerde.</small></span>
         </div>
         {NAV.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className="navlink" aria-current={path.startsWith(href) ? "page" : undefined} title={label}>

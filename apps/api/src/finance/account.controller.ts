@@ -17,7 +17,7 @@ const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const replayHeader = (res: Response, r: { replayed: boolean }) => { if (r.replayed) res.setHeader("Idempotent-Replayed", "true"); };
 
 /**
- * Hasta hesabı (VİA Net, hasta bazlı). Alacak, ödeme, dağıtım, iade ayrı kayıtlardır; bakiye hareketlerden hesaplanır.
+ * Hasta hesabı (PİA Net, hasta bazlı). Alacak, ödeme, dağıtım, iade ayrı kayıtlardır; bakiye hareketlerden hesaplanır.
  * Açık borç = etkin alacaklar − dağıtımlar (ters kayıtlar dahil). Avans = ödemeler − iadeler − dağıtımlar. İkisi ayrı gösterilir.
  */
 @Controller()
@@ -97,7 +97,7 @@ export class AccountController {
         debt += e.debtDelta; adv += e.advDelta;
         return { at: e.at, kind: e.kind, ref: e.ref, description: e.description, amount: e.amount, openDebtAfter: fromMinor(debt), advanceAfter: fromMinor(adv) };
       });
-      // VİA Net mutabakatı: alt kayıtlardan yürüyen bakiye = toplamlar.
+      // PİA Net mutabakatı: alt kayıtlardan yürüyen bakiye = toplamlar.
       const reconciled = fromMinor(debt) === totals.openDebt && fromMinor(adv) === totals.advance;
       return {
         currency: "TRY", totals, reconciled, receivables, payments,

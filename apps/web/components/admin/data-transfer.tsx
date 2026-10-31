@@ -101,9 +101,9 @@ export function ImportPanel({ notify }: { notify: Notify }) {
         {file && headers.length > 0 && (
           <details open={mapOpen || missingRequired.length > 0} onToggle={(e) => setMapOpen((e.target as HTMLDetailsElement).open)}>
             <summary className="small">Sütun eşlemesi — {headers.length} başlık bulundu{missingRequired.length ? `, ${missingRequired.length} zorunlu alan eşlenmedi` : ", zorunlu alanlar tamam"}</summary>
-            <p className="small muted" style={{ marginTop: 6 }}>Her VİADENT alanı için dosyadaki sütunu seçin. Öneriler tanınan başlıklardan gelir; eşlenmeyen dosya sütunları yok sayılır.</p>
+            <p className="small muted" style={{ marginTop: 6 }}>Her PİA-DENT alanı için dosyadaki sütunu seçin. Öneriler tanınan başlıklardan gelir; eşlenmeyen dosya sütunları yok sayılır.</p>
             <div className="table-wrap" tabIndex={0}><table className="table" style={{ marginTop: 8 }}>
-              <thead><tr><th>VİADENT alanı</th><th>Dosyadaki sütun</th></tr></thead>
+              <thead><tr><th>PİA-DENT alanı</th><th>Dosyadaki sütun</th></tr></thead>
               <tbody>{IMPORT_FIELDS[kind].map((f) => (
                 <tr key={f.key}>
                   <td>{f.label}{f.required && <span className="req" aria-hidden> *</span>}{f.hint && <div className="small muted">{f.hint}</div>}</td>

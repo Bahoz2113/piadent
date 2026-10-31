@@ -1,5 +1,5 @@
 /**
- * QA-003: VİA İz "değişen alanlar" satırlarında alan adı ve değer Türkçe/okunur; iç liste öğeleri grid'e düşmez.
+ * QA-003: PİA İz "değişen alanlar" satırlarında alan adı ve değer Türkçe/okunur; iç liste öğeleri grid'e düşmez.
  * Alan anahtarları API kaynağından türetilir: `audit(..., { changes: { k: ... } })` nesnelerinin üst düzey anahtarları,
  * `diff(before, next, [...])` sütun listeleri ve dinamik `changes[k] = ...` döngülerinin kaynak nesneleri.
  */
@@ -52,7 +52,7 @@ function fieldsInSource(): Set<string> {
       for (const m of src.matchAll(/const next = \{([\s\S]*?)\};/g)) for (const k of m[1]!.matchAll(/(?:^|[,{]\s*|\n\s*)([a-z_]+):/g)) found.add(k[1]!);
     }
   }
-  // VİA Akış ayarları: `changes[k]` döngüsü AkisSettings anahtarları üzerinden
+  // PİA Akış ayarları: `changes[k]` döngüsü AkisSettings anahtarları üzerinden
   for (const k of Object.keys(AKIS_DEFAULTS)) found.add(k);
   return found;
 }

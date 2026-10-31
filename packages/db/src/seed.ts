@@ -100,7 +100,7 @@ export async function seed(connectionString: string, opts: { password?: string; 
           let phone: string | null = `+905550${String(100000 + phoneSeq++).slice(-6)}`;
           if (i === 3) familyPhone = phone;
           if (i === 4) phone = familyPhone; // aile: ortak telefon (AT-04)
-          if (i === 7) phone = null; // eksik iletişim → VİA Akış görevi
+          if (i === 7) phone = null; // eksik iletişim → PİA Akış görevi
           const year = 1950 + ((i * 13) % 65);
           const birth = i === 9 ? null : `${year}-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 27) + 1).padStart(2, "0")}`;
           const counter = await c.query(
@@ -118,7 +118,7 @@ export async function seed(connectionString: string, opts: { password?: string; 
           );
           patientIds.push(p.rows[0].id);
         }
-        // Randevular: bugün ve yarın (klinik saatiyle). Bazıları geçmiş saatte "planned" → VİA Akış.
+        // Randevular: bugün ve yarın (klinik saatiyle). Bazıları geçmiş saatte "planned" → PİA Akış.
         const today = localDate(now, tz);
         const tomorrow = addDays(today, 1);
         const slots: [string, string, number, number, number, string][] = [
@@ -264,8 +264,8 @@ export async function seed(connectionString: string, opts: { password?: string; 
           await c.query("insert into cash_movements(tenant_id, cash_account_id, amount, source, source_id, occurred_at) values ($1,$2,300.00,'payment',$3,$4)",
             [tenantId, cash.rows.find((r) => r.kind === "bank")!.id, adv.rows[0].id, adv.rows[0].paid_at]);
         }
-        // Görev 4: VİADENT belge türü kataloğu (kendi sınıflandırmamız; Ek B başlıkları yalnız izlenebilirlikte eşlenir),
-        // iki SENTETİK DEMO şablon (gerçek bilgilendirme/onam metni DEĞİL), VİA Hazır kuralları, iletişim izni ve kontrol.
+        // Görev 4: PİA-DENT belge türü kataloğu (kendi sınıflandırmamız; Ek B başlıkları yalnız izlenebilirlikte eşlenir),
+        // iki SENTETİK DEMO şablon (gerçek bilgilendirme/onam metni DEĞİL), PİA Hazır kuralları, iletişim izni ve kontrol.
         const docTypes: [string, string, string, boolean, string | null][] = [
           ["GENEL-ONAM", "Genel tedavi bilgilendirme ve onam", "consent", true, null],
           ["CERRAHI-ONAM", "Cerrahi işlem bilgilendirme ve onam", "consent", true, null],
@@ -294,7 +294,7 @@ export async function seed(connectionString: string, opts: { password?: string; 
         const demoBody = (title: string) => normalizeDocumentText(
           `SENTETİK DEMO BELGESİ — klinik veya hukuki içerik değildir.\n\nBelge: ${title} (DEMO)\nHasta: {{hasta.ad_soyad}} (Dosya {{hasta.dosya_no}}, doğum tarihi {{hasta.dogum_tarihi}})\n` +
           `Klinik: {{klinik.ad}} · Hekim: {{hekim.ad}} · Tarih: {{belge.tarih}}\n\nBağlı plan kalemleri:\n{{plan.kalemler}}\n\n` +
-          `Bu bölüm, kliniğin klinik ve hukuk danışmanlarınca onaylanmış gerçek metinle değiştirilmelidir. VİADENT bu metnin içeriğini üretmez ve hukuki uygunluk iddiası taşımaz.`);
+          `Bu bölüm, kliniğin klinik ve hukuk danışmanlarınca onaylanmış gerçek metinle değiştirilmelidir. PİA-DENT bu metnin içeriğini üretmez ve hukuki uygunluk iddiası taşımaz.`);
         for (const [code, title] of [["GENEL-ONAM", "Genel tedavi bilgilendirme ve onam"], ["ENDO-ONAM", "Kanal tedavisi bilgilendirme ve onam"]] as const) {
           const tp = await c.query("insert into templates(tenant_id, document_type_id, name, created_by) values ($1,$2,$3,$4) returning id",
             [tenantId, typeIds[code], `${title} — DEMO şablon`, creator]);
@@ -315,7 +315,7 @@ export async function seed(connectionString: string, opts: { password?: string; 
           await c.query("insert into follow_ups(tenant_id, patient_id, due_date, reason, practitioner_id, created_by) values ($1,$2,$3,'6 aylık rutin kontrol (sentetik)',$4,$5)",
             [tenantId, patientIds[1], addDays(localDate(now, tz), 10), pracIds[0], creator]);
         }
-        // Görev 5: VİA Köprü — MOCK SMS ve online ödeme bağlantıları (gerçek gönderim/çekim yok), sağlayıcı tahsilat hesabı,
+        // Görev 5: PİA Köprü — MOCK SMS ve online ödeme bağlantıları (gerçek gönderim/çekim yok), sağlayıcı tahsilat hesabı,
         // erişim bekleyen sağlayıcılar “blocked” olarak kayıtlı (dürüst durum).
         for (const kind of ["sms", "payment"]) {
           await c.query(

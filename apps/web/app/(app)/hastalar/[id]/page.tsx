@@ -262,7 +262,7 @@ function Timeline({ patientId, resources }: { patientId: string; resources: { pr
     auditValueLabel(field, v, { entityType, names, formatDateTime: (iso) => fmtDateTime(iso, tz), formatDate: (iso) => fmtDate(iso) });
   return (
     <section className="card">
-      <div className="card-head"><div><h2>VİA İz — hasta geçmişi</h2><p className="muted small">Kim, ne zaman, neyi değiştirdi. Yalnız değişen alanlar gösterilir.</p></div></div>
+      <div className="card-head"><div><h2>PİA İz — hasta geçmişi</h2><p className="muted small">Kim, ne zaman, neyi değiştirdi. Yalnız değişen alanlar gösterilir.</p></div></div>
       {h.loading && !h.data ? <Loading /> : h.error ? <ErrorState error={h.error} /> : h.data!.items.length === 0 ? <EmptyState title="Kayıtlı olay yok" /> : (
         <ol className="timeline card-pad">
           {h.data!.items.map((e) => (

@@ -11,7 +11,7 @@ export interface AuditInput {
 
 /**
  * Sağlık içeriği taşıyan audit varlık türleri (anamnez, klinik not, odontogram bulgu/tanı).
- * Bu olaylar yalnız `patient.health.read` yetkisiyle okunur (VİA İz, KVKK dışa aktarım access_log, denetim raporu) — Plan §05.
+ * Bu olaylar yalnız `patient.health.read` yetkisiyle okunur (PİA İz, KVKK dışa aktarım access_log, denetim raporu) — Plan §05.
  * SQL kullanımı: `e.entity_type <> all($n::text[])`.
  */
 export const CLINICAL_ENTITY_TYPES: readonly string[] = ["anamnesis", "clinical_note", "clinical_chart"];
@@ -26,7 +26,7 @@ export async function audit(c: pg.PoolClient, ctx: Pick<RequestContext, "tenantI
   );
 }
 
-/** Yalnız değişen alanlar; maskeleyiciyle hassas değer loga tam yazılmaz (VİA İz kuralı). */
+/** Yalnız değişen alanlar; maskeleyiciyle hassas değer loga tam yazılmaz (PİA İz kuralı). */
 export function diff<T extends Record<string, unknown>>(
   before: T | null,
   after: T,

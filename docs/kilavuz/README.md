@@ -1,4 +1,4 @@
-# VİADENT kısa kullanım kılavuzları (Görev 14)
+# PİA-DENT kısa kullanım kılavuzları (Görev 14)
 
 Rol başına bir sayfa; ekran görüntüleri sentetik demo verisinden (`apps/web/e2e/screens-tur.mjs` ile üretilir, `docs/kilavuz/img/`). Pilot eğitiminde (`pilot-checklist.md` §5) basılır ya da ekranda açılır. Gerçek klinik adı/logosu/metni içermez; pilot klinik kendi içeriğini (katalog, şablon) Yönetim'den tanımlar.
 

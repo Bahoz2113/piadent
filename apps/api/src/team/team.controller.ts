@@ -143,7 +143,7 @@ export class TeamController {
       if (!m) throw Errors.notFound("Üyelik");
       // Kullanıcı başka bir klinikte de üyeyse tek klinik yöneticisi onun hesabının güvenliğini düşüremez (platform destek süreci).
       const others = (await this.auth.listMemberships(m.user_id)).filter((x) => x.tenantId !== ctx.tenantId);
-      if (others.length) throw new AppError(409, "MFA_RESET_MULTI_CLINIC", "Bu kullanıcı başka bir klinikte de üye; doğrulayıcı sıfırlaması VİADENT destek süreciyle (kimlik doğrulamalı) yapılır.");
+      if (others.length) throw new AppError(409, "MFA_RESET_MULTI_CLINIC", "Bu kullanıcı başka bir klinikte de üye; doğrulayıcı sıfırlaması PİA-DENT destek süreciyle (kimlik doğrulamalı) yapılır.");
       await c.query("update users set mfa_secret_enc = null, mfa_pending_enc = null, mfa_enabled_at = null, mfa_last_step = null where id = $1", [m.user_id]);
       await this.db.pool.query("delete from mfa_recovery_codes where user_id = $1", [m.user_id]);
       await c.query("update sessions set revoked_at = now() where user_id = $1 and revoked_at is null", [m.user_id]);
@@ -166,7 +166,7 @@ export class TeamController {
       const m = (await c.query("select user_id from memberships where id = $1 and tenant_id = $2 and status = 'active'", [id, ctx.tenantId])).rows[0];
       if (!m) throw Errors.notFound("Üyelik");
       const others = (await this.auth.listMemberships(m.user_id)).filter((x) => x.tenantId !== ctx.tenantId);
-      if (others.length) throw new AppError(409, "PASSWORD_RESET_MULTI_CLINIC", "Bu kullanıcı başka bir klinikte de üye; parola sıfırlaması VİADENT destek süreciyle yapılır.");
+      if (others.length) throw new AppError(409, "PASSWORD_RESET_MULTI_CLINIC", "Bu kullanıcı başka bir klinikte de üye; parola sıfırlaması PİA-DENT destek süreciyle yapılır.");
       const temp = `gecici-${randomBytes(9).toString("base64url")}`;
       await c.query("update users set password_hash = $2, must_change_password = true where id = $1", [m.user_id, await hashPassword(temp)]);
       await c.query("update sessions set revoked_at = now() where user_id = $1 and revoked_at is null", [m.user_id]);

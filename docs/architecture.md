@@ -6,9 +6,9 @@ TypeScript **modüler monolit** (Plan §07). Mikroservis yok; iş kuralları tek
 ```
 apps/web      Next.js 15 (App Router) — arayüz. /api/* isteklerini API'ye ters proxy'ler (aynı origin).
 apps/api      NestJS 11 + Express 5 — REST /api/v1. Tüm iş kuralları, yetki ve audit burada.
-apps/worker   Arka plan işçisi — outbox tüketimi + periyodik VİA Akış taraması.
+apps/worker   Arka plan işçisi — outbox tüketimi + periyodik PİA Akış taraması.
 packages/contracts  Paylaşılan zod şemaları, rol/izin matrisi, Türkçe metin ve saat dilimi yardımcıları.
-packages/db   SQL migration'lar, migration çalıştırıcı, rol kurulumu, sentetik seed, tenant bağlam yardımcısı, VİA Akış üreticisi.
+packages/db   SQL migration'lar, migration çalıştırıcı, rol kurulumu, sentetik seed, tenant bağlam yardımcısı, PİA Akış üreticisi.
 infra/        Yerel geliştirme docker-compose (PostgreSQL 16).
 docs/         Ürün ve teknik belgeler.
 ```
@@ -38,7 +38,7 @@ Planlanan ama henüz eklenmemiş: `packages/ui` (bileşenler şimdilik `apps/web
 ## Ajanda çakışması
 `appointments` üzerinde iki `EXCLUDE USING gist` kısıtı (hekim ve koltuk), aralık `tstzrange(starts_at, ends_at, '[)')`, `status <> 'cancelled'`. Eşzamanlı isteklerde yalnız biri başarılı olur; diğeri 409 `APPOINTMENT_CONFLICT` (AT-03, 6 eşzamanlı istekle test edildi).
 
-## VİA Akış
+## PİA Akış
 `packages/db/src/via-akis.ts`. Görev türleri: `overdue_checkin` (bugünkü planlı/teyitli randevu saati 10 dk geçti), `contact_pending` (yarınki planlı randevu, iletişim yok), `missing_contact` (7 gün içinde randevusu olan, telefonu ve e-postası olmayan hasta). Kısmi tekil indeks `(tenant_id, dedupe_key) WHERE status IN (open, in_progress, blocked)` ile tekrar oluşmaz. Kaynak koşul çözülünce görev `closed_reason` ile kapanır.
 Tetikleme: API yazımlarında outbox `via_akis.refresh` → işçi (2 sn yoklama, `FOR UPDATE SKIP LOCKED`, üstel geri çekilme, 8 denemede `dead`). Zamana bağlı koşullar için işçi her 60 sn tüm tenant'ları tarar. Kullanıcı “Listeyi yenile” ile de tetikleyebilir.
 

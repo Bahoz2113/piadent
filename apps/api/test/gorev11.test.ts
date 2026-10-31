@@ -37,7 +37,7 @@ describe("ADR-064: destek erişiminde dört göz", () => {
   let grantId: string;
   beforeAll(async () => {
     const { hashPassword } = await import("@viadent/db");
-    await ownerQuery(null, "insert into users(email, password_hash, full_name) values ($1,$2,'VİADENT Destek 2 (sentetik)')", [supportEmail, await hashPassword(TEST_PASSWORD)]);
+    await ownerQuery(null, "insert into users(email, password_hash, full_name) values ($1,$2,'PİA-DENT Destek 2 (sentetik)')", [supportEmail, await hashPassword(TEST_PASSWORD)]);
   });
 
   it("iki yöneticili klinikte talep 'pending' açılır; destek hesabı etkinleşmeden klinik bağlamına giremez", async () => {
@@ -79,7 +79,7 @@ describe("ADR-064: destek erişiminde dört göz", () => {
   it("süresi dolmuş talep onaylanamaz (409); tek yöneticili klinikte erişim doğrudan etkin", async () => {
     const supportEmail2 = `destek-${randomBytes(3).toString("hex")}@viadent.test`;
     const { hashPassword } = await import("@viadent/db");
-    await ownerQuery(null, "insert into users(email, password_hash, full_name) values ($1,$2,'VİADENT Destek 3 (sentetik)')", [supportEmail2, await hashPassword(TEST_PASSWORD)]);
+    await ownerQuery(null, "insert into users(email, password_hash, full_name) values ($1,$2,'PİA-DENT Destek 3 (sentetik)')", [supportEmail2, await hashPassword(TEST_PASSWORD)]);
     const g = (await bAdmin.post("/security/support-grants", { email: supportEmail2, hours: 1, reason: "Süre dolumu denemesi (sentetik)" }).expect(201)).body;
     await ownerQuery(tenantB, "update memberships set expires_at = now() - interval '1 minute' where id = $1", [g.id]);
     expect((await multi.post(`/security/support-grants/${g.id}/approve`)).status).toBe(409);

@@ -80,7 +80,7 @@ test("iletişim: izin tablosu ve MOCK mesaj — teslim uydurulmaz", async ({ pag
   await noOverflow(page);
 });
 
-test("hekim kontrol planlar; yönetici şablon ve VİA Hazır kurallarını görür", async ({ page, browser }) => {
+test("hekim kontrol planlar; yönetici şablon ve PİA Hazır kurallarını görür", async ({ page, browser }) => {
   await login(page, "elif.aras@demo-yesil.test");
   await openPatient(page, "Tedavi");
   await page.getByRole("button", { name: "Kontrol planla" }).click();
@@ -95,7 +95,7 @@ test("hekim kontrol planlar; yönetici şablon ve VİA Hazır kurallarını gör
   await adm.goto("/yonetim");
   await adm.getByRole("tab", { name: "Belge şablonları" }).click();
   await expect(adm.getByRole("heading", { name: "Şablonlar" })).toBeVisible();
-  await expect(adm.getByRole("heading", { name: "VİA Hazır kuralları" })).toBeVisible();
+  await expect(adm.getByRole("heading", { name: "PİA Hazır kuralları" })).toBeVisible();
   await expect(adm.getByText(/klinik\/hukuk incelemesinden geçmemiştir/)).toBeVisible();
   await noOverflow(adm);
   await adm.close();

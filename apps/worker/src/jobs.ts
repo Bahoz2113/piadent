@@ -30,7 +30,7 @@ export async function processOutbox(pool: pg.Pool, batch = 50, d?: WorkerDeps): 
   }
   const byTenant = new Map<string, typeof claimed>();
   for (const ev of claimed) {
-    // via_net.changed: hesap değişti → VİA Akış koşulları yeniden değerlendirilir (finans görevleri buradan genişler).
+    // via_net.changed: hesap değişti → PİA Akış koşulları yeniden değerlendirilir (finans görevleri buradan genişler).
     if (ev.topic === "file.scan") {
       try {
         await withContext<unknown>(pool, { tenantId: ev.tenant_id, userId: null }, (c) => scanFile(c, ev.tenant_id, ev.payload.fileId!, deps(d).storage, deps(d).scanner));

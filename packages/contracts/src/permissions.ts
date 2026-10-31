@@ -1,10 +1,10 @@
 /**
- * VİADENT varsayılan rol → izin matrisi (Plan §05). Bu tablo SUNUCUDA uygulanır;
+ * PİA-DENT varsayılan rol → izin matrisi (Plan §05). Bu tablo SUNUCUDA uygulanır;
  * arayüzde düğme gizlemek yalnız kolaylıktır, güvenlik değildir.
  */
 /** Atanabilir klinik rolleri (davet, rol değişikliği). */
 export const ROLES = ["clinic_admin", "dentist", "secretary", "assistant", "finance"] as const;
-/** Tüm roller: + `support` — VİADENT destek erişimi; yalnız yönetici tarafından süreli verilir, davetle atanmaz (ADR-061). */
+/** Tüm roller: + `support` — PİA-DENT destek erişimi; yalnız yönetici tarafından süreli verilir, davetle atanmaz (ADR-061). */
 export const ALL_ROLES = [...ROLES, "support"] as const;
 export type Role = (typeof ALL_ROLES)[number];
 
@@ -14,7 +14,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   secretary: "Sekreterya",
   assistant: "Asistan",
   finance: "Finans",
-  support: "VİADENT destek (süreli, salt okunur)",
+  support: "PİA-DENT destek (süreli, salt okunur)",
 };
 
 export const PERMISSIONS = [
@@ -36,7 +36,7 @@ export const PERMISSIONS = [
   "task.read",
   "task.write",
   "finance.read",            // klinik finans özeti, günlük tahsilat/işlem metrikleri, kasa, prim (gelir raporları)
-  "account.read",            // hasta hesabı: alacak, ödeme, avans, iade (VİA Net, hasta bazlı)
+  "account.read",            // hasta hesabı: alacak, ödeme, avans, iade (PİA Net, hasta bazlı)
   "payment.write",           // tahsilat kaydı ve avans dağıtımı
   "payment.refund",          // iade (dağıtım ters kaydı dahil)
   "receivable.write",        // elle alacak, alacak iptali
@@ -46,15 +46,15 @@ export const PERMISSIONS = [
   "document.issue",          // onaylı şablondan hasta belgesi üretme
   "document.decision",       // yüz yüze kabul/ret kaydı (kanıt olayı)
   "document.revoke",         // belgeyi gerekçeyle iptal
-  "template.manage",         // belge türü, şablon sürümü, VİA Hazır kuralları
+  "template.manage",         // belge türü, şablon sürümü, PİA Hazır kuralları
   "file.read",               // idari dosyalar (klinik dosyalar ayrıca patient.health.read ister)
   "file.write",              // dosya yükleme
   "file.delete",             // dosyayı gerekçeyle silindi işaretleme
   "communication.write",     // iletişim tercihi kaydı
   "message.send",            // mesaj kuyruğa alma (şimdilik yalnız MOCK sağlayıcı)
   "followup.write",          // kontrol planlama
-  "readiness.exception",     // VİA Hazır eksiğine gerekçeli istisna
-  "integration.read",        // VİA Köprü: bağlantılar, dış işler, webhook günlüğü
+  "readiness.exception",     // PİA Hazır eksiğine gerekçeli istisna
+  "integration.read",        // PİA Köprü: bağlantılar, dış işler, webhook günlüğü
   "integration.manage",      // bağlantı ayarı, sır yenileme, yeniden deneme/iptal, MOCK simülasyonu
   "integration.approve",     // onay kapısı (dört göz): onay isteyen dış işi onaylama/reddetme
   "lab.read",                // laboratuvar iş emirleri (maliyet hariç)

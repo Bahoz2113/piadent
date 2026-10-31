@@ -38,7 +38,7 @@ export default function TreatmentPage() {
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", marginBottom: 16 }}>
           <div className="card card-pad"><p className="muted small">Karar bekleyen teklif</p><p className="kpi">{count("proposed")}</p><p className="small muted money">{formatTRY(sum("proposed"))}</p></div>
           <div className="card card-pad"><p className="muted small">Devam eden kabul edilmiş plan</p><p className="kpi">{count("accepted")}</p><p className="small muted money">{formatTRY(sum("accepted"))}</p></div>
-          <div className="card card-pad"><p className="muted small">Randevusu olmayan plan</p><p className="kpi">{(data.data.items).filter((r) => r.status === "accepted" && !r.nextAppointmentAt).length}</p><p className="small muted">VİA Akış görev üretir</p></div>
+          <div className="card card-pad"><p className="muted small">Randevusu olmayan plan</p><p className="kpi">{(data.data.items).filter((r) => r.status === "accepted" && !r.nextAppointmentAt).length}</p><p className="small muted">PİA Akış görev üretir</p></div>
         </div>
       )}
       <div className="subtabs" role="tablist" aria-label="Filtre">

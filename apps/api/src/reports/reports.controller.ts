@@ -96,7 +96,7 @@ export class ReportsController {
       lines.push("");
       for (const [k, [label, type]] of Object.entries(result.totalLabels)) lines.push([csvCell(`TOPLAM · ${label}`), csvCell(fmtCell(result.totals[k], type, ctx.timezone))].join(";"));
     }
-    lines.push("", csvCell(`VİADENT · ${def.title} · ${from} – ${to} · ${ctx.tenantName} · ${ctx.timezone}`));
+    lines.push("", csvCell(`PİA-DENT · ${def.title} · ${from} – ${to} · ${ctx.tenantName} · ${ctx.timezone}`));
     await this.db.tx(ctx, (c) => audit(c, ctx, { action: "report.export", entityType: "report", changes: {
       report: { from: null, to: def.id }, params: { from: null, to: Object.fromEntries(Object.entries({ ...q, from, to }).filter(([k]) => /^[a-zA-Z]{2,20}$/.test(k))) },
       rows: { from: null, to: result.rows.length } } }));

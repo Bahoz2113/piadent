@@ -1,5 +1,5 @@
 /**
- * Görev 3: VİA Net — alacak, ödeme, dağıtım, avans, iade, kasa, gider, idempotency, hekim primi.
+ * Görev 3: PİA Net — alacak, ödeme, dağıtım, avans, iade, kasa, gider, idempotency, hekim primi.
  * Gerçek PostgreSQL (viadent_test) üzerinde, kısıtlı uygulama rolüyle. AT-06..AT-10, AT-19, AT-02 (iade), rol ve tenant.
  */
 import { randomUUID } from "node:crypto";

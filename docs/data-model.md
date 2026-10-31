@@ -22,8 +22,8 @@ Kaynak gerçek: `packages/db/migrations/*.sql`. Bu belge özet ve kurallardır.
 | `patients` | Hasta | `file_no` tenant içi tekil; `search_text` (Türkçe normalize, trigram indeks); `phone_e164`/`phone_digits` (**tekil değil** — aile ortak numara); kimlik türü+no birlikte; aktif kayıtlarda kimlik no tekil; gelecek doğum tarihi tetikleyiciyle reddedilir; `birth_date` boş olabilir (uydurulmaz) |
 | `clinical_notes` | Klinik not (ilk dilim) | yalnız ekleme; `corrects_note_id` + zorunlu `correction_reason` |
 | `appointments` | Randevu | durum makinesi ve **ayrı** `contact_outcome`; iki exclusion constraint; iptal nedeni zorunlu; ≤12 saat |
-| `tasks` | VİA Akış görevi | `kind`, `sensitivity` (general/clinical/finance), `dedupe_key` (açık görevlerde tekil), `reason`, `next_step`, `assignee_role`, kapanış nedeni zorunlu |
-| `audit_events` | VİA İz | yalnız değişen alanlar (`changes` jsonb); telefon/kimlik maskeli; klinik not içeriği yazılmaz; güncellenemez |
+| `tasks` | PİA Akış görevi | `kind`, `sensitivity` (general/clinical/finance), `dedupe_key` (açık görevlerde tekil), `reason`, `next_step`, `assignee_role`, kapanış nedeni zorunlu |
+| `audit_events` | PİA İz | yalnız değişen alanlar (`changes` jsonb); telefon/kimlik maskeli; klinik not içeriği yazılmaz; güncellenemez |
 | `outbox_events` | Arka plan iş kuyruğu | `pending → processing → done/dead`, deneme ve `available_at` |
 
 ## Uygulanmış tablolar (0002_agenda_patient_team — Görev 1)
@@ -73,7 +73,7 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 ## Görev 4 tabloları (`0005_documents_files.sql`)
 | Tablo | Amaç | Kural |
 |---|---|---|
-| `document_types` | VİADENT belge türü kataloğu | kategori, kabul gerekir mi, hazırlayabilen rol, inceleme durumu (DEMO) |
+| `document_types` | PİA-DENT belge türü kataloğu | kategori, kabul gerekir mi, hazırlayabilen rol, inceleme durumu (DEMO) |
 | `templates` / `template_versions` | Şablon ve sürümü | onaylı sürümün metni/özeti donar; şablon başına tek taslak; DEMO işareti |
 | `patient_documents` | Üretilmiş belge | metin snapshot + SHA-256, şablon sürümü değişmez; yalnız `issued → revoked` |
 | `consent_requests` | Karar isteği (kabul gerektiren türler) | kararlı/kapalı istek tekrar değişmez; 30 gün sonra süresi dolar |
@@ -82,7 +82,7 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 | `communication_preferences` | Amaç × kanal izni | yalnız ekleme; en son kayıt geçerli |
 | `messages` / `delivery_events` | Mesaj ve durum olayları | sağlayıcı yalnız `mock`; teslim ≠ gönderim; süre aşımı → unknown |
 | `follow_ups` | Kontrol | randevu bağlanınca scheduled, gerçekleşince done |
-| `readiness_rules` / `readiness_exceptions` | VİA Hazır kural ve gerekçeli istisna | kural türüne göre zorunlu alanlar (check) |
+| `readiness_rules` / `readiness_exceptions` | PİA Hazır kural ve gerekçeli istisna | kural türüne göre zorunlu alanlar (check) |
 
 ## Durum makineleri (uygulanan)
 **Randevu:** `planned → confirmed | checked_in | no_show | cancelled`; `confirmed → checked_in | no_show | cancelled`; `checked_in → in_progress | completed`; `in_progress → completed`. `completed`, `no_show`, `cancelled` terminal. Saati gelmemiş randevu `no_show` olamaz.

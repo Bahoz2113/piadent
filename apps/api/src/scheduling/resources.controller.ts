@@ -194,7 +194,7 @@ export class ResourcesController {
     });
   }
 
-  /** Kapatma, mevcut randevuları silmez/taşımaz; çakışanlar döner ve VİA Akış'a takip görevi düşer. */
+  /** Kapatma, mevcut randevuları silmez/taşımaz; çakışanlar döner ve PİA Akış'a takip görevi düşer. */
   @Post("closures")
   @Require("schedule.manage")
   createClosure(@Ctx() ctx: RequestContext, @Body() body: unknown) {

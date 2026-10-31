@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "VİADENT", template: "%s · VİADENT" },
+  title: { default: "PİA-DENT", template: "%s · PİA-DENT" },
   description: "Kliniğin akışı, tek yerde.",
   robots: { index: false, follow: false },
 };

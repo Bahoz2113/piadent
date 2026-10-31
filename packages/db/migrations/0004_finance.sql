@@ -1,4 +1,4 @@
--- VİADENT 0004 (Görev 3): VİA Net — alacak, ödeme, dağıtım, avans, iade, kasa hareketi, gider,
+-- PİA-DENT 0004 (Görev 3): PİA Net — alacak, ödeme, dağıtım, avans, iade, kasa hareketi, gider,
 -- idempotency anahtarı ve tahsilat bazlı hekim primi tahakkuku.
 -- İlkeler: para numeric(14,2); hareketler silinmez/güncellenmez, düzeltme ters kayıtla yapılır;
 -- tutar sınırları DB tetikleyicisinde de (API'nin arkasında ikinci savunma) kilitle denetlenir.

@@ -41,7 +41,7 @@ test("ajanda: URL eşitlemesi sunucuya gitmez, sayfa yeniden yüklenmez, başlı
 
   await page.goto("/ajanda");
   loads = 0; rscNavigations.length = 0; // goto'nun kendi yüklemesi sayılmaz
-  await expect(page).toHaveTitle("Ajanda · VİADENT");
+  await expect(page).toHaveTitle("Ajanda · PİA-DENT");
   await page.waitForURL(/\/ajanda\?tarih=\d{4}-\d{2}-\d{2}$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.waitForLoadState("networkidle");
@@ -51,7 +51,7 @@ test("ajanda: URL eşitlemesi sunucuya gitmez, sayfa yeniden yüklenmez, başlı
   expect(loads, "tam sayfa yeniden yükleme olmamalı").toBe(0);
   const gaps = await page.evaluate(() => (window as unknown as { __titleGaps: string[] }).__titleGaps);
   expect(gaps, "başlığın boş kaldığı kare olmamalı").toEqual([]);
-  await expect(page).toHaveTitle("Ajanda · VİADENT");
+  await expect(page).toHaveTitle("Ajanda · PİA-DENT");
   // Hafta görünümüne geçiş de yalnız adres çubuğunu günceller.
   await page.getByRole("button", { name: "Hafta", exact: true }).click();
   await page.waitForURL(/gorunum=hafta/);

@@ -10,7 +10,7 @@ const pid = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound("Hasta")
 
 /**
  * Sürümlü anamnez (H07). Her kayıt yeni sürümdür, önceki sürüm değişmez. Hekim kaydı otomatik
- * onaylıdır; asistan kaydı hekim onayı bekler ve VİA Akış'ta klinik görev oluşturur.
+ * onaylıdır; asistan kaydı hekim onayı bekler ve PİA Akış'ta klinik görev oluşturur.
  * Kritik işaretler tıbbi karar değildir, yalnız görünürlüktür. Soru seti DEMO'dur.
  */
 @Controller("patients/:patientId/anamnesis")

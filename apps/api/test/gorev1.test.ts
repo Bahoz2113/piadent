@@ -114,7 +114,7 @@ describe("T04 işlem türü", () => {
 });
 
 describe("T06 kapatma", () => {
-  it("kapatma mevcut randevuyu silmez; çakışanı döner ve VİA Akış görevi oluşturur", async () => {
+  it("kapatma mevcut randevuyu silmez; çakışanı döner ve PİA Akış görevi oluşturur", async () => {
     const thu = nextWeekday(4, 20);
     const a = await sec.post("/appointments", appt({ date: thu, startTime: "12:30", patientId: patients[11]!.id })).expect(201);
     const cl = await admin.post("/closures", { scope: "practitioner", practitionerId: res.practitioners[0]!.id, startDate: thu, startTime: "12:00", endDate: thu, endTime: "14:00", reason: "Kongre (sentetik)" }).expect(201);

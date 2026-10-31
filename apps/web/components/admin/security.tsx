@@ -70,7 +70,7 @@ export function SecurityPanel({ notify }: { notify: Notify }) {
 
       <section className="card card-pad stack">
         <div className="row" style={{ gap: 10 }}><LifeBuoy size={20} aria-hidden /><h2>Süreli destek erişimi</h2></div>
-        <p className="muted small">VİADENT destek ekibine (var olan bir kullanıcı hesabı) en çok 72 saatlik, <b>salt okunur</b> erişim verir: hasta kimlikleri maskeli, sağlık içeriği ve finans kapalı, hiçbir kayıt değiştirilemez.
+        <p className="muted small">PİA-DENT destek ekibine (var olan bir kullanıcı hesabı) en çok 72 saatlik, <b>salt okunur</b> erişim verir: hasta kimlikleri maskeli, sağlık içeriği ve finans kapalı, hiçbir kayıt değiştirilemez.
           Süre dolunca kendiliğinden kapanır; her işlem denetim izinde görünür. Erken kaldırmak için listeden “Kaldır”.</p>
         {err && err.code === "VALIDATION_FAILED" && <Alert kind="error">{err.message}</Alert>}
         <div className="form-grid">
@@ -105,7 +105,7 @@ export function SecurityPanel({ notify }: { notify: Notify }) {
   );
 }
 
-/** VİA Akış eşikleri (ADR-073): klinik kendi uyarı sürelerini belirler; boş bırakılan alan varsayılana döner. */
+/** PİA Akış eşikleri (ADR-073): klinik kendi uyarı sürelerini belirler; boş bırakılan alan varsayılana döner. */
 function AkisSettingsPanel({ notify }: { notify: Notify }) {
   const d = useData<{ settings: AkisSettingsT; defaults: AkisSettingsT }>("/security/akis");
   const [f, setF] = useState<Record<keyof AkisSettingsT, string> | null>(null);
@@ -121,13 +121,13 @@ function AkisSettingsPanel({ notify }: { notify: Notify }) {
       const body = Object.fromEntries(keys.map((k) => [k, f![k] === "" ? d.data!.defaults[k] : Number(f![k])]));
       const r = await api<{ settings: AkisSettingsT }>("/security/akis", { method: "PUT", body });
       setF(Object.fromEntries(Object.entries(r.settings).map(([k, v]) => [k, String(v)])) as Record<keyof AkisSettingsT, string>);
-      notify("success", "VİA Akış eşikleri kaydedildi; görevler bir sonraki taramada yeni eşiklerle üretilir.");
+      notify("success", "PİA Akış eşikleri kaydedildi; görevler bir sonraki taramada yeni eşiklerle üretilir.");
       await d.reload();
     } catch (e) { setErr(e as ApiFailure); notify("error", (e as ApiFailure).message); } finally { setBusy(false); }
   }
   return (
     <section className="card card-pad stack" aria-labelledby="akis-h">
-      <div className="row" style={{ gap: 10 }}><Workflow size={20} aria-hidden /><h2 id="akis-h">VİA Akış eşikleri</h2></div>
+      <div className="row" style={{ gap: 10 }}><Workflow size={20} aria-hidden /><h2 id="akis-h">PİA Akış eşikleri</h2></div>
       <p className="muted small">Görev üretim kuralları için bekleme süreleri. Varsayılanlar parantezde; boş bırakırsanız varsayılan kullanılır. Değişiklik denetim kaydına yazılır.</p>
       <div className="form-grid">
         {keys.map((k) => {

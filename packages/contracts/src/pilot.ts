@@ -27,8 +27,8 @@ export const IMPORT_FIELDS: Record<ImportKind, ImportField[]> = {
   ],
   opening_balances: [
     { key: "patient_ref", label: "Kaynak hasta no", required: false, aliases: ["kaynak_no", "kaynak hasta no", "hasta_no", "external_ref", "patient_ref"],
-      hint: "Hasta kartı aktarımındaki kaynak numarası; yoksa VİADENT dosya no" },
-    { key: "file_no", label: "VİADENT dosya no", required: false, aliases: ["dosya_no", "dosya", "file_no"] },
+      hint: "Hasta kartı aktarımındaki kaynak numarası; yoksa PİA-DENT dosya no" },
+    { key: "file_no", label: "PİA-DENT dosya no", required: false, aliases: ["dosya_no", "dosya", "file_no"] },
     { key: "amount", label: "Borç tutarı (₺)", required: true, aliases: ["tutar", "bakiye", "borc", "acik_borc", "amount", "balance"],
       hint: "1250,50 veya 1250.50; binlik ayırıcıyla 1.250,50. Alacaklı (avans) bakiye bu sürümde aktarılmaz." },
     { key: "as_of", label: "Bakiye tarihi", required: true, aliases: ["tarih", "bakiye_tarihi", "as_of", "date"], hint: "gg.aa.yyyy; vade tarihi olarak kullanılır" },
@@ -37,26 +37,26 @@ export const IMPORT_FIELDS: Record<ImportKind, ImportField[]> = {
   appointment_history: [
     { key: "external_ref", label: "Kaynak randevu no", required: false, aliases: ["randevu_no", "kaynak_randevu_no", "appointment_id", "external_ref", "id"],
       hint: "Önceki sistemdeki randevu numarası; tekrar aktarımda mükerrer kaydı önler (yoksa hasta+hekim+zaman eşleşmesi kullanılır)" },
-    { key: "patient_ref", label: "Kaynak hasta no", required: false, aliases: ["kaynak_no", "kaynak hasta no", "hasta_no", "patient_ref", "hasta"], hint: "Hasta kartı aktarımındaki kaynak numarası; yoksa VİADENT dosya no" },
-    { key: "file_no", label: "VİADENT dosya no", required: false, aliases: ["dosya_no", "dosya", "file_no"] },
+    { key: "patient_ref", label: "Kaynak hasta no", required: false, aliases: ["kaynak_no", "kaynak hasta no", "hasta_no", "patient_ref", "hasta"], hint: "Hasta kartı aktarımındaki kaynak numarası; yoksa PİA-DENT dosya no" },
+    { key: "file_no", label: "PİA-DENT dosya no", required: false, aliases: ["dosya_no", "dosya", "file_no"] },
     { key: "date", label: "Tarih", required: true, aliases: ["tarih", "randevu_tarihi", "date"], hint: "gg.aa.yyyy; yalnız geçmiş tarihler" },
     { key: "time", label: "Saat", required: true, aliases: ["saat", "baslangic", "time", "start"], hint: "SS:DD (24 saat)" },
     { key: "duration_min", label: "Süre (dk)", required: false, aliases: ["sure", "sure_dk", "duration", "duration_min", "dakika"], hint: "Boşsa 30" },
-    { key: "practitioner", label: "Hekim", required: true, aliases: ["hekim", "doktor", "practitioner", "dentist", "hekim_adi"], hint: "VİADENT'teki hekim adı (örn. Dt. Elif Aras) ya da kullanıcı e-postası" },
+    { key: "practitioner", label: "Hekim", required: true, aliases: ["hekim", "doktor", "practitioner", "dentist", "hekim_adi"], hint: "PİA-DENT'teki hekim adı (örn. Dt. Elif Aras) ya da kullanıcı e-postası" },
     { key: "status", label: "Durum", required: false, aliases: ["durum", "status"], hint: "geldi / gelmedi / iptal (boşsa geldi)" },
     { key: "reason", label: "Sebep / işlem", required: false, aliases: ["sebep", "islem", "reason", "aciklama"], hint: "Serbest metin; tedavi kaydı oluşturmaz" },
     { key: "note", label: "Not", required: false, aliases: ["not", "note"] },
   ],
   treatment_history: [
     { key: "external_ref", label: "Kaynak işlem no", required: false, aliases: ["islem_no", "kaynak_islem_no", "procedure_id", "external_ref", "id"], hint: "Tekrar aktarımda mükerrer kaydı önler; yoksa hasta+işlem+tarih+hekim eşleşmesi" },
-    { key: "patient_ref", label: "Kaynak hasta no", required: false, aliases: ["kaynak_no", "kaynak hasta no", "hasta_no", "patient_ref", "hasta"], hint: "Hasta kartı aktarımındaki kaynak numarası; yoksa VİADENT dosya no" },
-    { key: "file_no", label: "VİADENT dosya no", required: false, aliases: ["dosya_no", "dosya", "file_no"] },
+    { key: "patient_ref", label: "Kaynak hasta no", required: false, aliases: ["kaynak_no", "kaynak hasta no", "hasta_no", "patient_ref", "hasta"], hint: "Hasta kartı aktarımındaki kaynak numarası; yoksa PİA-DENT dosya no" },
+    { key: "file_no", label: "PİA-DENT dosya no", required: false, aliases: ["dosya_no", "dosya", "file_no"] },
     { key: "date", label: "İşlem tarihi", required: true, aliases: ["tarih", "islem_tarihi", "date", "completed_at"], hint: "gg.aa.yyyy; yalnız geçmiş" },
-    { key: "procedure", label: "İşlem (kod veya ad)", required: true, aliases: ["islem", "islem_kodu", "kod", "procedure", "procedure_code", "islem_adi"], hint: "VİADENT kataloğundaki kod (örn. DOL-01) ya da tam ad; eşleşmeyen satır hatalı" },
+    { key: "procedure", label: "İşlem (kod veya ad)", required: true, aliases: ["islem", "islem_kodu", "kod", "procedure", "procedure_code", "islem_adi"], hint: "PİA-DENT kataloğundaki kod (örn. DOL-01) ya da tam ad; eşleşmeyen satır hatalı" },
     { key: "tooth", label: "Diş (FDI)", required: false, aliases: ["dis", "dis_no", "tooth", "fdi"], hint: "11–48; boşsa işlem ağız düzeyinde" },
     { key: "quantity", label: "Adet", required: false, aliases: ["adet", "miktar", "quantity", "qty"], hint: "Boşsa 1" },
     { key: "amount", label: "Bedel (₺, bilgi)", required: false, aliases: ["tutar", "bedel", "ucret", "amount", "price"], hint: "Kaynaktaki bedel; ALACAK ÜRETMEZ (borç açılış bakiyesiyle gelir); boşsa 0" },
-    { key: "practitioner", label: "Hekim", required: true, aliases: ["hekim", "doktor", "practitioner", "dentist", "hekim_adi"], hint: "VİADENT'teki hekim adı ya da e-posta" },
+    { key: "practitioner", label: "Hekim", required: true, aliases: ["hekim", "doktor", "practitioner", "dentist", "hekim_adi"], hint: "PİA-DENT'teki hekim adı ya da e-posta" },
     { key: "note", label: "Not", required: false, aliases: ["not", "note", "aciklama"] },
   ],
 };
@@ -85,7 +85,7 @@ export const MfaLogin = z.object({ challenge: z.string().min(20).max(200),
   code: z.string().trim().regex(/^(\d{6}|[A-Za-z2-7]{4}-?[A-Za-z2-7]{4}-?[A-Za-z2-7]{2})$/, "6 haneli kodu veya kurtarma kodunu girin") });
 /** Klinik güvenlik politikası (yönetici): MFA zorunlu roller. */
 export const TenantSecurityPolicy = z.object({ requireMfaRoles: z.array(z.enum(["clinic_admin", "dentist", "secretary", "assistant", "finance", "support"])).max(6) });
-/** VİA Akış eşikleri (ADR-073): klinik ayarı; alan yoksa varsayılan. */
+/** PİA Akış eşikleri (ADR-073): klinik ayarı; alan yoksa varsayılan. */
 export const AKIS_DEFAULTS = { overdueCheckinMinutes: 10, missingContactDays: 7, planUnscheduledDays: 2, proposalPendingDays: 3 } as const;
 export const AKIS_SETTING_LABELS: Record<keyof typeof AKIS_DEFAULTS, { label: string; hint: string; unit: string; min: number; max: number }> = {
   overdueCheckinMinutes: { label: "Geciken geliş uyarısı", hint: "Planlı randevunun saati bu kadar dakika geçince sekretere görev düşer", unit: "dk", min: 5, max: 120 },

@@ -2,7 +2,7 @@
   "name": "viadent",
   "private": true,
   "version": "0.1.0",
-  "description": "VİADENT — diş klinikleri için çok kiracılı klinik ERP",
+  "description": "PİA-DENT — diş klinikleri için çok kiracılı klinik ERP",
   "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=22.12 <23"

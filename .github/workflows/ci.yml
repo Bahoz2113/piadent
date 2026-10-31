@@ -1,4 +1,4 @@
-# VİADENT sürekli entegrasyon (Görev 8). Her push/PR: bağımlılık taraması, tip kontrolü, birim + gerçek PostgreSQL
+# PİA-DENT sürekli entegrasyon (Görev 8). Her push/PR: bağımlılık taraması, tip kontrolü, birim + gerçek PostgreSQL
 # entegrasyon testleri, üretim derlemesi, derlenmiş API/worker ile uçtan uca (Playwright) testler, imaj derlemesi.
 # Sırlar: koşu başına rastgele üretilir (scripts/ci-env.sh); depoda veya günlükte sır yok. Veriler yalnız sentetik.
 name: ci

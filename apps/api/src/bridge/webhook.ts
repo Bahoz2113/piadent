@@ -139,6 +139,6 @@ async function deadLike(c: C, tenantId: string, jobId: string, reason: string) {
   await c.query(
     `insert into tasks(tenant_id, kind, source_type, source_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
      values ($1,'integration_dead','integration_job',$2::uuid,'integration_review:' || $2::text,'Sağlayıcı bildirimi incelenmeli',$3,
-             'VİA Köprü ekranında işi ve sağlayıcı bildirimini karşılaştırın; gerekirse finans kaydını elle düzeltin.','clinic_admin', now())
+             'PİA Köprü ekranında işi ve sağlayıcı bildirimini karşılaştırın; gerekirse finans kaydını elle düzeltin.','clinic_admin', now())
      on conflict (tenant_id, dedupe_key) where status in ('open','in_progress','blocked') do nothing`, [tenantId, jobId, reason.slice(0, 400)]);
 }

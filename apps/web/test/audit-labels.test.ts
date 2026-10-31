@@ -1,5 +1,5 @@
 /**
- * QA-002: VİA İz (hasta geçmişi) ekranında her denetim eylemi Türkçe etiketlidir.
+ * QA-002: PİA İz (hasta geçmişi) ekranında her denetim eylemi Türkçe etiketlidir.
  * API kaynağındaki `audit(c, ctx, { action: "..." })` çağrıları ve dinamik eylem türevleri
  * `AUDIT_ACTION_LABELS` (packages/contracts) içinde kapsanır; bilinmeyen kod okunur geri dönüş alır.
  */

@@ -2,7 +2,7 @@
 
 > Son güncelleme: 27.10.2026, Görev 14 (pilot açılış paketi).
 >
-> **Karar: VİADENT bugün “tüm kliniklere satışa hazır” DEĞİLDİR.** Yazılımın P0 kapsamı çalışıyor ve testli; ancak resmî entegrasyon, veri işleme ve sözleşme kararları, klinik kullanıcı kabulü ve bağımsız güvenlik testi açık. Mevcut durum yalnız **sentetik demo** ve — aşağıdaki “pilot öncesi” kapıları kapandıktan sonra — **tek hedef klinikte kontrollü pilot** için uygundur. “Tam uyumlu”, “Bakanlık onaylı”, “e-Nabız entegre”, “e-Fatura entegre” ifadeleri kullanılmaz (ADR-051).
+> **Karar: PİA-DENT bugün “tüm kliniklere satışa hazır” DEĞİLDİR.** Yazılımın P0 kapsamı çalışıyor ve testli; ancak resmî entegrasyon, veri işleme ve sözleşme kararları, klinik kullanıcı kabulü ve bağımsız güvenlik testi açık. Mevcut durum yalnız **sentetik demo** ve — aşağıdaki “pilot öncesi” kapıları kapandıktan sonra — **tek hedef klinikte kontrollü pilot** için uygundur. “Tam uyumlu”, “Bakanlık onaylı”, “e-Nabız entegre”, “e-Fatura entegre” ifadeleri kullanılmaz (ADR-051).
 
 Durum: ✅ kapalı (kanıtlı) · ⚠️ kısmi · ⛔ açık · 🔒 dış erişim/karar bekliyor
 
@@ -26,9 +26,9 @@ TLS ⚠️ (Caddy otomatik TLS yapılandırması hazır, sunucu yok) · secret m
 | Sağlık Bakanlığı / DHBS / e-Nabız | 🔒 | Güncel kapsam teyidi (13.08.2026 SBYS yönetmelik değişikliği dahil), kayıt/tescil, test ortamı, teknik doküman | Ürün sahibi + hukuk |
 | e-Fatura / e-Arşiv / e-SMM | 🔒 | Yetkili sağlayıcı sözleşmesi, test belgesi, mali müşavir onayı | Ürün sahibi + mali müşavir |
 | SMS / WhatsApp | 🔒 | Sağlayıcı sözleşmesi, iletişim izni değerlendirmesi, teslim webhook'u; şu an yalnız MOCK | Ürün sahibi |
-| Ödeme sağlayıcısı | 🔒 | Sözleşme, test senaryoları; kart verisi VİADENT'te tutulmaz; şu an yalnız MOCK | Ürün sahibi |
+| Ödeme sağlayıcısı | 🔒 | Sözleşme, test senaryoları; kart verisi PİA-DENT'te tutulmaz; şu an yalnız MOCK | Ürün sahibi |
 | Belge doğrulama / imza | 🔒 | Seçilen yöntemin klinik/hukuki uygunluğu; şu an yüz yüze kabul + personel beyanı | Hukuk |
-| KVKK | ⛔ | Veri envanteri, aydınlatma metni, işleme şartları, **veri işleme sözleşmesi (klinik = sorumlu, VİADENT = işleyen)**, saklama/imha süreleri, alt işleyenler (barındırma, yedek, e-posta), yurt dışı aktarım değerlendirmesi, veri sahibi başvuru süreci | Hukuk + ürün sahibi |
+| KVKK | ⛔ | Veri envanteri, aydınlatma metni, işleme şartları, **veri işleme sözleşmesi (klinik = sorumlu, PİA-DENT = işleyen)**, saklama/imha süreleri, alt işleyenler (barındırma, yedek, e-posta), yurt dışı aktarım değerlendirmesi, veri sahibi başvuru süreci | Hukuk + ürün sahibi |
 | Barındırma | ⛔ | Sağlayıcı, bölge, şifreleme, erişim, yedek kopya yeri, SLA | Ürün sahibi |
 | Müşteri sözleşmesi / SLA / fiyat | ⛔ | Hizmet sözleşmesi, destek saatleri, veri taşıma kapsamı, çıkışta veri iadesi (açık JSON dışa aktarım hazır) | Ürün sahibi |
 

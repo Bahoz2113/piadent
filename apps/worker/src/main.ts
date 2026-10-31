@@ -33,5 +33,5 @@ async function loop() {
 }
 
 for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => { stopping = true; });
-console.log("[worker] VİADENT worker başladı (outbox + VİA Köprü dış işleri + VİA Akış taraması)");
+console.log("[worker] PİA-DENT worker başladı (outbox + PİA Köprü dış işleri + PİA Akış taraması)");
 void loop();

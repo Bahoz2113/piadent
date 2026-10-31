@@ -1,5 +1,5 @@
 /**
- * VİA Net hesap çekirdeği. Tüm finans komutları aynı transaction içinde:
+ * PİA Net hesap çekirdeği. Tüm finans komutları aynı transaction içinde:
  *   hasta hesabı kilidi → domain kaydı → kasa hareketi → prim tahakkuku → audit (+ outbox).
  * Tutar sınırlarının asıl güvencesi DB tetikleyicileridir (0004); buradaki kontroller okunur hata mesajı içindir.
  */

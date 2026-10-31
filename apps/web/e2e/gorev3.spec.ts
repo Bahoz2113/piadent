@@ -17,13 +17,13 @@ const noOverflow = async (page: Page) => {
 };
 const tile = (page: Page, label: string) => page.locator(".net-tile", { hasText: label }).first();
 
-test("vezne → dağıtım → iade → VİA Net özet (sekreter + finans)", async ({ page, browser }, info) => {
+test("vezne → dağıtım → iade → PİA Net özet (sekreter + finans)", async ({ page, browser }, info) => {
   // Finans: bakiye listesinden açık borçlu sentetik hastaya git
   await login(page, "finans@demo-yesil.test");
   await page.goto("/finans");
   await page.getByRole("tab", { name: "Hasta bakiyeleri" }).click();
   await page.locator("table tbody tr").first().getByRole("link").click(); // en yüksek açık borçlu sentetik hasta
-  await expect(page.getByRole("heading", { name: "Hesap · VİA Net" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hesap · PİA Net" })).toBeVisible();
   const url = page.url();
   const debtBefore = (await tile(page, "Açık borç").locator(".kpi").innerText()).trim();
 
@@ -31,7 +31,7 @@ test("vezne → dağıtım → iade → VİA Net özet (sekreter + finans)", asy
   const sec = await (browser as Browser).newPage({ viewport: page.viewportSize()! });
   await login(sec, "sekreter@demo-yesil.test");
   await sec.goto(url);
-  await expect(sec.getByRole("heading", { name: "Hesap · VİA Net" })).toBeVisible();
+  await expect(sec.getByRole("heading", { name: "Hesap · PİA Net" })).toBeVisible();
   await expect(sec.getByRole("button", { name: "İade", exact: true })).toHaveCount(0); // sekreter iade yapamaz
   await sec.getByRole("button", { name: "Tahsilat al" }).click();
   const d = sec.getByRole("dialog", { name: "Tahsilat al" });
@@ -63,9 +63,9 @@ test("vezne → dağıtım → iade → VİA Net özet (sekreter + finans)", asy
   await expect(page.getByRole("cell", { name: /Dağıtım ters kaydı/ }).first()).toBeVisible();
   await expect(page.getByText(/Hareket defteri toplamlarla mutabık/)).toBeVisible();
 
-  // VİA Net özet: işlem ≠ tahsilat, kaynak satıra iniş
+  // PİA Net özet: işlem ≠ tahsilat, kaynak satıra iniş
   await page.goto("/finans");
-  await expect(page.getByRole("heading", { name: "Finans · VİA Net" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Finans · PİA Net" })).toBeVisible();
   await tile(page, "Tahsilat").click();
   await expect(page.getByRole("heading", { name: "Tahsilatı oluşturan ödemeler" })).toBeVisible();
   await expect(page.locator("table tbody tr", { hasText: "150,00" }).first()).toBeVisible();

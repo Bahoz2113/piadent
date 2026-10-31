@@ -18,7 +18,7 @@ const TABS = [
   { id: "kapatma", label: "Kapatmalar", perm: "schedule.manage" },
   { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
   { id: "belge", label: "Belge şablonları", perm: "template.manage" },
-  { id: "kopru", label: "Entegrasyonlar (VİA Köprü)", perm: "integration.read" },
+  { id: "kopru", label: "Entegrasyonlar (PİA Köprü)", perm: "integration.read" },
   { id: "aktarim", label: "Veri aktarımı", perm: "import.manage" },
   { id: "disa", label: "Dışa aktarım", perm: "export.clinic" },
   { id: "guvenlik", label: "Güvenlik", perm: "settings.manage" },

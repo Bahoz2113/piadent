@@ -61,7 +61,7 @@ describe("geçmiş randevu içe aktarımı", () => {
     expect(n).toBe(0);
   });
 
-  it("onay: geçerli satırlar geçmiş randevu olur (tamamlandı/iptal), Hasta 360 geçmişinde görünür, VİA Akış görevi üretmez", async () => {
+  it("onay: geçerli satırlar geçmiş randevu olur (tamamlandı/iptal), Hasta 360 geçmişinde görünür, PİA Akış görevi üretmez", async () => {
     const r = await admin.post(`/imports/${bid}/commit`).expect(200);
     expect(r.body.summary).toMatchObject({ imported: 2, skippedAtCommit: 0 });
     const ap = await ownerQuery(tenantA, "select status, external_ref, completed_at, cancel_reason, reason from appointments where import_batch_id = $1 order by starts_at", [bid]);
@@ -105,7 +105,7 @@ describe("geçmiş randevu içe aktarımı", () => {
   });
 });
 
-describe("ADR-073: VİA Akış eşikleri klinik ayarı", () => {
+describe("ADR-073: PİA Akış eşikleri klinik ayarı", () => {
   it("varsayılan 10 dk; 30 dk yapılınca 20 dk geciken randevu görev üretmez, 40 dk geciken üretir; sınır dışı 422; hekim değiştiremez; çapraz klinik etkilenmez", async () => {
     const { refreshViaAkis, withContext } = await import("@viadent/db");
     const pg = (await import("pg")).default;

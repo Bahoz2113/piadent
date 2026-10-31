@@ -1,6 +1,6 @@
 /**
  * Görev 4: belge (tür/şablon sürümü/hasta belgesi/onay isteği/kanıt), özel depo + tarama (AT-11), iletişim tercihi ve
- * mesaj (AT-12), şablon değişince imzalı eski sürüm (AT-14), kontrol görevi ve VİA Hazır. Gerçek PostgreSQL, uygulama rolü.
+ * mesaj (AT-12), şablon değişince imzalı eski sürüm (AT-14), kontrol görevi ve PİA Hazır. Gerçek PostgreSQL, uygulama rolü.
  */
 import { createHash, randomUUID } from "node:crypto";
 import { mkdtempSync, readdirSync, rmSync } from "node:fs";
@@ -76,7 +76,7 @@ beforeAll(async () => {
 afterAll(async () => { await app.close(); rmSync(dir, { recursive: true, force: true }); });
 
 describe("belge kataloğu ve şablon", () => {
-  it("VİADENT kataloğu DEMO/incelenmemiş; sentetik onaylı şablonlar var; finans belge göremez", async () => {
+  it("PİA-DENT kataloğu DEMO/incelenmemiş; sentetik onaylı şablonlar var; finans belge göremez", async () => {
     const types = (await dentist.get("/document-types").expect(200)).body.items;
     expect(types.length).toBe(17);
     expect(types.every((t: { reviewStatus: string }) => t.reviewStatus === "demo_unreviewed")).toBe(true);
@@ -339,7 +339,7 @@ describe("AT-12 iletişim tercihi ve mesaj", () => {
   });
 });
 
-describe("kontrol (follow-up) ve VİA Hazır", () => {
+describe("kontrol (follow-up) ve PİA Hazır", () => {
   it("hekim kontrol ister → sekretere görev; randevu verilince bağlanır ve görev kapanır", async () => {
     const pid = await newPatient("Gaye");
     expect((await sec.post("/follow-ups", { patientId: pid, dueDate: day(7), reason: "Kontrol" })).status).toBe(403);

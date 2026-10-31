@@ -55,7 +55,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
       {toast && <Alert kind="success">{toast}</Alert>}
       <section className="card">
         <div className="card-head">
-          <div><h2>Hesap · VİA Net</h2><p className="muted small">Borç ve avans ayrı tutulur; ödeme alacağa yalnız açık dağıtımla bağlanır. Her toplamın nasıl oluştuğunu görmek için kutuya tıklayın.</p></div>
+          <div><h2>Hesap · PİA Net</h2><p className="muted small">Borç ve avans ayrı tutulur; ödeme alacağa yalnız açık dağıtımla bağlanır. Her toplamın nasıl oluştuğunu görmek için kutuya tıklayın.</p></div>
           <div className="row">
             {can("receivable.write") && <button className="btn btn-sm" onClick={() => setDrawer({ kind: "receivable" })}><FilePlus2 size={15} aria-hidden />Elle alacak</button>}
             {can("payment.write") && advPayments.length > 0 && openRecs.length > 0 && <button className="btn btn-sm" onClick={() => setDrawer({ kind: "allocate" })}><Split size={15} aria-hidden />Avansı dağıt</button>}
@@ -286,7 +286,7 @@ function PaymentDrawer({ patientId, patientName, openRecs, onClose, onSaved }: {
         <SelectField label="Yöntem" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
           {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>)}
         </SelectField>
-        {method === "card_manual" && <Alert kind="info">Bu, kartla alınmış bir ödemenin <strong>manuel kaydıdır</strong>. VİADENT sanal POS'a bağlı değildir; karttan çekim yapmaz ve sonucu doğrulamaz.</Alert>}
+        {method === "card_manual" && <Alert kind="info">Bu, kartla alınmış bir ödemenin <strong>manuel kaydıdır</strong>. PİA-DENT sanal POS'a bağlı değildir; karttan çekim yapmaz ve sonucu doğrulamaz.</Alert>}
         <SelectField label="Kasa / banka" required value={account} onChange={(e) => setAccount(e.target.value)} error={err?.fieldErrors.cashAccountId}>
           {options.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
         </SelectField>

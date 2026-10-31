@@ -13,7 +13,7 @@ interface OnlineReq { id: string; amount: string; description: string; status: s
   paidAt: string | null; isMock: boolean; by: string }
 const TONE: Record<string, string> = { paid: "success", link_ready: "warning", created: "neutral", failed: "danger", cancelled: "neutral", expired: "neutral" };
 
-/** Online ödeme istekleri (VİA Köprü, MOCK sağlayıcı). Bağlantı oluşturmak tahsilat değildir; ödeme yalnız imzalı sağlayıcı bildirimiyle deftere girer. */
+/** Online ödeme istekleri (PİA Köprü, MOCK sağlayıcı). Bağlantı oluşturmak tahsilat değildir; ödeme yalnız imzalı sağlayıcı bildirimiyle deftere girer. */
 export function OnlinePayments({ patientId, onChanged }: { patientId: string; onChanged: () => void }) {
   const { can } = useSession();
   const list = useData<{ items: OnlineReq[] }>(`/patients/${patientId}/online-payments`);
@@ -68,7 +68,7 @@ function CreateDrawer({ patientId, onClose, onSaved }: { patientId: string; onCl
       footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy} onClick={() => void save()}>Bağlantı iste</button></>}>
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}
-        <Alert kind="info">Sağlayıcıya yalnız tutar, para birimi, genel açıklama ve VİADENT referansı gönderilir; hasta adı veya klinik bilgi gönderilmez. Kart bilgisi VİADENT'e hiç gelmez.</Alert>
+        <Alert kind="info">Sağlayıcıya yalnız tutar, para birimi, genel açıklama ve PİA-DENT referansı gönderilir; hasta adı veya klinik bilgi gönderilmez. Kart bilgisi PİA-DENT'e hiç gelmez.</Alert>
         <TextField label="Tutar (₺)" required inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} error={err?.fieldErrors.amount} />
         <TextField label="Açıklama" value={description} onChange={(e) => setDescription(e.target.value)} error={err?.fieldErrors.description} />
       </div>
@@ -94,7 +94,7 @@ export function ProviderRefundDrawer({ payment, onClose, onSaved }: { payment: {
       footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy || reason.trim().length < 3} onClick={() => void save()}>Onaya gönder</button></>}>
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}
-        <Alert kind="warning">Dört göz kuralı: iade, isteyen dışında yetkili bir kişi VİA Köprü ekranında onaylayınca sağlayıcıya iletilir. Hesaba iade kaydı, sağlayıcı iadeyi bildirdiğinde düşer.</Alert>
+        <Alert kind="warning">Dört göz kuralı: iade, isteyen dışında yetkili bir kişi PİA Köprü ekranında onaylayınca sağlayıcıya iletilir. Hesaba iade kaydı, sağlayıcı iadeyi bildirdiğinde düşer.</Alert>
         <TextField label="İade tutarı (₺)" required inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} error={err?.fieldErrors.amount} />
         <TextAreaField label="Gerekçe" required rows={2} value={reason} onChange={(e) => setReason(e.target.value)} error={err?.fieldErrors.reason} />
       </div>

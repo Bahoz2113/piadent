@@ -17,7 +17,7 @@ async function noHorizontalOverflow(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth), "yatay taşma").toBeLessThanOrEqual(vw + 1);
 }
 
-test("sekreter: hasta oluştur → randevu ver → çakışma reddi → VİA İz", async ({ page }, info) => {
+test("sekreter: hasta oluştur → randevu ver → çakışma reddi → PİA İz", async ({ page }, info) => {
   const mobile = info.project.name.includes("360");
   const stamp = Date.now().toString().slice(-6);
   const last = `Deneme${stamp}${mobile ? "M" : "D"}`;
@@ -90,6 +90,6 @@ test("ajanda ve Bugün ekranları klavye ile kullanılabilir, taşma yok", async
   await expect(page.getByRole("heading", { name: "Ajanda" })).toBeVisible();
   await noHorizontalOverflow(page);
   await page.goto("/bugun");
-  await expect(page.getByRole("heading", { name: "VİA Akış" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "PİA Akış" })).toBeVisible();
   await noHorizontalOverflow(page);
 });

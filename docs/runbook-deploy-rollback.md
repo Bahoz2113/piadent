@@ -34,12 +34,12 @@ Kural: **migration'lar yalnız ileri ve geriye uyumlu** (genişlet → kullan �
    4. `pnpm db:migrate`.
    5. Yeni API/worker/web dağıtılır (önceki imaj saklanır).
    6. `GET /api/v1/health/ready` → 200 ve `version` yeni imaj etiketi (her API örneği için).
-   7. **Duman testi (10 dk):** giriş + MFA; hasta ara/aç; randevu oluştur/iptal; tahsilat al (test hastasında, sonra ters kayıt); dosya yükle (taranıyor → kullanılabilir); rapor aç; Yönetim → VİA Köprü'de canlı gönderim KAPALI; `pnpm audit` raporu ekli.
+   7. **Duman testi (10 dk):** giriş + MFA; hasta ara/aç; randevu oluştur/iptal; tahsilat al (test hastasında, sonra ters kayıt); dosya yükle (taranıyor → kullanılabilir); rapor aç; Yönetim → PİA Köprü'de canlı gönderim KAPALI; `pnpm audit` raporu ekli.
    8. Worker başlatılır; outbox birikmesi izlenir (5 dk).
 3. **Onay noktası O2:** klinik sorumlusu duman testini imzalar → pencere kapanır.
 
 ## 3. Pilot kliniğe ilk veri taşıma (gerçek veri — yalnız O1 + veri işleme sözleşmesi sonrası)
-1. Klinik, kendi sisteminden dışa aktarım dosyasını **şifreli kanaldan** verir (e-posta eki değil). VİADENT rakip sisteme bağlanmaz.
+1. Klinik, kendi sisteminden dışa aktarım dosyasını **şifreli kanaldan** verir (e-posta eki değil). PİA-DENT rakip sisteme bağlanmaz.
 2. Dosya `docs/import-contract.md` biçimine dönüştürülür; dönüştürme betiği ve eşleme tablosu kayda girer (kişisel veri içermeden).
 3. **Prova:** üretim dışı izole ortamda (son yedekten açılmış, erişimi kısıtlı) Yönetim → Veri aktarımı → ön kontrol. Mutabakat: kaynak satır = geçerli + hatalı + mükerrer + önceden aktarılmış; açılış bakiyesi toplamı kaynak sistemin raporuyla aynı. Hatalı satır CSV'si kliniğe döner, düzeltilir. Prova ortamı sonra silinir.
 4. **Onay noktası O3:** veri sorumlusu prova mutabakatını imzalar (satır sayıları + tutar toplamı).

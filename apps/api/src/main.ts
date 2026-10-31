@@ -19,4 +19,4 @@ process.on("uncaughtException", (e) => {
   void app.close().then(() => process.exit(1), () => process.exit(1));
 });
 await app.listen(config.port, "127.0.0.1");
-log.log(`VİADENT API http://127.0.0.1:${config.port}/api/v1`);
+log.log(`PİA-DENT API http://127.0.0.1:${config.port}/api/v1`);

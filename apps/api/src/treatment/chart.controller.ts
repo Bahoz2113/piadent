@@ -221,7 +221,7 @@ export class ChartController {
     );
     await audit(c, ctx, { action: correctsId ? "procedure.correct" : "procedure.complete", entityType: "performed_procedure", entityId: r.rows[0].id, patientId,
       changes: { procedure: { from: null, to: proc.code }, amount: { from: null, to: r.rows[0].amount }, ...(correctsId ? { corrects_id: { from: null, to: correctsId } } : {}) } });
-    // Gerçekleşen işlem = hasta hesabında alacak (VİA Net). Aynı transaction; planlanan bedel alacak değildir.
+    // Gerçekleşen işlem = hasta hesabında alacak (PİA Net). Aynı transaction; planlanan bedel alacak değildir.
     let receivableId: string | null = null;
     if (Number(r.rows[0].amount) > 0) {
       await lockAccount(c, patientId);

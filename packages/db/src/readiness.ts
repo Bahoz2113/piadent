@@ -1,5 +1,5 @@
 /**
- * VİA Hazır (ziyaret hazırlığı) ve Görev 4 bakım kuralları. Tenant bağlamlı transaction içinde çağrılır.
+ * PİA Hazır (ziyaret hazırlığı) ve Görev 4 bakım kuralları. Tenant bağlamlı transaction içinde çağrılır.
  *  - Kurallar yetkili klinik tarafından tanımlanır (readiness_rules); tıbbi uygunluk hakkında otomatik karar verilmez.
  *  - Eksik kalem nedeniyle görünür; gerekçeli yetkili istisna kayda geçer (readiness_exceptions).
  */
@@ -56,7 +56,7 @@ export async function readinessFor(c: pg.PoolClient, appointmentId: string): Pro
 
 const OPEN = "('open','in_progress','blocked')";
 
-/** VİA Akış'a eklenen Görev 4 kuralları: kontrol bağlama/görevi, VİA Hazır eksikleri, karantina görevi kapanışı. */
+/** PİA Akış'a eklenen Görev 4 kuralları: kontrol bağlama/görevi, PİA Hazır eksikleri, karantina görevi kapanışı. */
 export async function refreshGorev4(c: pg.PoolClient, tenantId: string, tz: string, now: Date): Promise<{ created: number; closed: number }> {
   let created = 0, closed = 0;
   // Kontrol ↔ randevu bağlama: kontrol kaydından sonra verilen ilk (iptal/gelmedi olmayan) randevu bağlanır; gerçekleşince kontrol yapıldı.
@@ -87,7 +87,7 @@ export async function refreshGorev4(c: pg.PoolClient, tenantId: string, tz: stri
             closed_reason = case f.status when 'scheduled' then 'Kontrol randevusu verildi' when 'done' then 'Kontrol yapıldı' else 'Kontrol iptal edildi' end
        from follow_ups f where t.tenant_id = $1 and t.kind = 'follow_up' and t.status in ${OPEN} and f.id = t.source_id and f.status <> 'open'`, [tenantId])).rowCount ?? 0;
 
-  // VİA Hazır: yarınki randevularda eksik hazırlık.
+  // PİA Hazır: yarınki randevularda eksik hazırlık.
   const tomorrow = await c.query(
     `select a.id, a.patient_id, a.starts_at from appointments a
       where a.tenant_id = $1 and a.status in ('planned','confirmed')

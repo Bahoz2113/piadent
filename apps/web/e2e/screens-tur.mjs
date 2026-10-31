@@ -1,4 +1,4 @@
-// VİADENT ekran turu (Görev 14): rol başına ana ekranların görüntüsü — kılavuzlar ve durum sayfası için. Sentetik demo verisiyle.
+// PİA-DENT ekran turu (Görev 14): rol başına ana ekranların görüntüsü — kılavuzlar ve durum sayfası için. Sentetik demo verisiyle.
 // Kullanım: BASE=http://localhost:3000 PASSWORD=<parola> OUT=<dizin> node e2e/screens-tur.mjs
 import { chromium } from "@playwright/test";
 const base = process.env.BASE ?? "http://localhost:3000";

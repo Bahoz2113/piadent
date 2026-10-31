@@ -15,7 +15,7 @@ export const INTEGRATION_KIND_LABELS: Record<IntegrationKind, string> = {
  */
 export const PROVIDER_READINESS: Record<IntegrationKind, { mock: boolean; waitingFor: string }> = {
   sms: { mock: true, waitingFor: "Sağlayıcı seçimi, sözleşme, test hesabı, teslim webhook dokümanı; iletişim izni değerlendirmesi" },
-  payment: { mock: true, waitingFor: "Ödeme kuruluşu sözleşmesi, sandbox erişimi, callback imza dokümanı; kart verisi VİADENT'te tutulmaz" },
+  payment: { mock: true, waitingFor: "Ödeme kuruluşu sözleşmesi, sandbox erişimi, callback imza dokümanı; kart verisi PİA-DENT'te tutulmaz" },
   whatsapp: { mock: false, waitingFor: "Resmî WhatsApp Business Platform erişimi (QR oturumu resmî API değildir), şablon onayı" },
   email: { mock: false, waitingFor: "E-posta sağlayıcısı ve alan adı doğrulaması (SPF/DKIM)" },
   e_invoice: { mock: false, waitingFor: "Yetkili GİB entegratörü sözleşmesi, test belgesi, iptal/itiraz senaryosu ve mali müşavir onayı" },

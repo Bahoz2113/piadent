@@ -1,6 +1,6 @@
 # Sekreter — günlük akış (1 sayfa)
 
-**Sabah: Bugün ekranı.** Günün randevuları ve VİA Akış görevleri (neden, sorumlu, sonraki adım). "Geciken randevu" görevi randevu saati eşik kadar geçince düşer; **Geldi / Gelmedi** ile kapatın.
+**Sabah: Bugün ekranı.** Günün randevuları ve PİA Akış görevleri (neden, sorumlu, sonraki adım). "Geciken randevu" görevi randevu saati eşik kadar geçince düşer; **Geldi / Gelmedi** ile kapatın.
 ![Bugün](img/10-sekreter-bugun.jpg)
 
 **Ajanda.** Gün/hafta, hekime ya da koltuğa göre. Boş alana tıklayıp randevu verin; çakışma ve çalışma saati dışı uyarıları sunucudan gelir (bilinçli onayla geçilebilir, ikinci bir randevu aynı saate verilemez).

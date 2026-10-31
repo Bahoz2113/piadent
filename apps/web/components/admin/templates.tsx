@@ -24,7 +24,7 @@ export function TemplatesPanel({ notify }: { notify: Notify }) {
   if (tpls.error || types.error) return <div className="card"><ErrorState error={(tpls.error ?? types.error)!} /></div>;
   return (
     <div className="stack" style={{ gap: 16 }}>
-      <Alert kind="warning">Belge türü kataloğu VİADENT'in kendi sınıflandırmasıdır ve <strong>klinik/hukuk incelemesinden geçmemiştir (DEMO)</strong>. VİADENT bilgilendirme veya onam metni üretmez; şablon metnini kliniğin danışmanları sağlar. Kayıtlar elektronik imza değildir.</Alert>
+      <Alert kind="warning">Belge türü kataloğu PİA-DENT'in kendi sınıflandırmasıdır ve <strong>klinik/hukuk incelemesinden geçmemiştir (DEMO)</strong>. PİA-DENT bilgilendirme veya onam metni üretmez; şablon metnini kliniğin danışmanları sağlar. Kayıtlar elektronik imza değildir.</Alert>
       <section className="card">
         <div className="card-head">
           <div><h2>Şablonlar</h2><p className="muted small">Onaylanan sürüm donar (metin ve özeti değişmez). Değişiklik yeni sürümle yapılır; eski sürümle üretilmiş belgeler eski metni korur.</p></div>
@@ -118,7 +118,7 @@ function ReadinessRules({ notify, types }: { notify: Notify; types: DocType[] })
   }
   return (
     <section className="card">
-      <div className="card-head"><div><h2>VİA Hazır kuralları</h2><p className="muted small">Yarınki randevular bu kurallara göre kontrol edilir; eksik varsa sekreteryaya görev düşer. Tıbbi uygunluk hakkında otomatik karar verilmez; hekim gerekçeli istisna kaydedebilir.</p></div></div>
+      <div className="card-head"><div><h2>PİA Hazır kuralları</h2><p className="muted small">Yarınki randevular bu kurallara göre kontrol edilir; eksik varsa sekreteryaya görev düşer. Tıbbi uygunluk hakkında otomatik karar verilmez; hekim gerekçeli istisna kaydedebilir.</p></div></div>
       <ul className="list">{(rules.data?.items ?? []).map((r) => (
         <li key={r.id} className="row" style={{ padding: "10px 20px", justifyContent: "space-between" }}>
           <span>{r.kind === "anamnesis_reviewed" ? `Son ${r.maxAgeDays} gün içinde alınmış ve hekimce onaylı anamnez` : `${r.procedure} için “${r.documentType}” kabul edilmiş olmalı`}

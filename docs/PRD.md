@@ -1,4 +1,4 @@
-# VİADENT — Ürün Gereksinimleri (PRD)
+# PİA-DENT — Ürün Gereksinimleri (PRD)
 
 > Kaynak: `VIADENT_Plan.pdf` (22.10.2026) ve `VIADENT_Claude_Prompt.pdf`. Bu belge planın uygulanabilir özetidir; plan ile çelişki olursa plan esastır ve fark `decisions.md`'ye yazılır.
 
@@ -10,10 +10,10 @@ Hekimin işini hızlandır, sekreteryanın takibini kolaylaştır, klinik sahibi
 Türkiye'de tek şubeli, birkaç hekimli özel diş klinikleri. Üç pilot klinikle doğrulanacak (F0). Çok şube aynı temelin üzerine eklenir.
 
 ## Beş ürün ilkesi
-1. Bugün ne yapılacağı açık olsun (VİA Akış).
+1. Bugün ne yapılacağı açık olsun (PİA Akış).
 2. Hasta yolculuğu kopmasın (randevu → plan → seans → belge → ödeme → kontrol aynı geçmişte).
 3. Hesap açıklanabilir olsun (işlem bedeli, alacak, tahsilat, avans, iade, vade ayrı).
-4. Kendi imzamız görünsün (VİA Akış, VİA Net, VİA İz; özgün tasarım ve metin).
+4. Kendi imzamız görünsün (PİA Akış, PİA Net, PİA İz; özgün tasarım ve metin).
 5. Taşınabilir ve işletilebilir olsun (yedek, geri yükleme, dışa aktarım, açılış baştan tasarımda).
 
 ## Gezinme
@@ -32,19 +32,19 @@ Hasta 360: sabit kimlik özeti + Özet / Tedavi / Finans / Sağlık / Belgeler /
 Hasta oluştur → randevu ver → geliş kaydet → tedavi planı ve işlem → tahsilat → açık bakiye → kontrol görevi.
 Gerçek veritabanında kalıcı; veriler tamamen sentetik. Geçişi ekran sayısı değil akışın kabul testleri belirler.
 
-**Bu oturum sonunda çalışan kısım:** hasta oluştur → randevu ver → geliş kaydet → VİA Akış görevleri → VİA İz geçmişi. Tedavi/tahsilat Görev 2–3.
+**Bu oturum sonunda çalışan kısım:** hasta oluştur → randevu ver → geliş kaydet → PİA Akış görevleri → PİA İz geçmişi. Tedavi/tahsilat Görev 2–3.
 
 ## İmza özellikleri
 | Özellik | Öncelik | Kabul koşulu | Durum |
 |---|---|---|---|
-| VİA Akış | P0 | Aynı olay aynı görev türünde bir kez; tamamlanan iş kapanır; yetkisiz kişi finans/klinik ayrıntı göremez | **Temel sürüm çalışıyor** (3 görev türü, otomatik kapanış, hassasiyet filtresi) |
-| VİA Net | P0 | Alt kayıt toplamı üst toplamı verir; ödeme borçla karışmaz | Görev 3 |
-| VİA İz | P0 | Yalnız değişen alanlar; boş değer “Belirtilmedi”; sırlar loga yazılmaz | **Hasta bazlı çalışıyor** |
-| VİA Yolculuk | P0/P1 | Plan sürümü, seans, ödeme kaynağa bağlı | Görev 2–3 sonrası |
-| VİA Hazır | P1 | Eksik belge nedeni; otomatik tıbbi karar yok | Görev 4 |
-| VİA Denge | P1 | Öneri rezervasyon değildir; seçimde çakışma yeniden kontrol | Sonra |
-| VİA Köprü | P1 | Sağlayıcı kabulü ≠ nihai başarı; aynı webhook iki kayıt doğurmaz | Görev 5 |
-| VİA Asistan | P2, isteğe bağlı | Çıktı taslaktır; onaysız işlem yok | Veri kalitesi ve yetki modeli sonrası |
+| PİA Akış | P0 | Aynı olay aynı görev türünde bir kez; tamamlanan iş kapanır; yetkisiz kişi finans/klinik ayrıntı göremez | **Temel sürüm çalışıyor** (3 görev türü, otomatik kapanış, hassasiyet filtresi) |
+| PİA Net | P0 | Alt kayıt toplamı üst toplamı verir; ödeme borçla karışmaz | Görev 3 |
+| PİA İz | P0 | Yalnız değişen alanlar; boş değer “Belirtilmedi”; sırlar loga yazılmaz | **Hasta bazlı çalışıyor** |
+| PİA Yolculuk | P0/P1 | Plan sürümü, seans, ödeme kaynağa bağlı | Görev 2–3 sonrası |
+| PİA Hazır | P1 | Eksik belge nedeni; otomatik tıbbi karar yok | Görev 4 |
+| PİA Denge | P1 | Öneri rezervasyon değildir; seçimde çakışma yeniden kontrol | Sonra |
+| PİA Köprü | P1 | Sağlayıcı kabulü ≠ nihai başarı; aynı webhook iki kayıt doğurmaz | Görev 5 |
+| PİA Asistan | P2, isteğe bağlı | Çıktı taslaktır; onaysız işlem yok | Veri kalitesi ve yetki modeli sonrası |
 
 ## Ölçülecek pilot sonuçları
 Randevu oluşturma ve tahsilat kaydetme süresi; günlük takiplerin kapanma oranı; açıklanamayan hesap farkları; işe alışma destek ihtiyacı; kritik hata sayısı. Başlangıç değerleri ölçülmeden kazanım yüzdesi yazılmaz.

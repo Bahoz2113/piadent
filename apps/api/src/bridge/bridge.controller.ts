@@ -19,7 +19,7 @@ type C = import("pg").PoolClient;
 /** Aktif bağlantıyı bulur; yoksa iş oluşturulmaz (sessiz başarı yok). */
 export async function activeConnection(c: C, kind: string) {
   const r = (await c.query("select id, provider, mode from integration_connections where kind = $1 and status = 'active' order by created_at limit 1", [kind])).rows[0];
-  if (!r) throw new AppError(409, "PROVIDER_NOT_CONFIGURED", "Bu işlem için etkin bir sağlayıcı bağlantısı yok (VİA Köprü).");
+  if (!r) throw new AppError(409, "PROVIDER_NOT_CONFIGURED", "Bu işlem için etkin bir sağlayıcı bağlantısı yok (PİA Köprü).");
   return r as { id: string; provider: string; mode: string };
 }
 export async function createJob(c: C, ctx: RequestContext, j: { connectionId: string; operation: string; sourceType: string; sourceId: string;
@@ -34,7 +34,7 @@ export async function createJob(c: C, ctx: RequestContext, j: { connectionId: st
     await c.query(
       `insert into tasks(tenant_id, kind, source_type, source_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
        values ($1,'integration_approval','integration_job',$2::uuid,'integration_approval:' || $2::text,'Dış işlem onay bekliyor',$3,
-               'VİA Köprü ekranında işi inceleyin; isteyen kişiden farklı bir yetkili onaylamalı veya gerekçeyle reddetmeli.','clinic_admin', now())`,
+               'PİA Köprü ekranında işi inceleyin; isteyen kişiden farklı bir yetkili onaylamalı veya gerekçeyle reddetmeli.','clinic_admin', now())`,
       [ctx.tenantId, jobId, `${j.operation} işlemi onay kapısında bekliyor.`]);
   }
   await audit(c, ctx, { action: "integration_job.create", entityType: "integration_job", entityId: jobId,
@@ -43,7 +43,7 @@ export async function createJob(c: C, ctx: RequestContext, j: { connectionId: st
 }
 
 /**
- * VİA Köprü (VD-012): dış işler tek merkezde — gönderildi / sağlayıcı kabul etti / nihai sonuç / yeniden deneme / onay.
+ * PİA Köprü (VD-012): dış işler tek merkezde — gönderildi / sağlayıcı kabul etti / nihai sonuç / yeniden deneme / onay.
  * Gerçek sağlayıcı yok; MOCK bağlantılar açıkça etiketlidir ve dışarı hiçbir şey göndermez.
  */
 @Controller()

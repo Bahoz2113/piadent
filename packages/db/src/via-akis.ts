@@ -1,5 +1,5 @@
 /**
- * VİA Akış görev üreticisi (API ve worker ortak kullanır). Tenant bağlamı açık bir
+ * PİA Akış görev üreticisi (API ve worker ortak kullanır). Tenant bağlamı açık bir
  * transaction içinde çağrılmalıdır. Kurallar:
  *  - Aynı olay için aynı türde yalnız bir açık görev (kısmi tekil indeks).
  *  - Kaynak durum çözülünce görev otomatik kapanır (closed_reason ile).

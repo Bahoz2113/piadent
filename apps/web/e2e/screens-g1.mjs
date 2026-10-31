@@ -10,7 +10,7 @@ async function session(email, viewport, scale = 1) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(process.env.E2E_PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await page.getByRole("heading", { name: "VİA Akış" }).waitFor();
+  await page.getByRole("heading", { name: "PİA Akış" }).waitFor();
   return { ctx, page };
 }
 const D = { width: 1366, height: 900 };

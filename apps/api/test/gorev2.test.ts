@@ -1,6 +1,6 @@
 /**
  * Görev 2: işlem kataloğu (T01), sürümlü tarife (T02/T03), tanı ve odontogram (H04/H05),
- * plan → teklif → kabul (AT-05), ziyarete bağlı gerçekleşen işlem (VD-008), plan takibi (VİA Akış).
+ * plan → teklif → kabul (AT-05), ziyarete bağlı gerçekleşen işlem (VD-008), plan takibi (PİA Akış).
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
@@ -320,7 +320,7 @@ describe("H04/H05 tanı ve odontogram bulgusu", () => {
   });
 });
 
-describe("VİA Akış plan takibi", () => {
+describe("PİA Akış plan takibi", () => {
   it("kabul edilen plan randevusuzsa görev açılır; randevu verilince kapanır", async () => {
     const p = (await sec.post("/patients", { firstName: "Planlı", lastName: "Randevusuz" }).expect(201)).body.patient.id;
     const { versionId } = (await dentist.post(`/patients/${p}/plans`, { title: "Takip", practitionerId: pracId }).expect(201)).body;

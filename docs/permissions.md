@@ -26,14 +26,14 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 | `document.issue` (onaylı şablondan belge üretme) | – | ✔ | ✔ | – | – |
 | `document.decision` (yüz yüze kabul/ret kaydı) | – | ✔ | ✔ | – | – |
 | `document.revoke` (belgeyi gerekçeyle iptal) | ✔ | ✔ | – | – | – |
-| `template.manage` (belge türü, şablon sürümü, VİA Hazır kuralı) | ✔ | – | – | – | – |
+| `template.manage` (belge türü, şablon sürümü, PİA Hazır kuralı) | ✔ | – | – | – | – |
 | `file.read` (idari dosyalar; klinik kategoriler ayrıca `patient.health.read`) | ✔ | ✔ | ✔ | ✔ | – |
 | `file.write` (yükleme) | – | ✔ | ✔ | ✔ | – |
 | `file.delete` (gerekçeyle silindi işareti) | ✔ | ✔ | – | – | – |
 | `communication.write` (iletişim tercihi) | ✔ | ✔ | ✔ | – | – |
 | `message.send` (kuyruğa alma; şimdilik MOCK sağlayıcı) | ✔ | – | ✔ | – | ✔ |
 | `followup.write` (kontrol planlama) | – | ✔ | – | – | – |
-| `readiness.exception` (VİA Hazır gerekçeli istisna) | – | ✔ | – | – | – |
+| `readiness.exception` (PİA Hazır gerekçeli istisna) | – | ✔ | – | – | – |
 | `audit.read` | ✔ | ✔ | – | – | – |
 | `team.manage` (davet, rol, erişim kaldırma), `settings.manage` | ✔ | – | – | – | – |
 | `schedule.manage` (hekim/koltuk, çalışma saati, kapatma, işlem türü) | ✔ | – | – | – | – |
@@ -46,10 +46,10 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 
 Notlar:
 - “Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez” (Plan §05) → yönetici klinik notları **okuyamaz** (testli).
-- VİA İz: hasta geçmişi `patient.read` ile görünür, ancak `clinical_note` ve `anamnesis` olayları yalnız `patient.health.read` ile; not/yanıt içeriği audit'e hiç yazılmaz.
+- PİA İz: hasta geçmişi `patient.read` ile görünür, ancak `clinical_note` ve `anamnesis` olayları yalnız `patient.health.read` ile; not/yanıt içeriği audit'e hiç yazılmaz.
 - Hasta özetindeki kritik anamnez işaretleri (`clinical`) yalnız `patient.health.read` rollerine döner; diğer rollerde alan `null`.
 - Rol değişikliği ve erişim kaldırma kişinin kendisine uygulanamaz; üyelik her istekte okunduğundan bir sonraki istekte geçerlidir.
-- VİA Akış: `general` görevler herkese; `clinical` görevler `patient.health.read`, `finance` görevler `finance.read` ister (sunucuda filtrelenir).
+- PİA Akış: `general` görevler herkese; `clinical` görevler `patient.health.read`, `finance` görevler `finance.read` ister (sunucuda filtrelenir).
 - Odontogram ve tanı (`/patients/:id/chart`) `patient.health.read` ister: sekreter plan ve teklif bedelini görür, klinik haritayı görmez; yönetici de görmez (testli, ADR-023).
 - Asistan şimdilik işlem kaydetmez; hekim adına kayıt (asistan girer, hekim onaylar) pilot geri bildirimiyle değerlendirilecek.
 - Sekreterya vezne işini yapar (tahsilat, dağıtım) ama iade yapamaz ve klinik gelir raporlarını göremez (Plan §05; AT-02 iade testi). Yönetici raporları ve ayarları görür, tahsilat girmez (rol ayrılığı). Hekim varsayılan olarak hasta hesabını ve primi görmez (“ayrı izin”).
@@ -57,7 +57,7 @@ Notlar:
 - Belge türü hekime özel olabilir (`issuer_role = dentist`, ör. istirahat belgesi): sekreter hazırlayamaz (403).
 - Klinik dosyalar (röntgen, klinik fotoğraf, klinik belge) sekreter/yönetici/finans listelerinde görünmez ve doğrudan istekte 404 döner; yönetici idari dosyaları görür.
 
-## VİA Köprü yetkileri (Görev 5)
+## PİA Köprü yetkileri (Görev 5)
 | Yetki | Yönetici | Finans | Diğerleri |
 |---|---|---|---|
 | `integration.read` — bağlantılar, dış işler, webhook günlüğü | ✔ | ✔ | — |
@@ -97,7 +97,7 @@ Hekimin klinik raporlarda yalnız kendi kayıtlarını görmesi sunucuda üyelik
 ## Henüz uygulanmayan roller
 - **Laboratuvar dış kullanıcısı** (P1): yalnız atanmış iş ve gerekli teknik bilgi.
 - **Hasta / yetkili yakın** (P1): portal; yakınlık tek başına yetki değildir.
-- **VİADENT destek**: süreli, amaçlı, kayıtlı erişim; varsayılan hasta içeriği yok.
+- **PİA-DENT destek**: süreli, amaçlı, kayıtlı erişim; varsayılan hasta içeriği yok.
 
 ## Test kanıtları
-AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`), finans rolleri ve çapraz tenant (`gorev3.test.ts`, E2E `gorev3.spec.ts`), belge/dosya/iletişim rolleri ve çapraz tenant (`gorev4.test.ts`, E2E `gorev4.spec.ts`), VİA Köprü yetkileri, dört göz ve çapraz tenant (`gorev5.test.ts`, E2E `gorev5.spec.ts`), operasyon/rapor yetkileri, hekim “yalnız kendi”, CSV izni ve çapraz tenant (`gorev6.test.ts`, E2E `gorev6.spec.ts`). Sonuçlar: `verification.md`.
+AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`), finans rolleri ve çapraz tenant (`gorev3.test.ts`, E2E `gorev3.spec.ts`), belge/dosya/iletişim rolleri ve çapraz tenant (`gorev4.test.ts`, E2E `gorev4.spec.ts`), PİA Köprü yetkileri, dört göz ve çapraz tenant (`gorev5.test.ts`, E2E `gorev5.spec.ts`), operasyon/rapor yetkileri, hekim “yalnız kendi”, CSV izni ve çapraz tenant (`gorev6.test.ts`, E2E `gorev6.spec.ts`). Sonuçlar: `verification.md`.

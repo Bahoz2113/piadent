@@ -1,5 +1,5 @@
 /**
- * DEMO anamnez soru seti — VİADENT tasarımı, klinisyen onayı ALINMAMIŞTIR (Plan §06, Ek C).
+ * DEMO anamnez soru seti — PİA-DENT tasarımı, klinisyen onayı ALINMAMIŞTIR (Plan §06, Ek C).
  * Pilot öncesi diş hekimiyle gözden geçirilecek; rakip formundaki soru listesi kopyalanmamıştır.
  * Yanıt üç durumludur: yanıtsız (kayıt yok) / hayır / evet (+ ayrıntı). "Bilmiyor" ayrıca tutulur.
  */

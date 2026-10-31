@@ -1,4 +1,4 @@
-# VİADENT tek sunuculu pilot kurulumu ÖRNEĞİ (Görev 8). Gözden geçirilmeden üretimde kullanmayın:
+# PİA-DENT tek sunuculu pilot kurulumu ÖRNEĞİ (Görev 8). Gözden geçirilmeden üretimde kullanmayın:
 #  - Sırlar ./secrets/*.env dosyalarından gelir (git dışı, 0600; tercihen secret manager'dan üretilir). Bu dosyada sır yok.
 #  - Veritabanı yalnız iç ağda; dışarı yalnız ters vekil (Caddy, otomatik TLS) açılır.
 #  - Yedekler ayrı birime yazılır; birimi sunucu dışına kopyalayın (3-2-1). Geri yükleme doğrulaması günlük çalışır.

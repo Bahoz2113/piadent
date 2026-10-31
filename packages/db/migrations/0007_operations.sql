@@ -78,7 +78,7 @@ create table lab_orders (
   practitioner_id  uuid not null,
   supplier_id      uuid not null,
   plan_item_id     uuid,
-  appointment_id   uuid,                                   -- prova/teslim randevusu (VİA Akış hazırlık görevi)
+  appointment_id   uuid,                                   -- prova/teslim randevusu (PİA Akış hazırlık görevi)
   work_type        text not null check (length(work_type) between 2 and 120),
   teeth            text[] not null default '{}',
   shade            text check (shade is null or length(shade) <= 30),

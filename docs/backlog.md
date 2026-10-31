@@ -8,15 +8,15 @@ Durum sözlüğü: **tamamlandı** = kabul kriteri sağlandı ve test edildi · 
 | VD-002 Tenant ve rol temeli | **kısmi** (davet + rol değişikliği eklendi) | UI/API çapraz tenant negatif testleri ✔, RLS testleri ✔, worker kısıtlı rol ✔. Dosya erişimi Görev 4'te (dosya modülü yok). |
 | VD-003 Tasarım sistemi ve kabuk | **kısmi** | Tokenlar, kabuk, form/tablo/çekmece/rozet, boş/yükleme/hata/yetkisiz durumları, klavye odağı, kontrast testi ✔. Bileşenler `packages/ui`'ye taşınmadı; Storybook benzeri örnek sayfası yok. |
 | VD-004 Hasta kayıt ve arama | **tamamlandı** (ilk kapsam) | Kalıcı kayıt, maskeli arama, mükerrer aday, tarih doğrulama, audit, sürüm kontrolü, yakın/veli ve yasal temsil (Görev 1) — testli. |
-| VD-005 Ajanda ve kaynaklar | **tamamlandı** (ilk kapsam) | Çakışma (AT-03), çalışma saatleri, kapatma (eşzamanlılık testli), işlem türü, hekim/koltuk yönetimi, gün+hafta görünümü, mobil liste ✔. Açık: sürükle-bırak taşıma, ay görünümü, bekleme listesi (VİA Denge, P1). |
+| VD-005 Ajanda ve kaynaklar | **tamamlandı** (ilk kapsam) | Çakışma (AT-03), çalışma saatleri, kapatma (eşzamanlılık testli), işlem türü, hekim/koltuk yönetimi, gün+hafta görünümü, mobil liste ✔. Açık: sürükle-bırak taşıma, ay görünümü, bekleme listesi (PİA Denge, P1). |
 | VD-006 Anamnez ve klinik not | **kısmi** | Sürümlü anamnez + hekim onayı + kritik uyarı ✔, yalnız-ekleme not + düzeltme ✔, notun ziyarete bağlanması ✔ (Görev 2). Açık: soru setinin klinisyen onayı, taslak otomatik kaydı. |
 | VD-007 Plan ve odontogram | **tamamlandı** (ilk kapsam) | Özgün odontogram (FDI, daimi/süt/karma, yüzey seçimi), bulgu + tanı (gerekçeli durum geçmişi), katalog + sürümlü/hekime özel tarife, plan → teklif → karar → yeni sürüm; kabul edilen sürüm API ve DB'de değişmez (AT-05 testli). Açık: tanı kod sistemi (ADR-023), klinik içeriğin hekim onayı, plan PDF/teklif çıktısı (Görev 4), seans → randevu otomatik önerisi. |
 | VD-008 Gerçekleşen işlem ve hesap | **tamamlandı** (ilk kapsam) | Ziyarete bağlı gerçekleşen işlem, bedel snapshot'ı, kuruş yuvarlaması, gerekçeli iptal/düzeltme ✔; işlem aynı transaction'da hasta alacağı üretir, iptal/düzeltmede alacak iptal + dağıtım ters kaydı ✔ (Görev 3). |
 | VD-009 Ödeme, dağıtım, iade | **tamamlandı** (ilk kapsam, TRY) | Alacak/ödeme/dağıtım/avans/iade/kasa/gider ayrı; idempotency; DB tutar tetikleyicileri; eşzamanlı dağıtım; AT-06..AT-10, AT-19 gerçek DB'de testli. Açık: iade ikinci onay eşiği, banka/POS mutabakatı, makbuz/e-belge (Görev 5), ticari indirim/alacak düzeltmesi kaydı, çoklu para birimi davranışı. |
-| VD-010 VİA Akış / Net / İz | **kısmi** | Görev 6: laboratuvar (gecikme/kabul/hazırlık) ve stok (en az seviye/SKT) görevleri, klinik geneli LOG sorgusu. Akış (7 tür: geciken geliş, teyit, eksik iletişim, kapatma çakışması, anamnez onayı, randevusuz kabul edilmiş plan, yanıtsız teklif; dedupe, otomatik kapanış, rol/hassasiyet filtresi) ✔; İz (hasta bazlı, maskeli, rol kontrollü) ✔; Net: hasta hesabı (açılabilir toplamlar, hareket defteri, mutabakat), klinik özeti (işlem ≠ tahsilat), bakiyeler + yaşlandırma, kasa, gider, prim tahakkuku ✔ (Görev 3). |
+| VD-010 PİA Akış / Net / İz | **kısmi** | Görev 6: laboratuvar (gecikme/kabul/hazırlık) ve stok (en az seviye/SKT) görevleri, klinik geneli LOG sorgusu. Akış (7 tür: geciken geliş, teyit, eksik iletişim, kapatma çakışması, anamnez onayı, randevusuz kabul edilmiş plan, yanıtsız teklif; dedupe, otomatik kapanış, rol/hassasiyet filtresi) ✔; İz (hasta bazlı, maskeli, rol kontrollü) ✔; Net: hasta hesabı (açılabilir toplamlar, hareket defteri, mutabakat), klinik özeti (işlem ≠ tahsilat), bakiyeler + yaşlandırma, kasa, gider, prim tahakkuku ✔ (Görev 3). |
 | VD-011 Dosya ve belge sürümü | **tamamlandı** (ilk kapsam) | Belge türü / şablon sürümü / hasta belgesi / onay isteği / kanıt ayrı; SHA-256; AT-14 ✔. Özel depo, yükleme ≠ seçme, tarama portu (temel + clamd), karantina, erişim izi; AT-11 ✔. Açık: üretimde ClamAV kurulumu, S3 adaptörü, saklama/imha işi, PDF çıktısı, görüntüleyici, uzaktan onay kanalı (Görev 5). |
-| VD-012 Outbox ve entegrasyon merkezi | **tamamlandı** (MOCK kapsamı; gerçek sağlayıcılar **engelli**) | Port/adapter, MOCK SMS + online ödeme, dış iş kuyruğu (idempotency, retry/backoff, dead-letter, zaman aşımı → durum sorgusu/mutabakat), imzalı webhook (tekrar, ters sıra, replay, geçersiz imza), dört göz onay kapısı, canlı gönderim kapısı, VİA Köprü ekranı; AT-12/AT-13 testli (Görev 5). Gerçek SMS/WhatsApp/ödeme/e-belge/DHBS adaptörü: yetkili doküman + test erişimi bekliyor. |
-| VD-013 Laboratuvar ve prim | **tamamlandı** (ilk kapsam) | Laboratuvar iş emri (aşama/revizyon/maliyet, iş föyü en az veri, VİA Akış), tedarikçi carisi, tedavi bazlı prim + ters prim + prim ödemesi (tahakkuku aşamaz), temel stok (lot/SKT, hareket tabanlı, sayım farkı), 19 rapor (toplam = alt kayıtlar testli) + CSV (Görev 6). Açık: dış laboratuvar portalı, satın alma siparişi, lab maliyetinin primden düşülmesi kuralı, kurum carisi (F6). |
+| VD-012 Outbox ve entegrasyon merkezi | **tamamlandı** (MOCK kapsamı; gerçek sağlayıcılar **engelli**) | Port/adapter, MOCK SMS + online ödeme, dış iş kuyruğu (idempotency, retry/backoff, dead-letter, zaman aşımı → durum sorgusu/mutabakat), imzalı webhook (tekrar, ters sıra, replay, geçersiz imza), dört göz onay kapısı, canlı gönderim kapısı, PİA Köprü ekranı; AT-12/AT-13 testli (Görev 5). Gerçek SMS/WhatsApp/ödeme/e-belge/DHBS adaptörü: yetkili doküman + test erişimi bekliyor. |
+| VD-013 Laboratuvar ve prim | **tamamlandı** (ilk kapsam) | Laboratuvar iş emri (aşama/revizyon/maliyet, iş föyü en az veri, PİA Akış), tedarikçi carisi, tedavi bazlı prim + ters prim + prim ödemesi (tahakkuku aşamaz), temel stok (lot/SKT, hareket tabanlı, sayım farkı), 19 rapor (toplam = alt kayıtlar testli) + CSV (Görev 6). Açık: dış laboratuvar portalı, satın alma siparişi, lab maliyetinin primden düşülmesi kuralı, kurum carisi (F6). |
 | VD-014 İçe aktarma ve pilot | **kısmi** (yazılım tarafı tamamlandı; pilot kapıları açık) | Görev 7: hasta + açılış bakiyesi dry-run içe aktarma (AT-16), açık JSON klinik/hasta dışa aktarımı, şifreli yedek + izole geri yükleme doğrulaması (AT-17), TOTP MFA, güvenlik başlıkları/sınırlayıcı, performans ölçümü (100k/1M/50), yayın kapıları, runbook, pilot kontrol listesi. Açık: hukuk/KVKK/sözleşme, barındırma, sızma testi, klinik kabul, randevu/tedavi/ödeme geçmişi aktarımı (kaynak biçim gerekli) — `release-gates.md` |
 | VD-015 Pilot altyapısı | **kısmi** (yazılım tamamlandı; imaj ve CI ilk koşusu bekliyor) | Görev 8 — `deployment.md`. Açık: imajların ilk derlemesi (imaj deposu erişimi), CI ilk koşusu (GitHub deposu), barındırma kurulumu |
 | VD-016 Güvenlik derinleştirme | **kısmi** (Görev 9 + 10 tamamlandı; sızma testi ve kademeli gecikme açık) | ADR-056…061; `security-review.md` |
@@ -31,10 +31,10 @@ VD-007 tamamlandı (ilk kapsam), VD-008 kısmi (hesap Görev 3). H04, T01, T02, 
 VD-008 ve VD-009 tamamlandı (ilk kapsam, TRY), VD-013 kısmi (prim tahakkuku). H06, R02, R11, T07 çalışıyor; O03, R01, R20, T08, T09, T12 kısmi. ADR-027…031. Testler: API 99, E2E 22.
 
 ## Tamamlanan iş paketi: Görev 4 (23.10.2026)
-VD-011 tamamlandı (ilk kapsam). H11, H15 çalışıyor; H10, H13, A02, A03, R14, R22 kısmi; Ek B 43 başlık VİADENT türüne eşlendi (kısmi), B03/B43 uygulanmayacak. VİA Hazır temeli (P1), iletişim tercihi, MOCK mesaj. ADR-032…036. Testler: API 117, E2E 28.
+VD-011 tamamlandı (ilk kapsam). H11, H15 çalışıyor; H10, H13, A02, A03, R14, R22 kısmi; Ek B 43 başlık PİA-DENT türüne eşlendi (kısmi), B03/B43 uygulanmayacak. PİA Hazır temeli (P1), iletişim tercihi, MOCK mesaj. ADR-032…036. Testler: API 117, E2E 28.
 
 ## Tamamlanan iş paketi: Görev 5 (23.10.2026)
-VD-012 tamamlandı (MOCK kapsamı). R24 kısmi (online ödeme isteği ≠ tahsilat, MOCK), R14 kısmi sürüyor (gerçek sağlayıcı yok); E01/E02/E03 engelli kalır (gerekçe VİA Köprü ekranında). AT-13 geçti, AT-12 sağlayıcı bildirimiyle genişledi. ADR-037…040. Testler: API 135, E2E 32.
+VD-012 tamamlandı (MOCK kapsamı). R24 kısmi (online ödeme isteği ≠ tahsilat, MOCK), R14 kısmi sürüyor (gerçek sağlayıcı yok); E01/E02/E03 engelli kalır (gerekçe PİA Köprü ekranında). AT-13 geçti, AT-12 sağlayıcı bildirimiyle genişledi. ADR-037…040. Testler: API 135, E2E 32.
 
 ## Tamamlanan iş paketi: Görev 6 (23.10.2026)
 VD-013 tamamlandı (ilk kapsam). Ek A rapor ve tanımlama ID'leri tek tek karşılandı: çalışıyor R01, R03, R04, R05, R08, R09, R12, R13, R15, R19, R20, R22, R23, T15, T16, T18, H12; kısmi R14, R18, R24, T19, O03, G05; engelli R16; ertelendi (gerekçeli) R06, R07, R10, R17, R21, T10, T11, T17. ADR-041…045. Testler: API 157, E2E 40.
@@ -56,7 +56,7 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 
 **Görev 12 — tamamlandı (27.10.2026):** dosya içeriği imhası (0015, ADR-067) · işletim uyarı metrikleri + eşikler (0016, ADR-068) · içe aktarmada açık sütun eşleme ekranı (ADR-069) · axe erişilebilirlik taraması E2E'de, 2 bulgu düzeltildi (ADR-070) · WAL arşivleme + PITR tatbikatı gerçek kümede (ADR-071).
 
-**Görev 13 — tamamlandı (27.10.2026):** geçmiş randevu içe aktarımı (0017, ADR-072; sentetik sözleşme + örnek) · UAT senaryoları `uat-senaryolari.md` · 19 rapor + haftalık ajanda 100k/1M ölçümü, hekim-hasta 18× hızlandı, arka plan ertelendi (ADR-074) · VİA Akış eşikleri klinik ayarı (0018, ADR-073).
+**Görev 13 — tamamlandı (27.10.2026):** geçmiş randevu içe aktarımı (0017, ADR-072; sentetik sözleşme + örnek) · UAT senaryoları `uat-senaryolari.md` · 19 rapor + haftalık ajanda 100k/1M ölçümü, hekim-hasta 18× hızlandı, arka plan ertelendi (ADR-074) · PİA Akış eşikleri klinik ayarı (0018, ADR-073).
 
 **Görev 14 — tamamlandı (27.10.2026):** tedavi geçmişi aktarımı, alacak üretmez (0019, ADR-075) · perf DB'ye 300k işlem/alacak + 240k ödeme; borç bakiye 10,3 s → 0,33 s (0020, ADR-076) · migration/FORCE RLS bulgusu (ADR-077) · pilot provası tek akış E2E · rol kılavuzları + ekran turu. İmaj derleme + CI: depo/registry olmadığı için hâlâ açık.
 
@@ -73,7 +73,7 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 - Stok: satın alma siparişi, birden çok depo/şube, maliyet yöntemi (FIFO/ortalama) ve stok değerleme raporu; resmî ürün takip bildirimi yükümlülüğünün doğrulanması.
 - Raporlar: koltuk doluluğu (kullanılabilir süre modeli), kaydedilmiş rapor süzgeçleri, büyük raporların arka plana alınması, ana panelde haftalık karşılaştırma kartı (G05), dışa aktarımda XLSX.
 - Prim: hekimin kendi prim dökümünü görmesi (ayrı izin), prim ödemesinin bordro/stopaj ile ilişkisi (kapsam dışı; yalnız kayıt).
-- VİA Köprü: gerçek sağlayıcı adaptörleri (seçim + sözleşme + sandbox + webhook dokümanı geldikçe; her biri için sözleşme testi MOCK testleriyle aynı senaryoları geçmeli).
+- PİA Köprü: gerçek sağlayıcı adaptörleri (seçim + sözleşme + sandbox + webhook dokümanı geldikçe; her biri için sözleşme testi MOCK testleriyle aynı senaryoları geçmeli).
 - Sağlayıcı iadesinde zaman aşımı/bilinmiyor durumunda sağlayıcıdan iade durumu sorgusu (MOCK `query` var; gerçek API'ye göre).
 - Online ödeme bağlantısının süresi dolma işi (`expires_at` alanı var, iş yok) ve hastaya bağlantı gönderimi (SMS kanalıyla, izin + onay kapısıyla).
 - Webhook ret sayısı için hız sınırı/uyarı eşiği; webhook olay kaydı saklama süresi.
@@ -86,7 +86,7 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 - Kontrol görevinden doğrudan randevu verme kısayolu.
 - İade için ikinci onay eşiği (Plan §05), makbuz çıktısı, banka/POS ekstre mutabakatı.
 - Ticari indirim / alacak düzeltmesi kaydı (iade ile karıştırılmadan).
-- VİA Akış finans görevleri (vadesi geçmiş borç, dağıtılmamış avans) — `via_net.changed` olayı hazır.
+- PİA Akış finans görevleri (vadesi geçmiş borç, dağıtılmamış avans) — `via_net.changed` olayı hazır.
 - `<input type="date">` başlık biçimi tarayıcı yerel ayarına bağlı (headless Chromium'da aa/gg/yyyy); özel tarih seçici.
 - Tanı kod sistemi seçimi (lisans + klinisyen onayı) ve bulgu/katalog içeriğinin pilot hekimle doğrulanması.
 - Plan kalemini düzenleme çekmecesi (API'de `PATCH /plan-items/:id` var; arayüz şimdilik sil + yeniden ekle).
@@ -95,7 +95,7 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 - `plan_decision_pending` eşiğini (3 gün) klinik ayarına taşıma.
 - CI iş akışı Görev 8'de yazıldı (`.github/workflows/ci.yml`); depo GitHub'a bağlanınca ilk koşu ve imaj derlemesi doğrulanmalı.
 - Randevu oluşturmada Idempotency-Key (çift tık zaten arayüzde engelli; ağ tekrarına karşı).
-- VİA Akış eşiklerini klinik ayarına taşıma.
+- PİA Akış eşiklerini klinik ayarına taşıma.
 - Randevu sürükle-bırak taşıma (sunucu reddederse eski konuma dönüş) ve ay görünümü.
 - Anamnez soru setinin pilot hekimle gözden geçirilmesi (klinik içerik onayı).
 - Davet e-postası: sağlayıcı seçilince Görev 5 outbox üzerinden.

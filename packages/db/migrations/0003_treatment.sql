@@ -1,4 +1,4 @@
--- VİADENT 0003 (Görev 2): işlem kataloğu, sürümlü tarife, tanı, odontogram bulgusu,
+-- PİA-DENT 0003 (Görev 2): işlem kataloğu, sürümlü tarife, tanı, odontogram bulgusu,
 -- tedavi planı (sürüm / kalem / karar) ve ziyarete bağlı gerçekleşen işlem.
 -- Para: numeric(14,2). Kabul edilmiş/sunulmuş plan sürümü ve yayınlanmış tarife DB'de de değiştirilemez.
 
@@ -298,7 +298,7 @@ alter table clinical_notes add column appointment_id uuid;
 alter table clinical_notes add constraint clinical_notes_appointment_fk
   foreign key (tenant_id, appointment_id) references appointments(tenant_id, id);
 
--- VİA Akış: plan takibi.
+-- PİA Akış: plan takibi.
 alter table tasks drop constraint tasks_kind_check;
 alter table tasks add constraint tasks_kind_check
   check (kind in ('overdue_checkin','contact_pending','missing_contact','closure_conflict','anamnesis_review',

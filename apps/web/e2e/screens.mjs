@@ -11,7 +11,7 @@ for (const [name, viewport] of [["desktop", { width: 1366, height: 900 }], ["mob
   await page.getByLabel("E-posta").fill(process.env.E2E_EMAIL ?? "sekreter@demo-yesil.test");
   await page.getByLabel("Parola").fill(process.env.E2E_PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await page.getByRole("heading", { name: "VİA Akış" }).waitFor();
+  await page.getByRole("heading", { name: "PİA Akış" }).waitFor();
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${out}/${name}-1-bugun.png`, fullPage: true });
   await page.goto(`${base}/hastalar`);

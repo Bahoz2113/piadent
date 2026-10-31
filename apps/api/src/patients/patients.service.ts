@@ -205,7 +205,7 @@ export class PatientsService {
     });
   }
 
-  /** Tam kimlik no: gerekçe zorunlu, her açma denetim kaydına yazılır (hasta bazlı iz, VİA İz'de görünür). */
+  /** Tam kimlik no: gerekçe zorunlu, her açma denetim kaydına yazılır (hasta bazlı iz, PİA İz'de görünür). */
   async revealIdentity(ctx: RequestContext, id: string, reason: string) {
     return this.db.tx(ctx, async (c) => {
       const r = await c.query("select national_id_type, national_id_enc from patients where id = $1", [id]);
@@ -295,7 +295,7 @@ export class PatientsService {
     });
   }
 
-  /** VİA İz: okunabilir hasta geçmişi. Klinik içerik değişiklikleri yalnız sağlık yetkisiyle görünür. */
+  /** PİA İz: okunabilir hasta geçmişi. Klinik içerik değişiklikleri yalnız sağlık yetkisiyle görünür. */
   async history(ctx: RequestContext, id: string) {
     return this.db.tx(ctx, async (c) => {
       const exists = await c.query("select 1 from patients where id = $1", [id]);

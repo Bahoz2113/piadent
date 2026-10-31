@@ -1,4 +1,4 @@
--- VİADENT 0001: kimlik, tenant, hasta, ajanda, görev (VİA Akış), audit (VİA İz), outbox.
+-- PİA-DENT 0001: kimlik, tenant, hasta, ajanda, görev (PİA Akış), audit (PİA İz), outbox.
 -- Bu migration viadent_owner rolüyle çalışır. Uygulama rolleri tablo sahibi değildir.
 
 create extension if not exists btree_gist;
@@ -213,7 +213,7 @@ create table appointments (
 create index appointments_day_idx on appointments (tenant_id, starts_at);
 create index appointments_patient_idx on appointments (tenant_id, patient_id, starts_at desc);
 
--- ---------------------------------------------------------------- VİA Akış görevleri
+-- ---------------------------------------------------------------- PİA Akış görevleri
 create table tasks (
   id                      uuid primary key default gen_random_uuid(),
   tenant_id               uuid not null references tenants(id),
@@ -245,7 +245,7 @@ create unique index tasks_open_dedupe_uq on tasks (tenant_id, dedupe_key)
   where status in ('open','in_progress','blocked');
 create index tasks_open_idx on tasks (tenant_id, status, due_at);
 
--- ---------------------------------------------------------------- VİA İz (audit)
+-- ---------------------------------------------------------------- PİA İz (audit)
 create table audit_events (
   id                   bigint generated always as identity primary key,
   tenant_id            uuid references tenants(id),
@@ -336,7 +336,7 @@ grant select, insert, update on memberships, branches, tenant_counters, practiti
 grant select, insert on clinical_notes to viadent_app;
 grant select, insert on audit_events to viadent_app, viadent_worker;
 grant select, insert, update on outbox_events to viadent_app, viadent_worker;
--- İşçi: VİA Akış üretimi için gerekli en az yetki.
+-- İşçi: PİA Akış üretimi için gerekli en az yetki.
 grant select on patients, appointments, practitioners, memberships to viadent_worker;
 grant select, insert, update on tasks to viadent_worker;
 -- İşçi için aynı tenant politikaları (RLS policy'leri tüm rollere uygulanır; tenant bağlamı zorunlu).

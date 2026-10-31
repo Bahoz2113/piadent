@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-/** Görev 13 — geçmiş randevu içe aktarımı (ADR-072) ve VİA Akış eşikleri (ADR-073). */
+/** Görev 13 — geçmiş randevu içe aktarımı (ADR-072) ve PİA Akış eşikleri (ADR-073). */
 const PASSWORD = process.env.E2E_PASSWORD ?? "";
 test.skip(!PASSWORD, "E2E_PASSWORD (sentetik demo parolası) tanımlı değil");
 
@@ -61,7 +61,7 @@ test("geçmiş randevu aktarımı: hasta kartları → randevular (çakışma ha
   await expect(page.getByText(/Tamamlandı/).first()).toBeVisible();
 });
 
-test("Yönetim → Güvenlik → VİA Akış eşikleri: sınır dışı değer reddedilir, geçerli değer kaydedilir ve kalıcıdır", async ({ page }, info) => {
+test("Yönetim → Güvenlik → PİA Akış eşikleri: sınır dışı değer reddedilir, geçerli değer kaydedilir ve kalıcıdır", async ({ page }, info) => {
   test.skip(info.project.name !== "masaustu", "durumlu akış");
   await login(page, "yonetici@demo-yesil.test");
   await page.goto("/yonetim?sekme=guvenlik");
@@ -72,10 +72,10 @@ test("Yönetim → Güvenlik → VİA Akış eşikleri: sınır dışı değer r
   await expect(page.getByText(/Beklenen|en az|≥|5/).first()).toBeVisible();
   await f.fill("25");
   await page.getByRole("button", { name: "Eşikleri kaydet" }).click();
-  await expect(page.getByText(/VİA Akış eşikleri kaydedildi/)).toBeVisible();
+  await expect(page.getByText(/PİA Akış eşikleri kaydedildi/)).toBeVisible();
   await page.reload();
   await expect(page.getByLabel(/Geciken geliş uyarısı/)).toHaveValue("25");
   await page.getByLabel(/Geciken geliş uyarısı/).fill("10");
   await page.getByRole("button", { name: "Eşikleri kaydet" }).click();
-  await expect(page.getByText(/VİA Akış eşikleri kaydedildi/).last()).toBeVisible();
+  await expect(page.getByText(/PİA Akış eşikleri kaydedildi/).last()).toBeVisible();
 });

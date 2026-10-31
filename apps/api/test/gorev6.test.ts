@@ -1,6 +1,6 @@
 /**
  * Görev 6: Operasyon ve raporlar — tedarikçi carisi, laboratuvar iş emri (aşama/revizyon/maliyet), tedavi bazlı prim + prim ödemesi,
- * stok (lot/hareket, eksi stok yok, sayım farkı), VİA Akış görevleri ve raporların alt kayıtlarla mutabakatı (AT-19 dahil).
+ * stok (lot/hareket, eksi stok yok, sayım farkı), PİA Akış görevleri ve raporların alt kayıtlarla mutabakatı (AT-19 dahil).
  * Gerçek PostgreSQL (viadent_test), kısıtlı uygulama rolü.
  */
 import { randomUUID } from "node:crypto";
@@ -190,7 +190,7 @@ describe("laboratuvar iş emri (H12, Akış E)", () => {
     expect((await ownerQuery(tenantA, "select count(*)::int as n from audit_events where action = 'lab_order.work_sheet' and entity_id = $1", [orderId]))[0].n).toBe(1);
   });
 
-  it("VİA Akış: gecikme (sekreter), kabul bekleyen (hekim) ve yarınki randevu için hazır olmayan iş görevleri açılır ve kaynak çözülünce kapanır", async () => {
+  it("PİA Akış: gecikme (sekreter), kabul bekleyen (hekim) ve yarınki randevu için hazır olmayan iş görevleri açılır ve kaynak çözülünce kapanır", async () => {
     const p2 = await newPatient("Nehir");
     const appt = (await sec.post("/appointments", { patientId: p2, practitionerId: dentistPrac, date: day(1), startTime: "07:15", durationMinutes: 15, allowOutsideHours: true }).expect(201)).body;
     const o2 = (await sec.post("/lab-orders", { patientId: p2, practitionerId: dentistPrac, supplierId: labId, workType: "Gece plağı", appointmentId: appt.id }).expect(201)).body.id;

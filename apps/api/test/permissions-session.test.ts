@@ -5,7 +5,7 @@ import request from "supertest";
 import { adminQuery, EMAILS, login, ownerQuery, startApp } from "./helpers.js";
 
 let app: INestApplication;
-/** Hekimin klinik not yazdığı taze hasta; "VİA İz" testi bu kimliği kullanır (QA-005: liste indeksine bağımlılık kaldırıldı). */
+/** Hekimin klinik not yazdığı taze hasta; "PİA İz" testi bu kimliği kullanır (QA-005: liste indeksine bağımlılık kaldırıldı). */
 let notedPatientId: string;
 beforeAll(async () => { app = await startApp(); });
 afterAll(async () => app.close());
@@ -27,7 +27,7 @@ describe("AT-02 sekreter doğrudan API ile yetkisiz işlem çağırır", () => {
     expect(notes[0].n).toBe(0);
   });
 
-  it("sekreter ekip yönetimi ve VİA Akış dışı yönetici uçlarına erişemez", async () => {
+  it("sekreter ekip yönetimi ve PİA Akış dışı yönetici uçlarına erişemez", async () => {
     const sec = await login(app, EMAILS.aSecretary);
     expect((await sec.get("/team")).status).toBe(403);
     const m = (await ownerQuery(sec.session.activeMembership.tenantId, "select id from memberships limit 1"))[0].id;
@@ -51,7 +51,7 @@ describe("AT-02 sekreter doğrudan API ile yetkisiz işlem çağırır", () => {
     expect((await dentist.get(`/patients/${pid}/clinical-notes`).expect(200)).body.items).toHaveLength(2);
   });
 
-  it("VİA İz: sekreter hasta geçmişinde klinik not olaylarını görmez, hekim görür", async () => {
+  it("PİA İz: sekreter hasta geçmişinde klinik not olaylarını görmez, hekim görür", async () => {
     const pid = notedPatientId; // önceki testte hekimin not yazdığı hasta (örtük items[0] bağı yerine açık)
     const sec = await login(app, EMAILS.aSecretary);
     const dentist = await login(app, EMAILS.aDentist);

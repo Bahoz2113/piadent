@@ -1,6 +1,6 @@
 "use client";
 /**
- * VİADENT odontogramı — özgün vektör çizim. FDI numaralama; hastanın sağı ekranın solunda.
+ * PİA-DENT odontogramı — özgün vektör çizim. FDI numaralama; hastanın sağı ekranın solunda.
  * Her diş klavye ile seçilebilir bir düğmedir. Bilgi yalnız renkle verilmez: yüzey deseni,
  * kısa sembol ve erişilebilir ad birlikte kullanılır.
  */

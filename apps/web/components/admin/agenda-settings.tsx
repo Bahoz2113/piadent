@@ -56,7 +56,7 @@ export function ClosuresPanel({ notify }: { notify: (k: "success" | "error", t: 
   return (
     <section className="card">
       <div className="card-head">
-        <div><h2>Kapatmalar</h2><p className="muted small">Tatil, izin, bakım. Kapalı aralığa randevu verilemez; mevcut randevular silinmez, VİA Akış'a takip düşer.</p></div>
+        <div><h2>Kapatmalar</h2><p className="muted small">Tatil, izin, bakım. Kapalı aralığa randevu verilemez; mevcut randevular silinmez, PİA Akış'a takip düşer.</p></div>
         <button className="btn btn-primary" onClick={() => setCreating(true)}><Plus size={17} aria-hidden />Kapatma ekle</button>
       </div>
       {list.loading && !list.data ? <Loading /> : list.error ? <ErrorState error={list.error} /> : list.data!.items.length === 0 ? (
@@ -101,7 +101,7 @@ function ClosureDrawer({ res, onClose, onSaved }: { res: { practitioners: { id: 
       {affected ? (
         <div className="stack">
           <Alert kind={affected.length ? "warning" : "success"} title="Kapatma kaydedildi">
-            {affected.length ? `${affected.length} randevu bu aralıkla çakışıyor. Randevular silinmedi; VİA Akış'ta sekreterya için takip görevi oluşturuldu.` : "Çakışan randevu yok."}
+            {affected.length ? `${affected.length} randevu bu aralıkla çakışıyor. Randevular silinmedi; PİA Akış'ta sekreterya için takip görevi oluşturuldu.` : "Çakışan randevu yok."}
           </Alert>
           {affected.length > 0 && <ul className="list">{affected.map((a) => <li key={a.id} style={{ padding: "8px 0" }}>{fmtDateTime(a.startsAt, tz)} · {a.patientName}</li>)}</ul>}
         </div>

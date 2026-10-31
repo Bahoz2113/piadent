@@ -29,7 +29,7 @@ export default function InvitePage() {
   return (
     <div className="login-wrap">
       <aside className="login-side">
-        <div className="brand"><span className="brand-mark" aria-hidden>V</span><span>VİADENT</span></div>
+        <div className="brand"><span className="brand-mark" aria-hidden>V</span><span>PİA-DENT</span></div>
         <div><h1>Ekibe hoş geldiniz.</h1><p style={{ marginTop: 12, opacity: 0.85, maxWidth: 420 }}>Davet bağlantısı tek kullanımlıktır.</p></div>
         <p className="small" style={{ opacity: 0.7 }}>Kliniğin akışı, tek yerde.</p>
       </aside>
@@ -50,7 +50,7 @@ export default function InvitePage() {
             {err && <Alert kind="error">{err.message}</Alert>}
             {info!.userExists ? (
               <>
-                <Alert kind="info">Bu e-postayla bir VİADENT hesabınız var. Kabul etmek için mevcut parolanızı girin; klinik hesabınıza eklenir.</Alert>
+                <Alert kind="info">Bu e-postayla bir PİA-DENT hesabınız var. Kabul etmek için mevcut parolanızı girin; klinik hesabınıza eklenir.</Alert>
                 <TextField label="Mevcut parola" type="password" autoComplete="current-password" required value={pw} onChange={(e) => setPw(e.target.value)} error={err?.fieldErrors.password} />
               </>
             ) : (

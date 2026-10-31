@@ -1,5 +1,5 @@
 /**
- * Görev 5: VİA Köprü — port/adapter sözleşmesi, MOCK sağlayıcı, iş kuyruğu (retry/backoff/dead-letter), zaman aşımı → durum
+ * Görev 5: PİA Köprü — port/adapter sözleşmesi, MOCK sağlayıcı, iş kuyruğu (retry/backoff/dead-letter), zaman aşımı → durum
  * sorgusu (mutabakat), imzalı webhook (AT-13: tekrar, ters sıra, geçersiz imza, replay), AT-12 (teslim uydurulmaz),
  * online ödeme + sağlayıcı iadesi ve dört göz onay kapısı. Gerçek PostgreSQL, kısıtlı uygulama ve worker rolleri.
  */

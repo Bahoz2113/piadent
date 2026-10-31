@@ -1,4 +1,4 @@
--- VİADENT 0002 (Görev 1): işlem türleri, çalışma saatleri, kapatmalar, hasta yakınları,
+-- PİA-DENT 0002 (Görev 1): işlem türleri, çalışma saatleri, kapatmalar, hasta yakınları,
 -- sürümlü anamnez, ekip daveti. Tüm tablolar tenant'a aittir ve RLS ile korunur.
 
 -- ---------------------------------------------------------------- işlem (randevu) türleri — T04
@@ -149,7 +149,7 @@ $$;
 revoke all on function app.invitation_tenant(bytea) from public;
 grant execute on function app.invitation_tenant(bytea) to viadent_app;
 
--- ---------------------------------------------------------------- VİA Akış: kapatma çakışması
+-- ---------------------------------------------------------------- PİA Akış: kapatma çakışması
 alter table tasks drop constraint tasks_kind_check;
 alter table tasks add constraint tasks_kind_check
   check (kind in ('overdue_checkin','contact_pending','missing_contact','closure_conflict','anamnesis_review','follow_up','manual'));

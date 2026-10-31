@@ -142,7 +142,7 @@ export const MESSAGE_STATUS_LABELS: Record<string, string> = {
   failed: "Başarısız", cancelled: "İptal", unknown: "Sonuç bilinmiyor",
 };
 
-// ------------------------------------------------------------------ kontrol ve VİA Hazır
+// ------------------------------------------------------------------ kontrol ve PİA Hazır
 export const FollowUpCreate = z.object({
   patientId: uuid,
   dueDate: isoDate,

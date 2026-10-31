@@ -1,6 +1,6 @@
 # Finans — kasa ve gün sonu (1 sayfa)
 
-**Finans → VİA Net.** Günlük özet (işlem tutarı ≠ tahsilat), hasta bakiyeleri, kasa ve banka, giderler, hekim primi, ayarlar. Her tutar kayıtlı tutardır; KDV gösterimi mali müşavir onayı bekler (ekranda yazılı).
+**Finans → PİA Net.** Günlük özet (işlem tutarı ≠ tahsilat), hasta bakiyeleri, kasa ve banka, giderler, hekim primi, ayarlar. Her tutar kayıtlı tutardır; KDV gösterimi mali müşavir onayı bekler (ekranda yazılı).
 ![Finans](img/30-finans-ozet.jpg)
 
 **Hasta hesabı.** Alacaklar, ödemeler, dağıtım, avans, iade. Silme yoktur: hata ters kayıt/iade ile düzeltilir ve gerekçe ister. Açılış bakiyeleri "açılış bakiyesi" kaynağıyla tek satırdır.

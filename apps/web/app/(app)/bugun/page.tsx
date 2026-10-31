@@ -65,7 +65,7 @@ export default function TodayPage() {
           <h1>Bugün</h1>
           <p>{fmtLongDay(today)} · {session.activeMembership?.tenantName}</p>
         </div>
-        <button className="btn" onClick={() => void act("refresh", async () => undefined, "VİA Akış güncellendi")} disabled={busy === "refresh"}>
+        <button className="btn" onClick={() => void act("refresh", async () => undefined, "PİA Akış güncellendi")} disabled={busy === "refresh"}>
           <RefreshCw size={17} aria-hidden /> Listeyi yenile
         </button>
       </div>
@@ -83,7 +83,7 @@ export default function TodayPage() {
         <section className="card" aria-labelledby="akis-h">
           <div className="card-head">
             <div>
-              <h2 id="akis-h">VİA Akış</h2>
+              <h2 id="akis-h">PİA Akış</h2>
               <p className="muted small">Neden, sorumlu ve sonraki adımı belli işler</p>
             </div>
             <span className="badge badge-accent">{items.length} açık iş</span>
@@ -164,7 +164,7 @@ export default function TodayPage() {
                   {(t.kind === "plan_unscheduled" || t.kind === "plan_decision_pending") && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=tedavi`}>Planı aç</Link>}
                   {t.kind === "follow_up" && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=iletisim`}>İletişim tercihini gör</Link>}
                   {t.kind === "readiness_missing" && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=belgeler`}>Belgeleri aç</Link>}
-                  {(t.kind === "integration_dead" || t.kind === "integration_approval") && can("integration.read") && <Link className="btn btn-sm btn-primary" href="/yonetim?sekme=kopru">{t.kind === "integration_approval" ? "Onay ekranını aç" : "VİA Köprü'de incele"}</Link>}
+                  {(t.kind === "integration_dead" || t.kind === "integration_approval") && can("integration.read") && <Link className="btn btn-sm btn-primary" href="/yonetim?sekme=kopru">{t.kind === "integration_approval" ? "Onay ekranını aç" : "PİA Köprü'de incele"}</Link>}
                   {(t.kind === "lab_overdue" || t.kind === "lab_review" || t.kind === "lab_not_ready") && t.sourceId && can("lab.read") && <Link className="btn btn-sm btn-primary" href={`/operasyon?is=${t.sourceId}`}>İş emrini aç</Link>}
                   {(t.kind === "stock_low" || t.kind === "lot_expiring") && can("stock.read") && <Link className="btn btn-sm btn-primary" href="/operasyon?sekme=stok">Stoğa git</Link>}
                   {t.kind === "file_quarantined" && t.patientId && <Link className="btn btn-sm" href={`/hastalar/${t.patientId}?sekme=belgeler`}>Dosyalara git</Link>}

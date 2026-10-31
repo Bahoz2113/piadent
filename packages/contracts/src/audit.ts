@@ -12,7 +12,7 @@ import { ROLE_LABELS } from "./permissions";
 import { formatTRY, isMoney } from "./money";
 
 /**
- * Denetim izi (VİA İz) eylem etiketleri — tek kaynak (QA-002).
+ * Denetim izi (PİA İz) eylem etiketleri — tek kaynak (QA-002).
  * API `audit(c, ctx, { action })` çağrılarındaki her eylem burada Türkçe etiketlidir; web ve raporlar buradan okur.
  * Yeni bir audit eylemi eklendiğinde bu tabloya da eklenir (apps/web/test/audit-labels.test.ts kapsamı doğrular).
  */
@@ -157,7 +157,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "access.denied_or_missing": "Erişim reddedildi veya kayıt bulunamadı",
 
   // Ayarlar, entegrasyon, aktarım
-  "settings.akis_update": "VİA Akış ayarları güncellendi",
+  "settings.akis_update": "PİA Akış ayarları güncellendi",
   "integration_connection.create": "Entegrasyon bağlantısı oluşturuldu",
   "integration_connection.update": "Entegrasyon bağlantısı güncellendi",
   "integration_connection.rotate_secret": "Entegrasyon gizli anahtarı yenilendi",

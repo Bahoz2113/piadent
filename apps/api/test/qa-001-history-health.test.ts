@@ -1,5 +1,5 @@
 /**
- * QA-001 (S1): Sağlık yetkisi (`patient.health.read`) olmayan roller hasta geçmişinde (VİA İz)
+ * QA-001 (S1): Sağlık yetkisi (`patient.health.read`) olmayan roller hasta geçmişinde (PİA İz)
  * odontogram bulgu/tanı olaylarını (`entity_type = 'clinical_chart'`) görmemeli.
  * İkincil (aynı kök): KVKK hasta dışa aktarımı `access_log` ve denetim (log) raporu da
  * klinik olayları (clinical_chart / clinical_note / anamnesis) sağlık yetkisi yoksa dışlar.

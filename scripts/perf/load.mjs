@@ -1,4 +1,4 @@
-// VİADENT yük ölçümü (yalnız sentetik perf veritabanına karşı). Bağımlılık yok: Node 22 fetch.
+// PİA-DENT yük ölçümü (yalnız sentetik perf veritabanına karşı). Bağımlılık yok: Node 22 fetch.
 // Kullanım: BASE=http://127.0.0.1:4100 PASSWORD=<demo parolası> VUS=50 DURATION=60 node scripts/perf/load.mjs
 // Her sanal kullanıcı (VU) gerçek bir rolle oturum açar ve klinik gününe benzer bir karışım çalıştırır:
 //   hasta arama (ad/telefon), hasta kartı, hasta randevu geçmişi, günlük ajanda (500+ randevulu gün), Bugün görevleri,

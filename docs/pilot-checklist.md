@@ -3,7 +3,7 @@
 Plan F5: “Seçilmiş klinikte eğitim, paralel kontrol, veri mutabakatı.” Her madde **isimli bir sorumlu** ve tarihle işaretlenir. ☐ açık · ☑ tamam (kanıt bağlantısıyla) · ✖ uygulanmayacak (gerekçeyle). Durum 23.10.2026 itibarıyla yazılım tarafında doğrulananlar ☑ olarak işaretlidir; geri kalan her şey açıktır.
 
 ## 1. Hukuk ve sözleşme (gerçek veriden ÖNCE)
-- ☐ Veri işleme sözleşmesi (klinik veri sorumlusu, VİADENT veri işleyen); alt işleyenler listesi (barındırma, yedek konumu, e-posta)
+- ☐ Veri işleme sözleşmesi (klinik veri sorumlusu, PİA-DENT veri işleyen); alt işleyenler listesi (barındırma, yedek konumu, e-posta)
 - ☐ KVKK: veri envanteri, aydınlatma metni, sağlık verisi işleme şartı değerlendirmesi, yurt dışı aktarım durumu
 - ☐ Saklama/imha süreleri (kayıt türü bazında, danışmanla); içe aktarma satır verisinin silinme zamanı
 - ☐ Veri sahibi başvuru süreci (kimlik doğrulama, kapsam, yasal saklama gerekçesi) — teknik araç ☑ (Hasta 360 → Veriyi indir, gerekçeli, denetimli)
@@ -26,7 +26,7 @@ Plan F5: “Seçilmiş klinikte eğitim, paralel kontrol, veri mutabakatı.” H
 - ☐ İşlem kataloğu + tarife (kliniğin gerçek fiyatları) — Yönetim → Katalog ve tarife
 - ☐ Belge/onam metinleri: klinik + hukuk onayı; onaylanmayan şablon kullanılmaz
 - ☐ Finans: KDV gösterimi, yuvarlama, prim kuralı ve kesinti sırası, iade belgesi — mali müşavir onayı
-- ☐ VİA Akış eşikleri kliniğe göre ayarlandı (Yönetim → Güvenlik → VİA Akış eşikleri ☑ araç, Görev 13)
+- ☐ PİA Akış eşikleri kliniğe göre ayarlandı (Yönetim → Güvenlik → PİA Akış eşikleri ☑ araç, Görev 13)
 
 ## 4. Veri taşıma (runbook §3)
 - ☐ Kliniğin kaynak dışa aktarım dosyası (şifreli kanal) ve alan eşleme tablosu

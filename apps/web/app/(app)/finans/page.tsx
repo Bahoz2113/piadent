@@ -42,7 +42,7 @@ export default function FinancePage() {
   return (
     <>
       <div className="page-head">
-        <div><h1>Finans · VİA Net</h1><p>İşlem tutarı, tahsilat, iade ve gider ayrı hesaplanır. Gün sınırı klinik saatine göre ({tz}). Para birimi: TRY.</p></div>
+        <div><h1>Finans · PİA Net</h1><p>İşlem tutarı, tahsilat, iade ve gider ayrı hesaplanır. Gün sınırı klinik saatine göre ({tz}). Para birimi: TRY.</p></div>
       </div>
       <div className="subtabs" role="tablist" aria-label="Finans bölümleri">
         {tabs.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} className={`btn btn-sm ${tab === t.id ? "btn-primary" : ""}`} onClick={() => setTab(t.id)}>{t.label}</button>)}
@@ -353,7 +353,7 @@ function Commissions({ from, to }: { from: string; to: string }) {
             onClick={() => void api("/commission-payouts", { idempotencyKey: pay.key, body: { practitionerId: pay.practitionerId, amount: parseMoneyInput(pay.amount), cashAccountId: pay.cashAccountId,
               periodFrom: from, periodTo: to, note: pay.note || undefined } }).then(done, (e) => setErr(e as ApiFailure))}>Ödemeyi kaydet</button></>}>
           <div className="stack">
-            <Alert kind="info">Ödeme kasadan çıkış olarak kaydedilir ve ödenmemiş net tahakkuku aşamaz. Bordro/stopaj hesabı VİADENT kapsamı dışındadır; mali müşavirle doğrulayın.</Alert>
+            <Alert kind="info">Ödeme kasadan çıkış olarak kaydedilir ve ödenmemiş net tahakkuku aşamaz. Bordro/stopaj hesabı PİA-DENT kapsamı dışındadır; mali müşavirle doğrulayın.</Alert>
             <TextField label="Tutar (₺)" inputMode="decimal" required value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value })} />
             <SelectField label="Kasa / banka" required value={pay.cashAccountId} onChange={(e) => setPay({ ...pay, cashAccountId: e.target.value })}>
               {accts.data?.items.filter((a) => a.active).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</SelectField>

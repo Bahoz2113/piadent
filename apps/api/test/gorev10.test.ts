@@ -202,7 +202,7 @@ describe("süreli destek erişimi (support rolü)", () => {
   let grantId: string;
   beforeAll(async () => {
     const { hashPassword } = await import("@viadent/db");
-    await ownerQuery(null, "insert into users(email, password_hash, full_name) values ($1,$2,'VİADENT Destek (sentetik)')", [supportEmail, await hashPassword(TEST_PASSWORD)]);
+    await ownerQuery(null, "insert into users(email, password_hash, full_name) values ($1,$2,'PİA-DENT Destek (sentetik)')", [supportEmail, await hashPassword(TEST_PASSWORD)]);
   });
   it("yönetici var olan kullanıcıya en çok 72 saat gerekçeli destek erişimi verir; kendine veremez; hekim veremez", async () => {
     expect((await dentist.post("/security/support-grants", { email: supportEmail, hours: 2, reason: "Hekim deneme gerekçesi" })).status).toBe(403);
@@ -228,7 +228,7 @@ describe("süreli destek erişimi (support rolü)", () => {
     }
     expect((await su2.get("/finance/summary")).status).toBe(403);
     expect((await su2.get("/team")).status).toBe(403);
-    await su2.get(`/patients/${pid}/history`).expect(200); // VİA İz okunur (teşhis)
+    await su2.get(`/patients/${pid}/history`).expect(200); // PİA İz okunur (teşhis)
   });
 
   it("süre dolunca üyelik kendiliğinden geçersiz; yönetici erken kaldırabilir; destek rolü klinik rolüne çevrilemez", async () => {

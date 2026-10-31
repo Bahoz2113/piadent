@@ -1,5 +1,5 @@
 /**
- * Görev 6 VİA Akış kuralları: laboratuvar gecikmesi / teslim kararı / randevu hazırlığı, stok en az seviye ve SKT.
+ * Görev 6 PİA Akış kuralları: laboratuvar gecikmesi / teslim kararı / randevu hazırlığı, stok en az seviye ve SKT.
  * Görev başlıkları hasta adı içermez; kaynak çözülünce görev otomatik kapanır.
  */
 import type pg from "pg";

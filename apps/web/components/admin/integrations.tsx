@@ -58,7 +58,7 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
   const o = ov.data!;
   return (
     <div className="stack" style={{ gap: 16 }}>
-      <Alert kind="info" title="VİA Köprü — dış servis bağlantıları">
+      <Alert kind="info" title="PİA Köprü — dış servis bağlantıları">
         Bu ortamda yalnız <strong>MOCK</strong> (sahte, etiketli) SMS ve online ödeme sağlayıcısı vardır; gerçek mesaj gönderilmez, gerçek para hareket etmez.
         Canlı dış gönderim kapısı: <span className={`badge badge-${o.externalSendGate === "open" ? "warning" : "neutral"}`}>{o.externalSendGate === "open" ? "AÇIK" : "KAPALI"}</span>.
         Sağlayıcı “kabul etti” demek, mesajın teslim edildiği veya ödemenin alındığı anlamına gelmez; nihai sonuç yalnız imzası doğrulanmış bildirimle kaydedilir.

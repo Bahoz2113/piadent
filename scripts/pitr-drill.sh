@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VİADENT — WAL arşivleme + zaman noktasına geri yükleme (PITR) tatbikatı (Görev 12, ADR-071).
+# PİA-DENT — WAL arşivleme + zaman noktasına geri yükleme (PITR) tatbikatı (Görev 12, ADR-071).
 # Ne yapar: (1) kümede archive_mode açık mı denetler (değilse nasıl açılacağını yazar ve durur),
 # (2) pg_basebackup ile temel yedek alır, (3) bir "işaret" satırı yazar ve zamanı not eder, (4) sonra bir "hatalı" satır yazar,
 # (5) temel yedeği ayrı bir dizine/porta, recovery_target_time = işaret zamanı ile geri yükler, (6) işaret var / hatalı yok doğrular, süreleri ölçer.
