@@ -219,8 +219,21 @@ describe("H03 yakın / veli", () => {
 });
 
 describe("H07 sürümlü anamnez", () => {
+  /**
+   * QA-005: `patients[i]` liste sırası (`last_name, first_name`) diğer test dosyalarının oluşturduğu hastalarla
+   * koşudan koşuya kayar (vitest dosya sırası önbellekteki süreye bağlı); dosya no 1'in seed anamnezi olan hasta
+   * `[20]/[21]`'e düşünce `basedOnVersion: 0` 409 veriyordu. Anamnez testleri kendi taze hastasını kullanır.
+   */
+  async function freshPatient(lastName: string) {
+    const created = (await sec.post("/patients", { firstName: "Anamnez", lastName, birthDate: "1985-05-05" }).expect(201)).body.patient;
+    const cur = await dentist.get(`/patients/${created.id}/anamnesis`).expect(200);
+    expect(cur.body.current ?? null).toBeNull(); // ön koşul: hiç anamnez sürümü yok
+    return created.id as string;
+  }
+
   it("sekreter ve yönetici anamnezi okuyamaz; hasta özetinde klinik alan dönmez", async () => {
-    const p = (patients as { id: string; fileNo?: number }[]).find((x) => x.fileNo === 1)!.id; // seed: alerji işaretli demo anamnez
+    // seed: dosya no 1, alerji işaretli demo anamnez — liste indeksinden bağımsız, dosya no ile seçilir.
+    const p = ((await sec.get("/patients?q=1").expect(200)).body.items as { id: string; fileNo: number }[]).find((x) => x.fileNo === 1)!.id;
     expect((await sec.get(`/patients/${p}/anamnesis`)).status).toBe(403);
     expect((await admin.get(`/patients/${p}/anamnesis`)).status).toBe(403);
     expect((await sec.get(`/patients/${p}`).expect(200)).body.clinical).toBeNull();
@@ -230,7 +243,7 @@ describe("H07 sürümlü anamnez", () => {
 
   it("asistan kaydı onay bekler, klinik görev yalnız sağlık yetkili rollere görünür; hekim onayıyla kapanır", async () => {
     const assistant = await login(app, EMAILS.aAssistant);
-    const p = patients[20]!.id;
+    const p = await freshPatient("Onaybekler");
     const saved = await assistant.post(`/patients/${p}/anamnesis`, {
       basedOnVersion: 0, answers: { anticoagulant: { value: "yes", detail: "Sentetik ilaç" }, diabetes: { value: "no" } },
     }).expect(201);
@@ -247,7 +260,7 @@ describe("H07 sürümlü anamnez", () => {
   });
 
   it("her kayıt yeni sürüm; eski sürüm korunur; eski temelle kayıt çakışır; hekim kaydı otomatik onaylı", async () => {
-    const p = patients[21]!.id;
+    const p = await freshPatient("Surumlu");
     await dentist.post(`/patients/${p}/anamnesis`, { basedOnVersion: 0, answers: { allergy: { value: "no" } } }).expect(201);
     const v2 = await dentist.post(`/patients/${p}/anamnesis`, { basedOnVersion: 1, answers: { allergy: { value: "yes", detail: "Lateks (sentetik)" } } }).expect(201);
     expect(v2.body).toEqual({ version: 2, criticalFlags: ["allergy"], reviewed: true });
@@ -265,6 +278,17 @@ describe("H07 sürümlü anamnez", () => {
     const hist = (await dentist.get(`/patients/${p}/history`).expect(200)).body.items;
     expect(JSON.stringify(hist)).not.toContain("Lateks");
     expect((await sec.get(`/patients/${p}/history`).expect(200)).body.items.some((e: { entityType: string }) => e.entityType === "anamnesis")).toBe(false);
+  });
+
+  it("QA-005 regresyon: seed anamnezli hasta (dosya no 1) eski temelle 409 döner; taze hasta liste sırasından bağımsız 201", async () => {
+    const seeded = ((await sec.get("/patients?q=1").expect(200)).body.items as { id: string; fileNo: number }[]).find((x) => x.fileNo === 1)!.id;
+    const conflict = await dentist.post(`/patients/${seeded}/anamnesis`, { basedOnVersion: 0, answers: { diabetes: { value: "no" } } });
+    expect(conflict.status).toBe(409);
+    expect(conflict.body.code).toBe("VERSION_CONFLICT");
+    expect(conflict.body.details.currentVersion).toBeGreaterThanOrEqual(1);
+    // Taze hasta: liste indeksine bakılmaz; ilk kayıt her zaman sürüm 1.
+    const fresh = await freshPatient("Regresyon");
+    expect((await dentist.post(`/patients/${fresh}/anamnesis`, { basedOnVersion: 0, answers: { diabetes: { value: "no" } } }).expect(201)).body.version).toBe(1);
   });
 
   it("anamnez sürümleri uygulama rolüyle güncellenemez", async () => {
