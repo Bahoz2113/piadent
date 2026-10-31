@@ -17,6 +17,8 @@ async function login(page: Page, email: string) {
 }
 
 async function scan(page: Page, name: string) {
+  // QA-004: tarama kararlı belgede yapılır; başlık her ekranda dolu olmalı (beklenti sıkılaştırıldı, gevşetilmedi).
+  await expect(page, `${name}: belge başlığı`).toHaveTitle(/VİADENT/);
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   const bad = r.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   const summary = bad.map((v) => `${v.id} (${v.impact}): ${v.help} → ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`).join("\n");

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { ReadinessPanel } from "@/components/care/readiness-panel";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, UserPlus, Ban } from "lucide-react";
 import { addDays, APPOINTMENT_STATUS_LABELS, APPOINTMENT_TRANSITIONS, CONTACT_OUTCOME_LABELS, formatPhone, type AppointmentStatus } from "@viadent/contracts";
@@ -34,7 +34,6 @@ const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${St
 function AgendaInner() {
   const { tz, can } = useSession();
   const params = useSearchParams() ?? new URLSearchParams();
-  const router = useRouter();
   const [date, setDate] = useState(params.get("tarih") ?? todayIn(tz));
   const [view, setView] = useState<"day" | "week">(params.get("gorunum") === "hafta" ? "week" : "day");
   const [mode, setMode] = useState<"practitioner" | "chair">("practitioner");
@@ -49,9 +48,12 @@ function AgendaInner() {
   const ctx = useData<AgendaContext>(`/agenda-context?from=${start}&days=${days}`);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 60_000); return () => clearInterval(t); }, []);
+  // URL eşitleme (QA-004): yalnız adres çubuğu/paylaşım için; sunucuya gitmez. `router.replace` her yüklenişte RSC
+  // isteği + metadata (<title>) yeniden kurulumu yapıyordu; istek aksarsa tam sayfa yüklemeye düşüyor ve geçiş anında
+  // belge başlıksız yakalanabiliyordu. Next.js `history.replaceState`'i router durumuyla (useSearchParams) eşler.
   useEffect(() => {
-    router.replace(`/ajanda?tarih=${date}${view === "week" ? `&gorunum=hafta${weekPrac ? `&hekim=${weekPrac}` : ""}` : ""}`, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const href = `/ajanda?tarih=${date}${view === "week" ? `&gorunum=hafta${weekPrac ? `&hekim=${weekPrac}` : ""}` : ""}`;
+    if (`${window.location.pathname}${window.location.search}` !== href) window.history.replaceState(null, "", href);
   }, [date, view, weekPrac]);
   useEffect(() => { if (!weekPrac && res.data?.practitioners[0]) setWeekPrac(res.data.practitioners[0].id); }, [res.data, weekPrac]);
 
