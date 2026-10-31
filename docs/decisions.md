@@ -43,3 +43,21 @@ Tedavi/Finans/Operasyon/Raporlar menüde “Plan” etiketiyle; sayfada gerçek 
 
 ## ADR-014 Seed parolası
 Parola koda/seed'e gömülmez. `VIADENT_DEMO_PASSWORD` yoksa rastgele üretilir ve git dışı `.demo-credentials` dosyasına (0600) yazılır. Test veritabanı ayrı (`viadent_test`) ve yalnız testte kullanılan sentetik parolayla kurulur.
+
+## ADR-015 Çalışma saati politikası (Görev 1)
+Hekimin haftalık blokları (ISO haftagünü, dakika). Randevu bir bloğa tam sığmıyorsa 422 `OUTSIDE_WORKING_HOURS` + o günün blokları döner; kullanıcı **bilinçli onayla** (`allowOutsideHours`) kaydedebilir, audit'e `outside_working_hours` yazılır. Hiç blok tanımlanmamış hekimde kısıt yoktur (yönetim ekranında “Tanımsız” görünür). Gece yarısını aşan randevu çalışma saati dışıdır. **VİADENT tasarım kararı** (kaynakta yalnız menü görüldü).
+
+## ADR-016 Kapatma ve eşzamanlılık
+Kapatma (klinik/hekim/koltuk, gerekçe zorunlu) **aşılamaz**: 422 `RESOURCE_CLOSED`. Mevcut randevuları silmez/taşımaz; çakışanlar yanıt olarak döner ve VİA Akış'a `closure_conflict` görevi düşer, kapatma iptal edilince veya randevu taşınınca görev kendiliğinden kapanır. Kapatma ile randevu oluşturma aynı tenant için `pg_advisory_xact_lock` ile sıralanır: aynı anda yapılan iki işlemde randevu ya reddedilir ya da çakışan listesinde görünür (testli).
+
+## ADR-017 Yakın / veli / yasal temsil
+Yakınlık kaydı yetki vermez. `is_legal_representative` yalnız dayanak açıklaması ile işaretlenebilir; işaretleyen kullanıcı ve zaman doğrulayan olarak saklanır (DB check). İlişki silinmez, gerekçeyle sonlandırılır. 18 yaş altı hastada doğrulanmış temsilci yoksa başlıkta uyarı. Belge yükleme Görev 4. Portal erişimi (hasta/yakın rolü) P1.
+
+## ADR-018 Sürümlü anamnez
+Her kayıt yeni sürüm (`anamnesis_versions`, uygulama rolüne UPDATE yetkisi yok). Yanıt: yanıtsız (kayıt yok) / hayır / evet (+ayrıntı) / bilmiyor. Kritik işaretler sunucuda hesaplanır (istemci gönderemez) ve **yalnız sağlık yetkili rollere** döner — sekreter/yönetici varlığını da görmez. Hekim kaydı otomatik onaylı; asistan kaydı `anamnesis_review` klinik görevi açar. Eski temelle kayıt 409. Yanıt içerikleri audit'e yazılmaz. **Soru seti DEMO'dur** (`demo-2026.10`); rakip formu kopyalanmadı; klinisyen onayı açık iş.
+
+## ADR-019 Ekip daveti
+E-posta sağlayıcısı yok → mesaj gönderilmez. Davet 32 bayt rastgele token, DB'de yalnız SHA-256; 72 saat, tek kullanımlık, açık davet e-posta başına tekil. Bağlantı yalnız oluşturma yanıtında bir kez gösterilir; yönetici güvenli kanaldan iletir. Oturumsuz kabul için dar bir `SECURITY DEFINER` fonksiyonu (`app.invitation_tenant`) yalnız token→tenant eşlemesi yapar; gerisi RLS altında. Mevcut hesap kendi parolasıyla kabul eder (hesap sahipliği kanıtı); kaldırılmış üyelik yeniden etkinleşir. Rol değişikliği kendine uygulanamaz.
+
+## ADR-020 Mobil hesap ve klinik seçici
+Telefonda üst çubuktaki kullanıcı/rol/klinik seçici gizliydi; çok klinikli kullanıcı telefonda klinik değiştiremiyordu. Gezinme çekmecesine hesap bloğu ve klinik seçici eklendi.

@@ -56,11 +56,14 @@ E2E_PASSWORD=<demo parolası> npx playwright test # API + web çalışırken
 ```
 
 ## Neler çalışıyor
-- Oturum, çok klinikli üyelik, klinik değiştirme, erişim kaldırma (sunucu tarafı, her istekte doğrulanır)
+- Oturum, çok klinikli üyelik, klinik değiştirme, erişim kaldırma, **ekip daveti ve rol değişikliği** (sunucu tarafı, her istekte doğrulanır)
 - PostgreSQL RLS ile tenant izolasyonu (uygulama rolü RLS'i atlayamaz)
-- Hasta kaydı, Türkçe karakterden bağımsız arama, mükerrer aday uyarısı, rol bazlı maskeleme
-- Ajanda: hekim/koltuk sütunlu gün görünümü, mobil gün listesi, DB seviyesinde çakışma engeli, durum ve iletişim sonucu ayrı
-- **VİA Akış** (Bugün ekranı), **VİA İz** (hasta geçmişi), minimum klinik not
+- Hasta kaydı, Türkçe karakterden bağımsız arama, mükerrer aday uyarısı, rol bazlı maskeleme, **yakın/veli ve yasal temsil**
+- Ajanda: gün ve **hafta** görünümü, mobil gün listesi, DB seviyesinde çakışma engeli, **çalışma saatleri, kapatmalar, işlem türleri**
+- **Sürümlü anamnez** ve hekim onayı (soru seti DEMO), minimum klinik not
+- **VİA Akış** (5 görev türü), **VİA İz** (hasta geçmişi)
+
+Davet bağlantısı e-postayla gönderilmez (sağlayıcı bağlı değil); Yönetim > Ekip'te oluşturulan bağlantıyı kişiye kendiniz iletin.
 
 Kalan işler: `docs/backlog.md`. Mimari: `docs/architecture.md`. Devir notu: `docs/handoff.md`.
 

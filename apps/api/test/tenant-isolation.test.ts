@@ -94,13 +94,14 @@ describe("RLS ikinci savunma katmanı (W04)", () => {
     expect(r.rows[0]).toEqual({ rolsuper: false, rolbypassrls: false, owned: 0 });
   });
 
-  it("tüm tenant tablolarında RLS etkin ve FORCE açık", async () => {
+  it("tüm tenant tablolarında (19) RLS etkin ve FORCE açık", async () => {
     const r = await pool.query(
       `select relname, relrowsecurity, relforcerowsecurity from pg_class
         where relname = any($1::text[]) order by relname`,
-      [["patients", "appointments", "tasks", "practitioners", "chairs", "clinical_notes", "branches", "memberships", "audit_events", "outbox_events", "tenant_counters", "tenants"]],
+      [["patients", "appointments", "tasks", "practitioners", "chairs", "clinical_notes", "branches", "memberships", "audit_events", "outbox_events", "tenant_counters", "tenants",
+        "appointment_types", "work_schedules", "closures", "patient_relations", "anamnesis_versions", "anamnesis_reviews", "invitations"]],
     );
-    expect(r.rows).toHaveLength(12);
+    expect(r.rows).toHaveLength(19);
     for (const row of r.rows) expect([row.relname, row.relrowsecurity, row.relforcerowsecurity]).toEqual([row.relname, true, true]);
   });
 

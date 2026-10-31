@@ -3,12 +3,12 @@ G01,Ek A,Genel,Ana panel / klinik istatistik,Ekran görüldü,P0,V09 Analitik / 
 G02,Ek A,Genel,Üst çubuk / hızlı hasta arama,Ekran görüldü,P0,V02 Hasta 360,F1,yeniden tasarlanacak,çalışıyor,Global arama her ekranda; rol bazlı maskeleme (testli),WhatsApp bağlantı göstergesi V10/Görev 5
 G03,Ek A,Genel,Görünüm / tema paneli,Ekran görüldü,P2,Kabuk,F6,ertelenecek,ertelendi,—,Plan §04: önce okunabilirlik/kontrast; çoklu tema P2
 H01,Ek A,Hasta ve klinik,Hasta arama / sonuç listesi,Ekran görüldü,P0,V02 Hasta 360,F2,uygulanacak,çalışıyor,Türkçe karakterden bağımsız arama; dosya no/telefon/kimlik; boş sonuç durumu,scheduling-patients.test.ts
-H02,Ek A,Hasta ve klinik,Hasta dosyasının ortak başlığı,Ekran görüldü,P0,V02 Hasta 360,F2 · Görev 1,yeniden tasarlanacak,kısmi,Sabit kimlik özeti; yaş gelecek tarih nedeniyle negatif olamaz,"Alerji uyarısı (anamnez) Görev 1, bakiye Görev 3"
-H03,Ek A,Hasta ve klinik,"Hasta kartı / kimlik, iletişim ve diğer bilgiler",Kısmi ekran,P0,V02 Hasta 360,F2 · Görev 1,yeniden tasarlanacak,kısmi,AT-04; çekirdek/isteğe bağlı alan ayrımı; sunucu doğrulaması,"Veli/yakın ilişkisi, kurum, pasaport giriş/çıkış Görev 1"
+H02,Ek A,Hasta ve klinik,Hasta dosyasının ortak başlığı,Ekran görüldü,P0,V02 Hasta 360,F2 · Görev 1,yeniden tasarlanacak,kısmi,Sabit kimlik özeti; yaş gelecek tarih nedeniyle negatif olamaz,"Kritik anamnez uyarısı (yalnız sağlık rolleri), 18 yaş altı/temsilci uyarısı ✔; bakiye Görev 3"
+H03,Ek A,Hasta ve klinik,"Hasta kartı / kimlik, iletişim ve diğer bilgiler",Kısmi ekran,P0,V02 Hasta 360,F2 · Görev 1,yeniden tasarlanacak,kısmi,AT-04; çekirdek/isteğe bağlı alan ayrımı; sunucu doğrulaması,"Veli/yakın, yasal temsil dayanağı, ters yön görünümü ✔ (Görev 1); kurum, pasaport giriş/çıkış, kimlik belgesi türleri genişletmesi açık"
 H04,Ek A,Hasta ve klinik,Diş hizmet girişi / odontogram,Ekran görüldü,P0,V04 Klinik ve tedavi,F3 · Görev 2,yeniden tasarlanacak,planlandı,Diş/yüzey/tanı/plan/tamamlanan ayrı veri; özgün çizim,Rakip odontogram kopyalanmaz
 H05,Ek A,Hasta ve klinik,Tanı ekleme / tanı geçmişi,Yalnız menü veya kontrol,P0,V04 Klinik ve tedavi,F3 · Görev 2,yeniden tasarlanacak,planlandı,Tanı geçmişi korunur; kod sistemi kaynağı doğrulanır,Kod listesi uydurulmaz
 H06,Ek A,Hasta ve klinik,Hasta ödeme / borç ekranı,Ekran görüldü,P0,V05 Finans / VİA Net,F3 · Görev 3,yeniden tasarlanacak,planlandı,AT-06..AT-09,Borç/ödeme/dağıtım/iade ayrı tablolar
-H07,Ek A,Hasta ve klinik,Anamnez / sağlık öyküsü,Ekran görüldü,P0,V04 Klinik ve tedavi,F2 · Görev 1,yeniden tasarlanacak,planlandı,Yanıtsız/hayır/evet ayrımı; sürüm ve onaylayan hekim,Soru listesi klinisyenle doğrulanacak
+H07,Ek A,Hasta ve klinik,Anamnez / sağlık öyküsü,Ekran görüldü,P0,V04 Klinik ve tedavi,F2 · Görev 1,yeniden tasarlanacak,kısmi,Yanıtsız/hayır/evet ayrımı; sürüm ve onaylayan hekim,"Sürümlü anamnez, üç durumlu yanıt, hekim onayı, VİA Akış onay görevi ✔; soru seti DEMO — klinisyen onayı bekliyor"
 H08,Ek A,Hasta ve klinik,Klinik seyir / notlar,Ekran görüldü,P0,V04 Klinik ve tedavi,F2 · Görev 1,uygulanacak,kısmi,"AT-02; not silinmez, düzeltme gerekçeli",Yalnız ekleme + düzeltme bağı çalışıyor; ziyaret bağı ve taslak Görev 1
 H09,Ek A,Hasta ve klinik,Reçete / ilaç listeleri,Ekran görüldü,P1,V04 / V10,F4+,ertelenecek,ertelendi,Taslak ile resmî gönderim ayrı,e-reçete resmî erişim ve ilaç kataloğu lisansı gerekli
 H10,Ek A,Hasta ve klinik,Görüntüler / dosya arşivi,Ekran görüldü,P0,V06 Belge ve dosya,F4 · Görev 4,yeniden tasarlanacak,planlandı,AT-11,Dosya seçici ≠ yükleme; tarama sonrası available
@@ -16,7 +16,7 @@ H11,Ek A,Hasta ve klinik,Kontroller / takip planlaması,Ekran görüldü,P1,V07 
 H12,Ek A,Hasta ve klinik,Hasta laboratuvar işleri,Ekran görüldü,P1,V08 Klinik operasyon,F4 · Görev 6,yeniden tasarlanacak,planlandı,Aşama/revizyon/maliyet ayrı olay,
 H13,Ek A,Hasta ve klinik,Hasta raporları / metin şablonları,Ekran görüldü,P1,V06 Belge ve onay,F4 · Görev 4,yeniden tasarlanacak,planlandı,AT-14,Klinik metin üretilmez; demo şablon
 H14,Ek A,Hasta ve klinik,Hasta randevu geçmişi,Ekran görüldü,P0,V03 Ajanda,F2,uygulanacak,çalışıyor,Geçmiş/gelecek ayrımı ve durum rozetleri,Hasta 360 > Özet > Randevular
-O01,Ek A,Operasyon ve finans,Randevu takvimi,Ekran görüldü,P0,V03 Ajanda,F2 · Görev 1,yeniden tasarlanacak,kısmi,AT-03; mobil gün listesi; çakışma DB seviyesinde,"Gün görünümü + hekim/koltuk sütunları çalışıyor; hafta/ay, çalışma saati, sürükle-bırak Görev 1"
+O01,Ek A,Operasyon ve finans,Randevu takvimi,Ekran görüldü,P0,V03 Ajanda,F2 · Görev 1,yeniden tasarlanacak,kısmi,AT-03; mobil gün listesi; çakışma DB seviyesinde,"Gün + hafta görünümü, çalışma saati gölgesi, kapatma gösterimi ✔; ay görünümü ve sürükle-bırak açık"
 O02,Ek A,Operasyon ve finans,Yeni randevu penceresi,Ekran görüldü,P0,V03 Ajanda,F2,uygulanacak,çalışıyor,Kayıt anında sunucu çakışma kontrolü; anlamlı hata,E2E critical-flow.spec.ts
 O03,Ek A,Operasyon ve finans,Cari işlemler,Kısmi ekran,P1,V05 Finans,F3 · Görev 3/6,yeniden tasarlanacak,planlandı,Bakiye hareketlerden üretilir,Hesap kartı ve hareket defteri ayrı
 E01,Ek A,Entegrasyon,E-Fatura & E-SMM,Ekran görüldü,P1,V10 Entegrasyon,F4 · Görev 5,ertelenecek,engelli: sağlayıcı,Belge durumu ≠ tahsilat; tekilleştirme,Yetkili entegratör sözleşmesi ve test hesabı gerekli; yalnız mock
@@ -49,9 +49,9 @@ R24,Ek A,Rapor ve sorgu,Online Ödeme Sorgulama,Ekran görüldü,P1,V05 / V10,F4
 T01,Ek A,Tanımlama,Tedavi Tanımlama,Yalnız menü veya kontrol,P0,V04 Klinik ve tedavi,F3 · Görev 2,uygulanacak,planlandı,İşlem kataloğu sürümlü,
 T02,Ek A,Tanımlama,Tedavi Fiyat Tanımlama,Yalnız menü veya kontrol,P0,V04 / V05,F3 · Görev 2,uygulanacak,planlandı,AT-05; fiyat snapshot,
 T03,Ek A,Tanımlama,Doktor Tarife Tanımlama,Yalnız menü veya kontrol,P1,V04 / V05,F3 · Görev 2,yeniden tasarlanacak,planlandı,Hekim bazlı tarife sürümü,
-T04,Ek A,Tanımlama,Randevu Tedavi Tanımlama,Yalnız menü veya kontrol,P0,V03 Ajanda,F2 · Görev 1,yeniden tasarlanacak,planlandı,Varsayılan işlem süresi,Randevu formunda şimdilik süre seçimi
-T05,Ek A,Tanımlama,Randevu Saat Tanımlama,Yalnız menü veya kontrol,P0,V03 Ajanda,F2 · Görev 1,uygulanacak,planlandı,Çalışma saati dışında uyarı/engel,
-T06,Ek A,Tanımlama,Randevu Kapatma,Yalnız menü veya kontrol,P0,V03 Ajanda,F2 · Görev 1,uygulanacak,planlandı,Kapatma süresince randevu engellenir,
+T04,Ek A,Tanımlama,Randevu Tedavi Tanımlama,Yalnız menü veya kontrol,P0,V03 Ajanda,F2 · Görev 1,yeniden tasarlanacak,çalışıyor,Varsayılan işlem süresi,İşlem türü + varsayılan süre; randevu formunda süreyi ayarlar (gorev1.test.ts)
+T05,Ek A,Tanımlama,Randevu Saat Tanımlama,Yalnız menü veya kontrol,P0,V03 Ajanda,F2 · Görev 1,uygulanacak,çalışıyor,Çalışma saati dışında uyarı/engel,Haftalık bloklar; dışı uyarı + bilinçli onay + audit; tanımsız = kısıt yok (ADR-015)
+T06,Ek A,Tanımlama,Randevu Kapatma,Yalnız menü veya kontrol,P0,V03 Ajanda,F2 · Görev 1,uygulanacak,çalışıyor,Kapatma süresince randevu engellenir,"Klinik/hekim/koltuk kapatması; randevuyu siler/taşımaz, VİA Akış görevi; eşzamanlılık testli (ADR-016)"
 T07,Ek A,Tanımlama,Kasa Tanımlama,Ekran görüldü,P0,V05 Finans,F3 · Görev 3,uygulanacak,planlandı,Kasa hareketleri ayrı,
 T08,Ek A,Tanımlama,Banka Tanımlama,Ekran görüldü,P0,V05 Finans,F3 · Görev 3,uygulanacak,planlandı,Banka mutabakatına giriş,
 T09,Ek A,Tanımlama,Pos Tanımlama,Ekran görüldü,P1,V05 Finans,F3 · Görev 3,yeniden tasarlanacak,planlandı,Manuel kart kaydı ≠ sanal POS,
@@ -59,19 +59,19 @@ T10,Ek A,Tanımlama,Çek Kasası Tanımlama,Yalnız menü veya kontrol,P2,V05 Fi
 T11,Ek A,Tanımlama,Senet Kasası Tanımlama,Yalnız menü veya kontrol,P2,V05 Finans,F6,ertelenecek,ertelendi,—,
 T12,Ek A,Tanımlama,Döviz Tanımlama,Yalnız menü veya kontrol,P1,V05 Finans,F3 · Görev 3,yeniden tasarlanacak,planlandı,AT-10,"Model hazır, davranış kapalı (TRY)"
 T13,Ek A,Tanımlama,Hesap Planı Tanımlama,Yalnız menü veya kontrol,P1,V05 Finans,—,uygulanmayacak,uygulanmayacak,—,Tam genel muhasebe ilk sürüm kapsamı dışı; GL bağlantısı için kayıt/belge referansı korunur (§06)
-T14,Ek A,Tanımlama,Doktor Tanımlama,Yalnız menü veya kontrol,P0,V01 / V03,F2 · Görev 1,uygulanacak,kısmi,Hekim kaynağı üyelikle bağlı,practitioners tablosu ve seed var; yönetim ekranı Görev 1
+T14,Ek A,Tanımlama,Doktor Tanımlama,Yalnız menü veya kontrol,P0,V01 / V03,F2 · Görev 1,uygulanacak,çalışıyor,Hekim kaynağı üyelikle bağlı,"Hekim ekle/düzenle/pasifleştir, kullanıcıya bağla; koltuk yönetimi"
 T15,Ek A,Tanımlama,Laboratuvar Tanımlama,Yalnız menü veya kontrol,P1,V08 Klinik operasyon,F4 · Görev 6,uygulanacak,planlandı,,
 T16,Ek A,Tanımlama,Medikal Firma Tanımlama,Yalnız menü veya kontrol,P2,V08 Satın alma,F6,ertelenecek,ertelendi,—,
 T17,Ek A,Tanımlama,Kurum Tanımlama,Yalnız menü veya kontrol,P1,V05 / V02,F4 · Görev 6,yeniden tasarlanacak,planlandı,Kurum tarifesi ve hasta payı ayrı,
 T18,Ek A,Tanımlama,Firma Cari Tanımlama,Yalnız menü veya kontrol,P1,V05 Finans,F4 · Görev 6,yeniden tasarlanacak,planlandı,Bakiye hareketlerden,
 T19,Ek A,Tanımlama,Personel Tanımlama,Yalnız menü veya kontrol,P1,V01 / V08,F4 · Görev 6,yeniden tasarlanacak,planlandı,,Bordro kapsam dışı
-T20,Ek A,Tanımlama,Kullanıcı Tanımlama,Yalnız menü veya kontrol,P0,V01 Kimlik ve yetki,F1 · Görev 1,yeniden tasarlanacak,kısmi,"AT-02, AT-15, AT-20",Üyelik/rol/erişim kaldırma çalışıyor; davet ve rol değişikliği Görev 1
+T20,Ek A,Tanımlama,Kullanıcı Tanımlama,Yalnız menü veya kontrol,P0,V01 Kimlik ve yetki,F2 · Görev 1,yeniden tasarlanacak,çalışıyor,"AT-02, AT-15, AT-20","Davet (tek kullanımlık, 72 saat, manuel iletim), rol değişikliği, erişim kaldırma; e-posta gönderimi yok (ADR-019)"
 A01,Ek A,Ayarlar,Klinik ayarları,Kısmi ekran,P0,V11 SaaS işletimi,F1 · Görev 7,yeniden tasarlanacak,kısmi,Klinik saat dilimi/para birimi tenant düzeyinde,Açılış sihirbazı Görev 7
 A02,Ek A,Ayarlar,Rapor ayarları / çıktı şablonları,Ekran görüldü,P1,V06 Belge ve onay,F4 · Görev 4,yeniden tasarlanacak,planlandı,Çıktı şablonu sürümlü,
 A03,Ek A,Ayarlar,Onam formu şablonları,Yalnız menü veya kontrol,P1,V06 Belge ve onay,F4 · Görev 4,yeniden tasarlanacak,planlandı,AT-14,Gerçek onam metni üretilmez
 G04,Ek A,Genel,Ana panel / döviz kurları,Ekran görüldü,P1,V05 Finans,F3 · Görev 3,ertelenecek,planlandı,AT-10 (kur snapshot),"TRY çekirdek; çoklu döviz modeli hazır, davranış kapalı"
 G05,Ek A,Genel,Haftalık tedavi / tahsilat karşılaştırması,Ekran görüldü,P0,V09 Analitik,F4 · Görev 6,yeniden tasarlanacak,planlandı,Tedavi tutarı ≠ tahsilat; seriler ayrı (§09),
-G06,Ek A,Genel,Randevu durum istatistiği,Ekran görüldü,P0,V03 Ajanda,F2 · Görev 1,yeniden tasarlanacak,kısmi,Durum ve iletişim sonucu ayrı sayılır,Bugün sayaçları durumları gösteriyor; iletişim sonucu ayrı alan (testli)
+G06,Ek A,Genel,Randevu durum istatistiği,Ekran görüldü,P0,V03 Ajanda,F2 · Görev 1,yeniden tasarlanacak,kısmi,Durum ve iletişim sonucu ayrı sayılır,Bugün sayaçları + iletişim sonucu ayrı; durum istatistiği raporu Görev 6
 G07,Ek A,Genel,Ana panel / randevulu hastalar,Ekran görüldü,P0,V03 Ajanda,F2,uygulanacak,çalışıyor,"Günün randevuları kalıcı veriden, klinik saat diliminde",Bugün > Günün randevuları
 G08,Ek A,Genel,Ana panel / kısa notlar,Ekran görüldü,P1,V07 İletişim ve takip,F4 · Görev 4,yeniden tasarlanacak,planlandı,Not görev olarak sorumlu/son tarih taşır,Serbest kısa not yerine VİA Akış manual görev türü (modelde var)
 H15,Ek A,Hasta ve klinik,Hasta dosyası / onam ve belge seçimi,Ekran görüldü,P1,V06 Belge ve onay,F4 · Görev 4,yeniden tasarlanacak,planlandı,Üretildi/gönderildi/görüntülendi/onaylandı ayrı,Şablon seçimi onam kanıtı değildir
