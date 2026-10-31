@@ -11,7 +11,9 @@ const optText = (max: number) => z.preprocess((v) => (typeof v === "string" && v
 export const CURRENCIES = ["TRY"] as const;
 export const PAYMENT_METHODS = ["cash", "card_manual", "bank_transfer", "other"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+/** Görüntüleme etiketi: kullanıcı girişindeki yöntemler + sağlayıcı kaynaklı "online" (yalnız VİA Köprü yazar). */
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod | "online", string> = {
+  online: "Online (MOCK sağlayıcı)",
   cash: "Nakit",
   card_manual: "Kart (manuel kayıt · POS bağlantısı yok)",
   bank_transfer: "Havale / EFT",
