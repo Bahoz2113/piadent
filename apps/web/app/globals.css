@@ -363,3 +363,16 @@ button.net-tile:hover { border-color: var(--border-strong); }
 .explain ul { margin: 6px 0 6px 18px; padding: 0; }
 .alloc-line { display: grid; grid-template-columns: 1fr 120px; gap: 8px; align-items: center; }
 .alloc-line .input { text-align: right; }
+
+/* Belge, dosya, iletişim, VİA Hazır */
+.doc-preview { white-space: pre-wrap; font-size: .9rem; line-height: 1.55; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); max-height: 46vh; overflow: auto; overflow-wrap: anywhere; }
+.evidence { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.readiness { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.readiness li { display: flex; gap: 8px; align-items: flex-start; font-size: .9rem; flex-wrap: wrap; }
+.readiness-missing svg { color: var(--warning); flex: none; margin-top: 3px; }
+.readiness-ok svg, .readiness-excepted svg { color: var(--success); flex: none; margin-top: 3px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; border: 1px solid var(--border-strong); }
+.dot-granted { background: var(--success); border-color: var(--success); }
+.dot-withdrawn { background: var(--error); border-color: var(--error); }
+code { overflow-wrap: anywhere; }
+.dot-none { background: transparent; border-color: var(--text-secondary); }

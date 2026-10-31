@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { ReadinessPanel } from "@/components/care/readiness-panel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, UserPlus, Ban } from "lucide-react";
@@ -376,6 +377,7 @@ function AppointmentDetail({ appt, onClose, onChanged, onConflict }: { appt: App
           {appt.cancelReason && <><dt>İptal nedeni</dt><dd>{appt.cancelReason}</dd></>}
         </dl>
         <Link href={`/hastalar/${appt.patientId}`} className="btn btn-sm" style={{ alignSelf: "flex-start" }}>Hasta kartını aç</Link>
+        {["planned", "confirmed"].includes(appt.status) && <ReadinessPanel appointmentId={appt.id} />}
         {can("appointment.write") && (
           <>
             <hr className="divider" />

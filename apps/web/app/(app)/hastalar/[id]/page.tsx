@@ -18,6 +18,9 @@ import { RelationsCard } from "@/components/patient/relations";
 import { AnamnesisPanel } from "@/components/patient/anamnesis";
 import { TreatmentTab } from "@/components/treatment/treatment-tab";
 import { AccountTab } from "@/components/finance/account-tab";
+import { DocumentsTab } from "@/components/documents/documents-tab";
+import { CommunicationTab } from "@/components/communication/communication-tab";
+import { FollowUpsCard } from "@/components/care/follow-ups";
 import { questionLabel } from "@viadent/contracts";
 import { AlertTriangle } from "lucide-react";
 
@@ -168,11 +171,12 @@ function PatientInner() {
           <div className="card"><EmptyState icon={<Lock size={28} aria-hidden />} title="Sağlık bilgileri rolünüze kapalı">Anamnez ve klinik notlar yalnız yetkili klinik kullanıcılara görünür.</EmptyState></div>
         ))}
         {tab === "gecmis" && <Timeline patientId={p.id} resources={res.data} />}
-        {tab === "tedavi" && <TreatmentTab patientId={p.id} onChanged={() => { void tasks.reload(); }} />}
+        {tab === "tedavi" && <div className="stack" style={{ gap: 16 }}><TreatmentTab patientId={p.id} onChanged={() => { void tasks.reload(); }} /><FollowUpsCard patientId={p.id} /></div>}
+        {tab === "belgeler" && <DocumentsTab patientId={p.id} patientName={p.fullName} />}
+        {tab === "iletisim" && <CommunicationTab patientId={p.id} />}
         {tab === "finans" && (can("account.read") ? <AccountTab patientId={p.id} patientName={p.fullName} /> : (
           <div className="card"><EmptyState icon={<Lock size={28} aria-hidden />} title="Hasta hesabı rolünüze kapalı">Borç, tahsilat ve iade bilgileri vezne ve finans yetkisi olan kullanıcılara görünür.</EmptyState></div>
         ))}
-        {(tab === "belgeler" || tab === "iletisim") && <NotYet tab={tab} />}
       </div>
       {editing && <EditPatient p={p} practitioners={res.data?.practitioners ?? []} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); toast.show("success", "Hasta bilgileri güncellendi."); void patient.reload(); void tasks.reload(); }} />}
       {toast.node}
@@ -180,20 +184,6 @@ function PatientInner() {
   );
 }
 
-function NotYet({ tab }: { tab: string }) {
-  const info: Record<string, [string, string]> = {
-    belgeler: ["Belge ve dosyalar", "Görev 4 (VD-011): şablon sürümü, güvenli yükleme ve tarama, kanıt olayları."],
-    iletisim: ["İletişim tercihleri", "Görev 4: amaç bazlı izin/tercih ve mesaj teslim durumları. Randevu iletişim sonuçları şimdilik Geçmiş sekmesinde."],
-  };
-  const [title, body] = info[tab]!;
-  return (
-    <div className="card">
-      <EmptyState icon={<FileText size={28} aria-hidden />} title={`${title} henüz geliştirilmedi`}>
-        Bu bölüm bilinçli olarak boş bırakıldı; sahte veri gösterilmez. Planlanan iş: {body}
-      </EmptyState>
-    </div>
-  );
-}
 
 function ClinicalNotes({ patientId, canWrite }: { patientId: string; canWrite: boolean }) {
   const { tz } = useSession();

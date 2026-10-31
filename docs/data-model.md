@@ -70,18 +70,32 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 | `commission_rule_versions` | Prim kuralı sürümü | yalnız ekleme; geçerlilik tarihi; hekime özel veya genel |
 | `commission_accruals` | Prim tahakkuku | dağıtım başına bir satır; oran snapshot'ı; ters prim orijinal oranla |
 
+## Görev 4 tabloları (`0005_documents_files.sql`)
+| Tablo | Amaç | Kural |
+|---|---|---|
+| `document_types` | VİADENT belge türü kataloğu | kategori, kabul gerekir mi, hazırlayabilen rol, inceleme durumu (DEMO) |
+| `templates` / `template_versions` | Şablon ve sürümü | onaylı sürümün metni/özeti donar; şablon başına tek taslak; DEMO işareti |
+| `patient_documents` | Üretilmiş belge | metin snapshot + SHA-256, şablon sürümü değişmez; yalnız `issued → revoked` |
+| `consent_requests` | Karar isteği (kabul gerektiren türler) | kararlı/kapalı istek tekrar değişmez; 30 gün sonra süresi dolar |
+| `evidence_events` | Kanıt olayları | yalnız ekleme; belge özeti; kabulde yöntem zorunlu; taranmış nüsha bağlantısı |
+| `file_assets` / `file_access_events` | Dosya metadata'sı ve erişim izi | içerik DB'de değil; durum makinesi tetikleyiciyle; tarama zamanı olmadan available olmaz; hash değişmez |
+| `communication_preferences` | Amaç × kanal izni | yalnız ekleme; en son kayıt geçerli |
+| `messages` / `delivery_events` | Mesaj ve durum olayları | sağlayıcı yalnız `mock`; teslim ≠ gönderim; süre aşımı → unknown |
+| `follow_ups` | Kontrol | randevu bağlanınca scheduled, gerçekleşince done |
+| `readiness_rules` / `readiness_exceptions` | VİA Hazır kural ve gerekçeli istisna | kural türüne göre zorunlu alanlar (check) |
+
 ## Durum makineleri (uygulanan)
 **Randevu:** `planned → confirmed | checked_in | no_show | cancelled`; `confirmed → checked_in | no_show | cancelled`; `checked_in → in_progress | completed`; `in_progress → completed`. `completed`, `no_show`, `cancelled` terminal. Saati gelmemiş randevu `no_show` olamaz.
 **İletişim sonucu:** `not_contacted | informed | unreachable` — durumdan bağımsız; “Bilgi verildi” geldi anlamına gelmez.
 **Plan sürümü:** `draft → proposed | cancelled`; `proposed → accepted | rejected | superseded | cancelled`; `accepted → superseded | cancelled` (DB tetikleyicisi).
 **Gerçekleşen işlem:** `completed → cancelled | corrected`.
 **Tarife:** `draft → published → retired`.
+**Şablon sürümü:** `draft → approved → retired`. **Belge isteği:** `issued → accepted | declined | expired | revoked`; `accepted → revoked`. **Dosya:** `initiated → uploaded | rejected | deleted`; `uploaded → available | quarantined | rejected`; `available/quarantined/rejected → deleted`. **Mesaj:** `queued → submitted | failed | cancelled`; `submitted → unknown` (teslim bildirimi Görev 5). **Kontrol:** `open ⇄ scheduled → done`; `open/scheduled → cancelled`.
 **Alacak:** `active → cancelled` (dağıtımlar önce ters kayda alınır).
 **Görev:** `open | in_progress | blocked | done | cancelled`; kapalı görev yeniden açılmaz; iptal gerekçe ister.
 
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).
-- Görev 4: `template`, `template_version`, `patient_document`, `consent_request`, `evidence_event`, `file_asset`, `file_version`, `file_access_event`, `communication_preference`.
 - Görev 5: `message`, `delivery_event`, `integration_job`, `webhook_event`.
 - Görev 6: `lab_order`, `lab_event`, `commission_rule_version`, `commission_accrual`, `commission_payout`, `inventory_item`, `lot`, `stock_movement`.
 - Görev 7: `import_batch`.

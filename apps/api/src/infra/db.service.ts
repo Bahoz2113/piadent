@@ -14,6 +14,8 @@ export class Db implements OnModuleDestroy {
 
   constructor(@Inject(CONFIG) config: AppConfig) {
     this.pool = new pg.Pool({ connectionString: config.databaseUrl, max: 10, application_name: "viadent-api" });
+    // Boştaki bağlantı DB tarafından kapatılırsa API süreci çökmemeli (yeniden başlatma, failover); havuz yeni bağlantı açar.
+    this.pool.on("error", (e) => console.error(`[api] boşta bağlantı hatası: ${e.message.slice(0, 120)}`));
   }
 
   /** Doğrulanmış tenant bağlamında transaction. Tenant kimliği istemciden ALINMAZ. */

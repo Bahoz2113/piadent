@@ -11,13 +11,13 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (22.10.2026, Görev 3 sonrası)
+## Son koşu sonuçları (23.10.2026, Görev 4 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
 | `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması | **14/14 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 | **99/99 geçti** |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 senaryo × {1366 px, 360 px} | **22/22 geçti** (temiz seed) |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 | **118/118 geçti** |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 senaryo × {1366 px, 360 px} | **28/28 geçti** (temiz seed, worker çalışırken) |
 | Typecheck | contracts, db, api, worker, web | **temiz** |
 | `next build` | üretim derlemesi | **başarılı** |
 
@@ -36,6 +36,12 @@ Hekim: odontogramda seed bulgusu erişilebilir adla (“Diş 16; Çürük…”)
 ### Görev 3 E2E (`gorev3.spec.ts`, 1366 px + 360 px)
 Finans bakiye listesinden hastaya → sekreter tahsilat alır, öneriyle dağıtır, iade düğmesi görmez, “Açık borç” kutusundan formül açılır, mutabakat notu görünür → finans 50 ₺ iade eder, dağıtım ters kaydı defterde görünür → /finans özetinde Tahsilat kutusu kaynak ödemelere açılır · hekim hasta hesabını ve klinik finansı göremez · 360 px taşma yok.
 
+### Görev 4 testlerinin kapsadığı kurallar (`gorev4.test.ts`, 19 — gerçek PostgreSQL, uygulama rolü, geçici özel depo)
+Katalog 17 tür, hepsi DEMO/incelenmemiş, yalnız 2 sentetik onaylı şablon; finans belge göremez · şablonda tanımsız alan 422; onaylı sürüm API ve doğrudan SQL ile değişmez; sekreter şablon yönetemez · **AT-14** önizleme = üretim (aynı SHA-256), metin snapshot, DEMO başlığı, onay isteği; kabul yöntem + personel beyanı ister; kanıt olayları belge özetini taşır; karar bir kez; v2 onaylanıp v1 kullanımdan kalkınca eski kabul edilmiş belge v1 metni ve özetiyle kalır, kullanımdan kalkan sürümden belge üretilemez, yeni belge v2'ye bağlanır; belge metni/kanıt/kararlı istek DB'de değiştirilemez · iptal gerekçeli, iptalden sonra karar/yazdırma yok · hekime özel tür sekretere 403, bilgilendirme türü karar gerektirmez · **AT-11** eksik bayt “yüklendi” sayılmaz (422, deneme sayılır, durum initiated, tekrar yolu); tarama bitmeden indirme 409 + erişim reddi izi; temiz PNG taranır, hash başlığıyla iner, olay zinciri tam; içerik özel depoda · EICAR → karantina, indirilemez, yöneticiye görev, gerekçeli silmede görev kapanır · tür uyuşmazlığı → reddedildi; PDF'de JavaScript → karantina; temiz PDF → kullanılabilir · 5 başarısız denemede reddedildi; JSON gövde içerik sayılmaz · klinik dosyayı sekreter yükleyemez/göremez (404), asistan görür, yönetici listesinde yok; tarama zamanı olmadan DB available'a izin vermez · clamd INSTREAM sözleşme testi (sahte clamd: FOUND/OK; clamd yoksa dosya temiz sayılmaz) · **AT-12** izin yoksa 422; aynı anahtar tek mesaj; MOCK'a iletilir → submitted; 25 saat sonra unknown; olaylar queued→submitted→unknown, delivered yok · izin kuyruktayken geri çekilirse iptal; randevu izni kampanyayı kapsamaz; geçmiş korunur; hekim mesaj gönderemez · kontrol: sekreter planlayamaz, geçmiş tarih 422; görev sekretere; randevu verilince bağlanır ve görev kapanır · VİA Hazır: kabul edilmiş planda KAN-01 + yarınki randevu → anamnez ve belge eksik, görev açılır; belge plan kalemleriyle üretilir; karar bekleyen belge “kaydedilmedi” der; kabul + hekim istisnası (sekreter 403) → hazır, görev kapanır · çapraz tenant: B hekimi A'nın belge/dosya/iletişim/kontrol/hazırlık uçlarında 404, indirme 404, A şablonuyla A hastasına belge 422 · **dayanıklılık:** DB boştaki API bağlantılarını kapatınca API çökmez (düzeltmeden önce test işlenmemiş hatayla düşüyordu).
+
+### Görev 4 E2E (`gorev4.spec.ts`, 1366 px + 360 px; worker çalışırken)
+Sekreter: DEMO şablonu plan kalemleriyle önizler (DEMO uyarısı) → üretir → personel beyanı işaretlenmeden kabul kaydedilemez → kabul kaydedilir, “elektronik imza değildir” notu · temiz PNG yükler → gerçek kuyrukta taranıp “Kullanılabilir” olur · EICAR → “Karantinada”, indir düğmesi yok · İletişim: seed izni “İzin var”, MOCK uyarısı, mesaj kuyruğa alınır → “Sağlayıcıya iletildi (teslim bilinmiyor)”, “Teslim edildi” hiç görünmez · Hekim kontrol planlar · Yönetici şablon ve VİA Hazır kurallarını ve DEMO/inceleme uyarısını görür · taşma yok.
+
 ## Kabul testleri eşlemesi
 | Test | Durum | Kanıt |
 |---|---|---|
@@ -49,14 +55,18 @@ Finans bakiye listesinden hastaya → sekreter tahsilat alır, öneriyle dağıt
 | AT-08 alacaksız ödeme → avans | **geçti** | gorev3.test.ts |
 | AT-09 eşzamanlı dağıtım | **geçti** | gorev3.test.ts (5 tur + ters yön + doğrudan SQL) |
 | AT-10 kur / prim oranı değişimi | **geçti (prim)** | gorev3.test.ts. Kur kısmı: çoklu para birimi davranışı kapalı (ADR-028); TRY dışı değer reddi test edildi, kur snapshot davranışı açılınca test edilecek |
-| AT-11..AT-14, AT-16, AT-17 | açık | İlgili modüller yok (Görev 4–7) |
+| AT-11 dosya yükleme hatası / zararlı dosya | **geçti** | gorev4.test.ts + E2E (temel tarayıcı; clamd yalnız sözleşme testiyle — gerçek ClamAV bu ortamda yok) |
+| AT-12 SMS teslim sonucu gelmez | **geçti (MOCK)** | gorev4.test.ts + E2E: submitted → unknown, delivered uydurulmaz. Gerçek sağlayıcı Görev 5 |
+| AT-13 webhook tekrar/ters sıra/geçersiz imza | açık | Görev 5 |
+| AT-14 onaydan sonra şablon değişir | **geçti** | gorev4.test.ts (API + doğrudan SQL) |
+| AT-16, AT-17 | açık | Görev 7 |
 | AT-15 klinik değiştirme, eski sekme | **geçti** | eski bağlamla okuma/yazma 409; yeni bağlamda yalnız yeni kliniğin verisi; rol yeni kliniğe göre |
 | AT-18 360 px, klavye, ekran okuyucu | **kısmi** | E2E: 6 ana sayfada 360 px'de yatay taşma yok (ölçüt düzeltildi, aşağıya bkz.), “İçeriğe geç”, dialog erişilebilir adı, durumlar metin+renk, çalışma saati dışı/kapatma desen+metinle. Ekran okuyucuyla elle test ve renk körlüğü simülasyonu **yapılmadı** |
 | AT-19 gece yarısı raporu | **geçti** (finans özeti) | gorev3.test.ts: 23:59:30 / 00:00:30, satır = toplam, iki gün = aralık. Diğer raporlar Görev 6 |
 | AT-20 erişimi kaldırılan kullanıcı | **geçti** (API) | açık oturumla sonraki istek 403 `MEMBERSHIP_REVOKED`; çıkış sonrası 401. Worker kullanıcı adına iş yürütmüyor; dosya erişimi Görev 4 |
 
 ## RLS / güvenlik kontrolleri (geçti)
-Uygulama rolü superuser/BYPASSRLS/tablo sahibi değil · `tenant_id` taşıyan **39 tablonun tamamında** RLS + FORCE (test artık tabloları otomatik keşfediyor; yeni tablo unutulursa kırılır) · bağlamsız sorgu 0 satır · havuzda bağlam sızmıyor · yanlış tenant_id ile INSERT reddediliyor · audit UPDATE/DELETE reddediliyor · istemci gövdesindeki `tenantId` yok sayılıyor · CSRF başlığı zorunlu · token DB'de düz değil · 5 hatalı girişte kilit.
+Uygulama rolü superuser/BYPASSRLS/tablo sahibi değil · `tenant_id` taşıyan **53 tablonun tamamında** RLS + FORCE (test artık tabloları otomatik keşfediyor; yeni tablo unutulursa kırılır) · bağlamsız sorgu 0 satır · havuzda bağlam sızmıyor · yanlış tenant_id ile INSERT reddediliyor · audit UPDATE/DELETE reddediliyor · istemci gövdesindeki `tenantId` yok sayılıyor · CSRF başlığı zorunlu · token DB'de düz değil · 5 hatalı girişte kilit.
 
 ## Elle yapılan görsel kontrol
 Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar, Hasta 360, Geçmiş, Ajanda, Yeni hasta çekmecesi incelendi. Bulunan ve düzeltilen hatalar: masaüstünde mobil menü düğmesi görünmesi, 360 px'de aramanın daralması, çekmecenin erişilebilir adının olmaması (E2E yakaladı), telefonun biçimsiz gösterimi.
@@ -86,7 +96,15 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - 360 px'de hesap tabloları okunamaz biçimde daralıyordu → geniş tablolar en az 880 px, kendi kabında kayar.
 - E2E: seçici “İade” metnini toplam kutusunun erişilebilir adında da buluyordu; tutar okuma yeniden yüklemeyle yarışıyordu.
 
+## Görev 4'te bulunup düzeltilen hatalar
+- **Worker ve API, veritabanı boştaki bağlantıları kapatınca çöküyordu** (pg havuzunun `error` olayı dinlenmiyordu; DB yeniden başlatma/failover süreci düşürürdü). Her iki havuza dinleyici eklendi; regresyon testi düzeltme olmadan düştüğü doğrulanarak eklendi.
+- VİA Akış'a eklenen SQL'lerde aynı parametre hem metin hem uuid olarak kullanılıyordu (“inconsistent types deduced”); worker taraması sessizce yeniden deneme döngüsüne düşüyordu → açık tür dönüşümü.
+- Göreli `STORAGE_DIR` API ve worker'da farklı dizinlere çözülüyordu → depo köküne göre çözülür.
+- Önceden var olan iki test kararsızlığı: rol değişikliği testi finans kullanıcısını kalıcı olarak sekretere çeviriyordu (dosya sırasına göre Görev 3 testleri 403 alıyordu) → test eski rolü geri yükler; “geciken randevu” testi günün saatine bağlıydı (10:00'dan önce başarısız) → tarama sabit klinik saatiyle çalıştırılır.
+
 ## Çalıştırılmayan / yapılamayan
+- Gerçek ClamAV (clamd) bu ortamda kurulu değil (imza veritabanı indirilemiyor); yalnız sahte clamd ile protokol sözleşmesi test edildi.
+- Yazdırma penceresi E2E'de açılmadı (tarayıcı diyaloğu otomasyonu kilitler); `printed` kanıt olayı API testinde doğrulandı.
 - Performans hedefi (100.000 hasta, p95 500 ms) **ölçülmedi**.
 - Windows üzerinde kurulum bu oturumda **denenmedi** (geliştirme Linux konteynerde yapıldı); README adımları Docker Desktop + Node 22 + pnpm varsayar.
 - Ekran okuyucu (NVDA/VoiceOver) testi yapılmadı.

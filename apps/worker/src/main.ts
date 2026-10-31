@@ -6,6 +6,8 @@ loadEnv();
 const url = process.env.WORKER_DATABASE_URL ?? process.env.DATABASE_URL;
 if (!url) throw new Error("WORKER_DATABASE_URL tanımlı değil (.env.example)");
 const pool = new pg.Pool({ connectionString: url, max: 4, application_name: "viadent-worker" });
+// Boştaki bağlantı DB tarafından kapatılırsa (yeniden başlatma, failover) süreç çökmez; havuz yeni bağlantı açar.
+pool.on("error", (e) => console.error(`[worker] boşta bağlantı hatası: ${e.message.slice(0, 120)}`));
 let stopping = false;
 let lastScan = 0;
 

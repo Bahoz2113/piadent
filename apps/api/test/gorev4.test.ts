@@ -12,7 +12,8 @@ import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import pg from "pg";
 import { ClamdScanner, BasicScanner, LocalDiskStorage, documentsMaintenance, withContext } from "@viadent/db";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, adminQuery, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { Db } from "../src/infra/db.service.js";
 import { APP_URL, WORKER_URL } from "./env.js";
 import { processOutbox, scanAllTenants, type WorkerDeps } from "../../worker/src/jobs.js";
 import { MockMessagingAdapter } from "../../worker/src/messaging.js";
@@ -407,5 +408,17 @@ describe("tenant izolasyonu (Görev 4)", () => {
     expect((await bDentist.post(`/documents/${d.id}/decision`, { decision: "declined" })).status).toBe(404);
     expect((await bDentist.post("/documents", { patientId: pid, templateVersionId: v })).status).toBe(422);
     expect((await bDentist.post(`/files/${fid}/delete`, { reason: "deneme" })).status).toBe(404);
+  });
+});
+
+describe("dayanıklılık", () => {
+  it("DB boştaki bağlantıları kapatınca (yeniden başlatma/failover) API çökmez ve sonraki istek çalışır", async () => {
+    const pool = app.get(Db).pool;
+    await Promise.all([pool.query("select 1"), pool.query("select 1"), pool.query("select 1")]);
+    expect(pool.idleCount).toBeGreaterThan(0);
+    const killed = await adminQuery("select count(pg_terminate_backend(pid))::int as n from pg_stat_activity where application_name = 'viadent-api' and state = 'idle'");
+    expect(killed[0].n).toBeGreaterThan(0);
+    await new Promise((r) => setTimeout(r, 300));
+    expect((await sec.get("/patients?q=a")).status).toBe(200);
   });
 });

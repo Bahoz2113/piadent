@@ -7,7 +7,8 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile, rename, stat } from "node:fs/promises";
 import { createConnection } from "node:net";
-import { dirname, join, resolve, sep } from "node:path";
+import { existsSync } from "node:fs";
+import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 import type pg from "pg";
 
 // ------------------------------------------------------------------ depo portu
@@ -37,8 +38,15 @@ export class LocalDiskStorage implements StoragePort {
   async exists(key: string) { try { await stat(this.path(key)); return true; } catch { return false; } }
 }
 
+/** Göreli STORAGE_DIR depo köküne (pnpm-workspace.yaml) göre çözülür; API ve worker farklı dizinden çalışsa da aynı depoyu görür. */
+function repoRoot(): string {
+  let d = process.cwd();
+  for (let i = 0; i < 6; i++) { if (existsSync(join(d, "pnpm-workspace.yaml"))) return d; const up = dirname(d); if (up === d) break; d = up; }
+  return process.cwd();
+}
 export function storageFromEnv(): StoragePort {
-  return new LocalDiskStorage(process.env.STORAGE_DIR ?? join(process.cwd(), ".storage"));
+  const dir = process.env.STORAGE_DIR || ".storage";
+  return new LocalDiskStorage(isAbsolute(dir) ? dir : join(repoRoot(), dir));
 }
 export const objectKey = (tenantId: string, fileId: string, at = new Date()) => `${tenantId}/${at.getUTCFullYear()}/${fileId}`;
 export const sha256 = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");

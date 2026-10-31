@@ -6,6 +6,7 @@ import { TeamPanel } from "@/components/admin/team";
 import { ResourcesPanel } from "@/components/admin/resources";
 import { ClosuresPanel, TypesPanel } from "@/components/admin/agenda-settings";
 import { CatalogPanel } from "@/components/admin/catalog";
+import { TemplatesPanel } from "@/components/admin/templates";
 
 const TABS = [
   { id: "ekip", label: "Ekip ve davet", perm: "team.manage" },
@@ -13,6 +14,7 @@ const TABS = [
   { id: "turler", label: "İşlem türleri", perm: "schedule.manage" },
   { id: "kapatma", label: "Kapatmalar", perm: "schedule.manage" },
   { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
+  { id: "belge", label: "Belge şablonları", perm: "template.manage" },
 ] as const;
 
 export default function AdminPage() {
@@ -36,6 +38,7 @@ export default function AdminPage() {
             {tab === "turler" && <TypesPanel notify={toast.show} />}
             {tab === "kapatma" && <ClosuresPanel notify={toast.show} />}
             {tab === "katalog" && <CatalogPanel notify={toast.show} />}
+            {tab === "belge" && <TemplatesPanel notify={toast.show} />}
           </div>
         </>
       )}

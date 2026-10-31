@@ -14,8 +14,8 @@ Durum sözlüğü: **tamamlandı** = kabul kriteri sağlandı ve test edildi · 
 | VD-008 Gerçekleşen işlem ve hesap | **tamamlandı** (ilk kapsam) | Ziyarete bağlı gerçekleşen işlem, bedel snapshot'ı, kuruş yuvarlaması, gerekçeli iptal/düzeltme ✔; işlem aynı transaction'da hasta alacağı üretir, iptal/düzeltmede alacak iptal + dağıtım ters kaydı ✔ (Görev 3). |
 | VD-009 Ödeme, dağıtım, iade | **tamamlandı** (ilk kapsam, TRY) | Alacak/ödeme/dağıtım/avans/iade/kasa/gider ayrı; idempotency; DB tutar tetikleyicileri; eşzamanlı dağıtım; AT-06..AT-10, AT-19 gerçek DB'de testli. Açık: iade ikinci onay eşiği, banka/POS mutabakatı, makbuz/e-belge (Görev 5), ticari indirim/alacak düzeltmesi kaydı, çoklu para birimi davranışı. |
 | VD-010 VİA Akış / Net / İz | **kısmi** | Akış (7 tür: geciken geliş, teyit, eksik iletişim, kapatma çakışması, anamnez onayı, randevusuz kabul edilmiş plan, yanıtsız teklif; dedupe, otomatik kapanış, rol/hassasiyet filtresi) ✔; İz (hasta bazlı, maskeli, rol kontrollü) ✔; Net: hasta hesabı (açılabilir toplamlar, hareket defteri, mutabakat), klinik özeti (işlem ≠ tahsilat), bakiyeler + yaşlandırma, kasa, gider, prim tahakkuku ✔ (Görev 3). |
-| VD-011 Dosya ve belge sürümü | açık | Görev 4 |
-| VD-012 Outbox ve entegrasyon merkezi | **kısmi** | Outbox + retry/backoff + dead durumu (iç olaylar) ✔. Dış sağlayıcı adaptörleri, webhook, idempotency Görev 5. |
+| VD-011 Dosya ve belge sürümü | **tamamlandı** (ilk kapsam) | Belge türü / şablon sürümü / hasta belgesi / onay isteği / kanıt ayrı; SHA-256; AT-14 ✔. Özel depo, yükleme ≠ seçme, tarama portu (temel + clamd), karantina, erişim izi; AT-11 ✔. Açık: üretimde ClamAV kurulumu, S3 adaptörü, saklama/imha işi, PDF çıktısı, görüntüleyici, uzaktan onay kanalı (Görev 5). |
+| VD-012 Outbox ve entegrasyon merkezi | **kısmi** | Outbox + retry/backoff + dead durumu (iç olaylar) ✔; dosya tarama ve MOCK mesaj işleri, mesaj süre aşımı → bilinmiyor (AT-12) ✔ (Görev 4). Dış sağlayıcı adaptörleri, webhook, idempotency Görev 5. |
 | VD-013 Laboratuvar ve prim | **kısmi** | Tahsilat bazlı prim tahakkuku + ters prim + sürümlü kural (Görev 3) ✔. Laboratuvar, tedavi bazlı prim, prim ödemesi Görev 6. |
 | VD-014 İçe aktarma ve pilot | açık | Görev 7 |
 
@@ -28,10 +28,18 @@ VD-007 tamamlandı (ilk kapsam), VD-008 kısmi (hesap Görev 3). H04, T01, T02, 
 ## Tamamlanan iş paketi: Görev 3 (22.10.2026)
 VD-008 ve VD-009 tamamlandı (ilk kapsam, TRY), VD-013 kısmi (prim tahakkuku). H06, R02, R11, T07 çalışıyor; O03, R01, R20, T08, T09, T12 kısmi. ADR-027…031. Testler: API 99, E2E 22.
 
+## Tamamlanan iş paketi: Görev 4 (23.10.2026)
+VD-011 tamamlandı (ilk kapsam). H11, H15 çalışıyor; H10, H13, A02, A03, R14, R22 kısmi; Ek B 43 başlık VİADENT türüne eşlendi (kısmi), B03/B43 uygulanmayacak. VİA Hazır temeli (P1), iletişim tercihi, MOCK mesaj. ADR-032…036. Testler: API 117, E2E 28.
+
 ## Sıradaki tek iş paketi
-**Görev 4 — Belge, dosya ve takip (VD-011):** şablon sürümü ve belge örneği (onam/bilgilendirme içerik üretmeden, demo şablon), güvenli dosya yükleme (yükleme ≠ seçme; tarama/karantina, AT-11), belge kanıt olayları ve hash (AT-14), amaç bazlı iletişim tercihi, kontrol/takip görevi (H11). Prompttaki Görev 4 metniyle başlat.
+**Görev 5 — Sağlayıcılar ve VİA Köprü (VD-012):** port/adapter ile SMS/WhatsApp, ödeme, e-belge, imza/doğrulama sağlayıcıları; yetkili doküman ve test erişimi yoksa açık etiketli mock + sözleşme testleri; outbox, idempotency, retry/backoff, dead-letter, mutabakat, imzalı webhook (AT-12/13; zaman aşımı, ters sıra, çift olay); dış gönderim ayrı onay kapısında. Prompttaki Görev 5 metniyle başlat.
 
 ## Küçük açık işler
+- Üretimde clamd (ClamAV) kurulumu ve imza güncellemesi; tarama kuyruğu gecikme izleme.
+- Dosya saklama süresi ve “silindi” dosyaların imha işi; S3 uyumlu özel bucket adaptörü (sunucu tarafı şifreleme).
+- Belge PDF çıktısı (şu an tarayıcı yazdırması) ve taranmış nüshanın belgeye yüklemeden bağlanması akışı.
+- Klinik geneli belge/mesaj sorgu ekranları (R14, R22) — Görev 6.
+- Kontrol görevinden doğrudan randevu verme kısayolu.
 - İade için ikinci onay eşiği (Plan §05), makbuz çıktısı, banka/POS ekstre mutabakatı.
 - Ticari indirim / alacak düzeltmesi kaydı (iade ile karıştırılmadan).
 - VİA Akış finans görevleri (vadesi geçmiş borç, dağıtılmamış avans) — `via_net.changed` olayı hazır.
