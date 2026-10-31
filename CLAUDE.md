@@ -12,3 +12,8 @@ Kurallar (özet; tam liste VIADENT_Claude_Prompt.pdf):
 - Çalıştırmadığın testi geçmiş sayma; “tamamlandı” yalnız kabul kriteri sağlanınca.
 - Arayüz metinleri Türkçe; tarih gg.aa.yyyy, saat 24 saat, klinik saat dilimi.
 - Oturum sonunda `docs/handoff.md` ve `docs/verification.md` güncelle.
+
+## Proje bitiş kuralı (CEZERİ teslim testi)
+Kodlama tamamlandığında veya teslim adayı oluşturulduğunda `cezeri-teslim-testi` yeteneğini çağır. Varsa açık koşunun bulgu defterini kullan. Düzeltme geldiğinde yeniden çalıştır. Güncel sürüm için TESLİME ADAY raporu üretilene kadar "tamamlandı" yazma. İnsan onayıyla teslim et.
+- Koşular `qa-runs/<id>/` altında (plan.json, results.json, bugs.md, handoff.md, release.md, evidence/). Karar: `node qa/cezeri/gate.cjs qa-runs/<id>/results.json qa-runs/<id>/plan.json $(git rev-parse HEAD)` → 0 teslim adayı, 2 durdur, 3 beklet.
+- Yetenek dosyalarının kaynağı `qa/cezeri/` (kullanıcı makinesinde `~/.claude/skills/cezeri-teslim-testi/` ve `~/.claude/agents/`). Tester ürün kodunu değiştirmez; yama `cezeri-duzeltici` ile ayrı yapılır.
