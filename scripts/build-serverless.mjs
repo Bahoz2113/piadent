@@ -1,7 +1,7 @@
 // Serverless API paketi (Görev 15): apps/api + worker + db + contracts tek dosyada, TÜM bağımlılıklar gömülü (web'in node_modules'ında
 // Nest/pg olmadığı için). Çıktı: apps/web/vendor/viadent-api.cjs — Next pages/api köprüsü çalışma zamanında require eder.
 import { build } from "esbuild";
-import { mkdirSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -14,4 +14,8 @@ await build({
   external: ["pg-native", "@nestjs/microservices", "@nestjs/websockets", "@nestjs/platform-socket.io", "class-transformer", "class-validator", "@fastify/*", "cache-manager"],
   define: { "process.env.VIADENT_SERVERLESS": '"1"' },
 });
-console.log("derlendi: apps/web/vendor/viadent-api.cjs");
+// Migration SQL dosyaları: pakete gömülemez (diskten okunur), fonksiyon paketine kopyalanır.
+const migSrc = join(root, "packages/db/migrations"), migDst = join(root, "apps/web/vendor/migrations");
+mkdirSync(migDst, { recursive: true });
+cpSync(migSrc, migDst, { recursive: true });
+console.log(`derlendi: apps/web/vendor/viadent-api.cjs (+ ${readdirSync(migDst).filter((f) => f.endsWith(".sql")).length} migration)`);
