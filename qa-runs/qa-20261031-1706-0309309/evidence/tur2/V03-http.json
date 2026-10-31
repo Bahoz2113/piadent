@@ -1,0 +1,20 @@
+{
+ "case": "V03",
+ "run": "mvwi7ym2",
+ "day": "2027-01-19",
+ "concurrent": [
+  {
+   "role": "A-sekreter",
+   "status": 201
+  },
+  {
+   "role": "A-yonetici",
+   "status": 409,
+   "code": "APPOINTMENT_CONFLICT",
+   "message": "Seçilen saatte hekim dolu. Başka bir saat veya hekim seçin."
+  }
+ ],
+ "slot": "2027-01-19 10:00",
+ "appointmentsAtSlot": 1,
+ "verdict": "PASS"
+}

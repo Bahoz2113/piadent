@@ -1,0 +1,5 @@
+tenant_tables_without_force_rls|0
+tenant_tables_total|69
+app_role_delete_grants|auth_throttle,mfa_recovery_codes,plan_items,tariff_items,work_schedules
+app_role_flags super/bypassrls/createrole|false/false/false
+alloc_check_rows|0

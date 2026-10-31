@@ -1,0 +1,201 @@
+{
+ "case": "P02",
+ "run": "mvwi7ym2",
+ "day": "2027-02-18",
+ "rows": [
+  {
+   "label": "tarih 31.02",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": 422,
+   "ok": true
+  },
+  {
+   "label": "tarih 13. ay",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": 422,
+   "ok": true
+  },
+  {
+   "label": "saat 24:00",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": 422,
+   "ok": true
+  },
+  {
+   "label": "saat 9:00 (tek hane)",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": 422,
+   "ok": true
+  },
+  {
+   "label": "süre 4 dk",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": 422,
+   "ok": true
+  },
+  {
+   "label": "süre 721 dk",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": 422,
+   "ok": true
+  },
+  {
+   "label": "süre ondalık",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": 422,
+   "ok": true
+  },
+  {
+   "label": "hekim yok",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": [
+    404,
+    422
+   ],
+   "ok": true
+  },
+  {
+   "label": "hasta başka tenant (B hastası id'si)",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": [
+    404,
+    422
+   ],
+   "ok": true
+  },
+  {
+   "label": "geçerli slot 30 dk",
+   "status": 201,
+   "expected": [
+    201,
+    422
+   ],
+   "ok": true
+  },
+  {
+   "label": "aynı saat tekrar (çakışma)",
+   "status": 409,
+   "code": "APPOINTMENT_CONFLICT",
+   "expected": [
+    409,
+    422
+   ],
+   "ok": true
+  },
+  {
+   "label": "bitişik sonraki yarım saat (çakışmamalı)",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "expected": [
+    201,
+    422
+   ],
+   "ok": true
+  },
+  {
+   "label": "durum → confirmed",
+   "status": 200,
+   "ok": true
+  },
+  {
+   "label": "durum → checked_in",
+   "status": 200,
+   "ok": true
+  },
+  {
+   "label": "durum → in_progress",
+   "status": 200,
+   "ok": true
+  },
+  {
+   "label": "durum → completed",
+   "status": 200,
+   "ok": true
+  },
+  {
+   "label": "durum → no_show",
+   "status": 422,
+   "code": "INVALID_TRANSITION",
+   "ok": true
+  },
+  {
+   "label": "durum → cancelled",
+   "status": 422,
+   "code": "INVALID_TRANSITION",
+   "ok": true
+  },
+  {
+   "label": "durum → planned",
+   "status": 422,
+   "code": "INVALID_TRANSITION",
+   "ok": true
+  },
+  {
+   "label": "durum → bogus",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "ok": true
+  },
+  {
+   "label": "eski version ile durum (iyimser kilit)",
+   "status": 409,
+   "code": "VERSION_CONFLICT",
+   "ok": true
+  },
+  {
+   "label": "filtre ?date=2027-02-18",
+   "status": 200,
+   "count": 1,
+   "ok": true
+  },
+  {
+   "label": "filtre ?from=2027-02-18&days=7",
+   "status": 200,
+   "count": 1,
+   "ok": true
+  },
+  {
+   "label": "filtre ?from=2027-02-18&days=0",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "count": 0,
+   "ok": true
+  },
+  {
+   "label": "filtre ?from=2027-02-18&days=400",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "count": 0,
+   "ok": true
+  },
+  {
+   "label": "filtre ?date=31-02-2026",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "count": 0,
+   "ok": true
+  },
+  {
+   "label": "filtre ?practitionerId=<hekim>&date=2027-02-18",
+   "status": 200,
+   "count": 1,
+   "ok": true
+  },
+  {
+   "label": "filtre ?status=cancelled&date=2027-02-18",
+   "status": 200,
+   "count": 1,
+   "ok": true
+  }
+ ],
+ "verdict": "PASS"
+}

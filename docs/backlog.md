@@ -103,3 +103,9 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 - ~~Giriş hız sınırını DB'ye taşıma~~ — Görev 8'de yapıldı (ADR-053).
 - AT-19 tam senaryosu (rapor) Görev 3/6; gün sınırı birim testi var.
 - Tarayıcı yerel ayarında `<input type="date">` biçimi işletim sistemine bağlı; özel tarih seçici değerlendirilecek.
+
+## Teslim testinden gelen öneriler (31.10.2026)
+- **VD-030** E2E test verisi tekrarlı koşuya dayanıklı olsun (koşu-benzersiz tutar/hasta; `gorev3` 150 ₺ `.first()` bağımlılığı). Öncelik: düşük.
+- **VD-031** `GET /patients` sıralamasına kararlı kuyruk anahtarı (`file_no`); `tr-TR` collation değerlendirmesi (Ç/Ö/Ş/İ/Ü soyadları listenin sonuna düşüyor). Sayfalama eklenmeden önce.
+- **VD-032** Denetim raporunda `action` sütununu `auditActionLabel` ile Türkçeleştir (önek süzgeci korunarak).
+- **VD-033** İstemci tarafında 503 `SERVICE_UNAVAILABLE` için tek seferlik otomatik yeniden deneme (idempotent GET'ler) ve kullanıcıya Türkçe "bağlantı yenileniyor" bildirimi.

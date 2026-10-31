@@ -1,0 +1,6 @@
+# 2026-10-31T18:05:33+03:00 — sürüm f8de83a, sakin DB. Sütunlar: hasta|randevu|ödeme|ödeme toplamı|açık alacak toplamı|dağıtım toplamı|hastaya bağlı dosya|sahipsiz dosya|üyelik|denetim olayı|işlem|bulgu|hasta belgesi|payments yetkileri|politika|FORCE RLS tablo
+## viadent
+64|38|37|17794.00|92800.00|13000.00|9|0|16|757|14|12|4|viadent_app:INSERT,viadent_app:SELECT,viadent_backup:SELECT,viadent_owner:DELETE,viadent_owner:INSERT,viadent_owner:REFERENCES,viadent_owner:SELECT,viadent_owner:TRIGGER,viadent_owner:TRUNCATE,viadent_owner:UPDATE,viadent_worker:SELECT|84|70
+## viadent_qa_restore
+64|38|37|17794.00|92800.00|13000.00|9|0|16|757|14|12|4|viadent_app:INSERT,viadent_app:SELECT,viadent_backup:SELECT,viadent_owner:DELETE,viadent_owner:INSERT,viadent_owner:REFERENCES,viadent_owner:SELECT,viadent_owner:TRIGGER,viadent_owner:TRUNCATE,viadent_owner:UPDATE,viadent_worker:SELECT|84|70
+EŞLEŞTİ

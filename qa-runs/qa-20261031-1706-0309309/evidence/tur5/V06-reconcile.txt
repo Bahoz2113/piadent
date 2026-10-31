@@ -1,0 +1,6 @@
+# 2026-10-31T19:45:32+03:00 — sürüm 01b4c00, temiz seed + tam E2E sonrası, sakin DB. Sütunlar: hasta|randevu|ödeme|ödeme toplamı|açık alacak toplamı|dağıtım toplamı|hastaya bağlı dosya|sahipsiz dosya|üyelik|denetim olayı|işlem|bulgu|hasta belgesi|payments yetkileri|politika|FORCE RLS tablo
+## viadent
+41|19|9|3457.00|9500.00|1600.00|4|0|14|222|3|6|2|viadent_app:INSERT,viadent_app:SELECT,viadent_backup:SELECT,viadent_owner:DELETE,viadent_owner:INSERT,viadent_owner:REFERENCES,viadent_owner:SELECT,viadent_owner:TRIGGER,viadent_owner:TRUNCATE,viadent_owner:UPDATE,viadent_worker:SELECT|84|70
+## viadent_qa_restore
+41|19|9|3457.00|9500.00|1600.00|4|0|14|222|3|6|2|viadent_app:INSERT,viadent_app:SELECT,viadent_backup:SELECT,viadent_owner:DELETE,viadent_owner:INSERT,viadent_owner:REFERENCES,viadent_owner:SELECT,viadent_owner:TRIGGER,viadent_owner:TRUNCATE,viadent_owner:UPDATE,viadent_worker:SELECT|84|70
+EŞLEŞTİ

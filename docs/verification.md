@@ -15,6 +15,9 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
+## CEZERİ teslim testi (31.10.2026, sürüm 01b4c00) — bağımsız tester koşusu
+Koşu klasörü `qa-runs/qa-20261031-1706-0309309/` (plan.json kilitli 16 zorunlu vaka + 8 profil; results.json; bugs.md; handoff.md; fix1–5.md; release.md; evidence/ maskeli). Karar: `node qa/cezeri/gate.cjs … → TESLİME ADAY` (çıkış 0). Son tur (5): V01–V06 + P01–P03 HTTP 8/8, Chromium masaüstü+mobil 10/10; API **260/260 ×2**; contracts 15; web 25; typecheck temiz; audit 0; **E2E temiz seed 76 geçti + 8 atlama** (QA-004 regresyon spec'i dahil); RLS 69/69; yedek→izole geri yükleme 16 sütun eşleşti; QA-006 kabul: 800 istek + 96 bağlantı kesme → süreç ayakta, yalnız 200/503. Bulgular QA-001…007 hepsi VERIFIED (ayrıntı bugs.md).
+
 ## Son koşu sonuçları (27.10.2026, Görev 14 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|

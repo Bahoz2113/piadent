@@ -1,0 +1,370 @@
+{
+ "runId": "qa-20261031-1706-0309309-tur5",
+ "revision": "01b4c00f9bcfc45a1f5b11864c472872d412cc5a",
+ "at": "2026-10-31T16:46:13.226Z",
+ "round": 5,
+ "environment": "environment.md",
+ "inventory": "inventory.md",
+ "inventoryComplete": true,
+ "fullRegression": true,
+ "requiredIds": [
+  "V01",
+  "V02",
+  "V03",
+  "V04",
+  "V05",
+  "V06",
+  "P01",
+  "P02",
+  "P03",
+  "R01",
+  "R02",
+  "R03",
+  "R04",
+  "R05",
+  "R06",
+  "R07"
+ ],
+ "profiles": [
+  {
+   "name": "http",
+   "status": "PASS",
+   "evidence": "evidence/tur5/http-summary.json"
+  },
+  {
+   "name": "chromium-desktop",
+   "status": "PASS",
+   "evidence": "evidence/tur5/R04-R05-e2e-kosu3-temiz-seed.log"
+  },
+  {
+   "name": "chromium-mobile-emulation",
+   "status": "PASS",
+   "evidence": "evidence/tur5/R04-R05-e2e-kosu3-temiz-seed.log"
+  },
+  {
+   "name": "cli",
+   "status": "PASS",
+   "evidence": "evidence/tur5/V06-reconcile.txt"
+  },
+  {
+   "name": "physical-mobile-device",
+   "status": "NA",
+   "reason": "Web ürünü; fiziksel cihaz bu ortamda yok. Pilot klinikte gerçek telefonla ayrıca doğrulanmalı (insan)."
+  },
+  {
+   "name": "android-apk",
+   "status": "NA",
+   "reason": "Ürün APK üretmiyor (PWA/web)."
+  },
+  {
+   "name": "ios",
+   "status": "NA",
+   "reason": "iOS test ortamı yok; ürün web."
+  },
+  {
+   "name": "vscode-extension",
+   "status": "NA",
+   "reason": "Ürün VS Code uzantısı değil."
+  }
+ ],
+ "cases": [
+  {
+   "id": "V01",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/V01-http.json",
+   "extraEvidence": [
+    "evidence/tur5/masaustu-V01-b-tenant.jpg",
+    "evidence/tur5/mobil-V01-b-tenant.jpg"
+   ],
+   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu · masaustu: B hasta sayfası sızıntı=false, arama satırı 0 · mobil: B hasta sayfası sızıntı=false, arama satırı 0"
+  },
+  {
+   "id": "V02",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/V02-http.json",
+   "extraEvidence": [
+    "evidence/tur5/masaustu-V02-tedavi.jpg",
+    "evidence/tur5/mobil-V02-tedavi.jpg"
+   ],
+   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true · masaustu: diş 16 görünür=true, işlem metni=true, düzeltme izi=true · mobil: diş 16 görünür=true, işlem metni=true, düzeltme izi=true"
+  },
+  {
+   "id": "V03",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/V03-http.json",
+   "extraEvidence": [
+    "evidence/tur5/masaustu-V03-ajanda.jpg",
+    "evidence/tur5/mobil-V03-ajanda.jpg"
+   ],
+   "summary": "eşzamanlı yanıtlar 201/409; 14:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT · masaustu: 18.12.2026 14:00 ajandada randevu bloğu 1 (metin eşleşmesi 2); API: 1 · mobil: 18.12.2026 14:00 ajandada randevu bloğu 1 (metin eşleşmesi 1); API: 1"
+  },
+  {
+   "id": "V04",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/V04-http.json",
+   "extraEvidence": [
+    "evidence/tur5/masaustu-V04-finans.jpg",
+    "evidence/tur5/mobil-V04-finans.jpg"
+   ],
+   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201) · masaustu: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true · mobil: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true"
+  },
+  {
+   "id": "V05",
+   "profiles": [
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/V05-http.json",
+   "extraEvidence": [
+    "evidence/tur5/masaustu-V05-gecmis-sekreter.jpg",
+    "evidence/tur5/mobil-V05-gecmis-sekreter.jpg"
+   ],
+   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 0, finans: 0 · masaustu: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay) · mobil: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay)",
+   "bugs": [
+    "QA-001",
+    "QA-002",
+    "QA-003"
+   ]
+  },
+  {
+   "id": "V06",
+   "profiles": [
+    "cli"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/V06-reconcile.txt",
+   "extraEvidence": [
+    "evidence/tur5/V06-restore-verify.json"
+   ],
+   "summary": "yedek → viadent_qa_restore; restore-verify differences=[]; dosya 4/4; 16 sütunlu bağımsız mutabakat (sayımlar, ödeme/alacak/dağıtım toplamları, hasta-dosya ilişkisi 4 bağlı/0 sahipsiz, yetkiler, 84 politika, 70 FORCE RLS) iki DB'de EŞLEŞTİ"
+  },
+  {
+   "id": "P01",
+   "profiles": [
+    "http"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/P01-http.json",
+   "extraEvidence": [],
+   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true"
+  },
+  {
+   "id": "P02",
+   "profiles": [
+    "http"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/P02-http.json",
+   "extraEvidence": [],
+   "summary": "28 deneme, 0 beklenmedik"
+  },
+  {
+   "id": "P03",
+   "profiles": [
+    "http"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/P03-http.json",
+   "extraEvidence": [],
+   "summary": "8 kontrol, 0 beklenmedik"
+  },
+  {
+   "id": "R01",
+   "profiles": [
+    "cli"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/R01-api-tests-kosu1.log",
+   "extraEvidence": [
+    "evidence/tur5/R01-api-tests-kosu2.log"
+   ],
+   "summary": "API vitest 20 dosya / 260 test geçti ×2 koşu (yeni: qa-001 4, QA-005 regresyon 1, QA-006 dayanıklılık 1)"
+  },
+  {
+   "id": "R02",
+   "profiles": [
+    "cli"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/R02-contracts.log",
+   "summary": "contracts 15 test geçti"
+  },
+  {
+   "id": "R03",
+   "profiles": [
+    "cli"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/R03-web-unit.log",
+   "summary": "web birim 25 test geçti"
+  },
+  {
+   "id": "R04",
+   "profiles": [
+    "chromium-desktop"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/R04-R05-e2e-kosu3-temiz-seed.log",
+   "extraEvidence": [
+    "evidence/tur5/R04-R05-e2e-kosu1.log",
+    "evidence/tur4/R04-R05-e2e-kosu1.log"
+   ],
+   "summary": "Playwright masaüstü: temiz seed tam koşu 42 geçti 0 hata (toplam 76 geçti / 8 bilinçli atlama, 4,3 dk); ayrıca aynı sürümde 1 ek tam koşu (kosu1) 76/76 ve önceki sürümde (d6bbdd6) 76/76 — axe document-title artık görülmedi (QA-004 kapandı). kosu2 (kirli seed, 6. ardışık koşu) gorev3 2× başarısız → ortam ön koşulu ihlali, not düşüldü",
+   "bugs": [
+    "QA-004"
+   ]
+  },
+  {
+   "id": "R05",
+   "profiles": [
+    "chromium-mobile-emulation"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/R04-R05-e2e-kosu3-temiz-seed.log",
+   "summary": "Playwright telefon-360 (Pixel 5): 34 geçti, 0 hata (temiz seed)"
+  },
+  {
+   "id": "R06",
+   "profiles": [
+    "cli"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/R06-typecheck-audit.log",
+   "summary": "typecheck exit 0; pnpm audit --prod: bilinen açık yok"
+  },
+  {
+   "id": "R07",
+   "profiles": [
+    "cli"
+   ],
+   "status": "PASS",
+   "evidence": "evidence/tur5/R07-rls.txt",
+   "summary": "69/69 FORCE RLS; app rolü super/bypassrls yok; DELETE yalnız 5 finans-dışı tablo; alloc_check 0"
+  },
+  {
+   "id": "X01",
+   "status": "PASS",
+   "profiles": [
+    "http",
+    "cli"
+   ],
+   "evidence": "evidence/tur5/QA-006-retest.txt",
+   "summary": "Ek vaka (QA-006 kabul): 400 eşzamanlı istek + 12× pg_terminate_backend (idle; idle+aktif) → süreç ayakta, 398×200+2×503 / 382×200+18×503, sonrası 200, ready 200, pool.clientErrors 94, yakalanmamış istisna 0",
+   "bugs": [
+    "QA-006"
+   ]
+  }
+ ],
+ "bugs": [
+  {
+   "id": "QA-001",
+   "severity": "S1",
+   "state": "VERIFIED",
+   "title": "Sağlık yetkisi olmayan roller hasta geçmişinde odontogram bulgu/tanı olaylarını görüyor",
+   "evidence": "evidence/V05-http.json",
+   "retestEvidence": "evidence/tur5/V05-http.json",
+   "cases": [
+    "V05"
+   ]
+  },
+  {
+   "id": "QA-002",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "VİA İz ekranında ham eylem kodları (Türkçe etiket yok)",
+   "evidence": "evidence/masaustu-V05-gecmis-sekreter.jpg",
+   "retestEvidence": "evidence/tur5/masaustu-V05-gecmis-sekreter.jpg",
+   "cases": [
+    "V05"
+   ]
+  },
+  {
+   "id": "QA-003",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "VİA İz değişen alan satırları: etiket/değer çakışması ve ham alan adları/değerler",
+   "evidence": "evidence/tur2/QA-003-overlap-crop.jpg",
+   "cases": [
+    "V05"
+   ],
+   "retestEvidence": "evidence/tur5/masaustu-V05-gecmis-sekreter.jpg"
+  },
+  {
+   "id": "QA-004",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "Tam E2E koşusunda /ajanda axe document-title ihlali — aralıklı (kök neden: router.replace + akışlı metadata)",
+   "evidence": "evidence/tur3/R04-R05-e2e.log",
+   "retestEvidence": "evidence/tur5/R04-R05-e2e-kosu3-temiz-seed.log",
+   "cases": [
+    "R04"
+   ]
+  },
+  {
+   "id": "QA-005",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "API testi gorev1 H07 aralıklı 409 — liste indeksine bağlı hasta seçimi (test kodu)",
+   "evidence": "evidence/tur4/R01-api-tests-kosu1-FAIL.log",
+   "retestEvidence": "evidence/tur5/R01-api-tests-kosu1.log",
+   "cases": [
+    "R01"
+   ]
+  },
+  {
+   "id": "QA-006",
+   "severity": "S1",
+   "state": "VERIFIED",
+   "title": "Eşzamanlı trafik altında DB bağlantısı kesilince API süreci çöküyor",
+   "evidence": "evidence/tur4/QA-006-api-crash.log",
+   "retestEvidence": "evidence/tur5/QA-006-retest.txt",
+   "cases": [
+    "X01",
+    "R01"
+   ]
+  },
+  {
+   "id": "QA-007",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "Dayanıklılık testi küme genelinde bağlantı kesiyor (test kodu)",
+   "evidence": "evidence/tur4/R04-R05-e2e-kosu2-FAIL.log",
+   "retestEvidence": "evidence/tur5/R01-api-tests-kosu1.log",
+   "cases": [
+    "R01"
+   ]
+  }
+ ],
+ "notes": [
+  "Harness'ın ilk iki koşusundaki başarısızlıklar test ortamı hatasıydı (yanıt sarmalı, önceki koşu randevularıyla çakışma, tanı şeması) — ürün kusuru değil; evidence/http-summary-tur1.json ilk ham koşu kaydıdır.",
+  "V04 ürün kuralı: ödeme borçla otomatik karışmaz; 300 ₺ tahsilat açıkça alacağa dağıtıldı; iade için önce dağıtım ters kaydı gerekir (ürün sözleşmesi) — gözlenen davranış sözleşmeyle uyumlu.",
+  "2. tur: QA-001/QA-002 yeniden sınandı ve kapatıldı; aynı ekranda QA-003 (S3) açıldı → kodlamaya 2. devir. Tam regresyon final sürümde koşulacak.",
+  "3. tur (final sürüm f8de83a): QA-003 kapatıldı; tam regresyon koşuldu; R04 tek aralıklı axe başarısızlığı → FLAKY + QA-004 açıldı. Kural: FLAKY/açık bulgu varken TESLİME ADAY verilmez → BEKLET.",
+  "Tüm vakalar sentetik demo verisiyle; gerçek hasta/klinik verisi yok; dış servisler MOCK. Fiziksel cihaz, gerçek sağlayıcı, hukuk/mali müşavir/klinik kabulü kapıları bu koşunun dışında (release.md).",
+  "4. tur (d6bbdd6): QA-004 yeniden sınandı (1. tam E2E 76/76). 2. tam E2E sırasında kodlama ajanının paralel API testi (gorev4 dayanıklılık, küme geneli terminate) canlı API'yi çökertti → QA-006 (S1, ürün) ve QA-007 (S3, test) açıldı; API testinde gorev1 aralıklı 409 → QA-005 (S3, test). Tur 4 results dosyası ayrı yazılmadı; bulgular bugs.md 4. tur tablosunda.",
+  "5. tur (01b4c00, final): QA-004/005/006/007 kapatıldı. Tam regresyon: API 260/260 ×2, contracts 15, web 25, typecheck, audit 0, E2E temiz seed 76/76 (+8 atlama), RLS 69/69, yedek-geri yükleme eşleşti. Kirli seed üzerindeki 6. ardışık E2E koşusunda gorev3 başarısızlığı ortam ön koşulu ihlali olarak not edildi (bulgu değil; backlog: tekrarlı koşuya dayanıklı test verisi).",
+  "Kalan insan/dış kapılar (teslim kararı için): klinik UAT imzası, KVKK/hukuk, mali müşavir, barındırma, bağımsız sızma testi, fiziksel cihazda doğrulama, gerçek sağlayıcılar (docs/release-gates.md)."
+ ]
+}

@@ -1,0 +1,11 @@
+# Ortam kaydı — qa-20261031-1706-0309309
+- Sürüm (git): başlangıç 0309309 → tur2 6324f76 → tur3 f8de83a → tur4 d6bbdd6 → tur5 (final) 01b4c00f9bcfc45a1f5b11864c472872d412cc5a; her turda API/worker/web yeniden derlendi
+- Kirli dosyalar: 1 (?? qa-runs/ )
+- Node v22.22.0, pnpm 10.28.0, PostgreSQL 16.15
+- Playwright 1.64.1 · Chromium:  /opt/pw-browsers/chromium
+- Web: Next 15.5.28 (next start :3000) · API NestJS (:4000, NODE_ENV=production) · Worker ayrı süreç
+- Veri deposu: yerel PostgreSQL 16, `viadent` veritabanı sıfırlandı + sentetik seed (2 tenant: demo-yesil, demo-mavi). Gerçek hasta verisi yok.
+- Dış servisler: VIADENT_EXTERNAL_SEND_ENABLED=false (etiketli mock; gerçek SMS/e-posta/ödeme yok).
+- Kimlikler: sentetik demo kullanıcıları; parola güvenli ortamdan (E2E_PASSWORD), kayıtlara yazılmaz.
+- Test cihazı: konteyner (Linux x64, Chromium başsız). Komutun verildiği yer: Claude oturumu (claude.ai, Windows laptop ile bağlı).
+- Fiziksel mobil cihaz / iOS / Android APK: yok (web ürünü; mobil emülasyon Playwright ile).
