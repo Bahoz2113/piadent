@@ -4,11 +4,15 @@
  * Dosya deposu geçici diske yazılır (STORAGE_DIR); kalıcı nesne depolama adaptörü ayrı iş (deployment.md §8).
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { join } from "node:path";
 import pg from "pg";
 import { guardPool, processIntegrationJobs } from "@viadent/db";
 import { createApp } from "./bootstrap.js";
 import { loadConfig } from "./config.js";
 import { processOutbox, scanAllTenants } from "../../worker/src/jobs.js";
+
+// Paket CJS olduğundan migrate.ts'in import.meta tabanlı yolu çözülmez; .sql dosyaları fonksiyona `vendor/migrations` olarak eklenir (ADR-078).
+process.env.MIGRATIONS_DIR ||= join(process.cwd(), "vendor", "migrations");
 
 type Handler = (req: IncomingMessage, res: ServerResponse) => void;
 let handlerP: Promise<Handler> | null = null;

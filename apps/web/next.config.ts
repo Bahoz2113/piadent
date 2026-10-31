@@ -18,7 +18,7 @@ const config: NextConfig = {
     return process.env.VIADENT_SERVERLESS === "1" ? [] : [{ source: "/api/:path*", destination: `${api}/api/:path*` }];
   },
   // Gömülü API paketi webpack'e girmez; fonksiyon paketine dosya olarak eklenir.
-  outputFileTracingIncludes: { "/api/v1/[[...path]]": ["./vendor/viadent-api.cjs"] },
+  outputFileTracingIncludes: { "/api/v1/[[...path]]": ["./vendor/viadent-api.cjs", "./vendor/migrations/*.sql"] },
   async headers() {
     return [
       {
