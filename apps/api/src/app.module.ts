@@ -1,3 +1,4 @@
+import { OpsController } from "./ops/ops.controller.js";
 import { Module, type DynamicModule } from "@nestjs/common";
 import { APP_FILTER, APP_GUARD } from "@nestjs/core";
 import { CONFIG, type AppConfig } from "./config.js";
@@ -40,7 +41,7 @@ export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, SecurityController],
+      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, SecurityController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

@@ -16,7 +16,7 @@ interface PatientRow {
 }
 
 function PatientsInner() {
-  const params = useSearchParams();
+  const params = useSearchParams() ?? new URLSearchParams();
   const router = useRouter();
   const { can, tz } = useSession();
   const [q, setQ] = useState(params.get("q") ?? "");

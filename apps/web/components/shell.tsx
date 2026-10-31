@@ -20,7 +20,7 @@ const NAV = [
 
 export function Shell({ children }: { children: ReactNode }) {
   const { session, switchTo, logout, contextChanged } = useSession();
-  const path = usePathname();
+  const path = usePathname() ?? "/";
   const router = useRouter();
   const [navOpen, setNavOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);

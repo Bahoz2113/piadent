@@ -27,6 +27,9 @@ importers:
       '@nestjs/platform-express':
         specifier: 11.2.7
         version: 11.2.7(@nestjs/common@11.2.7(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.2.7)
+      '@vercel/functions':
+        specifier: 3.3.1
+        version: 3.3.1
       '@viadent/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -837,6 +840,19 @@ packages:
 
   '@types/supertest@7.2.1':
     resolution: {integrity: sha512-4CbBvoYVLHL7+yhbYrZET0vsvuyXTC05aRe7dNQkwMzm56auceoy6Yu3K50uZmwfHna1os3CMSgM/3QVkUtPTw==}
+
+  '@vercel/functions@3.3.1':
+    resolution: {integrity: sha512-iSurbVegVub6x8sAPhrupRzhVDh8xTRpHZ9UMFHjgR44oX6MNjVBicEjIZfe1PMDPd2lWMcgGS9atsySbBfDRA==}
+    engines: {node: '>= 20'}
+    peerDependencies:
+      '@aws-sdk/credential-provider-web-identity': '*'
+    peerDependenciesMeta:
+      '@aws-sdk/credential-provider-web-identity':
+        optional: true
+
+  '@vercel/oidc@3.0.4':
+    resolution: {integrity: sha512-NUna+D5Kk0UMscKnnFVgHhV4SfuoiE9wFpF8E8RvxHYQv9NB2PRIkQp0eTvu2uVzExFB5eH2/lYPpxw/SrICzg==}
+    engines: {node: '>= 20'}
 
   '@vitest/expect@4.1.12':
     resolution: {integrity: sha512-vFlTt+YEu9WBpNjdGayNmlMVzrWPi1+sv853/7t2FU7hpO5gAFBKHzQmkCq5Xjpr+evegF2994LQT3hF3mRlqQ==}
@@ -2198,6 +2214,12 @@ snapshots:
     dependencies:
       '@types/methods': 1.1.4
       '@types/superagent': 8.1.11
+
+  '@vercel/functions@3.3.1':
+    dependencies:
+      '@vercel/oidc': 3.0.4
+
+  '@vercel/oidc@3.0.4': {}
 
   '@vitest/expect@4.1.12':
     dependencies:

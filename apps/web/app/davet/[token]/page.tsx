@@ -8,7 +8,7 @@ interface Info { tenantName: string; email: string; fullName: string; roleLabel:
 
 /** Davet kabulü (oturumsuz). Token yalnız sunucuda özetle doğrulanır; sayfa token'ı saklamaz. */
 export default function InvitePage() {
-  const { token } = useParams<{ token: string }>();
+  const { token } = useParams<{ token: string }>() ?? { token: "" };
   const [info, setInfo] = useState<Info | null>(null);
   const [loadErr, setLoadErr] = useState<ApiFailure | null>(null);
   const [pw, setPw] = useState("");

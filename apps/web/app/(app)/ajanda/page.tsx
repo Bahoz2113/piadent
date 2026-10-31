@@ -33,7 +33,7 @@ const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${St
 
 function AgendaInner() {
   const { tz, can } = useSession();
-  const params = useSearchParams();
+  const params = useSearchParams() ?? new URLSearchParams();
   const router = useRouter();
   const [date, setDate] = useState(params.get("tarih") ?? todayIn(tz));
   const [view, setView] = useState<"day" | "week">(params.get("gorunum") === "hafta" ? "week" : "day");

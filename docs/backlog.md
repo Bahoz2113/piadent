@@ -60,7 +60,7 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 
 **Görev 14 — tamamlandı (27.10.2026):** tedavi geçmişi aktarımı, alacak üretmez (0019, ADR-075) · perf DB'ye 300k işlem/alacak + 240k ödeme; borç bakiye 10,3 s → 0,33 s (0020, ADR-076) · migration/FORCE RLS bulgusu (ADR-077) · pilot provası tek akış E2E · rol kılavuzları + ekran turu. İmaj derleme + CI: depo/registry olmadığı için hâlâ açık.
 
-**Görev 15 (öneri) — Dışa açık demo ortamı ve CI:** yönetilen PostgreSQL + barındırma üzerinde sentetik demo (roller, migration, seed), dosya deposu için nesne depolama adaptörü, GitHub + CI ilk koşu + imaj derleme, demo sıfırlama zamanlayıcısı. Ürün sahibi paralelde: bağımsız sızma testi, hukuk/KVKK.
+**Görev 15 — kısmen (27.10.2026):** serverless tek proje modu (ADR-078) yazıldı ve yerelde tam E2E ile doğrulandı; Vercel projesi açıldı. **Bekleyen dış adımlar (izin/erişim):** Supabase projesi, GitHub deposu (kaynağı Vercel'e taşımak için), Vercel Deployment Protection kapatma, gizli ortam değişkenleri — `deployment.md` §8. Sonra: nesne depolama adaptörü, CI ilk koşu, demo sıfırlama zamanlayıcısı.
 
 ## Görev 7'den kalan açık işler
 - Dosya/röntgen ve belge aktarımı (kaynak örneği gelince); ödeme geçmişi bilinçli aktarılmaz (ADR-075); randevu (Görev 13) ve tedavi (Görev 14) geçmişi sentetik sözleşmeyle var.

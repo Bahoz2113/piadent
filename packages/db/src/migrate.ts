@@ -7,7 +7,8 @@ import pg from "pg";
 import { loadEnv, requireEnv } from "./env.js";
 
 // Paketlenmiş CLI'de (dist/migrate.js) de ../migrations; konteynerde MIGRATIONS_DIR ile ezilebilir.
-const dir = process.env.MIGRATIONS_DIR || join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
+// Tembel çözümleme: CJS paketlerde (serverless) import.meta boştur; migrate çağrılmadıkça yol hesaplanmaz.
+const migrationsDir = () => process.env.MIGRATIONS_DIR || join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
 export async function migrate(connectionString: string, log = console.log): Promise<string[]> {
   const client = new pg.Client({ connectionString });
@@ -19,6 +20,7 @@ export async function migrate(connectionString: string, log = console.log): Prom
     const done = new Map(
       (await client.query("select name, checksum from schema_migrations")).rows.map((r) => [r.name, r.checksum]),
     );
+    const dir = migrationsDir();
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) {
       const sql = readFileSync(join(dir, file), "utf8");
       const sum = createHash("sha256").update(sql).digest("hex");

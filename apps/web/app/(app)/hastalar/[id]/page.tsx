@@ -60,8 +60,8 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 function PatientInner() {
-  const { id } = useParams<{ id: string }>();
-  const params = useSearchParams();
+  const { id } = useParams<{ id: string }>() ?? { id: "" };
+  const params = useSearchParams() ?? new URLSearchParams();
   const { can, tz } = useSession();
   const [tab, setTab] = useState<TabId>(() => (TABS.some((t) => t.id === params.get("sekme")) ? (params.get("sekme") as TabId) : "ozet"));
   const [editing, setEditing] = useState(params.get("duzenle") === "1");

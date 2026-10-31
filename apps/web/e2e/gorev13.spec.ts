@@ -38,7 +38,9 @@ test("geçmiş randevu aktarımı: hasta kartları → randevular (çakışma ha
   await page.getByText("Beklenen sütunlar").click();
   await expect(page.getByText(/Geçmiş randevular için önce hasta kartlarını aktarın/)).toBeVisible();
   await expect(page.getByRole("cell", { name: "Hekim", exact: true }).first()).toBeVisible();
-  const csv = `﻿Randevu_No;Kaynak_No;Tarih;Saat;Süre;Hekim;Durum;İşlem\r\n${run}-R1;${run}-P1;${trDay(-14)};09:00;30;Dt. Elif Aras;geldi;Kontrol\r\n${run}-R2;${run}-P1;${trDay(-14)};09:15;30;Dt. Elif Aras;geldi;\r\n${run}-R3;${run}-P1;${trDay(-7)};10:00;30;Dt. Elif Aras;iptal;\r\n`;
+  // koşu başına benzersiz gün: aynı seed'de tekrar koşuda DB çakışması olmasın (yalnız dosya içi çakışma sınanır)
+  const d1 = trDay(-(30 + (Date.now() % 300))), d2 = trDay(-(400 + (Date.now() % 300)));
+  const csv = `﻿Randevu_No;Kaynak_No;Tarih;Saat;Süre;Hekim;Durum;İşlem\r\n${run}-R1;${run}-P1;${d1};09:00;30;Dt. Elif Aras;geldi;Kontrol\r\n${run}-R2;${run}-P1;${d1};09:15;30;Dt. Elif Aras;geldi;\r\n${run}-R3;${run}-P1;${d2};10:00;30;Dt. Elif Aras;iptal;\r\n`;
   await page.getByLabel(/^Dosya/).setInputFiles({ name: `randevu-${run}.csv`, mimeType: "text/csv", buffer: Buffer.from(csv) });
   await expect(page.getByText(/Sütun eşlemesi — 8 başlık bulundu, zorunlu alanlar tamam/)).toBeVisible();
   await page.getByRole("button", { name: "Ön kontrol yap" }).click();

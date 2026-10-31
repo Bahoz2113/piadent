@@ -13,9 +13,12 @@ const config: NextConfig = {
   poweredByHeader: false,
   transpilePackages: ["@viadent/contracts"],
   // Web ve API aynı origin altında: çerez SameSite=Lax + CSRF başlığı (ADR-005).
+  // Serverless (tek proje) kurulumunda API aynı fonksiyonda gömülüdür (pages/api/v1/[[...path]].ts); yeniden yazma yapılmaz.
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${api}/api/:path*` }];
+    return process.env.VIADENT_SERVERLESS === "1" ? [] : [{ source: "/api/:path*", destination: `${api}/api/:path*` }];
   },
+  // Gömülü API paketi webpack'e girmez; fonksiyon paketine dosya olarak eklenir.
+  outputFileTracingIncludes: { "/api/v1/[[...path]]": ["./vendor/viadent-api.cjs"] },
   async headers() {
     return [
       {

@@ -44,8 +44,9 @@ test("pilot günü provası: veri taşıma → randevu → tedavi görünümü �
   const a = await browser.newContext(); const admin = await a.newPage();
   await login(admin, "yonetici@demo-yesil.test");
   await importCsv(admin, "patients", `hasta-${run}.csv`, `Kaynak_No;Adı;Soyadı;Doğum Tarihi;Telefon\r\n${run}-P1;${first};${last};${dob};0555 000 ${String(Date.now() % 100).padStart(2, "0")} 11\r\n`, 1);
-  await importCsv(admin, "appointment_history", `randevu-${run}.csv`, `Randevu_No;Kaynak_No;Tarih;Saat;Hekim;Durum;İşlem\r\n${run}-R1;${run}-P1;${trDay(-30)};09:00;Dt. Elif Aras;geldi;Kontrol\r\n`, 1);
-  await importCsv(admin, "treatment_history", `islem-${run}.csv`, `İşlem_No;Kaynak_No;Tarih;İşlem;Diş;Bedel;Hekim\r\n${run}-T1;${run}-P1;${trDay(-30)};DOL-01;36;1.800,00;Dt. Elif Aras\r\n`, 1);
+  const past = -(30 + (Date.now() % 300)); // koşu başına benzersiz geçmiş gün (DB çakışması olmasın)
+  await importCsv(admin, "appointment_history", `randevu-${run}.csv`, `Randevu_No;Kaynak_No;Tarih;Saat;Hekim;Durum;İşlem\r\n${run}-R1;${run}-P1;${trDay(past)};09:00;Dt. Elif Aras;geldi;Kontrol\r\n`, 1);
+  await importCsv(admin, "treatment_history", `islem-${run}.csv`, `İşlem_No;Kaynak_No;Tarih;İşlem;Diş;Bedel;Hekim\r\n${run}-T1;${run}-P1;${trDay(past)};DOL-01;36;1.800,00;Dt. Elif Aras\r\n`, 1);
   await importCsv(admin, "opening_balances", `bakiye-${run}.csv`, `kaynak_no;tutar;tarih;aciklama\r\n${run}-P1;500,00;${trDay(-30)};Önceki sistem açık bakiyesi\r\n`, 1);
   await a.close();
 
@@ -60,11 +61,12 @@ test("pilot günü provası: veri taşıma → randevu → tedavi görünümü �
   await sec.getByRole("link", { name: "Randevu ver" }).click();
   const ap = sec.getByRole("dialog", { name: "Randevu ver" });
   await expect(ap.getByText(`${first} ${last}`)).toBeVisible();
-  await ap.getByRole("textbox", { name: "Tarih", exact: true }).fill(trDay(40 + (Date.now() % 20)));
-  await ap.getByRole("textbox", { name: "Saat", exact: true }).fill("10:30");
+  await ap.getByRole("textbox", { name: "Tarih", exact: true }).fill(trDay(40 + (Date.now() % 200)));
+  await ap.getByRole("textbox", { name: "Saat", exact: true }).fill(`1${Date.now() % 7}:${["00", "15", "30", "45"][Date.now() % 4]}`); // 10:00–16:45 arası; gün koşu başına farklı
   await ap.getByLabel("Açıklama").fill("Kontrol (prova)");
   await ap.getByRole("button", { name: "Randevuyu kaydet" }).click();
   const outside = ap.getByRole("button", { name: "Çalışma saati dışında yine de kaydet" });
+  await Promise.race([sec.getByText("Randevu oluşturuldu.").waitFor({ timeout: 10_000 }), outside.waitFor({ timeout: 10_000 })]);
   if (await outside.isVisible().catch(() => false)) await outside.click();
   await expect(sec.getByText("Randevu oluşturuldu.")).toBeVisible();
   await sec.goto(`${url.split("?")[0]}?sekme=finans`);
