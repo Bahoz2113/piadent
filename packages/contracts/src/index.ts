@@ -1,3 +1,4 @@
+import "./zod-tr";
 export * from "./permissions";
 export * from "./text";
 export * from "./schemas";

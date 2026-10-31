@@ -1,5 +1,5 @@
 import pg from "pg";
-import { documentsMaintenance, refreshViaAkis, scanFile, scannerFromEnv, storageFromEnv, withContext, type ScannerPort, type StoragePort } from "@viadent/db";
+import { documentsMaintenance, importRetentionDays, purgeAuthThrottle, purgeImportRows, refreshViaAkis, scanFile, scannerFromEnv, storageFromEnv, withContext, type ScannerPort, type StoragePort } from "@viadent/db";
 
 export interface WorkerDeps { storage: StoragePort; scanner: ScannerPort }
 let defaultDeps: WorkerDeps | null = null;
@@ -75,8 +75,10 @@ export async function scanAllTenants(pool: pg.Pool, now = new Date()) {
   for (const t of tenants.rows) {
     out[t.id] = await withContext(pool, { tenantId: t.id, userId: null }, async (c) => {
       await documentsMaintenance(c, t.id, now);
+      await purgeImportRows(c, importRetentionDays(), now);
       return refreshViaAkis(c, t.id, now);
     });
   }
+  await purgeAuthThrottle(pool);
   return out;
 }

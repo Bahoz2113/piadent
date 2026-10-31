@@ -1,4 +1,4 @@
-# Güvenlik gözden geçirmesi (Görev 7, 23.10.2026)
+# Güvenlik gözden geçirmesi (Görev 7, 23.10.2026; Görev 8 güncellemesi aynı gün)
 
 Kapsam: Plan §08 “Teknik güvenlik tabanı” maddeleri + Görev 7'de eklenen içe/dışa aktarma, MFA ve yedek. Yöntem: kod incelemesi + otomatik testler (`security.test.ts`, `gorev7.test.ts`, `tenant-isolation.test.ts`, önceki görev testleri) + bağımlılık taraması + depo sır taraması. **Bağımsız sızma testi yapılmadı** (yayın kapısı).
 
@@ -6,15 +6,15 @@ Kapsam: Plan §08 “Teknik güvenlik tabanı” maddeleri + Görev 7'de eklenen
 | Madde | Durum | Kanıt / not |
 |---|---|---|
 | TLS | ⛔ altyapı | Uygulama TLS sonlandırmaz; ters vekil (nginx/Caddy/yük dengeleyici) ile. Üretimde `Secure` çerez + HSTS açılır (testli). Sertifika/yapılandırma canlıya alma runbook'unda |
-| Secret manager | ⛔ altyapı | Sırlar `.env`'den okunur (`.env` git dışı; `.env.example` boş/CHANGE_ME — testli). Üretimde secret manager'dan ortam değişkeni olarak enjekte edilmeli. `VIADENT_SECRET_KEY` döndürme prosedürü yok |
+| Secret manager | ⛔ altyapı | Sırlar ortam değişkeninden okunur (`.env` yalnız yerelde; imajlarda yok). Sürümlü anahtar ve döndürme komutu hazır (ADR-052); secret manager seçimi barındırma kararı |
 | Şifreli yedek | ✅ | AES-256-GCM + scrypt, kurcalama/yanlış parola reddi (testli), ayrı yalnız-okuma yedek rolü |
 | Özel dosya depolama | ✅ | Görev 4: imzalı olmayan, API arkasında, tür imzası + boyut + tarama portu; üretimde ClamAV zorunlu |
 | Güçlü oturum yönetimi | ✅ | Sunucu tarafı oturum, belirteç SHA-256 ile saklanır (bytea), 12 sa TTL, erişim kaldırmada iptal (AT-20), MFA sıfırlamada tüm oturumlar kapanır |
 | Yönetici ve destek için MFA | ⚠️ kısmi | TOTP (RFC 6238 vektörüyle testli), tek kullanımlık meydan okuma, 5 deneme (atomik), kod tekrarına karşı adım kaydı (koşullu güncelleme), yönetici sıfırlaması (gerekçe + kendi hesabı değil + çok klinikli kullanıcıda yasak). **Zorunluluk yapılandırmayla:** `VIADENT_REQUIRE_MFA_ROLES=clinic_admin,finance` üretimde ayarlanmalı (yayın kapısı). “Destek” rolü/konsolu henüz yok → destek erişim süreci tanımlı değil |
-| Hız sınırlama | ⚠️ kısmi | Giriş: e-posta+IP başına 5/15 dk **ve** hesap başına 20/15 dk (yeni, testli); MFA: meydan okuma başına 5. **Bellek içi, tek süreç** → çok süreçte paylaşılan depo (Redis/PG) gerekir. Genel API hız sınırı yok (ters vekilde önerilir) |
+| Hız sınırlama | ✅ | Giriş: e-posta+IP başına 5/15 dk ve hesap başına 20/15 dk; davet 5; MFA meydan okuma başına 5. **PostgreSQL'de paylaşılan** (çok süreç, yeniden başlatmaya dayanıklı; ADR-053). Genel API istek sınırı ters vekilde önerilir |
 | Güvenli çerez | ✅ | `HttpOnly; SameSite=Lax; Secure (üretim); Path=/` — testli |
 | CSRF | ✅ | SameSite=Lax + durum değiştiren her istekte `x-viadent-request: 1` özel başlık (testli); webhook ayrı imzalı yol |
-| XSS | ✅ / ⚠️ | React çıktı kaçışı; `dangerouslySetInnerHTML` yok; CSP `default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`. **`script-src 'unsafe-inline'`** (Next önyükleme betiği) → nonce'lu CSP backlog. CSV hücreleri formül enjeksiyonuna karşı korumalı. API yanıtlarında `default-src 'none'` |
+| XSS | ✅ | React çıktı kaçışı; `dangerouslySetInnerHTML` yok; **nonce'lu CSP** (`script-src 'nonce-…' 'strict-dynamic'`, `unsafe-inline` yok), `frame-ancestors 'none'`, `object-src 'none'`; E2E'de CSP ihlali 0. CSV hücreleri formül enjeksiyonuna karşı korumalı. API yanıtlarında `default-src 'none'` |
 | Dosya türü/boyut, zararlı içerik | ✅ | Görev 4 (AT-11) |
 | Ayrı DB rolleri | ✅ | `viadent_app` (NOBYPASSRLS, sahip değil), `viadent_worker`, `viadent_owner` (migration), `viadent_backup` (yalnız okuma, BYPASSRLS), yönetici yalnız rol kurulumunda — testli |
 | Parola/token loglarda ve seed'de yok | ✅ | Seed parolası ortamdan veya rastgele (`.demo-credentials`, git dışı); hata yanıtları iç ayrıntı içermez (testli); sır taraması testli |
@@ -36,15 +36,24 @@ Kapsam: Plan §08 “Teknik güvenlik tabanı” maddeleri + Görev 7'de eklenen
 | # | Bulgu | Önem | Öneri |
 |---|---|---|---|
 | A1 | Bağımsız sızma testi yapılmadı | Yüksek (kapı) | Pilot öncesi dış test; kapsam: kimlik/oturum, çapraz klinik, dosya, webhook, içe aktarma |
-| A2 | Hız sınırlayıcı bellek içi | Orta | Çok süreçte paylaşılan depo; ters vekilde genel istek sınırı |
-| A3 | `VIADENT_SECRET_KEY` (webhook ve MFA sırları) tek anahtar, döndürme yok; KMS yok | Orta | Anahtar sürümlü şifreleme (`v1.` öneki var) + döndürme komutu |
+| A2 | ~~Hız sınırlayıcı bellek içi~~ → **kapandı (Görev 8)**: PostgreSQL'de paylaşılan sayaç, anahtar özetli (ADR-053); iki uygulama örneğinde aynı kilit testli | — | Genel istek sınırı ters vekilde önerilir |
+| A3 | ~~Tek anahtar, döndürme yok~~ → **kapandı (Görev 8)**: sürümlü anahtar halkası + `db:rotate-keys` (ADR-052), uçtan uca testli | — | KMS/secret manager barındırma kararıyla |
 | A4 | T.C. kimlik no veritabanında şifresiz (RLS + maskeleme var) | Orta | Alan düzeyinde şifreleme + arama için HMAC; yetkili danışmanla risk değerlendirmesi |
-| A5 | CSP `script-src 'unsafe-inline'` | Düşük | Next middleware ile nonce'lu CSP |
+| A5 | ~~CSP `script-src 'unsafe-inline'`~~ → **kapandı (Görev 8)**: nonce + `strict-dynamic`; E2E'de gezinmede CSP ihlali 0 | — | — |
 | A6 | MFA zorunluluğu varsayılan kapalı (yapılandırma) | Orta | Üretim `.env`: `VIADENT_REQUIRE_MFA_ROLES=clinic_admin,finance` — runbook ve kapı listesinde |
-| A7 | API/worker `tsx` ile çalışıyor (derlenmemiş) | Düşük | Üretim için derlenmiş çıktı + konteyner imajı |
-| A8 | İçe aktarma satır verisi (`import_rows.data`) süresiz kalıyor | Orta (KVKK) | Saklama süresi danışmanla; pilot kabulünden sonra temizleme işi |
+| A7 | ~~API/worker tsx ile~~ → **kapandı (Görev 8)**: derlenmiş tek dosya; tam E2E derlenmiş kodla geçti | — | İmajlar CI'da ilk kez derlenmeli |
+| A8 | ~~İçe aktarma satır verisi süresiz~~ → **kısmen kapandı (Görev 8)**: worker 30 gün sonra temizler (ADR-054) | Düşük | Süreyi danışmanla kesinleştirin |
 | A9 | Destek erişimi (VİADENT personelinin müşteri verisine erişimi) için rol, onay ve iz yok | Orta | Tanımlanana kadar destek yalnız ekran paylaşımıyla, müşteri oturumunda |
 | A10 | Ekran okuyucuyla elle erişilebilirlik testi yok (AT-18 kısmi) | — | Pilot kontrol listesinde |
+
+## Görev 8'de ayrıca bulunup düzeltilenler
+| # | Bulgu | Önem | Düzeltme |
+|---|---|---|---|
+| S8 | Paketlenmiş API, `import.meta.url` kontrolü nedeniyle açılışta migration çalıştırmaya kalkardı | Yüksek (işletim) | Dosya adı kontrolü (ADR-055) |
+| S9 | `roles` üretimde de `<db>_test` veritabanı oluşturuyordu | Düşük | Yalnız üretim dışı |
+| S10 | Zod 4'ün `new Function` denemesi her sayfada CSP ihlali üretiyordu (önceden ölçülmemişti) | Düşük | Tarayıcıda JIT kapalı |
+| S11 | Doğrulama hatalarında İngilizce iç mesaj (“Invalid input: expected string…”) kullanıcıya ulaşıyordu | Düşük | Türkçe zod yerel ayarı + eksik alan mesajı |
+| S12 | `.env.example` yedek şifrelemesini yanlış tanımlıyordu (“PBKDF2”; gerçekte scrypt) | Bilgi | Düzeltildi |
 
 ## Çalıştırılan kontroller
 `pnpm audit` → “No known vulnerabilities found” (23.10.2026). `security.test.ts` 12/12, `gorev7.test.ts` 23/23 (MFA, dışa aktarımda sır yok, çapraz klinik). Depo sır taraması: özel anahtar, AWS/Stripe/Slack/GitHub belirteç kalıpları — 0 bulgu.

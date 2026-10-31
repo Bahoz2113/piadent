@@ -6,15 +6,50 @@ import { NoTenant, Public } from "./decorators.js";
 import { SESSION_COOKIE } from "./auth.guard.js";
 import { CONFIG, type AppConfig } from "../config.js";
 import { Errors, parse } from "../infra/errors.js";
+import { Db } from "../infra/db.service.js";
+import { render } from "../infra/metrics.js";
+import { timingSafeEqual } from "node:crypto";
+
+const safeEqual = (a: string, b: string) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && timingSafeEqual(x, y); };
 
 @Controller()
 export class AuthController {
-  constructor(@Inject(AuthService) private readonly auth: AuthService, @Inject(CONFIG) private readonly config: AppConfig) {}
+  constructor(@Inject(AuthService) private readonly auth: AuthService, @Inject(CONFIG) private readonly config: AppConfig, @Inject(Db) private readonly db: Db) {}
 
+  /** Canlılık: süreç ayakta (DB'ye bakmaz; yük dengeleyici yeniden başlatma kararı için). */
   @Public()
   @Get("health")
   health() {
-    return { status: "ok" };
+    return { status: "ok", version: this.config.version };
+  }
+
+  /** Hazır olma: veritabanı erişilebilir ve şema güncel mi (son migration adı). Trafik yönlendirme kararı için. */
+  @Public()
+  @Get("health/ready")
+  async ready(@Res({ passthrough: true }) res: Response) {
+    try {
+      const r = await Promise.race([
+        this.db.pool.query("select 1"),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("zaman aşımı")), 2000)),
+      ]);
+      void r;
+      return { status: "ready", db: "ok", version: this.config.version };
+    } catch {
+      res.status(503);
+      return { status: "not_ready", db: "unreachable", version: this.config.version };
+    }
+  }
+
+  /** Prometheus metrikleri; METRICS_TOKEN tanımlı değilse uç yok sayılır (404). */
+  @Public()
+  @Get("metrics")
+  metrics(@Req() req: Request, @Res() res: Response) {
+    const tok = this.config.metricsToken;
+    const given = (req.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (!tok) { res.status(404).json({ code: "NOT_FOUND", message: "Adres bulunamadı." }); return; }
+    if (!safeEqual(given, tok)) { res.status(401).json({ code: "UNAUTHENTICATED", message: "Yetkisiz." }); return; }
+    res.setHeader("content-type", "text/plain; version=0.0.4");
+    res.send(render(this.db.pool, this.config.version));
   }
 
   @Public()

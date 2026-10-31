@@ -11,6 +11,8 @@
 | Klinik sorumlusu | Kabul kontrollerini yapar, kliniği bilgilendirir |
 | Veri sorumlusu (klinik) | Kaynak veri dosyasını verir, içe aktarma sonucunu onaylar |
 
+Teknik parçalar (imajlar, compose, systemd, CI, ortam değişkenleri, izleme): `deployment.md`.
+
 ## 1. Ortam ön koşulları (bir kez)
 1. Ayrı sunucular: PostgreSQL 16 (yalnız özel ağ), API + worker (≥2 API süreci), web; ters vekil TLS 1.2+ ile.
 2. Sırlar secret manager'da: `VIADENT_APP/OWNER/WORKER/BACKUP_DB_PASSWORD`, `VIADENT_SECRET_KEY` (32 bayt), `BACKUP_ENCRYPTION_PASSPHRASE` (yedekten ayrı yerde). `.env` dosyası sunucuda tutulmaz.
@@ -31,8 +33,9 @@ Kural: **migration'lar yalnız ileri ve geriye uyumlu** (genişlet → kullan �
    3. Worker durdurulur (yeni dış iş başlamasın), API okuma kipine alınır veya kapatılır.
    4. `pnpm db:migrate`.
    5. Yeni API/worker/web dağıtılır (önceki imaj saklanır).
-   6. **Duman testi (10 dk):** giriş + MFA; hasta ara/aç; randevu oluştur/iptal; tahsilat al (test hastasında, sonra ters kayıt); dosya yükle (taranıyor → kullanılabilir); rapor aç; Yönetim → VİA Köprü'de canlı gönderim KAPALI; `pnpm audit` raporu ekli.
-   7. Worker başlatılır; outbox birikmesi izlenir (5 dk).
+   6. `GET /api/v1/health/ready` → 200 ve `version` yeni imaj etiketi (her API örneği için).
+   7. **Duman testi (10 dk):** giriş + MFA; hasta ara/aç; randevu oluştur/iptal; tahsilat al (test hastasında, sonra ters kayıt); dosya yükle (taranıyor → kullanılabilir); rapor aç; Yönetim → VİA Köprü'de canlı gönderim KAPALI; `pnpm audit` raporu ekli.
+   8. Worker başlatılır; outbox birikmesi izlenir (5 dk).
 3. **Onay noktası O2:** klinik sorumlusu duman testini imzalar → pencere kapanır.
 
 ## 3. Pilot kliniğe ilk veri taşıma (gerçek veri — yalnız O1 + veri işleme sözleşmesi sonrası)
@@ -64,5 +67,11 @@ pnpm db:restore-verify .backups/<G0-dizini> --keep --target viadent_g0   # geri 
 ## 5. Geri dönüş eşikleri (pencere içinde)
 Aşağıdakilerden biri 15 dakikada çözülemezse **rollback**: duman testinde giriş/hasta açma/tahsilat başarısız · 5xx oranı > %1 (5 dk) · p95 > 1 sn (5 dk, normal yükte) · içe aktarma mutabakatı O3'ten farklı · çapraz klinik veri görünmesi şüphesi (bu durumda **anında** servis durdurulur, olay müdahalesi başlar).
 
-## 6. Olay sonrası
+## 6. Sır anahtarı döndürme (planlı, yılda en az bir kez veya sızıntı şüphesinde hemen)
+1. Yeni anahtar üret (secret manager'da), `VIADENT_SECRET_KEY` = yeni, `VIADENT_SECRET_KEYS_OLD` = eski → API/worker yeniden başlat.
+2. `node dist/rotate-keys.js` (önizleme: kaç sır yeniden yazılacak, `failed` = 0 olmalı) → `node dist/rotate-keys.js --apply`.
+3. Tekrar önizleme → tüm sayılar 0. MFA'lı bir test hesabıyla giriş + bir MOCK webhook simülasyonu.
+4. `VIADENT_SECRET_KEYS_OLD` boşaltılır → yeniden başlat. Eski anahtar secret manager'da imha edilir. (Testli: `gorev8.test.ts`.)
+
+## 7. Olay sonrası
 Kayıt: zaman çizelgesi, karar, etkilenen kayıt sayısı (kişisel veri olmadan), kök neden, önleyici iş. Kişisel veri ihlali şüphesinde hukukla birlikte KVKK bildirim değerlendirmesi (süreler danışmanla).

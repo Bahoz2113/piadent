@@ -9,3 +9,4 @@ export * from "./bridge.js";
 export * from "./totp.js";
 export * from "./backup.js";
 export * from "./db-tuning.js";
+export * from "./retention.js";

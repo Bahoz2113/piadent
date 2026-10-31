@@ -123,5 +123,10 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 - Yedek rolü `viadent_backup` için şema/tablo/sıra okuma yetkileri ve varsayılan yetkiler (rol varsa).
 - `patients_phone_trgm` (telefon parça/son hane araması). Veritabanı başına katalog ayarı: `textlike` LEAKPROOF (ADR-047; migration değil, süper kullanıcı adımı).
 
+## Görev 8 (0010_pilot_infra)
+- `auth_throttle` — paylaşılan giriş/davet deneme sayacı: anahtar SHA-256 özeti (bytea, e-posta/IP düz değil), hata sayısı, pencere başlangıcı. Kiracısız (giriş klinik bağlamından önce); uygulama rolü yazar, worker 1 günden eskiyi siler.
+- `import_batches.rows_purged_at` — saklama süresi dolunca satır verisinin temizlendiği an (ADR-054); worker yalnız `import_rows.data/errors/warnings` sütunlarını güncelleyebilir.
+- Şifreli sır biçimi `v2.<kid>.…` (ADR-052) — şema değişikliği yok, mevcut `text` sütunları.
+
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).

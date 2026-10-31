@@ -1,24 +1,14 @@
 import type { NextConfig } from "next";
+import { join } from "node:path";
 
 const api = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:4000";
 
 const dev = process.env.NODE_ENV !== "production";
-// İçerik güvenliği politikası: yalnız kendi origin; çerçeveye alınamaz; dış betik/font/görsel yok (hepsi yerel).
-// Next.js satır içi önyükleme betiği için 'unsafe-inline' gerekir (nonce'lu sürüm: backlog, ADR-047). Geliştirmede HMR için 'unsafe-eval'.
-const csp = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-  `connect-src 'self'${dev ? " ws:" : ""}`,
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join("; ");
+// İçerik güvenliği politikası nonce'lu olarak middleware.ts'de üretilir (sayfa başına). Burada yalnız sabit başlıklar.
 
 const config: NextConfig = {
+  // Konteyner imajı için bağımsız çıktı (NEXT_OUTPUT=standalone); yerelde `next start` aynı kalır.
+  ...(process.env.NEXT_OUTPUT === "standalone" ? { output: "standalone" as const, outputFileTracingRoot: join(__dirname, "../..") } : {}),
   reactStrictMode: true,
   poweredByHeader: false,
   transpilePackages: ["@viadent/contracts"],
@@ -35,7 +25,6 @@ const config: NextConfig = {
           { key: "Referrer-Policy", value: "same-origin" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Content-Security-Policy", value: csp },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           // HSTS yalnız üretimde (TLS sonlandırıcı arkasında); yerelde http kullanıldığı için verilmez.
           ...(dev ? [] : [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }]),

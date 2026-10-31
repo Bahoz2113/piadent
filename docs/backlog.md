@@ -18,6 +18,7 @@ Durum sözlüğü: **tamamlandı** = kabul kriteri sağlandı ve test edildi · 
 | VD-012 Outbox ve entegrasyon merkezi | **tamamlandı** (MOCK kapsamı; gerçek sağlayıcılar **engelli**) | Port/adapter, MOCK SMS + online ödeme, dış iş kuyruğu (idempotency, retry/backoff, dead-letter, zaman aşımı → durum sorgusu/mutabakat), imzalı webhook (tekrar, ters sıra, replay, geçersiz imza), dört göz onay kapısı, canlı gönderim kapısı, VİA Köprü ekranı; AT-12/AT-13 testli (Görev 5). Gerçek SMS/WhatsApp/ödeme/e-belge/DHBS adaptörü: yetkili doküman + test erişimi bekliyor. |
 | VD-013 Laboratuvar ve prim | **tamamlandı** (ilk kapsam) | Laboratuvar iş emri (aşama/revizyon/maliyet, iş föyü en az veri, VİA Akış), tedarikçi carisi, tedavi bazlı prim + ters prim + prim ödemesi (tahakkuku aşamaz), temel stok (lot/SKT, hareket tabanlı, sayım farkı), 19 rapor (toplam = alt kayıtlar testli) + CSV (Görev 6). Açık: dış laboratuvar portalı, satın alma siparişi, lab maliyetinin primden düşülmesi kuralı, kurum carisi (F6). |
 | VD-014 İçe aktarma ve pilot | **kısmi** (yazılım tarafı tamamlandı; pilot kapıları açık) | Görev 7: hasta + açılış bakiyesi dry-run içe aktarma (AT-16), açık JSON klinik/hasta dışa aktarımı, şifreli yedek + izole geri yükleme doğrulaması (AT-17), TOTP MFA, güvenlik başlıkları/sınırlayıcı, performans ölçümü (100k/1M/50), yayın kapıları, runbook, pilot kontrol listesi. Açık: hukuk/KVKK/sözleşme, barındırma, sızma testi, klinik kabul, randevu/tedavi/ödeme geçmişi aktarımı (kaynak biçim gerekli) — `release-gates.md` |
+| VD-015 Pilot altyapısı | **kısmi** (yazılım tamamlandı; imaj ve CI ilk koşusu bekliyor) | Görev 8 — `deployment.md`. Açık: imajların ilk derlemesi (imaj deposu erişimi), CI ilk koşusu (GitHub deposu), barındırma kurulumu |
 
 ## Tamamlanan iş paketi: Görev 1 (22.10.2026)
 Çalışma saatleri (T05), kapatma (T06), işlem türü (T04), hekim/koltuk yönetimi (T14), yakın/veli (H03), sürümlü anamnez (H07), davet ve rol değişikliği (T20), haftalık ajanda. Testler: API 61, E2E 12 (bkz. `verification.md`).
@@ -40,14 +41,17 @@ VD-013 tamamlandı (ilk kapsam). Ek A rapor ve tanımlama ID'leri tek tek karş�
 ## Tamamlanan iş paketi: Görev 7 (23.10.2026)
 VD-014 yazılım tarafı: içe aktarma (ADR-046), RLS altında arama performansı (ADR-047), yedek/geri yükleme (ADR-048), MFA (ADR-049), güvenlik başlıkları ve bağımlılık hijyeni (ADR-050), yayın kapıları — satışa hazır beyanı yok (ADR-051). AT-16 ve AT-17 testli. Ek C satırları (C01–C07) izlenebilirliğe eklendi. Testler: API 192, E2E 47 (+1 bilinçli atlama). Belgeler: `release-gates.md`, `runbook-deploy-rollback.md`, `pilot-checklist.md`, `import-contract.md`, `backup-restore.md`, `performance.md`, `security-review.md`.
 
+## Tamamlanan iş paketi: Görev 8 (23.10.2026) — VD-015 pilot altyapısı
+Derlenmiş üretim çıktısı (esbuild; paket başına dış bağımlılık; kendini çalıştırma kontrolü düzeltildi), konteyner tanımları (api/worker/web/ops — **imaj deposuna erişim yok, derlenmedi**), tek sunuculu compose + Caddy (TLS) + yedek döngüsü, systemd zamanlayıcıları, CI iş akışı (**GitHub'da koşmadı**), PostgreSQL'de paylaşılan giriş sınırlayıcısı (ADR-053), sürümlü sır anahtarı + döndürme (ADR-052), nonce'lu CSP, içe aktarma satır verisi saklama (ADR-054), `/health/ready` + `/metrics` + `TRUST_PROXY` (ADR-055), Türkçe doğrulama mesajları. Testler: API 200, E2E 49 (derlenmiş API/worker'a karşı). Belge: `deployment.md`.
+
 ## Sıradaki tek iş paketi
-**Görev 8 (öneri) — Pilot altyapı paketi (VD-015):** üretim için derlenmiş API/worker çıktısı ve konteyner imajları, CI (PostgreSQL servisiyle tüm testler + `pnpm audit`), zamanlanmış saatlik yedek + günlük `restore-verify` (systemd/cron örnekleri, alarm çıkış kodu), paylaşılan giriş hız sınırlayıcısı (PostgreSQL), `VIADENT_SECRET_KEY` sürümlü anahtar ve döndürme komutu, nonce'lu CSP, `import_rows.data` saklama/temizleme işi, sağlık/metrik ucu. Hukuk, barındırma seçimi, sızma testi ve klinik kabul **ürün sahibinin kararlarıdır**; bu paket onları beklemeden yapılabilecek teknik kapıları kapatır.
+**Görev 9 (öneri) — Sızma testi öncesi güvenlik derinleştirme (VD-016):** MFA kurtarma kodları (tek kullanımlık, özetli) ve MFA zorunluluğunun klinik ayarından yönetilmesi; T.C. kimlik no alan düzeyinde şifreleme + arama için HMAC (geçiş migration'ıyla); VİADENT destek erişim modeli (süreli, klinik yöneticisi onaylı, amaç kayıtlı, otomatik kapanan, tamamen denetimli “kırık cam” erişimi); oturum yönetimi ekranı (açık oturumlar, uzaktan kapatma). Bunlar `security-review.md` A4, A9 ve MFA kalanlarını kapatır ve sızma testinin kapsamını netleştirir.
 
 ## Görev 7'den kalan açık işler
 - Randevu, tedavi, ödeme geçmişi ve dosya aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; eşleme uydurulmaz).
 - İçe aktarmada açık alan eşleme arayüzü (API `mapping` destekliyor; ekran yalnız takma adlarla eşliyor ve eksik sütunu listeliyor).
-- Kurtarma kodları (MFA) — şimdilik yönetici sıfırlaması.
-- Tek klinikte MFA zorunluluğunu klinik ayarından açma (şimdilik ortam değişkeni, tüm klinikler).
+- Kurtarma kodları (MFA) — şimdilik yönetici sıfırlaması → Görev 9 önerisi.
+- Tek klinikte MFA zorunluluğunu klinik ayarından açma (şimdilik ortam değişkeni, tüm klinikler) → Görev 9 önerisi.
 - Haftalık ajanda ve raporların büyük veriyle ölçümü; büyük raporların arka plana alınması.
 - WAL arşivleme / PITR değerlendirmesi (RPO ≤ 1 sa).
 - T.C. kimlik no alan düzeyinde şifreleme (risk değerlendirmesiyle).
@@ -78,13 +82,13 @@ VD-014 yazılım tarafı: içe aktarma (ADR-046), RLS altında arama performans�
 - Gerçekleşen işlem düzeltmesi için arayüz (API var; arayüzde yalnız iptal).
 - Odontogramda planlı/gerçekleşen yüzeylerin ayrı katman olarak boyanması (şimdilik sembol).
 - `plan_decision_pending` eşiğini (3 gün) klinik ayarına taşıma.
-- CI (GitHub Actions: PostgreSQL servisiyle `pnpm test`).
+- CI iş akışı Görev 8'de yazıldı (`.github/workflows/ci.yml`); depo GitHub'a bağlanınca ilk koşu ve imaj derlemesi doğrulanmalı.
 - Randevu oluşturmada Idempotency-Key (çift tık zaten arayüzde engelli; ağ tekrarına karşı).
 - VİA Akış eşiklerini klinik ayarına taşıma.
 - Randevu sürükle-bırak taşıma (sunucu reddederse eski konuma dönüş) ve ay görünümü.
 - Anamnez soru setinin pilot hekimle gözden geçirilmesi (klinik içerik onayı).
 - Davet e-postası: sağlayıcı seçilince Görev 5 outbox üzerinden.
 - Çok bloklu çalışma günü için arayüz (API destekliyor; ekran gün başına tek blok düzenliyor).
-- Giriş hız sınırını DB'ye taşıma (ADR-007; Görev 7'de hesap başına eşik eklendi, depo hâlâ bellek içi).
+- ~~Giriş hız sınırını DB'ye taşıma~~ — Görev 8'de yapıldı (ADR-053).
 - AT-19 tam senaryosu (rapor) Görev 3/6; gün sınırı birim testi var.
 - Tarayıcı yerel ayarında `<input type="date">` biçimi işletim sistemine bağlı; özel tarih seçici değerlendirilecek.

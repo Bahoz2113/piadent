@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { loadEnv, requireEnv } from "./env.js";
 
-const dir = join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
+// Paketlenmiş CLI'de (dist/migrate.js) de ../migrations; konteynerde MIGRATIONS_DIR ile ezilebilir.
+const dir = process.env.MIGRATIONS_DIR || join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
 export async function migrate(connectionString: string, log = console.log): Promise<string[]> {
   const client = new pg.Client({ connectionString });
@@ -44,7 +45,9 @@ export async function migrate(connectionString: string, log = console.log): Prom
   return applied;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Yalnız bu dosya doğrudan çalıştırılınca (tsx src/migrate.ts veya paketlenmiş dist/migrate.js). import.meta.url
+// karşılaştırması paketlenmiş API'de API'nin kendisine eşit olur ve açılışta migration çalıştırırdı (Görev 8).
+if (/[\\/]migrate\.(ts|js)$/.test(process.argv[1] ?? "")) {
   loadEnv();
   migrate(requireEnv("MIGRATION_DATABASE_URL")).catch((e) => {
     console.error("Migration başarısız:", e.message);

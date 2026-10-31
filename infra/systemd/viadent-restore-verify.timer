@@ -1,0 +1,9 @@
+[Unit]
+Description=VİADENT günlük geri yükleme doğrulaması
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Europe/Istanbul
+Persistent=true
+
+[Install]
+WantedBy=timers.target

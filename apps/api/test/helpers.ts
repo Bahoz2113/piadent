@@ -3,7 +3,6 @@ import request from "supertest";
 import pg from "pg";
 import { createApp } from "../src/bootstrap.js";
 import { loadConfig } from "../src/config.js";
-import { resetRateLimiter } from "../src/auth/rate-limit.js";
 import { ADMIN_URL, APP_URL, OWNER_URL, TEST_DB, TEST_PASSWORD } from "./env.js";
 
 export const EMAILS = {
@@ -17,8 +16,8 @@ export const EMAILS = {
   multi: "coklu@demo.test",
 } as const;
 
-export async function startApp(overrides: Partial<import("../src/config.js").AppConfig> = {}): Promise<INestApplication> {
-  resetRateLimiter();
+export async function startApp(overrides: Partial<import("../src/config.js").AppConfig> = {}, opts: { keepThrottle?: boolean } = {}): Promise<INestApplication> {
+  if (!opts.keepThrottle) await resetRateLimiter();
   const app = await createApp(loadConfig({ databaseUrl: APP_URL, port: 0, ...overrides }), { logger: process.env.DEBUG_API ? undefined : false });
   await app.init();
   return app;
@@ -87,4 +86,9 @@ export async function adminQuery<T = any>(sql: string, params: unknown[] = []): 
   } finally {
     await c.end();
   }
+}
+
+/** Test dosyaları arasında giriş deneme sayacını sıfırlar (sayaç artık veritabanında, ADR-053). */
+export async function resetRateLimiter() {
+  await ownerQuery(null, "delete from auth_throttle");
 }

@@ -20,11 +20,16 @@
     "test": "pnpm -r --workspace-concurrency=1 run test",
     "build": "pnpm -r run build",
     "db:backup": "pnpm --filter @viadent/db run backup",
-    "db:restore-verify": "pnpm --filter @viadent/db run restore-verify"
+    "db:restore-verify": "pnpm --filter @viadent/db run restore-verify",
+    "db:rotate-keys": "pnpm --filter @viadent/db run rotate-keys",
+    "build:server": "node scripts/build-server.mjs"
   },
   "pnpm": {
     "overrides": {
       "postcss": ">=8.5.23 <9"
     }
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }

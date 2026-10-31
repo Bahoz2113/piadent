@@ -9,26 +9,57 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 import type pg from "pg";
 import { withContext } from "./context.js";
 
-// ------------------------------------------------------------------ sır şifreleme (uygulama anahtarı; secret manager yerine geçici)
-function appKey(): Buffer {
-  const k = process.env.VIADENT_SECRET_KEY;
-  if (!k) throw new Error("VIADENT_SECRET_KEY tanımlı değil (.env.example)");
-  const b = Buffer.from(k, "base64");
-  if (b.length !== 32) throw new Error("VIADENT_SECRET_KEY 32 bayt (base64) olmalı");
+// ------------------------------------------------------------------ sır şifreleme (sürümlü anahtar halkası, ADR-052)
+// VIADENT_SECRET_KEY: güncel anahtar (32 bayt base64) — yeni şifrelemeler bununla yapılır.
+// VIADENT_SECRET_KEYS_OLD: virgülle ayrılmış eski anahtarlar — yalnız çözmek için (döndürme sonrası geçiş dönemi).
+// Biçim v2: "v2.<kid>.<iv>.<etiket>.<veri>"; kid = anahtarın SHA-256 özetinin ilk 8 hanesi (anahtarı ele vermez).
+// Eski biçim v1 (kid'siz) okunmaya devam eder; `pnpm db:rotate-keys` hepsini güncel anahtarla yeniden yazar.
+function parseKey(k: string, name: string): Buffer {
+  const b = Buffer.from(k.trim(), "base64");
+  if (b.length !== 32) throw new Error(`${name} 32 bayt (base64) olmalı`);
   return b;
 }
-export function encryptSecret(plain: string): string {
-  const iv = randomBytes(12);
-  const c = createCipheriv("aes-256-gcm", appKey(), iv);
-  const enc = Buffer.concat([c.update(plain, "utf8"), c.final()]);
-  return `v1.${iv.toString("base64")}.${c.getAuthTag().toString("base64")}.${enc.toString("base64")}`;
+export const keyId = (key: Buffer) => createHash("sha256").update(key).digest("hex").slice(0, 8);
+function keyring(): { current: Buffer; all: Buffer[] } {
+  const k = process.env.VIADENT_SECRET_KEY;
+  if (!k) throw new Error("VIADENT_SECRET_KEY tanımlı değil (.env.example)");
+  const current = parseKey(k, "VIADENT_SECRET_KEY");
+  const old = (process.env.VIADENT_SECRET_KEYS_OLD ?? "").split(",").map((x) => x.trim()).filter(Boolean).map((x) => parseKey(x, "VIADENT_SECRET_KEYS_OLD"));
+  return { current, all: [current, ...old] };
 }
-export function decryptSecret(blob: string): string {
-  const [v, iv, tag, enc] = blob.split(".");
-  if (v !== "v1" || !iv || !tag || !enc) throw new Error("şifreli sır biçimi tanınmadı");
-  const d = createDecipheriv("aes-256-gcm", appKey(), Buffer.from(iv, "base64"));
+export function currentKeyId(): string { return keyId(keyring().current); }
+export function encryptSecret(plain: string): string {
+  const key = keyring().current;
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", key, iv);
+  const enc = Buffer.concat([c.update(plain, "utf8"), c.final()]);
+  return `v2.${keyId(key)}.${iv.toString("base64")}.${c.getAuthTag().toString("base64")}.${enc.toString("base64")}`;
+}
+function open(key: Buffer, iv: string, tag: string, enc: string): string {
+  const d = createDecipheriv("aes-256-gcm", key, Buffer.from(iv, "base64"));
   d.setAuthTag(Buffer.from(tag, "base64"));
   return Buffer.concat([d.update(Buffer.from(enc, "base64")), d.final()]).toString("utf8");
+}
+export function decryptSecret(blob: string): string {
+  const parts = blob.split(".");
+  const { all } = keyring();
+  if (parts[0] === "v2" && parts.length === 5) {
+    const [, kid, iv, tag, enc] = parts as [string, string, string, string, string];
+    const key = all.find((k) => keyId(k) === kid);
+    if (!key) throw new Error(`şifreli sırrın anahtarı (${kid}) anahtar halkasında yok — VIADENT_SECRET_KEYS_OLD eksik`);
+    return open(key, iv, tag, enc);
+  }
+  if (parts[0] === "v1" && parts.length === 4) {
+    const [, iv, tag, enc] = parts as [string, string, string, string];
+    for (const k of all) { try { return open(k, iv, tag, enc); } catch { /* sıradaki anahtar */ } }
+    throw new Error("v1 sır hiçbir anahtarla çözülemedi");
+  }
+  throw new Error("şifreli sır biçimi tanınmadı");
+}
+/** Güncel anahtarla yazılmamışsa (v1 veya eski kid) döndürme gerekir. */
+export function needsRotation(blob: string): boolean {
+  const p = blob.split(".");
+  return !(p[0] === "v2" && p[1] === currentKeyId());
 }
 export const newWebhookSecret = () => `whsec_${randomBytes(24).toString("base64url")}`;
 

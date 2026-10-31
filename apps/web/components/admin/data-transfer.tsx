@@ -20,7 +20,7 @@ interface Summary {
 }
 interface Batch {
   id: string; kind: ImportKind; format: string; fileName: string; status: "dry_run" | "committed" | "rolled_back"; mapping: Record<string, string>; summary: Summary;
-  createdAt: string; by: string; committedAt: string | null; committedBy: string | null; rolledBackAt: string | null; rollbackReason: string | null; reused?: boolean;
+  createdAt: string; by: string; committedAt: string | null; committedBy: string | null; rolledBackAt: string | null; rollbackReason: string | null; rowsPurgedAt?: string | null; reused?: boolean;
 }
 interface Row { rowNo: number; status: string; errors: { field: string; message: string }[]; warnings: { field: string; message: string }[]; data: Record<string, unknown>; amount: string | null }
 
@@ -151,6 +151,7 @@ function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: No
       <div className="card-pad stack">
         {err && <Alert kind="error">{err.message}</Alert>}
         {b.status === "rolled_back" && <Alert kind="info" title="Geri alındı">{fmtDateTime(b.rolledBackAt)} · {b.rollbackReason}</Alert>}
+        {b.rowsPurgedAt && <Alert kind="info" title="Satır verisi temizlendi">Saklama süresi dolduğu için {fmtDateTime(b.rowsPurgedAt)} tarihinde satırların içeriği silindi. Sayımlar ve mutabakat özeti korunur.</Alert>}
         <div className="totals" aria-label="Mutabakat">
           <div className="stat card"><div className="label">Kaynak satır</div><div className="value">{s.rows}</div></div>
           <div className="stat card"><div className="label">Aktarılabilir</div><div className="value">{s.valid}</div></div>

@@ -38,13 +38,15 @@ async function main() {
   if (backupPw) await ensureRole("viadent_backup", backupPw, "nosuperuser nocreaterole nocreatedb bypassrls noinherit");
   const db = await admin.query("select 1 from pg_database where datname = $1", [dbName]);
   if (!db.rowCount) await admin.query(`create database ${dbName} owner viadent_owner`);
-  for (const testDb of [`${dbName}_test`]) {
+  // Test veritabanı yalnız geliştirme/CI'da (üretimde fazladan veritabanı açılmaz).
+  const withTest = process.env.NODE_ENV !== "production";
+  for (const testDb of withTest ? [`${dbName}_test`] : []) {
     const t = await admin.query("select 1 from pg_database where datname = $1", [testDb]);
     if (!t.rowCount) await admin.query(`create database ${testDb} owner viadent_owner`);
   }
   await admin.end();
-  for (const d of [dbName, `${dbName}_test`]) await applyDbTuning(requireEnv("ADMIN_DATABASE_URL"), d);
-  console.log(`Roller hazır; veritabanları: ${dbName}, ${dbName}_test`);
+  for (const d of withTest ? [dbName, `${dbName}_test`] : [dbName]) await applyDbTuning(requireEnv("ADMIN_DATABASE_URL"), d);
+  console.log(`Roller hazır; veritabanları: ${dbName}${withTest ? `, ${dbName}_test` : ""}`);
 }
 
 main().catch((e) => {

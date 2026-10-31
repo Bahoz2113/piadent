@@ -11,13 +11,13 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (23.10.2026, Görev 7 sonrası)
+## Son koşu sonuçları (23.10.2026, Görev 8 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
 | `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması | **14/14 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · **`gorev7` 23** · **`security` 12** | **192/192 geçti** (Vitest 4.1.12) |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + **`gorev7` 4** senaryo × {1366 px, 360 px} | **47 geçti + 1 bilinçli atlama** (MFA akışı durumlu; yalnız masaüstünde) — temiz seed, worker çalışırken |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · **`gorev8` 8** · `security` 12 | **200/200 geçti** (Vitest 4.1.12) |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + **`gorev8` 1** senaryo × {1366 px, 360 px} | **49 geçti + 1 bilinçli atlama** (MFA akışı durumlu; yalnız masaüstünde) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
 | `pnpm audit` | tüm bağımlılıklar (üretim + geliştirme) | **0 bilinen açık** |
 | Yedek / geri yükleme | `pnpm db:backup` + `pnpm db:restore-verify` (dev seed ve 100k/1M perf DB) | **fark 0** (ayrıntı `backup-restore.md`) |
 | Performans | 100.024 hasta / 1.000.009 randevu / 50 eşzamanlı kullanıcı | gerçekçi p95 39,6 ms, yoğun p95 201,8 ms, sayfalar ≤ 1,6 sn; doygunlukta p95 565 ms (`performance.md`) |
@@ -59,6 +59,17 @@ Sekreter hasta kartından iş emri açar (taslak) → hedef tarihle gönderir �
 
 ### Görev 7 testlerinin kapsadığı kurallar (`gorev7.test.ts`, 23 — gerçek PostgreSQL, uygulama + yedek rolleri, izole geri yükleme)
 İçe aktarma: yalnız yönetici (sekreter/hekim/finans 403) · dry-run hasta yazmaz · Türkçe başlık takma adları, `gg.aa.yyyy`, başlık düzeni, telefon E.164 · alan bazında hatalar (soyad, tarih, cinsiyet, telefon, e-posta, TCKN) · dosya içi aynı kaynak no · hata CSV'si (BOM, `;`, yalnız hatalı satırlar) · **aynı dosya → aynı batch** · onay yalnız geçerli satırları yazar, kaynak no + batch kimliği saklanır, ikinci onay 409, denetim sırası · **farklı dosya + aynı kaynak no → `already_imported`, mükerrer hasta yok** · eksik zorunlu sütun 422 + başlık listesi, açık eşleme · JSON biçimi · çapraz klinik (B, A'nın batch'ini göremez/onaylayamaz; A'nın kaynak no'su B'yi etkilemez) · açılış bakiyesi tutar mutabakatı (`amountSource = valid + error + duplicate`), belirsiz `1.250` hatası, bulunamayan hasta, aynı hasta iki kez · onayda alacak `opening_balance` + batch kimliği, DB toplamı = özet · ikinci aktarımda aynı hastaya ikinci açılış bakiyesi yok · geri alma: gerekçe zorunlu, alacak iptal (silinmez), ikinci geri alma 409 · aktarım sonrası düzenlenmiş hasta varken geri alma 409. Dışa aktarım: gerekçe zorunlu, finans 403, yalnız kendi kliniği, sayım = satır, sır sütunları/parola yok, kullanıcıda yalnız id/ad/e-posta, denetim kaydı · hasta dışa aktarımı yalnız o hasta, sağlık yetkisi yoksa sağlık bölümleri atlanır, başka klinik 404, sekreter 403. MFA: RFC 6238 vektörleri · kurulum/etkinleştirme, sır DB'de açık değil · parola sonrası meydan okuma, çerez yok · yanlış kod 401, kullanılmış kod 401, doğru kod çerez (HttpOnly), aynı meydan okuma tekrar 401, 5 yanlış denemeden sonra 429 · oturum audit'inde `mfa: true` · yönetici sıfırlaması (gerekçe, kendi hesabı değil, sekreter 403, oturumlar kapanır) · çok klinikli kullanıcı 409 · zorunlu rolde MFA'sız klinik ucu 403 `MFA_ENROLLMENT_REQUIRED`, Hesabım açık, zorunlu olmayan rol etkilenmez. Yedek: AES-256-GCM, yanlış parola ve kurcalanmış dosya reddi · **tablo sahibi FORCE RLS nedeniyle döküm alamaz**, yedek rolü alır · gerçek depolanmış dosyayla yedek → izole DB → tablo sayıları, klinik bazında hasta/finans toplamları, dosya özeti mutabık, süreler ölçülür, manifest kişisel veri içermez · geri yüklenen DB'de ≥60 tabloda FORCE RLS ve uygulama rolü bağlamsız 0 hasta görür · kurcalanmış parça geri yüklemeye başlamadan reddedilir.
+
+### Görev 8 testleri (`gorev8.test.ts`, 8)
+Sır anahtarı: yeni şifreleme `v2.<kid>`, açık metin yok, eski `v1` okunur ve döndürme ister · **uçtan uca döndürme**: MFA'lı kullanıcı + eski biçim webhook sırrı → yeni anahtar + eski anahtar halkada → önizleme hiçbir şey yazmaz → uygula → tekrar önizleme 0 → tüm sırlar yeni kid → klinik denetim kaydı (sır değeri yok) → eski anahtar çıkarılınca webhook sırrı çözülür ve MFA'lı giriş çalışır → eski anahtarla yazılmış sır açık hata verir → test DB'si eski anahtara geri döndürülür. Sağlık: canlılık + hazır olma 200; erişilemeyen DB'de 503. Metrik: belirteç yoksa 404, yanlış 401, doğru belirteçle Prometheus metni (yol/kimlik/e-posta etiketi yok). Türkçe doğrulama: eksik alan “Bu alan zorunlu.”, İngilizce mesaj yok. Saklama: süresi dolmamış aktarım temizlenmez, 31 gün sonra worker rolüyle temizlenir (veri + hata metinleri boş, durumlar/hedef kayıtlar/özet kalır, kaynak değer yok), ikinci çalıştırma 0, hasta kaydı yerinde, API `rowsPurgedAt` döner; worker rolü başka sütunu güncelleyemez.
+`security.test.ts` ayrıca: hesap başına kilit **veritabanında** (anahtar 32 baytlık özet, e-posta görünmez) ve **ikinci bir uygulama örneği aynı kilidi görür** (çok süreç).
+
+### Görev 8 E2E (`gorev8.spec.ts`, 1366 px + 360 px)
+CSP başlığında `'strict-dynamic'` var, `'unsafe-inline'` yok; nonce her istekte farklı; sayfadaki her `<script>` o isteğin nonce'ını taşır; giriş + 8 ana sayfa + Hasta 360 gezintisinde `securitypolicyviolation` olayı 0.
+
+### Üretim paketi doğrulaması (Görev 8, elle koşuldu)
+`pnpm build:server` → `pnpm deploy --legacy --prod` ile ayrık dizinler → `.env` olmadan yalnız ortam değişkenleriyle: boş veritabanına `dist/migrate.js` (10 migration) + `dist/roles.js` (LEAKPROOF dahil) · API: canlılık, hazır olma, giriş, hasta arama, raporlar, finans özeti, metrikler · worker başladı · `dist/backup-cli.js backup` + `restore-verify` (fark 0) · `dist/rotate-keys.js` önizleme · Next bağımsız çıktı: `/giris` 200, nonce'lu CSP, statik parça 200, API vekili 200 · yedek döngüsü bir tur (başarı `YEDEK-OK`, kısa parola `YEDEK-HATA` ve döngü sürer) · `docker compose config` (zorunlu değişken koruması dahil) · `systemd-analyze verify` (bir hata yakalandı: `OnFailure` yanlış bölümdeydi → düzeltildi) · CI YAML ayrıştırma + `ci-env.sh` çıktısında `CHANGE_ME` kalmıyor.
+**Yapılamayan:** Docker imaj derlemesi (Docker Hub / ECR / GCR aynası bu ortamdan `Forbidden`), CI'ın GitHub'da koşması, Caddy yapılandırma doğrulaması, ClamAV.
 
 ### Güvenlik testleri (`security.test.ts`, 12)
 API başlıkları (nosniff, CSP, X-Frame-Options, no-store, x-powered-by yok) · üretimde HSTS + `HttpOnly; Secure; SameSite=Lax` · CSRF başlığı yoksa 403 · gövde sınırı 413 (genel) / içe aktarma 6 MB'a kadar kabul · hata yanıtında iç ayrıntı yok · yanlış parolada hesap varlığı sızmaz · rol öznitelikleri (app/worker/backup) ve yedek rolünde yalnız SELECT · uygulama rolü DELETE/CREATE/RLS kapatma yapamaz · oturum belirteci bytea özet, webhook sırrı şifreli · `.env.example` değersiz, depoda sır kalıbı yok · hesap başına 20 hatalı girişte 429 (IP değişse de) · `textlike` LEAKPROOF.
@@ -155,6 +166,15 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - `db:reset` ve test kurulumu veritabanını yeniden oluşturunca LEAKPROOF ayarı kayboluyordu → her ikisi de uyguluyor; testle denetleniyor.
 - Perf verisi md5 tabanlı (v4 olmayan) UUID üretiyordu; API doğru şekilde 422 verdi → üreteç v4 biçimine çevrildi.
 - `pnpm audit`: postcss (next içinde) 2 yüksek + 2 orta, vitest/tinypool 2 kritik + 3 orta → override + Vitest 4.1.12; 0 açık.
+
+## Görev 8'de bulunup düzeltilen hatalar
+- **Paketlenmiş API açılışta migration çalıştırırdı:** `migrate.ts`'in “doğrudan çalıştırıldım mı” kontrolü `import.meta.url === argv[1]` idi; tek dosyaya paketlenince API'nin kendisiyle eşleşir → dosya adı kontrolüne çevrildi (seed ve döndürme CLI'si de aynı).
+- **İmajda modül bulunamazdı:** worker ve db CLI'si zod'u (contracts üzerinden) kullanıyor ama doğrudan bağımlılıkları değil; `pnpm deploy` çıktısında yok → derleme betiği paket başına yalnız kendi bağımlılıklarını dışarıda bırakıyor, gerisini gömüyor.
+- `roles` üretimde de `<db>_test` veritabanı açıyordu → yalnız üretim dışı.
+- Zod 4'ün eval denemesi her sayfada CSP ihlali raporluyordu (Görev 7'de de vardı, ölçülmemişti) → tarayıcıda JIT kapalı.
+- Doğrulama hatalarında İngilizce mesaj (“Invalid input: expected string, received undefined”) → Türkçe yerel ayar + “Bu alan zorunlu.”
+- systemd biriminde `OnFailure` `[Service]` altındaydı (sessizce yok sayılırdı) → `[Unit]`.
+- `.env.example` yedek şifrelemesini “PBKDF2” diye tanımlıyordu (gerçekte scrypt).
 
 ## Çalıştırılmayan / yapılamayan
 - Performans: temel uçlar ve sayfalar 100k/1M/50 kullanıcıda ölçüldü (Görev 7); **raporlar ve haftalık ajanda büyük veriyle ölçülmedi**; ölçüm tek makinede (DB + API + yük üreteci), TLS/internet gecikmesi yok.

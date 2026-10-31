@@ -60,17 +60,17 @@ export class InvitationsController {
       const inv = i.rows[0];
       if (!inv) throw new AppError(404, "INVITATION_INVALID", "Davet bağlantısı geçersiz, kullanılmış veya süresi dolmuş.");
       const key = `${inv.email.toLowerCase()}|${req.ip ?? "-"}`;
-      if (isLocked(key)) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Çok sayıda hatalı deneme. 15 dakika sonra tekrar deneyin.");
+      if (await isLocked(this.db.pool, key)) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Çok sayıda hatalı deneme. 15 dakika sonra tekrar deneyin.");
       const existing = await c.query("select id, password_hash, status from users where lower(email) = lower($1)", [inv.email]);
       let userId: string;
       if (existing.rowCount) {
         // Var olan hesap: davet, hesabın mevcut parolasıyla kabul edilir (hesap sahipliği kanıtı).
         const ok = await verifyPassword(input.password, existing.rows[0].password_hash);
         if (!ok || existing.rows[0].status !== "active") {
-          recordFail(key);
+          await recordFail(this.db.pool, key); // ayrı bağlantı: transaction geri alınsa da sayaç kalır
           throw new AppError(401, "INVALID_CREDENTIALS", "Bu e-postaya ait hesabın parolası hatalı.", { password: "Mevcut hesabınızın parolasını girin." });
         }
-        clearFails(key);
+        await clearFails(this.db.pool, key);
         userId = existing.rows[0].id;
       } else {
         await verifyPassword(input.password, DUMMY_HASH);

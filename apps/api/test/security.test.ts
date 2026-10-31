@@ -100,7 +100,7 @@ describe("veritabanı rolleri ve sırlar", () => {
     const s = await adminQuery("select token_hash from sessions limit 1");
     expect(Buffer.isBuffer(s[0].token_hash)).toBe(true);
     const w = await adminQuery("select webhook_secret_enc from integration_connections where webhook_secret_enc is not null limit 3");
-    for (const x of w) expect(String(x.webhook_secret_enc)).toMatch(/^v1\./);
+    for (const x of w) expect(String(x.webhook_secret_enc)).toMatch(/^v[12]\./);
   });
 
   it("depoda sır yok: .env.example değer içermez, kaynak kodda gizli anahtar kalıbı yok", () => {
@@ -140,8 +140,19 @@ describe("giriş sınırlayıcı", () => {
       last = (await s(server).post("/api/v1/auth/login").set("x-viadent-request", "1").set("x-forwarded-for", `10.0.${i}.1`).send({ email, password: `yanlis-${i}` })).status;
     }
     expect(last).toBe(429);
-    const { resetRateLimiter } = await import("../src/auth/rate-limit.js");
-    resetRateLimiter();
+    // sayaç veritabanında (süreçler arası ortak): anahtar düz metin değil, 32 baytlık özet
+    const raw = await adminQuery("select key_hash, fail_count from auth_throttle");
+    expect(raw.length).toBeGreaterThan(0);
+    expect(raw.every((x) => Buffer.isBuffer(x.key_hash) && x.key_hash.length === 32 && !x.key_hash.toString("latin1").includes("finans"))).toBe(true);
+    expect(Math.max(...raw.map((x) => x.fail_count))).toBeGreaterThanOrEqual(20);
+    // ikinci bir API süreci (ayrı uygulama örneği) aynı kilidi görür
+    const other = await startApp({}, { keepThrottle: true });
+    try {
+      const r2 = await s(other.getHttpServer()).post("/api/v1/auth/login").set("x-viadent-request", "1").set("x-forwarded-for", "10.9.9.9").send({ email, password: "yine-yanlis" });
+      expect(r2.status).toBe(429);
+    } finally { await other.close(); }
+    const { resetRateLimiter } = await import("./helpers.js");
+    await resetRateLimiter();
   });
 });
 

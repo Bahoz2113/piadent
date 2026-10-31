@@ -1,0 +1,25 @@
+# Ters vekil: otomatik TLS (Let's Encrypt), HTTP→HTTPS, yalnız web'e yönlendirme (web, /api'yi iç ağda API'ye vekiller).
+{$VIADENT_DOMAIN} {
+	encode zstd gzip
+	# Genel istek sınırı uygulamadaki giriş sınırlayıcısına ek olarak burada (ör. caddy-ratelimit eklentisi) önerilir.
+	request_body {
+		max_size 8MB
+	}
+	reverse_proxy web:3000 {
+		header_up X-Forwarded-For {remote_host}
+	}
+	log {
+		output stdout
+		# İstek gövdesi ve çerez günlüğe yazılmaz (Caddy varsayılanı); sorgu dizesinde hasta adı olabilir → ayıkla
+		format filter {
+			wrap json
+			fields {
+				request>uri query {
+					delete q
+				}
+				request>headers>Cookie delete
+				request>headers>Authorization delete
+			}
+		}
+	}
+}

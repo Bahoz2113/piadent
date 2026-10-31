@@ -55,6 +55,13 @@ pnpm db:restore-verify         # en yeni yedeği izole DB'ye yükler, sayım/fin
 ```
 Ayrıntı: `docs/backup-restore.md`. Performans ölçümü: `docs/performance.md`. Yayın kapıları: `docs/release-gates.md`.
 
+### Üretim derlemesi (Görev 8)
+```bash
+pnpm build:server              # API, worker ve DB CLI'leri → dist/ (tsx gerekmez)
+pnpm db:rotate-keys            # sır anahtarı döndürme önizlemesi (--apply ile uygular)
+```
+İmajlar, compose, systemd, CI ve üretim ortam değişkenleri: `docs/deployment.md`.
+
 ## Test
 ```bash
 pnpm typecheck
@@ -71,6 +78,7 @@ E2E_PASSWORD=<demo parolası> npx playwright test # API + web çalışırken
 - **Sürümlü anamnez** ve hekim onayı (soru seti DEMO), minimum klinik not
 - **VİA Akış** (5 görev türü), **VİA İz** (hasta geçmişi)
 - Sonraki görevler (ayrıntı `docs/handoff.md`): tedavi planı ve odontogram (2), VİA Net finans (3), belge/dosya/iletişim (4), VİA Köprü — yalnız MOCK sağlayıcı (5), laboratuvar/stok/prim/raporlar (6)
+- **Görev 8:** derlenmiş üretim çıktısı, konteyner/compose/CI tanımları, paylaşılan giriş sınırlayıcısı, sır anahtarı döndürme, nonce'lu CSP, sağlık ve metrik uçları
 - **Görev 7:** veri aktarımı (ön kontrol → onay → geri alma), açık JSON dışa aktarım (klinik + hasta), iki adımlı doğrulama (TOTP), şifreli yedek + izole geri yükleme doğrulaması, güvenlik başlıkları, 100k hasta / 1M randevu performans ölçümü
 
 **Durum:** sentetik demo. Yayın kapıları (hukuk/KVKK, resmî entegrasyonlar, barındırma, sızma testi, klinik kabulü) açıktır — ürün “satışa hazır” değildir (`docs/release-gates.md`).

@@ -196,7 +196,7 @@ export class ImportController {
       `select b.*, u.full_name as by, cu.full_name as committed_by_name from import_batches b join users u on u.id = b.created_by left join users cu on cu.id = b.committed_by where b.id = $1`, [bid])).rows[0];
     if (!b) throw Errors.notFound("Aktarım");
     return { id: b.id, kind: b.kind, format: b.format, fileName: b.file_name, fileSha256: b.file_sha256, status: b.status, mapping: b.mapping, summary: b.summary,
-      createdAt: b.created_at, by: b.by, committedAt: b.committed_at, committedBy: b.committed_by_name, rolledBackAt: b.rolled_back_at, rollbackReason: b.rollback_reason };
+      createdAt: b.created_at, by: b.by, committedAt: b.committed_at, committedBy: b.committed_by_name, rolledBackAt: b.rolled_back_at, rollbackReason: b.rollback_reason, rowsPurgedAt: b.rows_purged_at };
   }
 
   @Get("imports")

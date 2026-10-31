@@ -1,5 +1,7 @@
 # Yayın kapıları (Plan §11 “Yayın tanımı”, §04 “Satış kapısı”) — durum 23.10.2026
 
+> Son güncelleme: 23.10.2026, Görev 8 (pilot altyapı paketi).
+>
 > **Karar: VİADENT bugün “tüm kliniklere satışa hazır” DEĞİLDİR.** Yazılımın P0 kapsamı çalışıyor ve testli; ancak resmî entegrasyon, veri işleme ve sözleşme kararları, klinik kullanıcı kabulü ve bağımsız güvenlik testi açık. Mevcut durum yalnız **sentetik demo** ve — aşağıdaki “pilot öncesi” kapıları kapandıktan sonra — **tek hedef klinikte kontrollü pilot** için uygundur. “Tam uyumlu”, “Bakanlık onaylı”, “e-Nabız entegre”, “e-Fatura entegre” ifadeleri kullanılmaz (ADR-051).
 
 Durum: ✅ kapalı (kanıtlı) · ⚠️ kısmi · ⛔ açık · 🔒 dış erişim/karar bekliyor
@@ -7,7 +9,7 @@ Durum: ✅ kapalı (kanıtlı) · ⚠️ kısmi · ⛔ açık · 🔒 dış eri�
 ## 1. Plan §11 yayın tanımı
 | Kapı | Durum | Kanıt / kalan |
 |---|---|---|
-| Kritik testler geçer | ✅ | API 192/192, E2E 47 (1 bilinçli atlama), contracts 14, web kontrast 14, typecheck temiz, `next build` (bkz. `verification.md`). AT-01…AT-17, AT-19, AT-20 otomatik testli; AT-18 kısmi (aşağıda) |
+| Kritik testler geçer | ✅ | API 200/200, E2E 49 (1 bilinçli atlama; **derlenmiş üretim API/worker'ına karşı**), contracts 14, web kontrast 14, typecheck temiz, `next build` (bkz. `verification.md`). AT-01…AT-17, AT-19, AT-20 otomatik testli; AT-18 kısmi (aşağıda) |
 | Açık kritik/yüksek güvenlik bulgusu yok | ⚠️ | Bilinen kritik/yüksek kod bulgusu yok; `pnpm audit` 0. **Bağımsız sızma testi yapılmadı** → kapı açık sayılır (`security-review.md` A1) |
 | Finans mutabakatı | ✅ (yazılım) / ⛔ (klinik) | AT-06…AT-10, AT-19, rapor toplamı = alt kayıtlar, içe aktarma tutar mutabakatı, yedek-geri yükleme finans toplamları mutabık. **Mali müşavir onayı** (KDV gösterimi, yuvarlama, prim kesinti sırası, iade belgesi) ve pilotta paralel gün sonu mutabakatı yapılmadı |
 | Geri yükleme denenmiş | ✅ (teknik) / ⚠️ (işletim) | İzole geri yükleme + sayım/finans/dosya mutabakatı otomatik (AT-17); 100k hasta/1M randevu 93 sn. RPO ≤ 1 sa için **saatlik zamanlanmış yedek veya WAL arşivleme kurulmadı**; insanlı uçtan uca tatbikat yapılmadı |
@@ -16,7 +18,7 @@ Durum: ✅ kapalı (kanıtlı) · ⚠️ kısmi · ⛔ açık · 🔒 dış eri�
 | Rollback ve destek sorumlusu belli | ⚠️ | Rollback adımları yazıldı (`runbook-deploy-rollback.md`); **sorumlu kişi, nöbet ve destek kanalı atanmadı** |
 
 ## 2. Güvenlik tabanı (Plan §08) — özet
-TLS ⛔ (altyapı) · secret manager ⛔ (altyapı) · şifreli yedek ✅ · özel dosya deposu ✅ (üretimde ClamAV ⛔) · MFA ✅ yazılım / ⛔ üretimde zorunluluk ayarı · hız sınırlama ⚠️ (tek süreç) · güvenli çerez ✅ · CSRF/XSS ✅ (CSP nonce ⚠️) · ayrı DB rolleri ✅ · log/seed'de sır yok ✅. Ayrıntı `security-review.md`.
+TLS ⚠️ (Caddy otomatik TLS yapılandırması hazır, sunucu yok) · secret manager ⛔ (altyapı; anahtar döndürme ✅ ADR-052) · şifreli yedek ✅ · özel dosya deposu ✅ (üretimde ClamAV ⛔) · MFA ✅ yazılım / ⛔ üretimde zorunluluk ayarı · hız sınırlama ✅ (PostgreSQL'de paylaşılan, ADR-053; genel istek sınırı ters vekilde ⚠️) · güvenli çerez ✅ · CSRF/XSS ✅ (nonce'lu CSP, `unsafe-inline` yok — E2E'de ihlal 0) · ayrı DB rolleri ✅ · log/seed'de sır yok ✅. Ayrıntı `security-review.md`.
 
 ## 3. Resmî entegrasyon, veri işleme ve sözleşme kararları
 | Konu | Durum | Gereken kanıt (Plan §08) | Sahibi |
@@ -52,9 +54,12 @@ TLS ⛔ (altyapı) · secret manager ⛔ (altyapı) · şifreli yedek ✅ · öz
 ## 5. Performans (Plan §11)
 ✅ 100.024 hasta / 1.000.009 randevu / 50 eşzamanlı kullanıcı: gerçekçi profilde p95 39,6 ms, yoğun profilde 201,8 ms; sayfalar ≤ 1,6 sn (500 ms ölçüm penceresi dahil). ⚠️ Doygunlukta (düşünme süresiz) p95 565 ms: tek süreçli API + aynı makinede DB → üretimde ayrı DB ve ≥2 API süreci. Ayrıntı `performance.md`.
 
+## 5b. Görev 8 ile kapanan teknik kapılar
+Derlenmiş üretim çıktısı (tsx yok) ✅ · konteyner tanımları ⚠️ (yazıldı; imaj deposuna erişim olmadığı için **derlenmedi**) · CI iş akışı ⚠️ (yazıldı; depo GitHub'a bağlı olmadığı için **koşmadı**) · saatlik yedek + günlük doğrulama zamanlayıcısı ✅ (compose döngüsü bir tur koşuldu; systemd birimleri doğrulandı) · paylaşılan giriş sınırlayıcısı ✅ · anahtar döndürme ✅ · nonce'lu CSP ✅ · içe aktarma satır verisi saklama ✅ (30 gün varsayılan, danışman onayı ⛔) · sağlık/hazır olma/metrik uçları ✅. Ayrıntı `deployment.md`.
+
 ## 6. Pilot öncesi kapanması gerekenler (kontrollü tek klinik pilotu için asgari)
 1. Veri işleme sözleşmesi + KVKK aydınlatma/işleme şartı değerlendirmesi (hukuk) — **gerçek veri bundan önce alınmaz**.
-2. Barındırma: TLS, secret manager, ayrı DB sunucusu, saatlik şifreli yedek (veya WAL), ikinci konumda yedek kopyası, ClamAV.
+2. Barındırma seçimi ve kurulum: sunucu, alan adı + TLS, secret manager, ayrı DB sunucusu, `infra/compose.prod.yml` veya systemd ile çalıştırma, yedek biriminin ikinci konuma kopyası, ClamAV, izleme alarmları (`deployment.md` §7). İmajların ilk derlemesi ve imaj içi duman testi.
 3. `VIADENT_REQUIRE_MFA_ROLES=clinic_admin,finance`, `VIADENT_EXTERNAL_SEND_ENABLED=false`.
 4. Bağımsız sızma testi (en az kimlik/oturum, çapraz klinik, dosya, içe aktarma) ve yüksek bulguların kapatılması.
 5. Uçtan uca geri yükleme tatbikatı (insanlı, süre ölçümlü) + rollback provası.

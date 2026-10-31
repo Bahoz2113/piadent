@@ -1,0 +1,14 @@
+# Günlük izole geri yükleme doğrulaması (AT-17). Mümkünse AYRI bir veritabanı sunucusunda çalıştırın (ADMIN_DATABASE_URL oraya işaret etsin).
+[Unit]
+Description=VİADENT yedeğini izole veritabanına geri yükle ve doğrula
+After=network-online.target
+# Başarısızlık → viadent-alert@ birimi (ör. e-posta/izleme webhook'u; kurulumda tanımlanır)
+OnFailure=viadent-alert@%n.service
+
+[Service]
+Type=oneshot
+User=viadent
+WorkingDirectory=/opt/viadent/db
+EnvironmentFile=/etc/viadent/viadent.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/backup-cli.js restore-verify

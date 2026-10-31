@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { json } from "express";
 import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module.js";
+import { observe } from "./infra/metrics.js";
 import type { AppConfig } from "./config.js";
 
 export async function createApp(config: AppConfig, opts: { logger?: boolean } = {}) {
@@ -13,7 +14,8 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean } = 
     logger: opts.logger === false ? false : ["error", "warn", "log"],
     rawBody: true, // webhook imzası ham gövde üzerinden doğrulanır
   });
-  app.set("trust proxy", "loopback");
+  // Ters vekil arkasında gerçek istemci IP'si (giriş sınırlayıcısı ve denetim için). Sayıysa hop sayısı.
+  app.set("trust proxy", /^\d+$/.test(config.trustProxy) ? Number(config.trustProxy) : config.trustProxy.split(",").map((x) => x.trim()));
   app.disable("x-powered-by");
   app.use(cookieParser());
   // Webhook gövdesi JSON olarak ayrıştırılmadan ham alınır: imza ham bayt üzerinde doğrulanır, bozuk JSON da kayıtlı ret olur.
@@ -34,6 +36,8 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean } = 
   // Dosya içeriği yalnız application/octet-stream ile ve 20 MB + pay sınırıyla kabul edilir (PUT /files/:id/content).
   app.useBodyParser("raw", { type: "application/octet-stream", limit: "21mb" });
   app.use((req: Request, res: Response, next: NextFunction) => {
+    const t0 = process.hrtime.bigint();
+    res.on("finish", () => observe(req.method, res.statusCode, Number(process.hrtime.bigint() - t0) / 1e9));
     const incoming = req.get("x-correlation-id");
     req.correlationId = incoming && /^[\w-]{8,64}$/.test(incoming) ? incoming : randomUUID();
     res.setHeader("x-correlation-id", req.correlationId);

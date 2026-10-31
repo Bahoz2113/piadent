@@ -414,7 +414,7 @@ export async function seed(connectionString: string, opts: { password?: string; 
   return result;
 }
 
-if (process.argv[1]?.endsWith("seed.ts")) {
+if (/[\\/]seed\.(ts|js)$/.test(process.argv[1] ?? "")) {
   loadEnv();
   const provided = process.env.VIADENT_DEMO_PASSWORD || undefined;
   seed(requireEnv("MIGRATION_DATABASE_URL"), { password: provided })

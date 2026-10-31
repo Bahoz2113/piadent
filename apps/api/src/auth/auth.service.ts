@@ -35,7 +35,7 @@ export class AuthService {
   async login(email: string, password: string, ip: string): Promise<{ token: string; expiresAt: Date } | { mfaChallenge: string }> {
     const key = `${email.toLowerCase()}|${ip}`;
     const acct = `acct|${email.toLowerCase()}`;
-    if (isLocked(key) || isLocked(acct, Date.now(), ACCOUNT_MAX_FAILS)) {
+    if ((await isLocked(this.db.pool, key)) || (await isLocked(this.db.pool, acct, ACCOUNT_MAX_FAILS))) {
       throw new AppError(429, "TOO_MANY_ATTEMPTS", "Çok sayıda hatalı deneme. 15 dakika sonra tekrar deneyin.");
     }
     const u = await this.db.pool.query(
@@ -45,12 +45,12 @@ export class AuthService {
     const user = u.rows[0];
     const ok = await verifyPassword(password, user?.password_hash ?? DUMMY_HASH);
     if (!user || !ok || user.status !== "active") {
-      recordFail(key);
-      recordFail(acct);
+      await recordFail(this.db.pool, key);
+      await recordFail(this.db.pool, acct);
       throw new AppError(401, "INVALID_CREDENTIALS", "E-posta veya parola hatalı.");
     }
-    clearFails(key);
-    clearFails(acct);
+    await clearFails(this.db.pool, key);
+    await clearFails(this.db.pool, acct);
     if (user.mfa_enabled_at) {
       const challenge = randomBytes(32).toString("base64url");
       await this.db.pool.query("insert into mfa_challenges(user_id, token_hash, expires_at) values ($1,$2, now() + interval '5 minutes')",
