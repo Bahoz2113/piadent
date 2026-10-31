@@ -6,10 +6,10 @@
  */
 import { useEffect, useState } from "react";
 import { Download, FileUp, RotateCcw, ShieldCheck, Upload } from "lucide-react";
-import { IMPORT_FIELDS, IMPORT_KIND_LABELS, IMPORT_MAX_BYTES, IMPORT_ROW_STATUS_LABELS, extractImportHeaders, formatTRY, mapImportHeaders, type ImportKind } from "@viadent/contracts";
+import { APPOINTMENT_STATUS_LABELS, IMPORT_FIELDS, IMPORT_KIND_LABELS, IMPORT_MAX_BYTES, IMPORT_ROW_STATUS_LABELS, extractImportHeaders, formatTRY, mapImportHeaders, type ImportKind } from "@viadent/contracts";
 import { api, ApiFailure, download } from "@/lib/api";
 import { useData } from "@/lib/use-data";
-import { fmtDateTime } from "@/lib/format";
+import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
 
 type Notify = (k: "success" | "error", t: string) => void;
@@ -131,7 +131,8 @@ export function ImportPanel({ notify }: { notify: Notify }) {
             ))}</tbody>
           </table>
           <p className="small muted">Ayırıcı “;” veya “,” olabilir; Excel'in UTF-8 CSV çıktısı uygundur. Tarih gg.aa.yyyy, tutar 1.250,50 biçiminde yazılabilir.
-            {kind === "opening_balances" && " Açılış bakiyesi için önce hasta kartlarını aktarın."}</p>
+            {kind === "opening_balances" && " Açılış bakiyesi için önce hasta kartlarını aktarın."}
+            {kind === "appointment_history" && " Geçmiş randevular için önce hasta kartlarını aktarın; hekim adı Yönetim → Hekimler'deki adla (ya da e-postayla) eşleşmeli; yalnız geçmiş tarihler."}</p>
         </details>
         <div><button className="btn btn-primary" disabled={!file || busy || duplicateTargets.length > 0} onClick={() => void check()}><FileUp size={17} aria-hidden />{busy ? "Kontrol ediliyor…" : "Ön kontrol yap"}</button></div>
       </section>
@@ -187,7 +188,18 @@ function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: No
     try { await api(`/imports/${id}/rollback`, { body: { reason } }); notify("success", "Aktarım geri alındı; kayıtlar arşivlendi/iptal edildi (silinmedi)."); setReason(""); await d.reload(); onChange(); }
     catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
-  const keys = Object.values(b.mapping);
+  // Satır tablosunda gösterilecek sütunlar: türe göre anlamlı 4 alan; aksi halde eşlemedeki ilk 4
+  const PREFERRED: Record<string, string[]> = { patients: ["external_ref", "first_name", "last_name", "birth_date"], opening_balances: ["patient_ref", "amount", "as_of", "description"],
+    appointment_history: ["date", "time", "practitioner_name", "status"] };
+  const mapped = Object.values(b.mapping);
+  const keys = (PREFERRED[b.kind] ?? []).filter((k) => mapped.includes(k) || k === "practitioner_name").length >= 2 ? PREFERRED[b.kind]! : mapped;
+  const cell = (r: Row, k: string): string => {
+    if (k === "amount" && r.amount) return formatTRY(r.amount);
+    if (k === "practitioner_name") return String(r.data.practitioner_name ?? "");
+    if (k === "status" && b.kind === "appointment_history") return APPOINTMENT_STATUS_LABELS[String(r.data.status) as keyof typeof APPOINTMENT_STATUS_LABELS] ?? String(r.data.status ?? "");
+    if (k === "date" || k === "birth_date" || k === "as_of") { const v = r.data[k]; return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? fmtDate(v) : String(v ?? ""); }
+    return String(r.data[k] ?? r.data[`${k}_masked`] ?? r.data[k === "patient_ref" ? "file_no" : k] ?? "");
+  };
   return (
     <section className="card" aria-label="Aktarım ayrıntısı">
       <div className="card-head">
@@ -247,14 +259,14 @@ function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: No
       </div>
       <div className="table-wrap" tabIndex={0}>
         <table className="table">
-          <thead><tr><th className="num">Satır</th><th>Durum</th>{keys.slice(0, 4).map((k) => <th key={k}>{IMPORT_FIELDS[b.kind].find((f) => f.key === k)?.label ?? k}</th>)}<th>Hata / uyarı</th></tr></thead>
+          <thead><tr><th className="num">Satır</th><th>Durum</th>{keys.slice(0, 4).map((k) => <th key={k}>{k === "practitioner_name" ? "Hekim" : (IMPORT_FIELDS[b.kind].find((f) => f.key === k)?.label ?? k)}</th>)}<th>Hata / uyarı</th></tr></thead>
           <tbody>
             {b.rows.length === 0 && <tr><td colSpan={7} className="muted">Bu süzgeçte satır yok.</td></tr>}
             {b.rows.map((r) => (
               <tr key={r.rowNo}>
                 <td className="num">{r.rowNo}</td>
                 <td><span className={`badge ${STATUS_BADGE[r.status] ?? "badge-neutral"}`}>{IMPORT_ROW_STATUS_LABELS[r.status] ?? r.status}</span></td>
-                {keys.slice(0, 4).map((k) => <td key={k} className="small">{k === "amount" && r.amount ? formatTRY(r.amount) : String(r.data[k] ?? r.data[`${k}_masked`] ?? r.data[k === "patient_ref" ? "file_no" : k] ?? "")}</td>)}
+                {keys.slice(0, 4).map((k) => <td key={k} className="small">{cell(r, k)}</td>)}
                 <td className="small">
                   {r.errors.map((e, i) => <div key={`e${i}`} style={{ color: "var(--error)" }}>{e.message}</div>)}
                   {r.warnings.map((w, i) => <div key={`w${i}`} className="muted">{w.message}</div>)}

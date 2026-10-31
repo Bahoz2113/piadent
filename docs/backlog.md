@@ -56,11 +56,13 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 
 **Görev 12 — tamamlandı (27.10.2026):** dosya içeriği imhası (0015, ADR-067) · işletim uyarı metrikleri + eşikler (0016, ADR-068) · içe aktarmada açık sütun eşleme ekranı (ADR-069) · axe erişilebilirlik taraması E2E'de, 2 bulgu düzeltildi (ADR-070) · WAL arşivleme + PITR tatbikatı gerçek kümede (ADR-071).
 
-**Görev 13 (öneri) — Pilot veri ve kullanıcı kabulü hazırlığı:** randevu/tedavi/ödeme geçmişi içe aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; gelmezse sentetik sözleşme taslağı ve örnek dosyalar), rol bazlı kullanıcı kabul (UAT) senaryoları — `pilot-checklist.md` maddeleriyle birebir, her senaryo için beklenen ekran/çıktı —, büyük veride (100k/1M) haftalık ajanda ve 19 raporun ölçümü + büyük raporların arka plana alınması (worker işi + indirilebilir sonuç), sabit VİA Akış eşiklerinin klinik ayarına çıkarılması. Ürün sahibi paralelde: bağımsız sızma testi, barındırma, hukuk/KVKK, imaj deposu + GitHub.
+**Görev 13 — tamamlandı (27.10.2026):** geçmiş randevu içe aktarımı (0017, ADR-072; sentetik sözleşme + örnek) · UAT senaryoları `uat-senaryolari.md` · 19 rapor + haftalık ajanda 100k/1M ölçümü, hekim-hasta 18× hızlandı, arka plan ertelendi (ADR-074) · VİA Akış eşikleri klinik ayarı (0018, ADR-073).
+
+**Görev 14 (öneri) — Pilot açılış paketi:** tedavi/ödeme geçmişi için sentetik aktarım sözleşmesi (hayali finans üretmeden), perf verisine finans/tedavi hacmi + finans raporu ölçümü, UAT senaryolarının tek akışta otomatik ön koşusu, rol başına 1 sayfalık ekran görüntülü Türkçe kılavuz, imaj derleme + CI ilk koşu (GitHub bağlanınca). Ürün sahibi paralelde: bağımsız sızma testi, barındırma, hukuk/KVKK.
 
 ## Görev 7'den kalan açık işler
-- Randevu, tedavi, ödeme geçmişi ve dosya aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; eşleme uydurulmaz).
-- Haftalık ajanda ve raporların büyük veriyle ölçümü; büyük raporların arka plana alınması.
+- Tedavi, ödeme geçmişi ve dosya aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; randevu geçmişi Görev 13'te sentetik sözleşmeyle eklendi).
+- Büyük raporların arka plana alınması — yalnız ölçüm tetiklerse (Görev 13: tüm raporlar p95 ≤ 300 ms, ADR-074); finans hacimli perf verisi henüz yok.
 - Üretimde `archive_command` hedefi (ikinci konum) ve WAL arşivi için alarm (`pg_stat_archiver.failed_count`) — barındırma kararıyla (tatbikat Görev 12'de).
 - Destek erişiminde platform tarafı talep **başlatma** akışı (klinik tarafı onay/dört göz Görev 10–11'de tamam).
 

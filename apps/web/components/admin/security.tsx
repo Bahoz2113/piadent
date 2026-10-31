@@ -1,8 +1,9 @@
 "use client";
 /** Yönetim → Güvenlik (Görev 10): klinik MFA politikası (ADR-060) ve süreli destek erişimi (ADR-061). */
 import { useEffect, useState } from "react";
-import { LifeBuoy, ShieldCheck } from "lucide-react";
+import { LifeBuoy, ShieldCheck, Workflow } from "lucide-react";
 import { api, ApiFailure } from "@/lib/api";
+import { AKIS_SETTING_LABELS, type AkisSettingsT } from "@viadent/contracts";
 import { useData } from "@/lib/use-data";
 import { fmtDateTime } from "@/lib/format";
 import { Alert, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
@@ -99,6 +100,43 @@ export function SecurityPanel({ notify }: { notify: Notify }) {
           </table></div>
         )}
       </section>
+      <AkisSettingsPanel notify={notify} />
     </div>
+  );
+}
+
+/** VİA Akış eşikleri (ADR-073): klinik kendi uyarı sürelerini belirler; boş bırakılan alan varsayılana döner. */
+function AkisSettingsPanel({ notify }: { notify: Notify }) {
+  const d = useData<{ settings: AkisSettingsT; defaults: AkisSettingsT }>("/security/akis");
+  const [f, setF] = useState<Record<keyof AkisSettingsT, string> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<ApiFailure | null>(null);
+  useEffect(() => { if (d.data && !f) setF(Object.fromEntries(Object.entries(d.data.settings).map(([k, v]) => [k, String(v)])) as Record<keyof AkisSettingsT, string>); }, [d.data, f]);
+  if (d.loading && !d.data) return <section className="card"><Loading /></section>;
+  if (d.error || !d.data || !f) return <section className="card"><ErrorState error={d.error ?? new ApiFailure(500, { code: "UNKNOWN", message: "Yüklenemedi" })} onRetry={d.reload} /></section>;
+  const keys = Object.keys(AKIS_SETTING_LABELS) as (keyof AkisSettingsT)[];
+  async function save() {
+    setBusy(true); setErr(null);
+    try {
+      const body = Object.fromEntries(keys.map((k) => [k, f![k] === "" ? d.data!.defaults[k] : Number(f![k])]));
+      const r = await api<{ settings: AkisSettingsT }>("/security/akis", { method: "PUT", body });
+      setF(Object.fromEntries(Object.entries(r.settings).map(([k, v]) => [k, String(v)])) as Record<keyof AkisSettingsT, string>);
+      notify("success", "VİA Akış eşikleri kaydedildi; görevler bir sonraki taramada yeni eşiklerle üretilir.");
+      await d.reload();
+    } catch (e) { setErr(e as ApiFailure); notify("error", (e as ApiFailure).message); } finally { setBusy(false); }
+  }
+  return (
+    <section className="card card-pad stack" aria-labelledby="akis-h">
+      <div className="row" style={{ gap: 10 }}><Workflow size={20} aria-hidden /><h2 id="akis-h">VİA Akış eşikleri</h2></div>
+      <p className="muted small">Görev üretim kuralları için bekleme süreleri. Varsayılanlar parantezde; boş bırakırsanız varsayılan kullanılır. Değişiklik denetim kaydına yazılır.</p>
+      <div className="form-grid">
+        {keys.map((k) => {
+          const m = AKIS_SETTING_LABELS[k];
+          return <TextField key={k} label={`${m.label} (${m.unit}, varsayılan ${d.data!.defaults[k]})`} type="number" inputMode="numeric" min={m.min} max={m.max} step={1}
+            value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} hint={m.hint} error={err?.fieldErrors[k]} />;
+        })}
+      </div>
+      <div><button className="btn btn-primary" disabled={busy} onClick={() => void save()}>Eşikleri kaydet</button></div>
+    </section>
   );
 }

@@ -4,12 +4,12 @@
  * kendiliğinden geçersiz; yönetici erken kaldırabilir; her adım denetim kaydında. Sağlık içeriği ve kimlik açma yoktur.
  */
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post, Put } from "@nestjs/common";
-import { ALL_ROLES, SupportGrant, TenantSecurityPolicy, ROLE_LABELS, type Role } from "@viadent/contracts";
+import { AKIS_DEFAULTS, ALL_ROLES, AkisSettings, SupportGrant, TenantSecurityPolicy, ROLE_LABELS, akisSettingsFrom, type Role } from "@viadent/contracts";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
-import { audit } from "../audit/audit.js";
+import { audit, enqueue } from "../audit/audit.js";
 import { CONFIG, type AppConfig } from "../config.js";
 
 @Controller("security")
@@ -88,6 +88,31 @@ export class SecurityController {
         changes: { email: { from: null, to: i.email.toLowerCase() }, hours: { from: null, to: i.hours }, expires_at: { from: null, to: expiresAt.toISOString() }, reason: { from: null, to: i.reason },
           four_eyes: { from: null, to: status === "pending" } } });
       return { id, expiresAt, status };
+    });
+  }
+
+  /** VİA Akış eşikleri (ADR-073). */
+  @Get("akis")
+  @Require("settings.manage")
+  akis(@Ctx() ctx: RequestContext) {
+    return this.db.tx(ctx, async (c) => {
+      const t = (await c.query("select akis_settings from tenants where id = $1", [ctx.tenantId])).rows[0];
+      return { settings: akisSettingsFrom(t.akis_settings), defaults: AKIS_DEFAULTS };
+    });
+  }
+
+  @Put("akis")
+  @Require("settings.manage")
+  setAkis(@Ctx() ctx: RequestContext, @Body() body: unknown) {
+    const i = parse(AkisSettings, body);
+    return this.db.tx(ctx, async (c) => {
+      const before = akisSettingsFrom((await c.query("select akis_settings from tenants where id = $1 for update", [ctx.tenantId])).rows[0].akis_settings);
+      await c.query("update tenants set akis_settings = $2 where id = $1", [ctx.tenantId, JSON.stringify(i)]);
+      const changes: Record<string, { from: unknown; to: unknown }> = {};
+      for (const k of Object.keys(i) as (keyof typeof i)[]) if (before[k] !== i[k]) changes[k] = { from: before[k], to: i[k] };
+      if (Object.keys(changes).length) await audit(c, ctx, { action: "settings.akis_update", entityType: "tenant", entityId: ctx.tenantId, changes });
+      await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "settings.akis_update" });
+      return { settings: i, defaults: AKIS_DEFAULTS };
     });
   }
 

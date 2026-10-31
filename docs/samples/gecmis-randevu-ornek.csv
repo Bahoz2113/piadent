@@ -1,0 +1,5 @@
+﻿randevu_no;kaynak_no;tarih;saat;sure;hekim;durum;islem
+ESKI-R-0001;ESKI-0001;12.03.2026;09:00;30;Dt. Elif Aras;geldi;Kontrol ve diş taşı temizliği
+ESKI-R-0002;ESKI-0001;19.03.2026;09:00;45;elif.aras@demo-yesil.test;gelmedi;
+ESKI-R-0003;ESKI-0002;19.03.2026;09:15;30;Dt. Elif Aras;geldi;Dolgu
+ESKI-R-0004;ESKI-0002;02.04.2026;14:00;30;Dt. Olmayan Hekim;iptal;

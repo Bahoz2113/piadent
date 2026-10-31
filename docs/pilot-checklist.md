@@ -26,7 +26,7 @@ Plan F5: “Seçilmiş klinikte eğitim, paralel kontrol, veri mutabakatı.” H
 - ☐ İşlem kataloğu + tarife (kliniğin gerçek fiyatları) — Yönetim → Katalog ve tarife
 - ☐ Belge/onam metinleri: klinik + hukuk onayı; onaylanmayan şablon kullanılmaz
 - ☐ Finans: KDV gösterimi, yuvarlama, prim kuralı ve kesinti sırası, iade belgesi — mali müşavir onayı
-- ☐ VİA Akış eşikleri (teyit süresi, gecikme) kliniğe göre gözden geçirildi
+- ☐ VİA Akış eşikleri kliniğe göre ayarlandı (Yönetim → Güvenlik → VİA Akış eşikleri ☑ araç, Görev 13)
 
 ## 4. Veri taşıma (runbook §3)
 - ☐ Kliniğin kaynak dışa aktarım dosyası (şifreli kanal) ve alan eşleme tablosu
@@ -34,7 +34,7 @@ Plan F5: “Seçilmiş klinikte eğitim, paralel kontrol, veri mutabakatı.” H
 - ☐ Hatalı satırlar kliniğe döndü, düzeltildi
 - ☐ Üretim aktarımı öncesi yedek (G1) ve doğrulaması
 - ☐ 20 hastalık örneklem karşılaştırması imzalandı
-- ☐ Randevu/tedavi/ödeme geçmişi aktarımı kapsam kararı (bu sürümde yok; eski sistem salt okunur referans olarak kalır mı?)
+- ☐ Randevu geçmişi aktarımı provası (araç ☑ Görev 13, `gecmis-randevu-ornek.csv`); tedavi/ödeme geçmişi kapsam kararı (bu sürümde yok; eski sistem salt okunur referans olarak kalır mı?)
 
 ## 5. Kullanıcılar ve eğitim
 - ☐ Kullanıcı listesi ve roller (yönetici, hekim, asistan, sekreter, finans); davetler gönderildi
@@ -43,7 +43,7 @@ Plan F5: “Seçilmiş klinikte eğitim, paralel kontrol, veri mutabakatı.” H
 - ☐ Kısa başvuru kartı: “sistem çalışmazsa ne yapılır” (kâğıt randevu listesi, sonra giriş)
 
 ## 6. Kabul ve ölçüm
-- ☐ Klinik kullanıcı kabul senaryoları (rol başına 5–8 gerçekçi akış) imzalandı
+- ☐ Klinik kullanıcı kabul senaryoları imzalandı (belge ☑ `uat-senaryolari.md`: sekreter 8, hekim 7, finans 6, yönetici 8, ortak 4)
 - ☐ Tablet ve ekran okuyucuyla elle erişilebilirlik kontrolü (AT-18 kalanı; tarih alanı takvimi dahil — Görev 11)
 - ☐ PITR insanlı tatbikat: `scripts/pitr-drill.sh` üretim benzeri kümede, süre ölçümü ve runbook §7a provası (Görev 12 betiği)
 - ☐ İzleme: `deployment.md` §7 eşikleri alarm sistemine girildi mi (en az `outbox_oldest_pending_seconds`, `auth_locked_keys`, `webhook_rejections_1h`)

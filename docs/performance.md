@@ -44,8 +44,25 @@ Uç bazında (gerçekçi profil, p95): arama 41,6 · hasta kartı 27,0 · randev
 2. **Kısa sayısal arama tüm hastaları sıralıyordu:** “0555” 100.000 telefonla eşleşip benzerliğe göre sıralanıyordu. Kural: ≥ 7 hane → telefon içinde, 4–6 hane → telefon **sonu** (“son 4 hane” alışkanlığı), dosya no sayısal eşitlik (benzersiz dizin). Telefon için trigram dizini (`0009_search_perf.sql`).
 3. **Perf verisinde v4 olmayan UUID:** API'nin UUID doğrulaması md5 tabanlı kimlikleri doğru şekilde reddetti; üreteç v4 biçimine çevrildi (uygulama hatası değil, test verisi hatası).
 
+## Raporlar ve haftalık ajanda (27.10.2026, Görev 13)
+`scripts/perf/reports.mjs`, aynı perf veritabanı (migration 0018'e kadar güncellendi), tek kullanıcı, ardışık 5 koşu; ham çıktılar `docs/perf/reports-before-…json` ve `reports-after-…json`.
+
+| Uç | Satır | p50 | p95 | Not |
+|---|---|---|---|---|
+| Günlük ajanda (tüm hekimler) | 500 | 20 ms | 40 ms | |
+| **Haftalık ajanda** (7 gün, tüm hekimler) | 3.500 | 137 ms | 150 ms | 2021 yoğun haftası da 160 ms |
+| **Hekim – hasta** (1 yıl) — önce | 28 | 1.028 ms | **5.082 ms** | hekim başına bağıntılı alt sorgular |
+| **Hekim – hasta** (1 yıl) — sonra | 28 | 268 ms | **276 ms** | tek geçişli gruplu toplama (ADR-074) |
+| Randevu raporu (1 yıl) | 28 | 133 ms | 138 ms | |
+| İşletme özeti (1 yıl) | 9 | 84 ms | 87 ms | |
+| Prim (1 yıl) | 1 | 65 ms | 90 ms | |
+| Denetim günlüğü (92 gün) | 1.147 | 28 ms | 34 ms | |
+| Diğer 12 rapor (en uzun aralık) | ≤ 3 | ≤ 10 ms | ≤ 20 ms | perf verisinde finans/tedavi hacmi küçük (yalnız hasta+randevu üretildi) |
+
+Sonuç: tüm raporlar p95 ≤ 300 ms (hedef 500 ms); büyük raporların arka plana alınması ertelendi (ADR-074). Sınır: finans/tedavi/laboratuvar tabloları perf verisinde küçük olduğu için bu raporlar gerçek hacimle ölçülmedi — `perf-data.ts` genişletilince tekrar koşulur.
+
 ## Ölçülmeyenler / açık
-- Raporlar büyük veriyle ölçülmedi (senkron; 2.000/20.000 satır sınırı). Plan: sınırı aşan raporlar arka plana.
+- Finans/tedavi/laboratuvar raporları büyük **finans** hacmiyle ölçülmedi (perf verisi yalnız hasta + randevu); randevu tabanlı raporlar ölçüldü (yukarıda).
 - Haftalık ajanda (~3.500 randevu) ve 500+ randevulu günde telefon görünümü ölçülmedi.
 - İnternet gecikmesi/TLS, ayrı DB sunucusu, çok süreçli API, PostgreSQL ayarı (shared_buffers vb.) — üretim topolojisi seçilince tekrar ölçülmeli.
 - Yük altında yazma yoğun senaryolar (toplu tahsilat, gün sonu) ölçülmedi.

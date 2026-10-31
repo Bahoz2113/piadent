@@ -315,13 +315,17 @@ const plan: Runner = async (a) => {
 
 const hekimHasta: Runner = async (a) => {
   const args = [a.r.fromUtc, a.r.toUtc, a.ownPractitionerId];
+  // Tek geçişli toplama (Görev 13 ölçümü: hekim başına bağıntılı alt sorgular 1 yılda ~1–5 sn sürüyordu; tarih dizini üzerinden tek tarama ~100 ms).
   const r = await a.c.query(
-    `select pr.id, pr.display_name,
-            (select count(*) from appointments x where x.practitioner_id = pr.id and x.status = 'completed' and x.starts_at >= $1 and x.starts_at < $2)::int as visits,
-            (select count(distinct x.patient_id) from appointments x where x.practitioner_id = pr.id and x.status = 'completed' and x.starts_at >= $1 and x.starts_at < $2)::int as patients,
-            (select count(*) from performed_procedures pp where pp.practitioner_id = pr.id and pp.status = 'completed' and pp.completed_at >= $1 and pp.completed_at < $2)::int as procedures,
-            (select count(*) from patients p where p.primary_practitioner_id = pr.id and p.created_at >= $1 and p.created_at < $2)::int as new_patients
-       from practitioners pr where ($3::uuid is null or pr.id = $3) order by pr.display_name`, args);
+    `with ap as (select x.practitioner_id, count(*)::int as visits, count(distinct x.patient_id)::int as patients
+                   from appointments x where x.status = 'completed' and x.starts_at >= $1 and x.starts_at < $2 and ($3::uuid is null or x.practitioner_id = $3) group by x.practitioner_id),
+          pp as (select practitioner_id, count(*)::int as procedures from performed_procedures
+                   where status = 'completed' and completed_at >= $1 and completed_at < $2 and ($3::uuid is null or practitioner_id = $3) group by practitioner_id),
+          np as (select primary_practitioner_id as practitioner_id, count(*)::int as new_patients from patients
+                   where created_at >= $1 and created_at < $2 and primary_practitioner_id is not null and ($3::uuid is null or primary_practitioner_id = $3) group by primary_practitioner_id)
+     select pr.id, pr.display_name, coalesce(ap.visits, 0) as visits, coalesce(ap.patients, 0) as patients, coalesce(pp.procedures, 0) as procedures, coalesce(np.new_patients, 0) as new_patients
+       from practitioners pr left join ap on ap.practitioner_id = pr.id left join pp on pp.practitioner_id = pr.id left join np on np.practitioner_id = pr.id
+      where ($3::uuid is null or pr.id = $3) order by pr.display_name`, args);
   const t = await one(a,
     `select (select count(*) from appointments x where x.status = 'completed' and x.starts_at >= $1 and x.starts_at < $2 and ($3::uuid is null or x.practitioner_id = $3))::int as visits,
             (select count(distinct x.patient_id) from appointments x where x.status = 'completed' and x.starts_at >= $1 and x.starts_at < $2 and ($3::uuid is null or x.practitioner_id = $3))::int as patients,

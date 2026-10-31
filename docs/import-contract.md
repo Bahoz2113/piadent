@@ -43,15 +43,31 @@ Sınırlar: en çok **5 MB** ve **20.000 satır** (büyük dosyayı parçalara b
 
 Açılış bakiyesi **hayali geçmiş işlem üretmez**: kaynağı `opening_balance` olan tek bir alacak satırıdır (`receivables.import_batch_id` zorunlu, DB check). Avans/alacaklı bakiye mali müşavir onayıyla elle girilir.
 
+### Geçmiş randevular (`appointment_history`, Görev 13 — ADR-072)
+| Alan | Zorunlu | Başlıklar | Kural |
+|---|---|---|---|
+| Kaynak randevu no | – | randevu_no, appointment_id | Tekrar aktarımda mükerrer kaydı önler; yoksa hasta + hekim + başlangıç zamanı eşleşmesi kullanılır |
+| Kaynak hasta no **veya** VİADENT dosya no | biri | kaynak_no / dosya_no | Hasta önce aktarılmış olmalı |
+| Tarih | evet | tarih, randevu_tarihi | gg.aa.yyyy; **yalnız geçmiş** (bugün ve sonrası ajandadan girilir) |
+| Saat | evet | saat, baslangic | SS:DD (24 saat), klinik saat dilimi |
+| Süre (dk) | – | sure, dakika | 5–720 tam sayı; boşsa 30 |
+| Hekim | evet | hekim, doktor | VİADENT'teki hekim adı (unvanlı/unvansız: “Dt. Elif Aras” / “Elif Aras”) ya da kullanıcı e-postası; birden çok eşleşme hata |
+| Durum | – | durum | geldi / gelmedi / iptal (İngilizce karşılıkları da tanınır); boşsa geldi |
+| Sebep / işlem | – | sebep, islem | Serbest metin; **tedavi, işlem ya da finans kaydı üretmez** |
+| Not | – | not | Serbest metin |
+
+Kurallar: hekimin aynı zaman aralığında başka randevusu varsa (DB'de ya da dosyada) satır hatalıdır (çakışma); iptal satırları kapasite tutmaz. Onayda `completed` randevu `completed_at = bitiş`, iptal randevu “Önceki sistemden aktarıldı (iptal)” gerekçesiyle yazılır; VİA Akış görevi üretilmez. **Geri alma silmez**: randevu “Aktarım geri alındı: <gerekçe>” ile iptal edilir, kaynak no korunur ve aynı kaynak no yeniden aktarılabilir; randevu sonradan düzenlenmiş ya da işlem/not/laboratuvar/kontrol bağlanmışsa geri alma reddedilir.
+
 ## Mutabakat
 Özet: `rows = valid + errors + duplicates + alreadyImported`. Açılış bakiyesinde tutarlar ayrıca uzlaştırılır: `amountSource = amountValid + amountError + amountDuplicate + amountAlreadyImported`; tutarı okunamayan satırlar `unparsedAmountRows` olarak ayrı sayılır. Onay sonrası `imported`, `skippedAtCommit`, `amountImported` eklenir ve DB'deki `sum(receivables.amount where import_batch_id = …)` ile eşleşir (testli).
 
 ## Örnek sentetik dosyalar
 - `docs/samples/hasta-ornek.csv` — 4 satır: 2 geçerli, 1 hatalı (tarih/cinsiyet/telefon/e-posta), 1 dosya içi mükerrer.
 - `docs/samples/acilis-bakiyesi-ornek.csv` — hasta dosyası aktarıldıktan sonra: 2 geçerli (1.550,50 ₺), 1 belirsiz tutar, 1 bulunamayan hasta.
+- `docs/samples/gecmis-randevu-ornek.csv` — hasta dosyası aktarıldıktan sonra: 2 geçerli (biri e-postayla hekim), 1 çakışma (09:15, aynı hekim), 1 bulunamayan hekim.
 
 ## Kapsam dışı (bu sürüm)
-Randevu geçmişi, tedavi/işlem geçmişi, ödeme geçmişi, dosya/röntgen ve belge aktarımı: kaynak sistemin gerçek dışa aktarım biçimi görülmeden alan eşlemesi uydurulmaz. Pilot klinikle örnek dosya üzerinden ayrı iş paketi (backlog VD-014 kalanları).
+Tedavi/işlem geçmişi, ödeme geçmişi, dosya/röntgen ve belge aktarımı: kaynak sistemin gerçek dışa aktarım biçimi görülmeden alan eşlemesi uydurulmaz (randevu geçmişi Görev 13'te sentetik sözleşmeyle eklendi; gerçek kaynak dosyası gelince başlık takma adları genişletilir). Pilot klinikle örnek dosya üzerinden ayrı iş paketi (backlog VD-014 kalanları).
 
 ## Saklama
 `import_rows.data` normalize edilmiş kişisel veri içerir (RLS'li). Saklama süresi yetkili danışmanla belirlenecek; önerilen: pilot kabulünden sonra satır verisinin temizlenmesi (batch özeti ve sayımlar kalır). İş açık (backlog).

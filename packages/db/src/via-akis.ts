@@ -6,6 +6,7 @@
  *  - Görev başlığı hasta adı içermez; ad okuma anında yetkiyle birleştirilir.
  */
 import type pg from "pg";
+import { akisSettingsFrom } from "@viadent/contracts";
 import { refreshGorev4 } from "./readiness.js";
 import { refreshGorev6 } from "./operations-akis.js";
 
@@ -14,9 +15,10 @@ export interface AkisResult { created: number; closed: number }
 const OPEN = "('open','in_progress','blocked')";
 
 export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Date = new Date()): Promise<AkisResult> {
-  const t = await c.query("select timezone from tenants where id = $1", [tenantId]);
+  const t = await c.query("select timezone, akis_settings from tenants where id = $1", [tenantId]);
   if (!t.rowCount) return { created: 0, closed: 0 };
   const tz: string = t.rows[0].timezone;
+  const cfg = akisSettingsFrom(t.rows[0].akis_settings); // ADR-073: klinik eşikleri; yoksa varsayılan
   let created = 0;
   let closed = 0;
 
@@ -30,10 +32,10 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
             'secretary', a.starts_at
        from appointments a
       where a.tenant_id = $1 and a.status in ('planned','confirmed')
-        and a.starts_at < $3::timestamptz - interval '10 minutes'
+        and a.starts_at < $3::timestamptz - make_interval(mins => $4)
         and (a.starts_at at time zone $2)::date = ($3::timestamptz at time zone $2)::date
      on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`,
-    [tenantId, tz, now],
+    [tenantId, tz, now, cfg.overdueCheckinMinutes],
   )).rowCount ?? 0;
 
   // 2) Yarınki randevular için iletişim bekleyen teyit.
@@ -61,10 +63,10 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
             'secretary', min(a.starts_at)
        from patients p join appointments a on a.patient_id = p.id
       where p.tenant_id = $1 and p.status = 'active' and p.phone_e164 is null and p.email is null
-        and a.status in ('planned','confirmed') and a.starts_at >= $2::timestamptz and a.starts_at < $2::timestamptz + interval '7 days'
+        and a.status in ('planned','confirmed') and a.starts_at >= $2::timestamptz and a.starts_at < $2::timestamptz + make_interval(days => $3)
       group by p.tenant_id, p.id
      on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`,
-    [tenantId, now],
+    [tenantId, now, cfg.missingContactDays],
   )).rowCount ?? 0;
 
   // 4) Kapatmayla çakışan gelecek randevu (kapatma randevuyu silmez/taşımaz; insan karar verir).
@@ -109,14 +111,14 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
             'Kabul edilen planın randevusu yok',
             'Kabul edilmiş tedavi planında tamamlanmamış işlem var; ileri tarihli randevu bulunmuyor.',
             'Hastayı arayıp bir sonraki seans için randevu verin.',
-            'secretary', pv.decided_at + interval '2 days'
+            'secretary', pv.decided_at + make_interval(days => $3)
        from plan_versions pv join treatment_plans tp on tp.id = pv.plan_id
       where pv.tenant_id = $1 and pv.status = 'accepted'
         and exists (select 1 from plan_items pi where pi.plan_version_id = pv.id
                      and pi.quantity > coalesce((select sum(pp.quantity) from performed_procedures pp where pp.plan_item_id = pi.id and pp.status = 'completed'), 0))
         and not exists (select 1 from appointments a where a.patient_id = tp.patient_id and a.status in ('planned','confirmed') and a.starts_at > $2::timestamptz)
      on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`,
-    [tenantId, now],
+    [tenantId, now, cfg.planUnscheduledDays],
   )).rowCount ?? 0;
 
   // 7) 3 günden uzun süredir yanıt bekleyen teklif.
@@ -126,11 +128,11 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
             'Teklif yanıtı bekleniyor',
             'Tedavi teklifi ' || to_char(pv.proposed_at at time zone $3, 'DD.MM.YYYY') || ' tarihinde sunuldu; kabul veya ret kaydı yok.',
             'Hastayla görüşüp kararını (kabul / ret / kararsız) kaydedin.',
-            'secretary', pv.proposed_at + interval '3 days'
+            'secretary', pv.proposed_at + make_interval(days => $4)
        from plan_versions pv join treatment_plans tp on tp.id = pv.plan_id
-      where pv.tenant_id = $1 and pv.status = 'proposed' and pv.proposed_at < $2::timestamptz - interval '3 days'
+      where pv.tenant_id = $1 and pv.status = 'proposed' and pv.proposed_at < $2::timestamptz - make_interval(days => $4)
      on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`,
-    [tenantId, now, tz],
+    [tenantId, now, tz, cfg.proposalPendingDays],
   )).rowCount ?? 0;
 
   // Otomatik kapanış: kaynak koşul artık geçerli değil.
