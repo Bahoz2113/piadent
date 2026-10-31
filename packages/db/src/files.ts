@@ -5,7 +5,7 @@
  *  - Tarama bitmeden dosya "available" olmaz (DB tetikleyicisi de zorlar).
  */
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile, rename, stat } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rename, stat, rm } from "node:fs/promises";
 import { createConnection } from "node:net";
 import { existsSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve, sep } from "node:path";
@@ -16,6 +16,8 @@ export interface StoragePort {
   put(key: string, data: Buffer): Promise<void>;
   get(key: string): Promise<Buffer>;
   exists(key: string): Promise<boolean>;
+  /** İçeriği kalıcı olarak kaldırır; nesne yoksa hata vermez (imha işi tekrar güvenli). */
+  delete(key: string): Promise<void>;
 }
 
 export class LocalDiskStorage implements StoragePort {
@@ -36,6 +38,7 @@ export class LocalDiskStorage implements StoragePort {
   }
   async get(key: string) { return readFile(this.path(key)); }
   async exists(key: string) { try { await stat(this.path(key)); return true; } catch { return false; } }
+  async delete(key: string) { const p = this.path(key); await rm(p, { force: true }); await rm(`${p}.part`, { force: true }); }
 }
 
 /** Göreli STORAGE_DIR depo köküne (pnpm-workspace.yaml) göre çözülür; API ve worker farklı dizinden çalışsa da aynı depoyu görür. */

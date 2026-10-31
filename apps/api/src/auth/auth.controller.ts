@@ -7,7 +7,7 @@ import { SESSION_COOKIE } from "./auth.guard.js";
 import { CONFIG, type AppConfig } from "../config.js";
 import { Errors, parse } from "../infra/errors.js";
 import { Db } from "../infra/db.service.js";
-import { render } from "../infra/metrics.js";
+import { render, type OpsRow } from "../infra/metrics.js";
 import { timingSafeEqual } from "node:crypto";
 
 const safeEqual = (a: string, b: string) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && timingSafeEqual(x, y); };
@@ -43,13 +43,16 @@ export class AuthController {
   /** Prometheus metrikleri; METRICS_TOKEN tanımlı değilse uç yok sayılır (404). */
   @Public()
   @Get("metrics")
-  metrics(@Req() req: Request, @Res() res: Response) {
+  async metrics(@Req() req: Request, @Res() res: Response) {
     const tok = this.config.metricsToken;
     const given = (req.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
     if (!tok) { res.status(404).json({ code: "NOT_FOUND", message: "Adres bulunamadı." }); return; }
     if (!safeEqual(given, tok)) { res.status(401).json({ code: "UNAUTHENTICATED", message: "Yetkisiz." }); return; }
+    // İşletim uyarı metrikleri (ADR-068): dar SECURITY DEFINER fonksiyon; DB erişilemezse HTTP metrikleri yine döner, ops satırları boş kalır.
+    let ops: OpsRow[] = [];
+    try { ops = (await this.db.pool.query("select metric, label, value from app.ops_metrics()")).rows as OpsRow[]; } catch { ops = []; }
     res.setHeader("content-type", "text/plain; version=0.0.4");
-    res.send(render(this.db.pool, this.config.version));
+    res.send(render(this.db.pool, this.config.version, ops));
   }
 
   @Public()

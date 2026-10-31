@@ -66,7 +66,7 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
 
       <section className="card">
         <div className="card-head"><div><h2>Bağlantılar</h2><p className="muted small">Erişim bekleyen servisler etkinleştirilemez; yerine sahte başarı gösterilmez.</p></div></div>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Servis</th><th>Sağlayıcı</th><th>Durum</th><th>MOCK davranışı</th><th>Webhook</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>{o.connections.map((c) => (
@@ -108,7 +108,7 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
           </div>
         </div>
         {jobs.error ? <ErrorState error={jobs.error} /> : !jobs.data ? <Loading /> : jobs.data.items.length === 0 ? <p className="muted" style={{ padding: "12px 20px" }}>Bu filtrede iş yok.</p> : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
               <thead><tr><th>İş</th><th>Durum</th><th>Deneme</th><th>İsteyen / onaylayan</th><th><span className="sr-only">İşlem</span></th></tr></thead>
               <tbody>{jobs.data.items.map((j) => (

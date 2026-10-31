@@ -45,6 +45,8 @@ Plan F5: “Seçilmiş klinikte eğitim, paralel kontrol, veri mutabakatı.” H
 ## 6. Kabul ve ölçüm
 - ☐ Klinik kullanıcı kabul senaryoları (rol başına 5–8 gerçekçi akış) imzalandı
 - ☐ Tablet ve ekran okuyucuyla elle erişilebilirlik kontrolü (AT-18 kalanı; tarih alanı takvimi dahil — Görev 11)
+- ☐ PITR insanlı tatbikat: `scripts/pitr-drill.sh` üretim benzeri kümede, süre ölçümü ve runbook §7a provası (Görev 12 betiği)
+- ☐ İzleme: `deployment.md` §7 eşikleri alarm sistemine girildi mi (en az `outbox_oldest_pending_seconds`, `auth_locked_keys`, `webhook_rejections_1h`)
 - ☐ Destek erişimi: klinikte ikinci yönetici tanımlı mı (dört göz için; tek yöneticide erişim doğrudan açılır — ADR-064)
 - ☐ Paralel dönem (öneri 2 hafta): her gün sonu tahsilat/kasa toplamı iki sistemde karşılaştırıldı, fark yok veya açıklandı
 - ☐ Pilot ölçümleri için başlangıç değerleri (Plan: kazanım yüzdesi ölçülmeden iddia edilmez)

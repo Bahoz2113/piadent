@@ -49,3 +49,18 @@ Servisler: `db` (yalnız iç ağ), `migrate` (tek seferlik roller + migration), 
 
 ## 7. Sağlık ve izleme
 `GET /api/v1/health` → `{status:"ok",version}` (canlılık) · `GET /api/v1/health/ready` → DB'ye 2 sn içinde ulaşılamazsa 503 · `GET /api/v1/metrics` (Bearer `METRICS_TOKEN`): `viadent_http_requests_total{method,status}`, `viadent_http_request_duration_seconds` (histogram), `viadent_db_pool_connections{state}`, `viadent_uptime_seconds`, `viadent_build_info`. Önerilen alarmlar: 5xx oranı > %1 (5 dk), p95 > 1 sn, havuzda bekleyen > 0 (5 dk), `YEDEK-HATA`, yedek yaşı > 2 sa, ready 503.
+
+**İşletim uyarı metrikleri (Görev 12, ADR-068)** — aynı uçta, `app.ops_metrics()` ile (kiracı/kimlik içermez):
+| Metrik | Anlam | Önerilen eşik / alarm |
+|---|---|---|
+| `viadent_outbox_oldest_pending_seconds` | en eski bekleyen iç işin yaşı | > 300 sn (5 dk) → worker durmuş olabilir (kritik) |
+| `viadent_outbox_events{state="dead"}` | dead-letter iç iş | artış → inceleme (yüksek) |
+| `viadent_integration_jobs{state="dead"\|"unknown"}` | sağlayıcıya gidemeyen / sonucu belirsiz dış iş | > 0 ve 15 dk sürüyor → sağlayıcı/ağ (yüksek) |
+| `viadent_integration_jobs_pending_approval` | dört göz onayı bekleyen dış iş | > 0 ve 24 sa → yöneticiye hatırlatma (bilgi) |
+| `viadent_webhook_rejections_1h{state=…}` | son 1 saatte reddedilen webhook (imza/zaman/bozuk) | ≥ 20 → yanlış sır ya da saldırı denemesi (yüksek) |
+| `viadent_auth_locked_keys` | etkin giriş kilidi sayısı | ≥ 10 → parola deneme dalgası (yüksek); tek hesap sürekli kilitte → kullanıcıyla iletişim |
+| `viadent_file_assets{state="quarantined"}` | karantinada, imha edilmemiş dosya | artış → kaynak kullanıcı/klinik incelemesi (orta) |
+| `viadent_file_assets_purge_due` | imha süresi 15 günden fazla geçmiş silinmiş dosya | > 0 → imha işi çalışmıyor (orta) |
+| `viadent_import_batches_pending` | 7 günden eski onaylanmamış ön kontrol | > 0 → yöneticiye hatırlatma (bilgi) |
+| `viadent_memberships_support_active` | etkin destek erişimi | > 0 iken bilgi; beklenmeyen artış → güvenlik incelemesi |
+Prometheus kural örneği: `viadent_outbox_oldest_pending_seconds > 300` for 5m → `severity=critical`.

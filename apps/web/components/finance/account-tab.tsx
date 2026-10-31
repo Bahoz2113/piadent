@@ -80,7 +80,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
       <section className="card">
         <div className="card-head"><div><h2>Alacaklar</h2><p className="muted small">Gerçekleşen işlemden otomatik doğar; planlanan bedel alacak değildir. Tutar değişmez, iptal gerekçeyle yapılır.</p></div></div>
         {a.receivables.length === 0 ? <EmptyState title="Alacak yok" /> : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
               <thead><tr><th>Tarih</th><th>Açıklama</th><th>Hekim</th><th>Vade</th><th className="money">Tutar</th><th className="money">Dağıtılan</th><th className="money">Açık</th><th>Durum</th><th><span className="sr-only">İşlem</span></th></tr></thead>
               <tbody>
@@ -107,7 +107,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
       <section className="card">
         <div className="card-head"><div><h2>Ödemeler</h2><p className="muted small">Ödeme silinmez. İade ayrı kayıttır; gerekirse dağıtımı ters kayıtla geri alır.</p></div></div>
         {a.payments.length === 0 ? <EmptyState title="Ödeme yok" /> : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
               <thead><tr><th>Tarih</th><th>Yöntem</th><th>Kasa / banka</th><th className="money">Tutar</th><th className="money">Dağıtılan</th><th className="money">İade</th><th className="money">Kullanılabilir</th><th><span className="sr-only">İşlem</span></th></tr></thead>
               <tbody>
@@ -139,7 +139,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
       {a.ledger.length > 0 && (
         <section className="card">
           <div className="card-head"><div><h2><ListTree size={18} aria-hidden style={{ verticalAlign: "-3px" }} /> Hareket defteri</h2><p className="muted small">Kronolojik; her satırdan sonra açık borç ve avans ayrı yürür.</p></div></div>
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
               <thead><tr><th>Zaman</th><th>Hareket</th><th>Açıklama</th><th className="money">Tutar</th><th className="money">Açık borç</th><th className="money">Avans</th><th><span className="sr-only">İşlem</span></th></tr></thead>
               <tbody>

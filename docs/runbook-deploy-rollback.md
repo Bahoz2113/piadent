@@ -73,5 +73,8 @@ Aşağıdakilerden biri 15 dakikada çözülemezse **rollback**: duman testinde 
 3. Tekrar önizleme → tüm sayılar 0. MFA'lı bir test hesabıyla giriş + bir MOCK webhook simülasyonu.
 4. `VIADENT_SECRET_KEYS_OLD` boşaltılır → yeniden başlat. Eski anahtar secret manager'da imha edilir. (Testli: `gorev8.test.ts`.)
 
+## 7a. Zaman noktasına geri dönüş (PITR) — yanlışlıkla silme / bozuk toplu işlem
+Ön koşul: WAL arşivleme açık (`backup-restore.md` PITR bölümü). Adımlar: (1) olay zamanını denetim kaydından belirle (`audit_events.created_at`), hedef = olaydan hemen önce; (2) uygulamayı bakım moduna al (API/worker durdur); (3) `scripts/pitr-drill.sh`'teki 5. adımı **ayrı bir dizin/porta** uygula: temel yedeği aç, `restore_command` + `recovery_target_time=<hedef>` + `recovery_target_action=promote`, başlat, `pg_is_in_recovery()` false olana kadar bekle; (4) geri yüklenen kümede sayım/finans mutabakatı (`db:restore-verify` mantığı: `backup.ts` manifest karşılaştırması) ve olaya konu kayıtların durumu; (5) karar: ya tüm kümeyi bu kümeyle değiştir (olay sonrası tüm işlemler kaybolur — klinik bilgilendirilir) ya da yalnız etkilenen satırları geri yüklenen kümeden kopyala (tercih edilen; `pg_dump -t` ile tablo/satır bazında, ters kayıt ilkesine uygun); (6) denetim kaydına işletim notu, `handoff.md`'ye olay özeti. Tatbikat süresi (143 MB): temel yedek 13 sn, geri yükleme 9 sn; 100k hasta / 1M randevu ölçeğinde `pg_dump` geri yüklemesi 93 sn ölçülmüştü, PITR benzer mertebede beklenir (ölçülmedi).
+
 ## 7. Olay sonrası
 Kayıt: zaman çizelgesi, karar, etkilenen kayıt sayısı (kişisel veri olmadan), kök neden, önleyici iş. Kişisel veri ihlali şüphesinde hukukla birlikte KVKK bildirim değerlendirmesi (süreler danışmanla).

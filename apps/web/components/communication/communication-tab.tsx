@@ -33,7 +33,7 @@ export function CommunicationTab({ patientId }: { patientId: string }) {
       <section className="card">
         <div className="card-head"><div><h2>İletişim tercihleri</h2>
           <p className="muted small">Her amaç ve kanal ayrı izindir. Aydınlatma metni, iletişim izni ve tıbbi onam farklı kavramlardır; tek bir “KVKK onaylı” kutusu yoktur. Kayıt yok = izin yok.</p></div></div>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Amaç</th>{COMM_CHANNELS.map((ch) => <th key={ch}>{COMM_CHANNEL_LABELS[ch]}</th>)}</tr></thead>
             <tbody>{COMM_PURPOSES.map((p) => (

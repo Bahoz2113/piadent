@@ -188,7 +188,7 @@ function VersionView({ v, plan, patientId, onChanged, onAddItem, readOnly }: { v
       {err && <Alert kind="error">{err.message}</Alert>}
       {v.statusReason && <p className="small muted">Not: {v.statusReason}</p>}
       {v.items.length === 0 ? <p className="muted small">Kalem yok.</p> : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Seans</th><th>İşlem</th><th>Konum</th><th className="money">Adet</th><th className="money">Birim</th><th className="money">İndirim</th><th className="money">Tutar</th><th>Durum</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>
@@ -230,7 +230,7 @@ function PerformedCard({ chart, canWrite, onChanged }: { chart: Chart; canWrite:
   return (
     <section className="card">
       <div className="card-head"><div><h2>Gerçekleşen işlemler</h2><p className="muted small">Her kayıt bir ziyarete bağlıdır. Bedel, işlem anındaki snapshot'tır; hasta hesabına aktarımı Finans modülünde (Görev 3).</p></div></div>
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex={0}>
         <table className="table table-wide">
           <thead><tr><th>Tarih</th><th>İşlem</th><th>Konum</th><th className="money">Adet</th><th className="money">Bedel</th><th>Hekim</th><th>Durum</th><th><span className="sr-only">İşlem</span></th></tr></thead>
           <tbody>

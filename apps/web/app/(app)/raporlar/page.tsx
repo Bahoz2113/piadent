@@ -173,7 +173,7 @@ export default function ReportsPage() {
               {res.truncated && <Alert kind="warning">İlk {res.limit} satır gösteriliyor; toplamlar tüm kayıtları kapsar. Aralığı daraltın.</Alert>}
               <section className="card">
                 {res.rows.length === 0 ? <EmptyState title="Bu süzgeçle kayıt yok" /> : (
-                  <div className="table-wrap">
+                  <div className="table-wrap" tabIndex={0}>
                     <table className="table table-wide">
                       <thead><tr>{res.columns.map((c) => <th key={c.key} className={["money", "int", "qty", "percent"].includes(c.type) ? "money" : undefined}>{c.label}</th>)}</tr></thead>
                       <tbody>{res.rows.map((r, i) => {

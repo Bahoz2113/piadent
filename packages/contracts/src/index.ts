@@ -14,4 +14,5 @@ export * from "./integrations";
 export * from "./operations";
 export * from "./reports";
 export * from "./pilot";
+export * from "./import-map";
 export * from "./password";

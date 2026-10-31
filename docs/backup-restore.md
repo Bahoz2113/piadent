@@ -24,7 +24,19 @@ Donanım: 2 vCPU Intel Xeon @ 2,80 GHz, 7,8 GiB RAM, yerel SSD, PostgreSQL 16.15
 | Test (gorev7.test.ts, gerçek dosya + kurcalama) | — | — | — | — | — | ~3,5 sn | 0; kurcalanmış parça reddedildi |
 
 **RTO ölçümü:** pilot hacminde teknik geri yükleme ≈ 1,5 dk. Gerçek RTO = karar + yeni sunucu/DB hazırlığı + geri yükleme + doğrulama + DNS/uygulama yönlendirmesi; teknik kısım 4 saat hedefinin çok altında, **uçtan uca tatbikat (insan adımlarıyla) yapılmadı** → pilot öncesi kapı.
-**RPO:** yalnız gece/saatlik `pg_dump` ile RPO = yedek aralığıdır. **≤ 1 saat için saatlik zamanlanmış yedek (cron/systemd timer) veya WAL arşivleme (PITR) gerekir.** Zamanlayıcı ve WAL arşivleme bu depoda kurulmadı (üretim altyapısı kararı) → açık kapı.
+**RPO:** yalnız gece/saatlik `pg_dump` ile RPO = yedek aralığıdır. Saatlik zamanlayıcı (Görev 8) ve WAL arşivleme/PITR tatbikatı (Görev 12, yukarıda) hazır; üretimde `archive_command` hedefi (ikinci konum) barındırma kararıyla belirlenir → kapı **kısmen** kapalı.
+
+## WAL arşivleme ve zaman noktasına geri yükleme — PITR (Görev 12, ADR-071)
+`pg_dump` tabanlı yedek RPO'yu yedek aralığına bağlar. RPO ≤ 1 sa (hedef) için **WAL arşivleme** değerlendirildi ve `scripts/pitr-drill.sh` ile **gerçek kümede tatbik edildi** (26.10.2026, yerel PostgreSQL 16, 143 MB veri dizini):
+
+| Adım | Sonuç |
+|---|---|
+| Arşiv ayarı | `archive_mode=on`, `archive_command='test ! -f <arşiv>/%f && cp %p <arşiv>/%f'`, `archive_timeout=300` (en geç 5 dk'da bir parça → RPO ≤ 5 dk + kopya gecikmesi) |
+| Temel yedek (`pg_basebackup -Ft -z -Xnone -c fast`) | 143 MB → 13 sn |
+| İşaret satırı → hedef zaman → "hatalı" satır → `pg_switch_wal()` | arşivde WAL parçası görüldü |
+| Ayrı kümeye geri yükleme (`restore_command`, `recovery_target_time`, `recovery_target_action=promote`) | 8–9 sn; işaret satırı **var**, hatalı satır **yok** → **BAŞARILI**; toplam 26–27 sn |
+
+Betik üretim verisine dokunmaz (kendi `ops.pitr_drill` tablosu), geri yüklemeyi ayrı dizin/porta yapar, Debian/Ubuntu'da veri dizini dışındaki yapılandırma dosyalarını kopyalar ve **üretim kümesini gösteren mutlak yolları etkisizleştirir** (ilk denemede `data_directory` satırı üretim kümesinin kilidine çarptı — betik bunu kalıcı olarak düzeltir). Önerilen üretim düzeni: `archive_command` WAL parçasını **ikinci konuma** (ayrı disk/nesne deposu) kopyalar ve başarısızlıkta ≠0 döner (PostgreSQL yeniden dener; arşiv birikirse `pg_stat_archiver.failed_count` alarmı); günlük temel yedek + sürekli WAL; şifreli `pg_dump` snapshot'ı (bu depodaki `db:backup`) **ayrıca** sürer (taşınabilir, izole doğrulanabilir). Yönetilen PostgreSQL'de (bulut) sağlayıcının PITR'ı kullanılır; betik yalnız kendi kümesi için. Tatbikat çıktısı `verification.md`'de; pilot öncesi insanlı tatbikat `pilot-checklist.md`'de.
 
 ## Bilinen sınırlar
 - Roller küme düzeyindedir, dökümde yoktur: hedef sunucuda önce `pnpm db:roles`. `textlike LEAKPROOF` katalog ayarı da taşınmaz; `restore-verify` ve `db:roles` uygular.

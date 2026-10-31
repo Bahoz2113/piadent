@@ -68,7 +68,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand { display: flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s2) var(--s4); font-weight: 700; letter-spacing: 0.06em; }
 .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--brand-primary); display: grid; place-items: center; position: relative; flex: none; }
 .brand-mark::after { content: ""; position: absolute; width: 8px; height: 8px; right: -2px; top: -2px; border-radius: 50%; background: var(--brand-accent); }
-.brand small { display: block; font-weight: 400; letter-spacing: 0; opacity: 0.8; font-size: 12px; }
+.brand small { display: block; font-weight: 400; letter-spacing: 0; color: rgba(255, 255, 255, 0.82); font-size: 12px; }
 .navlink {
   display: flex; align-items: center; gap: var(--s3); min-height: 44px; padding: 0 var(--s3);
   border-radius: var(--radius-sm); color: rgba(255, 255, 255, 0.86); text-decoration: none; font-weight: 500;
@@ -77,7 +77,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .navlink[aria-current="page"] { background: var(--brand-primary); color: #fff; }
 .navlink .soon { margin-left: auto; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.12); }
 .shell.collapsed .navlink span, .shell.collapsed .brand-text, .shell.collapsed .navlink .soon { display: none; }
-.nav-foot { margin-top: auto; font-size: 12px; opacity: 0.75; padding: var(--s2); }
+.nav-foot { margin-top: auto; font-size: 12px; color: rgba(255, 255, 255, 0.78); padding: var(--s2); }
+.table-wrap:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 .main { display: flex; flex-direction: column; min-width: 0; }
 .topbar {

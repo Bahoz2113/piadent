@@ -29,7 +29,7 @@ export function SuppliersPanel({ notify }: { notify: (k: "success" | "error", t:
         {can("supplier.manage") && <button className="btn btn-sm btn-primary" onClick={() => setEdit("new")}><Plus size={15} aria-hidden />Yeni kayıt</button>}
       </div>
       {list.data!.items.length === 0 ? <EmptyState icon={<Truck size={28} />} title="Kayıt yok" /> : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Ad</th><th>Tür</th>{bal.data && <><th className="money">Borç</th><th className="money">Ödeme</th><th className="money">Bakiye</th></>}<th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>{list.data!.items.map((s) => {

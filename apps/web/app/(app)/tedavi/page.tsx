@@ -48,7 +48,7 @@ export default function TreatmentPage() {
         {data.loading && !data.data ? <Loading /> : data.error ? <ErrorState error={data.error} onRetry={() => void data.reload()} /> : rows.length === 0 ? (
           <EmptyState icon={<ClipboardList size={28} aria-hidden />} title="Bu filtrede plan yok" />
         ) : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
               <thead><tr><th>Hasta</th><th>Plan</th><th>Durum</th><th>Hekim</th><th className="money">Bedel</th><th>İlerleme</th><th>Sonraki randevu</th></tr></thead>
               <tbody>

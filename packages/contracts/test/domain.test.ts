@@ -97,3 +97,22 @@ describe("finans (Görev 3)", () => {
     expect(PaymentCreate.safeParse({ ...base, amount: "10.00" }).success).toBe(true);
   });
 });
+
+describe("içe aktarma başlık eşlemesi (ADR-069)", () => {
+  it("CSV/JSON başlıkları çıkarılır; takma ad önerisi; açık '' eşlemesi takma adı geçersiz kılar", async () => {
+    const { extractImportHeaders, mapImportHeaders } = await import("../src/import-map");
+    expect(extractImportHeaders('﻿"Kaynak_No";Adı;"Soy;adı";Telefon\r\n1;Ali;Veli;0555\r\n', "csv")).toEqual(["Kaynak_No", "Adı", "Soy;adı", "Telefon"]);
+    expect(extractImportHeaders('a,b,c\n1,2,3', "csv")).toEqual(["a", "b", "c"]);
+    expect(extractImportHeaders('[{"hasta_no":1,"ad":"x"},{"soyad":"y"}]', "json")).toEqual(["hasta_no", "ad", "soyad"]);
+    expect(extractImportHeaders("bozuk", "json")).toEqual([]);
+    const auto = mapImportHeaders("patients", ["Kaynak_No", "Adı", "Soyadı", "Telefon"]);
+    expect(auto.mapping).toEqual({ Kaynak_No: "external_ref", Adı: "first_name", Soyadı: "last_name", Telefon: "phone" });
+    expect(auto.missing).toEqual([]);
+    const ex = mapImportHeaders("patients", ["Kaynak_No", "Adı", "Soyadı", "Telefon"], { Telefon: "", Soyadı: "last_name" });
+    expect(ex.mapping).not.toHaveProperty("Telefon");
+    expect(ex.unmapped).toEqual(["Telefon"]);
+    const bad = mapImportHeaders("patients", ["X", "Y"], { X: "external_ref", Y: "olmayan_alan" });
+    expect(bad.mapping).toEqual({ X: "external_ref" });
+    expect(bad.missing).toEqual(["first_name", "last_name"]);
+  });
+});

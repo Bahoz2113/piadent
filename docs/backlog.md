@@ -54,13 +54,14 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 ## Sıradaki tek iş paketi
 **Görev 11 — tamamlandı (26.10.2026):** düz metin `national_id` kaldırıldı (0013, ADR-062) · kimlik no gerekçeli gösterim (ADR-063) · destek erişiminde dört göz (0014, ADR-064) · sınırlı kademeli giriş gecikmesi (ADR-065) · `DateField` gg.aa.yyyy + takvim, 18 kullanım (ADR-066) · multer override.
 
-**Görev 12 (öneri) — Pilot operasyon hazırlığı:** WAL arşivleme / PITR değerlendirmesi (RPO ≤ 1 sa; `pg_basebackup` + arşiv komutu, geri yükleme tatbikatı belgesi), “silindi” dosyaların fiziksel imha işi (worker; saklama süresi parametreli), webhook ret sayısı ve giriş kilidi için uyarı metrikleri (`/metrics` sayaçları + alarm eşiği önerileri), içe aktarmada açık alan eşleme ekranı (API `mapping` hazır), ekran okuyucu kontrol listesi için otomatik eksen (axe) taraması E2E'de. Ürün sahibi paralelde: bağımsız sızma testi, barındırma, hukuk/KVKK, imaj deposu + GitHub.
+**Görev 12 — tamamlandı (27.10.2026):** dosya içeriği imhası (0015, ADR-067) · işletim uyarı metrikleri + eşikler (0016, ADR-068) · içe aktarmada açık sütun eşleme ekranı (ADR-069) · axe erişilebilirlik taraması E2E'de, 2 bulgu düzeltildi (ADR-070) · WAL arşivleme + PITR tatbikatı gerçek kümede (ADR-071).
+
+**Görev 13 (öneri) — Pilot veri ve kullanıcı kabulü hazırlığı:** randevu/tedavi/ödeme geçmişi içe aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; gelmezse sentetik sözleşme taslağı ve örnek dosyalar), rol bazlı kullanıcı kabul (UAT) senaryoları — `pilot-checklist.md` maddeleriyle birebir, her senaryo için beklenen ekran/çıktı —, büyük veride (100k/1M) haftalık ajanda ve 19 raporun ölçümü + büyük raporların arka plana alınması (worker işi + indirilebilir sonuç), sabit VİA Akış eşiklerinin klinik ayarına çıkarılması. Ürün sahibi paralelde: bağımsız sızma testi, barındırma, hukuk/KVKK, imaj deposu + GitHub.
 
 ## Görev 7'den kalan açık işler
 - Randevu, tedavi, ödeme geçmişi ve dosya aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; eşleme uydurulmaz).
-- İçe aktarmada açık alan eşleme arayüzü (API `mapping` destekliyor; ekran yalnız takma adlarla eşliyor ve eksik sütunu listeliyor).
 - Haftalık ajanda ve raporların büyük veriyle ölçümü; büyük raporların arka plana alınması.
-- WAL arşivleme / PITR değerlendirmesi (RPO ≤ 1 sa).
+- Üretimde `archive_command` hedefi (ikinci konum) ve WAL arşivi için alarm (`pg_stat_archiver.failed_count`) — barındırma kararıyla (tatbikat Görev 12'de).
 - Destek erişiminde platform tarafı talep **başlatma** akışı (klinik tarafı onay/dört göz Görev 10–11'de tamam).
 
 ## Küçük açık işler

@@ -94,5 +94,14 @@ Doğrulanıp **sorun bulunmayan** alanlar: dinamik SQL yalnız sunucu tarafı sa
 | A11 | Kilitleme DoS'u | **Azaltıldı**: sınırlı kademeli gecikme; süre ölçen test (ADR-065) |
 | — | `pnpm audit`: multer < 2.5.0 (platform-express'in dolaylı bağımlılığı; dosya yükleme bu kütüphaneyle yapılmıyor) — DoS | **Kapandı**: pnpm override `multer >=2.5.0 <3`; audit temiz |
 
+## Görev 12 (27.10.2026) — işletim güvenliği
+| # | Konu | Durum |
+|---|---|---|
+| — | Silinmiş dosya içeriği diskte süresiz kalıyordu | **Kapandı**: 30/7 gün sonra imha, üst veri ve kanıt kalır (ADR-067); testli |
+| — | Erişilebilir dosyanın silinmesi 500 veriyordu (kısıt hatası) | **Kapandı** (0015) — Görev 12 testinde bulundu |
+| — | Kuyruk/kilit/webhook reddi için uyarı sinyali yoktu | **Kapandı**: `app.ops_metrics()` — yalnız sayılar, bayraklı sahip politikası, app rolü doğrudan okuyamaz (ADR-068) |
+| — | Yan menüde `opacity` ile soluk metin; kayan tablo klavyeyle erişilemiyordu | **Kapandı** (axe; ADR-070) |
+| A1 | Bağımsız sızma testi | Açık (kapı) |
+
 ## Çalıştırılan kontroller
 `pnpm audit` → “No known vulnerabilities found” (26.10.2026; multer override sonrası). `security.test.ts` 12/12, `gorev7.test.ts` 23/23 (MFA, dışa aktarımda sır yok, çapraz klinik). Depo sır taraması: özel anahtar, AWS/Stripe/Slack/GitHub belirteç kalıpları — 0 bulgu.

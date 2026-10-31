@@ -82,7 +82,7 @@ export function SecurityPanel({ notify }: { notify: Notify }) {
         <div><button className="btn" disabled={busy || !g.email || g.reason.trim().length < 10} onClick={() => void grant()}>Destek erişimi ver</button>
           {grants.data?.fourEyes && <span className="muted small" style={{ marginLeft: 12 }}>Dört göz kuralı: klinikte birden fazla yönetici var; talep ikinci bir yöneticinin onayıyla etkinleşir.</span>}</div>
         {grants.data && grants.data.items.length > 0 && (
-          <div className="table-wrap"><table className="table"><thead><tr><th>Hesap</th><th>Gerekçe</th><th>Bitiş</th><th>Durum</th><th /></tr></thead>
+          <div className="table-wrap" tabIndex={0}><table className="table"><thead><tr><th>Hesap</th><th>Gerekçe</th><th>Bitiş</th><th>Durum</th><th /></tr></thead>
             <tbody>{grants.data.items.map((x) => (
               <tr key={x.id}>
                 <td><strong>{x.fullName}</strong><div className="muted small">{x.email}</div></td>

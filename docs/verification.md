@@ -11,14 +11,16 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (26.10.2026, Görev 11 sonrası)
+## Son koşu sonuçları (27.10.2026, Görev 12 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
-| `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması | **14/14 geçti** |
+| `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması, **içe aktarma başlık çıkarımı/eşlemesi** | **15/15 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · `gorev8` 8 · `gorev9` 9 · `pentest` 12 · `gorev10` 13 · **`gorev11` 7** · `security` 12 | **241/241 geçti** (Vitest 4.1.12; `gorev11`: düz kimlik sütunu yok, dört göz akışı — pending/409/404/403/onay/süre dolumu/DB kısıtı —, kademeli gecikme süre ölçümü) |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + `gorev8` 1 + `gorev9` 1 + `gorev10` 2 + **`gorev11` 4** senaryo × {1366 px, 360 px} | **59 geçti + 5 bilinçli atlama** (durumlu akışlar yalnız masaüstünde; `gorev11`: DateField yazım/maske/geçersiz gün/ISO yapıştırma/takvim klavye, ajanda tarih alanı, `input[type=date]` sayısı 0, kimlik no gerekçeli gösterim, dört göz onayı). `gorev7` E2E'de koşu kimliğine bağlı Türkçe büyük/küçük harf (I→ı) kaynaklı aralıklı hata giderildi (test verisi) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
-| `pnpm audit` | tüm bağımlılıklar (üretim + geliştirme) | **0 bilinen açık** (26.10: multer DoS → override ≥2.5.0 sonrası temiz) |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · `gorev8` 8 · `gorev9` 9 · `pentest` 12 · `gorev10` 13 · `gorev11` 7 · **`gorev12` 4** · `security` 12 | **245/245 geçti** (Vitest 4.1.12; `gorev12`: dosya imhası 7/30 gün + DB kısıtı, işletim metrikleri — kilit/karantina sayaçları, sızıntı yok —, açık eşlemede `''` yok sayma) |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + `gorev8` 1 + `gorev9` 1 + `gorev10` 2 + `gorev11` 4 + **`gorev12` 1 + `erisilebilirlik` 5 (axe)** senaryo × {1366 px, 360 px} | **71 geçti + 5 bilinçli atlama** (durumlu akışlar yalnız masaüstünde; `gorev11`: DateField yazım/maske/geçersiz gün/ISO yapıştırma/takvim klavye, ajanda tarih alanı, `input[type=date]` sayısı 0, kimlik no gerekçeli gösterim, dört göz onayı). `gorev7` E2E'de koşu kimliğine bağlı Türkçe büyük/küçük harf (I→ı) kaynaklı aralıklı hata giderildi (test verisi) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
+| `pnpm audit` | tüm bağımlılıklar (üretim + geliştirme) | **0 bilinen açık** (27.10) |
+| **axe (WCAG 2.1 A/AA)** | 14 ekran durumu × 2 görünüm | **ciddi/kritik ihlal 0** (ilk taramada 2 gerçek bulgu düzeltildi: yan menü kontrastı, kayan tablo odağı) |
+| **PITR tatbikatı** | `scripts/pitr-drill.sh`, gerçek yerel küme (143 MB) | temel yedek 13 sn, hedef zamana geri yükleme 8–9 sn, işaret var/hatalı yok → **başarılı** (`backup-restore.md`) |
 | Yedek / geri yükleme | `pnpm db:backup` + `pnpm db:restore-verify` (dev seed ve 100k/1M perf DB) | **fark 0** (ayrıntı `backup-restore.md`) |
 | Performans | 100.024 hasta / 1.000.009 randevu / 50 eşzamanlı kullanıcı | gerçekçi p95 39,6 ms, yoğun p95 201,8 ms, sayfalar ≤ 1,6 sn; doygunlukta p95 565 ms (`performance.md`) |
 | Typecheck | contracts, db, api, worker, web | **temiz** |

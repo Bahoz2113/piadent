@@ -25,7 +25,7 @@ export function CatalogPanel({ notify }: { notify: Notify }) {
           <div><h2>İşlem kataloğu</h2><p className="muted small">Kod ve konum kapsamı oluşturulduktan sonra değişmez (geçmiş planlar bu tanıma dayanır). Katalog DEMO içeriktir; resmî kod listesi iddiası yoktur.</p></div>
           <button className="btn btn-primary btn-sm" onClick={() => setEditing("new")}><Plus size={16} aria-hidden />Yeni işlem</button>
         </div>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table">
             <thead><tr><th>Kod</th><th>Ad</th><th>Kategori</th><th>Konum kapsamı</th><th>Süre</th><th>Durum</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>
@@ -88,7 +88,7 @@ function TariffsCard({ procedures, notify }: { procedures: Procedure[]; notify: 
         <button className="btn btn-primary btn-sm" onClick={() => setCreating({})}><Plus size={16} aria-hidden />Yeni tarife</button>
       </div>
       {tariffs.loading && !tariffs.data ? <Loading /> : tariffs.error ? <ErrorState error={tariffs.error} /> : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table">
             <thead><tr><th>Ad</th><th>Geçerlilik</th><th>Kapsam</th><th>Kalem</th><th>Durum</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>
@@ -165,7 +165,7 @@ function TariffItemsDrawer({ tariffId, procedures, onClose, onSaved }: { tariffI
         <div className="stack">
           {err && <Alert kind="error">{err.message}</Alert>}
           {invalid && <Alert kind="warning">Tutarlar 1250.00 biçiminde olmalı (en fazla 2 ondalık).</Alert>}
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table">
               <thead><tr><th>İşlem</th><th className="money">Fiyat (₺)</th></tr></thead>
               <tbody>

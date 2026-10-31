@@ -51,7 +51,7 @@ function PatientsInner() {
             {debounced ? "Yazımı kontrol edin veya telefon / dosya no ile deneyin." : undefined}
           </EmptyState>
         ) : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table">
               <thead>
                 <tr><th>Dosya</th><th>Hasta</th><th className="desktop-only">Doğum tarihi</th><th>Telefon</th><th className="desktop-only">Sorumlu hekim</th><th className="desktop-only">Sıradaki randevu</th></tr>

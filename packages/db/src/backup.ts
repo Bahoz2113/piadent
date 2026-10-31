@@ -93,7 +93,7 @@ export async function manifestWith(c: pg.Client, storageDir: string | null): Pro
     for (const r of ten.rows) tenants[r.slug] = { patients: r.patients, activePatients: r.active_patients, receivables: r.receivables, payments: r.payments,
       refunds: r.refunds, allocations: r.allocations, cashNet: r.cash_net, supplierBills: r.supplier_bills, supplierPayments: r.supplier_payments,
       commissionNet: r.commission_net, stockMovements: r.stock_movements };
-    const files = (await c.query("select object_key, sha256 from file_assets where status in ('available','quarantined') and object_key is not null order by object_key")).rows;
+    const files = (await c.query("select object_key, sha256 from file_assets where status in ('available','quarantined') and purged_at is null and object_key is not null order by object_key")).rows;
     let present = 0;
     const h = createHash("sha256");
     for (const f of files) {

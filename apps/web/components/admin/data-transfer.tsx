@@ -4,9 +4,9 @@
  * mutabakatı incele → hatalı satırları CSV olarak indir, düzelt, yeniden yükle → onayla → gerekirse gerekçeyle geri al.
  * Dışa aktarım: klinik verisinin tamamı açık JSON biçiminde (gerekçeli, denetlenir).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, FileUp, RotateCcw, ShieldCheck, Upload } from "lucide-react";
-import { IMPORT_FIELDS, IMPORT_KIND_LABELS, IMPORT_MAX_BYTES, IMPORT_ROW_STATUS_LABELS, formatTRY, type ImportKind } from "@viadent/contracts";
+import { IMPORT_FIELDS, IMPORT_KIND_LABELS, IMPORT_MAX_BYTES, IMPORT_ROW_STATUS_LABELS, extractImportHeaders, formatTRY, mapImportHeaders, type ImportKind } from "@viadent/contracts";
 import { api, ApiFailure, download } from "@/lib/api";
 import { useData } from "@/lib/use-data";
 import { fmtDateTime } from "@/lib/format";
@@ -35,15 +35,38 @@ export function ImportPanel({ notify }: { notify: Notify }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  // Sütun eşlemesi (ADR-069): dosya seçilince yalnız başlık satırı istemcide okunur; API ile aynı kural (takma adlar) önerilir, kullanıcı değiştirebilir.
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [fieldMap, setFieldMap] = useState<Record<string, string>>({}); // alan anahtarı → dosya başlığı ("" = eşlenmiyor)
+  const [mapOpen, setMapOpen] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    if (!file) { setHeaders([]); setFieldMap({}); return; }
+    void file.slice(0, 64 * 1024).text().then((head) => {
+      if (!alive) return;
+      const hs = extractImportHeaders(head, /\.json$/i.test(file.name) ? "json" : "csv");
+      setHeaders(hs);
+      const auto = mapImportHeaders(kind, hs).mapping; // başlık → alan
+      setFieldMap(Object.fromEntries(IMPORT_FIELDS[kind].map((f) => [f.key, Object.entries(auto).find(([, k]) => k === f.key)?.[0] ?? ""])));
+    });
+    return () => { alive = false; };
+  }, [file, kind]);
+
+  const missingRequired = IMPORT_FIELDS[kind].filter((f) => f.required && !fieldMap[f.key]).map((f) => f.label);
+  const duplicateTargets = Object.values(fieldMap).filter((h, i, a) => h && a.indexOf(h) !== i);
+  // başlık → alan; seçilmeyen başlıklar "" ile açıkça yok sayılır (takma ad eşleşse bile)
+  const explicitMapping = () => { const chosen = Object.fromEntries(Object.entries(fieldMap).filter(([, h]) => h).map(([k, h]) => [h, k])); return Object.fromEntries(headers.map((h) => [h, chosen[h] ?? ""])); };
 
   async function check() {
     if (!file || busy) return;
     if (file.size > IMPORT_MAX_BYTES) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Dosya en çok 5 MB olabilir; parçalara bölün." })); return; }
+    if (missingRequired.length) { setMapOpen(true); setErr(new ApiFailure(422, { code: "IMPORT_MAPPING_INCOMPLETE", message: `Zorunlu sütun eşlenmedi: ${missingRequired.join(", ")}. Aşağıdaki eşlemeden seçin.` })); return; }
     setBusy(true); setErr(null);
     try {
       const content = await file.text();
       const format = /\.json$/i.test(file.name) ? "json" : "csv";
-      const b = await api<Batch>("/imports", { body: { kind, format, fileName: file.name, content } });
+      const b = await api<Batch>("/imports", { body: { kind, format, fileName: file.name, content, mapping: explicitMapping() } });
       notify("success", b.reused ? "Bu dosya daha önce yüklenmiş; mevcut aktarım açıldı (yeni kayıt oluşmaz)." : "Ön kontrol tamam. Hiçbir kayıt henüz yazılmadı.");
       setOpenId(b.id);
       await history.reload();
@@ -75,6 +98,30 @@ export function ImportPanel({ notify }: { notify: Notify }) {
             <input id="import-file" className="input" type="file" accept=".csv,.json,text/csv,application/json" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setErr(null); }} />
           </div>
         </div>
+        {file && headers.length > 0 && (
+          <details open={mapOpen || missingRequired.length > 0} onToggle={(e) => setMapOpen((e.target as HTMLDetailsElement).open)}>
+            <summary className="small">Sütun eşlemesi — {headers.length} başlık bulundu{missingRequired.length ? `, ${missingRequired.length} zorunlu alan eşlenmedi` : ", zorunlu alanlar tamam"}</summary>
+            <p className="small muted" style={{ marginTop: 6 }}>Her VİADENT alanı için dosyadaki sütunu seçin. Öneriler tanınan başlıklardan gelir; eşlenmeyen dosya sütunları yok sayılır.</p>
+            <div className="table-wrap" tabIndex={0}><table className="table" style={{ marginTop: 8 }}>
+              <thead><tr><th>VİADENT alanı</th><th>Dosyadaki sütun</th></tr></thead>
+              <tbody>{IMPORT_FIELDS[kind].map((f) => (
+                <tr key={f.key}>
+                  <td>{f.label}{f.required && <span className="req" aria-hidden> *</span>}{f.hint && <div className="small muted">{f.hint}</div>}</td>
+                  <td>
+                    <label className="sr-only" htmlFor={`map-${f.key}`}>{f.label} sütunu</label>
+                    <select id={`map-${f.key}`} className="select" value={fieldMap[f.key] ?? ""} aria-invalid={f.required && !fieldMap[f.key]}
+                      onChange={(e) => { setFieldMap({ ...fieldMap, [f.key]: e.target.value }); setErr(null); }}>
+                      <option value="">— Eşlenmiyor —</option>
+                      {headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table></div>
+            {duplicateTargets.length > 0 && <p className="small" style={{ color: "var(--error)" }}>Aynı dosya sütunu birden çok alana seçildi: {[...new Set(duplicateTargets)].join(", ")}</p>}
+            {!!headers.filter((h) => !Object.values(fieldMap).includes(h)).length && <p className="small muted">Yok sayılacak sütunlar: {headers.filter((h) => !Object.values(fieldMap).includes(h)).join(", ")}</p>}
+          </details>
+        )}
         <details>
           <summary className="small">Beklenen sütunlar</summary>
           <table className="table" style={{ marginTop: 8 }}>
@@ -86,7 +133,7 @@ export function ImportPanel({ notify }: { notify: Notify }) {
           <p className="small muted">Ayırıcı “;” veya “,” olabilir; Excel'in UTF-8 CSV çıktısı uygundur. Tarih gg.aa.yyyy, tutar 1.250,50 biçiminde yazılabilir.
             {kind === "opening_balances" && " Açılış bakiyesi için önce hasta kartlarını aktarın."}</p>
         </details>
-        <div><button className="btn btn-primary" disabled={!file || busy} onClick={() => void check()}><FileUp size={17} aria-hidden />{busy ? "Kontrol ediliyor…" : "Ön kontrol yap"}</button></div>
+        <div><button className="btn btn-primary" disabled={!file || busy || duplicateTargets.length > 0} onClick={() => void check()}><FileUp size={17} aria-hidden />{busy ? "Kontrol ediliyor…" : "Ön kontrol yap"}</button></div>
       </section>
 
       {openId && <BatchDetail id={openId} notify={notify} onChange={() => void history.reload()} onClose={() => setOpenId(null)} />}
@@ -95,7 +142,7 @@ export function ImportPanel({ notify }: { notify: Notify }) {
         <div className="card-head"><h2>Aktarım geçmişi</h2></div>
         {history.loading && !history.data ? <Loading /> : history.error ? <ErrorState error={history.error} onRetry={history.reload} /> :
           (history.data!.items.length === 0 ? <EmptyState title="Henüz aktarım yok" /> : (
-            <div className="table-wrap">
+            <div className="table-wrap" tabIndex={0}>
               <table className="table">
                 <thead><tr><th>Dosya</th><th>Tür</th><th>Durum</th><th className="num">Satır</th><th className="num">Geçerli</th><th className="num">Aktarılan</th><th className="desktop-only">Yükleyen</th><th><span className="sr-only">İşlem</span></th></tr></thead>
                 <tbody>{history.data!.items.map((b) => (
@@ -198,7 +245,7 @@ function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: No
           {Object.entries(IMPORT_ROW_STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </div>
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex={0}>
         <table className="table">
           <thead><tr><th className="num">Satır</th><th>Durum</th>{keys.slice(0, 4).map((k) => <th key={k}>{IMPORT_FIELDS[b.kind].find((f) => f.key === k)?.label ?? k}</th>)}<th>Hata / uyarı</th></tr></thead>
           <tbody>

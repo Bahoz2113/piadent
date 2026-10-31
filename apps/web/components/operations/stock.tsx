@@ -32,7 +32,7 @@ export function StockPanel({ notify }: { notify: (k: "success" | "error", t: str
         {can("stock.manage") && <button className="btn btn-sm btn-primary" onClick={() => setEdit("new")}><Plus size={15} aria-hidden />Yeni kalem</button>}
       </div>
       {items.length === 0 ? <EmptyState icon={<Boxes size={28} />} title="Stok kalemi yok" /> : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Kalem</th><th className="money">Bakiye</th><th>Lotlar</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>{items.map((i) => (

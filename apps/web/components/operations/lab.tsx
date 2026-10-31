@@ -33,7 +33,7 @@ export function LabBadge({ o }: { o: Pick<LabOrder, "status" | "overdue"> }) {
 export function LabOrdersTable({ items, onOpen, showPatient = true }: { items: LabOrder[]; onOpen: (o: LabOrder) => void; showPatient?: boolean }) {
   const withCost = items.some((o) => o.cost !== undefined);
   return (
-    <div className="table-wrap">
+    <div className="table-wrap" tabIndex={0}>
       <table className="table table-wide">
         <thead><tr><th>No</th>{showPatient && <th>Hasta</th>}<th>İş</th><th>Laboratuvar</th><th>Aşama</th><th>Hedef teslim</th>{withCost && <th className="money">Maliyet</th>}<th><span className="sr-only">Aç</span></th></tr></thead>
         <tbody>{items.map((o) => (

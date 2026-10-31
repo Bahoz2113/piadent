@@ -47,7 +47,7 @@ function DocumentsCard({ patientId, patientName }: { patientId: string; patientN
         {can("document.issue") && <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}><FilePlus2 size={15} aria-hidden />Belge hazırla</button>}
       </div>
       {docs.loading && !docs.data ? <Loading /> : docs.error ? <ErrorState error={docs.error} /> : docs.data!.items.length === 0 ? <EmptyState icon={<FileText size={28} aria-hidden />} title="Belge yok" /> : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Belge</th><th>Tür</th><th>Hazırlayan</th><th>Şablon</th><th>Özet (SHA-256)</th><th>Durum</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>{docs.data!.items.map((d) => (
@@ -294,7 +294,7 @@ function FilesCard({ patientId }: { patientId: string }) {
       </div>
       {msg && <div className="card-pad" style={{ paddingBottom: 0 }}><Alert kind={msg.kind}>{msg.text}</Alert></div>}
       {files.loading && !files.data ? <Loading /> : files.error ? <ErrorState error={files.error} /> : files.data!.items.length === 0 ? <EmptyState title="Dosya yok" /> : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Dosya</th><th>Kategori</th><th>Boyut</th><th>Durum</th><th>Tarama</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>{files.data!.items.map((f) => (

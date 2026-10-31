@@ -2,7 +2,10 @@
  * İçe aktarma ayrıştırıcıları: CSV (“;” veya “,”, tırnak, CRLF, BOM), JSON dizi; Türkçe tarih ve tutar biçimleri.
  * Belirsiz değer tahmin edilmez: “1.250” gibi binlik/ondalık ayrımı belirsiz tutar hatadır.
  */
-import { IMPORT_FIELDS, normalizeSearch, type ImportKind } from "@viadent/contracts";
+import { mapImportHeaders, normalizeSearch } from "@viadent/contracts";
+
+/** Geriye uyumlu ad: eşleme mantığı contracts paketine taşındı (web'de de kullanılır, ADR-069). */
+export const mapHeaders = mapImportHeaders;
 
 export interface Parsed { headers: string[]; rows: Record<string, string>[]; delimiter?: string }
 
@@ -44,28 +47,6 @@ export function parseJson(text: string): Parsed {
     const x = (o as Record<string, unknown>)?.[h];
     return [h, x === null || x === undefined ? "" : String(x).trim()];
   }))) };
-}
-
-const norm = (s: string) => normalizeSearch(s).replace(/[\s_\-.]+/g, "_");
-
-/** Başlık → alan eşlemesi. Açık eşleme takma adlardan önceliklidir. Bilinmeyen başlıklar raporlanır, yok sayılır. */
-export function mapHeaders(kind: ImportKind, headers: string[], explicit: Record<string, string> = {}) {
-  const fields = IMPORT_FIELDS[kind];
-  const mapping: Record<string, string> = {};
-  const used = new Set<string>();
-  for (const h of headers) {
-    const ex = explicit[h];
-    if (ex && fields.some((f) => f.key === ex) && !used.has(ex)) { mapping[h] = ex; used.add(ex); }
-  }
-  for (const h of headers) {
-    if (mapping[h]) continue;
-    const n = norm(h);
-    const f = fields.find((x) => !used.has(x.key) && (norm(x.key) === n || x.aliases.some((a) => norm(a) === n)));
-    if (f) { mapping[h] = f.key; used.add(f.key); }
-  }
-  const unmapped = headers.filter((h) => !mapping[h]);
-  const missing = fields.filter((f) => f.required && !used.has(f.key)).map((f) => f.key);
-  return { mapping, unmapped, missing };
 }
 
 /** gg.aa.yyyy, g.a.yyyy, gg/aa/yyyy veya yyyy-aa-gg → ISO; geçersiz takvim tarihi null. */

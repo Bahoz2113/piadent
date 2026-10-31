@@ -1,5 +1,5 @@
 import pg from "pg";
-import { documentsMaintenance, importRetentionDays, purgeAuthThrottle, purgeImportRows, refreshViaAkis, scanFile, scannerFromEnv, storageFromEnv, withContext, type ScannerPort, type StoragePort } from "@viadent/db";
+import { documentsMaintenance, importRetentionDays, purgeAuthThrottle, purgeFileContents, purgeImportRows, refreshViaAkis, scanFile, scannerFromEnv, storageFromEnv, withContext, type ScannerPort, type StoragePort } from "@viadent/db";
 
 export interface WorkerDeps { storage: StoragePort; scanner: ScannerPort }
 let defaultDeps: WorkerDeps | null = null;
@@ -69,13 +69,14 @@ async function finish(pool: pg.Pool, ids: number[], status: "done" | "dead", err
 }
 
 /** Zaman temelli görevler (geciken randevu vb.) için periyodik tarama. */
-export async function scanAllTenants(pool: pg.Pool, now = new Date()) {
+export async function scanAllTenants(pool: pg.Pool, now = new Date(), storage: StoragePort = storageFromEnv()) {
   const tenants = await pool.query("select id from tenants where status = 'active'");
   const out: Record<string, { created: number; closed: number }> = {};
   for (const t of tenants.rows) {
     out[t.id] = await withContext(pool, { tenantId: t.id, userId: null }, async (c) => {
       await documentsMaintenance(c, t.id, now);
       await purgeImportRows(c, importRetentionDays(), now);
+      await purgeFileContents(c, storage, now);
       return refreshViaAkis(c, t.id, now);
     });
   }

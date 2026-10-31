@@ -120,7 +120,7 @@ function Summary({ from, to }: { from: string; to: string }) {
       {d.data!.days.length > 1 && (
         <section className="card">
           <div className="card-head"><h2>Günlere göre</h2></div>
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table">
               <thead><tr><th>Gün</th><th className="money">İşlem tutarı</th><th className="money">Tahsilat</th><th className="money">İade</th><th className="money">Gider</th></tr></thead>
               <tbody>{d.data!.days.map((x) => <tr key={x.day}><td>{fmtDate(x.day)}</td><td className="money">{formatTRY(x.procedures)}</td><td className="money">{formatTRY(x.collections)}</td><td className="money">{formatTRY(x.refunds)}</td><td className="money">{formatTRY(x.expenses)}</td></tr>)}</tbody>
@@ -138,7 +138,7 @@ function MetricRows({ metric, data, tz }: { metric: Metric; data: SummaryData; t
   return (
     <section className="card">
       <div className="card-head"><h2>{titles[metric]}</h2></div>
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex={0}>
         <table className="table table-wide">
           {metric === "procedures" && <>
             <thead><tr><th>Zaman</th><th>Hasta</th><th>İşlem</th><th>Hekim</th><th>Durum</th><th className="money">Bedel</th></tr></thead>
@@ -180,7 +180,7 @@ function Balances() {
         </div>
       </div>
       {rows.length === 0 ? <EmptyState title="Kayıt yok" /> : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Hasta</th><th className="money">Açık borç</th><th className="money">Vadesi gelmemiş</th><th className="money">0–30 gün</th><th className="money">31–60</th><th className="money">61–90</th><th className="money">90+</th><th className="money">Avans</th></tr></thead>
             <tbody>{rows.map((x) => (
@@ -210,7 +210,7 @@ function Cash({ from, to }: { from: string; to: string }) {
     <div className="stack" style={{ gap: 16 }}>
       <section className="card">
         <div className="card-head"><div><h2>Hesap bakiyeleri</h2><p className="muted small">Kapanış = açılış + giriş + çıkış. Banka/POS mutabakatı (ekstreyle eşleştirme) henüz yok.</p></div></div>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Hesap</th><th>Tür</th><th className="money">Açılış</th><th className="money">Giriş</th><th className="money">Çıkış</th><th className="money">Kapanış</th></tr></thead>
             <tbody>{d.data!.accounts.map((a) => <tr key={a.id}><td><strong>{a.name}</strong></td><td>{CASH_ACCOUNT_KIND_LABELS[a.kind as keyof typeof CASH_ACCOUNT_KIND_LABELS]}</td>
@@ -221,7 +221,7 @@ function Cash({ from, to }: { from: string; to: string }) {
       <section className="card">
         <div className="card-head"><h2>Hareketler</h2></div>
         {d.data!.movements.length === 0 ? <EmptyState title="Bu aralıkta hareket yok" /> : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
               <thead><tr><th>Zaman</th><th>Hesap</th><th>Açıklama</th><th className="money">Tutar</th></tr></thead>
               <tbody>{d.data!.movements.map((m) => <tr key={m.id}><td>{fmtDateTime(m.at, tz)}</td><td>{name.get(m.accountId)}</td><td>{m.label}</td><td className="money">{formatTRY(m.amount)}</td></tr>)}</tbody>
@@ -249,7 +249,7 @@ function Expenses({ from, to, notify }: { from: string; to: string; notify: (k: 
         {can("expense.write") && <button className="btn btn-sm btn-primary" onClick={() => setAdding(true)}><Plus size={15} aria-hidden />Gider ekle</button>}
       </div>
       {d.loading && !d.data ? <Loading /> : d.error ? <ErrorState error={d.error} /> : d.data!.items.length === 0 ? <EmptyState title="Bu aralıkta gider yok" /> : (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Zaman</th><th>Kategori</th><th>Açıklama</th><th>Hesap</th><th className="money">Tutar</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>{d.data!.items.map((e) => (
@@ -313,7 +313,7 @@ function Commissions({ from, to }: { from: string; to: string }) {
       <section className="card">
         <div className="card-head"><div><h2>Hekim primi</h2><p className="muted small">Tedavi bazlı prim gerçekleşen işlemden, tahsilat bazlı prim dağıtılan tahsilattan doğar. İptal/iade orijinal oranla ters prim doğurur. Prim kazanımı ve ödemesi ayrı harekettir; ödenecek bakiye = net tahakkuk − ödenen (tüm zamanlar).</p></div></div>
         {d.data!.groups.length === 0 ? <EmptyState title="Bu aralıkta tahakkuk yok" /> : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
               <thead><tr><th>Hekim</th><th className="money">Tahakkuk</th><th className="money">Ters prim</th><th className="money">Net (dönem)</th><th className="money">Ödenen (dönem)</th><th className="money">Ödenecek bakiye</th><th><span className="sr-only">İşlem</span></th></tr></thead>
               <tbody>{d.data!.groups.map((g) => <tr key={g.practitionerId}><td><strong>{g.practitioner}</strong></td><td className="money">{formatTRY(g.accrued)}</td><td className="money">{formatTRY(g.reversed)}</td>
@@ -338,7 +338,7 @@ function Commissions({ from, to }: { from: string; to: string }) {
       {d.data!.rows.length > 0 && (
         <section className="card">
           <div className="card-head"><h2>Tahakkuk satırları</h2></div>
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
               <thead><tr><th>Zaman</th><th>Hekim</th><th>Temel</th><th>Hasta</th><th>Kaynak</th><th className="money">Taban</th><th className="money">Oran</th><th className="money">Prim</th></tr></thead>
               <tbody>{d.data!.rows.map((r) => <tr key={r.id}><td>{fmtDateTime(r.at, tz)}</td><td>{r.practitioner}</td><td>{r.basis === "treatment" ? "Tedavi" : "Tahsilat"}</td><td>{r.patient}</td><td>{r.description}{r.reversal && <div className="small muted">Ters kayıt</div>}</td>
@@ -407,7 +407,7 @@ function Settings({ notify }: { notify: (k: "success" | "error", t: string) => v
       <section className="card">
         <div className="card-head"><div><h2>Prim kuralı sürümleri</h2><p className="muted small">Kural silinmez/değiştirilmez; yeni sürüm bugünden veya ileri bir tarihten geçerli olur. Hekime özel kural genel kuraldan önceliklidir; bir hekim için bir günde tek kural etkindir, temeli (tedavi veya tahsilat) hangi olayın prim doğuracağını belirler — aynı iş için çift prim oluşmaz. Oranlar DEMO; mali müşavirle doğrulanmalı.</p></div></div>
         {rules.data && rules.data.items.length > 0 && (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table">
               <thead><tr><th>Geçerlilik</th><th>Kapsam</th><th>Temel</th><th className="money">Oran</th><th>Not</th><th>Ekleyen</th></tr></thead>
               <tbody>{rules.data.items.map((r) => <tr key={r.id}><td>{fmtDate(r.validFrom)}</td><td>{r.practitionerName ?? "Tüm hekimler"}</td><td>{COMMISSION_BASIS_LABELS[r.basis]}</td><td className="money">%{r.rate.replace(".00", "")}</td><td>{r.note ?? "—"}</td><td>{r.by}</td></tr>)}</tbody>

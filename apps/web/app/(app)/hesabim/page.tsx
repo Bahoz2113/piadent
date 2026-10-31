@@ -175,7 +175,7 @@ export default function AccountPage() {
         </div>
         <p className="muted small">Hesabınıza açık tüm oturumlar. Tanımadığınız bir oturum görürseniz diğerlerini kapatın ve parolanızı değiştirin.</p>
         {sessions.data && (
-          <div className="table-wrap"><table className="table"><thead><tr><th>Oturum</th><th>Açılış</th><th>Son işlem</th></tr></thead>
+          <div className="table-wrap" tabIndex={0}><table className="table"><thead><tr><th>Oturum</th><th>Açılış</th><th>Son işlem</th></tr></thead>
             <tbody>{sessions.data.items.map((x) => (
               <tr key={x.id}><td>{x.current ? <span className="badge badge-success">Bu cihaz</span> : <span className="badge badge-neutral">Diğer</span>}</td><td>{fmtDateTime(x.createdAt)}</td><td>{fmtDateTime(x.lastSeenAt)}</td></tr>
             ))}</tbody>

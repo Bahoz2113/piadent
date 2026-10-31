@@ -50,7 +50,7 @@ export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: stri
           <button className="btn btn-primary" onClick={() => setInviting(true)}><MailPlus size={17} aria-hidden />Ekibe davet et</button>
         </div>
         {team.loading && !team.data ? <Loading /> : team.error ? <ErrorState error={team.error} /> : (
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table">
               <thead><tr><th>Kullanıcı</th><th>Rol</th><th>Durum</th><th>İki adımlı</th><th className="desktop-only">Eklenme</th><th><span className="sr-only">İşlem</span></th></tr></thead>
               <tbody>

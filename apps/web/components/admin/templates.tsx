@@ -53,7 +53,7 @@ export function TemplatesPanel({ notify }: { notify: Notify }) {
       </section>
       <section className="card">
         <div className="card-head"><div><h2>Belge türleri</h2><p className="muted small">Kabul gerektiren türlerde hastanın kararı yüz yüze kaydedilir; bilgilendirme türleri yalnız teslim edilir.</p></div></div>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
             <thead><tr><th>Tür</th><th>Kategori</th><th>Karar</th><th>Hazırlayabilen</th><th>İnceleme</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>{types.data!.items.map((t) => (
