@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { isoDate } from "./zdate";
 
 const uuid = z.uuid("Geçersiz kimlik");
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tarih gg.aa.yyyy biçiminde olmalı");
 const optText = (max: number) => z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().max(max).optional());
 
 // ------------------------------------------------------------------ belge türü / şablon

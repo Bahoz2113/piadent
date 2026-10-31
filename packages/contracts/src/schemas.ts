@@ -1,6 +1,6 @@
 import { z } from "zod";
+import { isoDate } from "./zdate";
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tarih gg.aa.yyyy biçiminde olmalı");
 const uuid = z.uuid("Geçersiz kimlik");
 const trimmed = (max: number) => z.string().trim().max(max);
 const optionalText = (max: number) =>

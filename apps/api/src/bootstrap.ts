@@ -7,6 +7,7 @@ import { json } from "express";
 import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module.js";
 import { observe } from "./infra/metrics.js";
+import { sanitizeBody } from "./infra/sanitize.js";
 import type { AppConfig } from "./config.js";
 
 export async function createApp(config: AppConfig, opts: { logger?: boolean } = {}) {
@@ -52,6 +53,7 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean } = 
     if (config.production) res.setHeader("strict-transport-security", "max-age=31536000; includeSubDomains");
     next();
   });
+  app.use(sanitizeBody); // JSON ayrıştırıldıktan sonra, denetleyicilerden önce
   app.setGlobalPrefix("api/v1");
   return app;
 }

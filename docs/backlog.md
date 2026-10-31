@@ -44,14 +44,17 @@ VD-014 yazılım tarafı: içe aktarma (ADR-046), RLS altında arama performans�
 ## Tamamlanan iş paketi: Görev 8 (23.10.2026) — VD-015 pilot altyapısı
 Derlenmiş üretim çıktısı (esbuild; paket başına dış bağımlılık; kendini çalıştırma kontrolü düzeltildi), konteyner tanımları (api/worker/web/ops — **imaj deposuna erişim yok, derlenmedi**), tek sunuculu compose + Caddy (TLS) + yedek döngüsü, systemd zamanlayıcıları, CI iş akışı (**GitHub'da koşmadı**), PostgreSQL'de paylaşılan giriş sınırlayıcısı (ADR-053), sürümlü sır anahtarı + döndürme (ADR-052), nonce'lu CSP, içe aktarma satır verisi saklama (ADR-054), `/health/ready` + `/metrics` + `TRUST_PROXY` (ADR-055), Türkçe doğrulama mesajları. Testler: API 200, E2E 49 (derlenmiş API/worker'a karşı). Belge: `deployment.md`.
 
+## Tamamlanan iş paketi: Görev 9 (23.10.2026) — iç güvenlik denetimi (VD-016 kısmi)
+Kod incelemesi + negatif doğrulama testleri; 9 bulgu kapandı (parola değiştirme/sıfırlama yoktu, NUL → 500, görünmez karakterler, boşta kalma süresi, parola politikası, MFA kod deneme sınırı, takvimsel tarih, oturum listesi/kapatma, derleme hatası). ADR-056, 057. Testler: API 221, E2E 50 (+2 bilinçli atlama). `security-review.md` “Görev 9 iç güvenlik denetimi”. **Bağımsız sızma testi hâlâ açık.**
+
 ## Sıradaki tek iş paketi
-**Görev 9 (öneri) — Sızma testi öncesi güvenlik derinleştirme (VD-016):** MFA kurtarma kodları (tek kullanımlık, özetli) ve MFA zorunluluğunun klinik ayarından yönetilmesi; T.C. kimlik no alan düzeyinde şifreleme + arama için HMAC (geçiş migration'ıyla); VİADENT destek erişim modeli (süreli, klinik yöneticisi onaylı, amaç kayıtlı, otomatik kapanan, tamamen denetimli “kırık cam” erişimi); oturum yönetimi ekranı (açık oturumlar, uzaktan kapatma). Bunlar `security-review.md` A4, A9 ve MFA kalanlarını kapatır ve sızma testinin kapsamını netleştirir.
+**Görev 10 (öneri) — VD-016 kalanı:** MFA kurtarma kodları; MFA zorunluluğunun klinik ayarından yönetimi; T.C. kimlik no alan düzeyinde şifreleme + HMAC arama (geçiş migration'ı); VİADENT destek “kırık cam” erişim modeli; Hesabım'da açık oturumlar ekranı (API hazır); kilitleme DoS'una karşı kademeli gecikme. Paralelde ürün sahibi: bağımsız sızma testi firması, barındırma, hukuk/KVKK.
 
 ## Görev 7'den kalan açık işler
 - Randevu, tedavi, ödeme geçmişi ve dosya aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; eşleme uydurulmaz).
 - İçe aktarmada açık alan eşleme arayüzü (API `mapping` destekliyor; ekran yalnız takma adlarla eşliyor ve eksik sütunu listeliyor).
-- Kurtarma kodları (MFA) — şimdilik yönetici sıfırlaması → Görev 9 önerisi.
-- Tek klinikte MFA zorunluluğunu klinik ayarından açma (şimdilik ortam değişkeni, tüm klinikler) → Görev 9 önerisi.
+- Kurtarma kodları (MFA) — şimdilik yönetici sıfırlaması → Görev 10 önerisi.
+- Tek klinikte MFA zorunluluğunu klinik ayarından açma (şimdilik ortam değişkeni, tüm klinikler) → Görev 10 önerisi.
 - Haftalık ajanda ve raporların büyük veriyle ölçümü; büyük raporların arka plana alınması.
 - WAL arşivleme / PITR değerlendirmesi (RPO ≤ 1 sa).
 - T.C. kimlik no alan düzeyinde şifreleme (risk değerlendirmesiyle).

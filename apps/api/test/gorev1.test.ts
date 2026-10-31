@@ -293,16 +293,16 @@ describe("T20 davet ve rol değişikliği", () => {
     const info = (await request(server).get(`/api/v1/invitations/${token}`).expect(200)).body;
     expect(info).toMatchObject({ email: "yeni.hekim@demo-yesil.test", role: "dentist", userExists: false });
     expect((await request(server).post(`/api/v1/invitations/${token}/accept`).set("x-viadent-request", "1").send({ password: "kisa" })).status).toBe(422);
-    const acc = await request(server).post(`/api/v1/invitations/${token}/accept`).set("x-viadent-request", "1").send({ password: "Sentetik-Parola-123" }).expect(200);
+    const acc = await request(server).post(`/api/v1/invitations/${token}/accept`).set("x-viadent-request", "1").send({ password: "Guvenli-Deneme-Parolasi-7" }).expect(200);
     const cookie = (acc.headers["set-cookie"] as unknown as string[])[0]!.split(";")[0]!;
     const s = (await request(server).get("/api/v1/session").set("cookie", cookie).expect(200)).body;
     expect(s.activeMembership).toMatchObject({ role: "dentist", tenantId: tenantA });
     // Token yeniden kullanılamaz; token DB'de düz saklanmaz.
-    expect((await request(server).post(`/api/v1/invitations/${token}/accept`).set("x-viadent-request", "1").send({ password: "Sentetik-Parola-123" })).status).toBe(404);
+    expect((await request(server).post(`/api/v1/invitations/${token}/accept`).set("x-viadent-request", "1").send({ password: "Guvenli-Deneme-Parolasi-7" })).status).toBe(404);
     const raw = await ownerQuery(tenantA, "select encode(token_hash, 'hex') as h from invitations");
     expect(raw.some((r) => r.h.includes(Buffer.from(token).toString("hex")))).toBe(false);
     // Yeni hekim aynı parolayla normal giriş yapabilir.
-    await login(app, "yeni.hekim@demo-yesil.test", "Sentetik-Parola-123");
+    await login(app, "yeni.hekim@demo-yesil.test", "Guvenli-Deneme-Parolasi-7");
   });
 
   it("süresi dolan veya iptal edilen davet kullanılamaz; geçersiz biçimli token sorgulanmaz", async () => {

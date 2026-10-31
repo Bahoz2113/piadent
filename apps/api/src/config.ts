@@ -4,6 +4,8 @@ export interface AppConfig {
   databaseUrl: string;
   port: number;
   sessionTtlHours: number;
+  /** Boşta kalma süresi (dk): bu kadar süre istek gelmeyen oturum düşer (klinikte açık bırakılan ekran). 0 = kapalı. */
+  sessionIdleMinutes: number;
   webOrigin: string;
   production: boolean;
   /** Bu rollerde iki adımlı doğrulama zorunlu (VIADENT_REQUIRE_MFA_ROLES, örn. "clinic_admin,finance"). */
@@ -21,6 +23,7 @@ export function loadConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     databaseUrl: overrides.databaseUrl ?? requireEnv("DATABASE_URL"),
     port: overrides.port ?? Number(process.env.API_PORT ?? 4000),
     sessionTtlHours: overrides.sessionTtlHours ?? Number(process.env.SESSION_TTL_HOURS ?? 12),
+    sessionIdleMinutes: overrides.sessionIdleMinutes ?? Number(process.env.SESSION_IDLE_MINUTES ?? 90),
     webOrigin: overrides.webOrigin ?? process.env.WEB_ORIGIN ?? "http://localhost:3000",
     production: overrides.production ?? process.env.NODE_ENV === "production",
     requireMfaRoles: overrides.requireMfaRoles ?? (process.env.VIADENT_REQUIRE_MFA_ROLES ?? "").split(",").map((x) => x.trim()).filter(Boolean),

@@ -19,7 +19,7 @@ declare global {
     interface Request {
       correlationId?: string;
       ctx?: RequestContext;
-      sessionInfo?: { sessionId: string; userId: string; userName: string; email: string; activeMembershipId: string | null; mfaEnabled: boolean };
+      sessionInfo?: { sessionId: string; userId: string; userName: string; email: string; activeMembershipId: string | null; mfaEnabled: boolean; mustChangePassword: boolean };
     }
   }
 }

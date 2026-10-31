@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from "@nestjs/common";
-import { InvitationCreate, MembershipRevoke, RoleChange, ROLE_LABELS, type Role } from "@viadent/contracts";
-import { newSessionToken } from "@viadent/db";
+import { InvitationCreate, MembershipRevoke, PasswordReset, RoleChange, ROLE_LABELS, type Role } from "@viadent/contracts";
+import { hashPassword, newSessionToken } from "@viadent/db";
+import { randomBytes } from "node:crypto";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
@@ -144,6 +145,29 @@ export class TeamController {
       await c.query("update sessions set revoked_at = now() where user_id = $1 and revoked_at is null", [m.user_id]);
       await audit(c, ctx, { action: "mfa.reset", entityType: "membership", entityId: id, changes: { mfa: { from: true, to: false }, reason: { from: null, to: input.reason } } });
       return { ok: true };
+    });
+  }
+
+  /**
+   * Parola sıfırlama (yönetici): kimlik yüz yüze/telefonla doğrulandıktan sonra tek kullanımlık geçici parola üretilir, yalnız bir kez
+   * gösterilir, kullanıcının tüm oturumları kapanır ve ilk girişte parola değiştirmesi zorunludur. Kendi parolası Hesabım'dan.
+   */
+  @Post(":id/password-reset")
+  @HttpCode(200)
+  @Require("team.manage")
+  passwordReset(@Ctx() ctx: RequestContext, @Param("id", mId) id: string, @Body() body: unknown) {
+    const input = parse(PasswordReset, body ?? {});
+    if (id === ctx.membershipId) throw new AppError(422, "CANNOT_RESET_SELF", "Kendi parolanızı Hesabım sayfasından değiştirin.");
+    return this.db.tx(ctx, async (c) => {
+      const m = (await c.query("select user_id from memberships where id = $1 and tenant_id = $2 and status = 'active'", [id, ctx.tenantId])).rows[0];
+      if (!m) throw Errors.notFound("Üyelik");
+      const others = (await this.auth.listMemberships(m.user_id)).filter((x) => x.tenantId !== ctx.tenantId);
+      if (others.length) throw new AppError(409, "PASSWORD_RESET_MULTI_CLINIC", "Bu kullanıcı başka bir klinikte de üye; parola sıfırlaması VİADENT destek süreciyle yapılır.");
+      const temp = `gecici-${randomBytes(9).toString("base64url")}`;
+      await c.query("update users set password_hash = $2, must_change_password = true where id = $1", [m.user_id, await hashPassword(temp)]);
+      await c.query("update sessions set revoked_at = now() where user_id = $1 and revoked_at is null", [m.user_id]);
+      await audit(c, ctx, { action: "password.reset", entityType: "membership", entityId: id, changes: { reason: { from: null, to: input.reason } } });
+      return { temporaryPassword: temp, note: "Geçici parola yalnız şimdi gösterilir; kullanıcıya güvenli kanaldan iletin. İlk girişte değiştirmesi zorunludur." };
     });
   }
 }

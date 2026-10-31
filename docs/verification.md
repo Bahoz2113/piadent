@@ -11,13 +11,13 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (23.10.2026, Görev 8 sonrası)
+## Son koşu sonuçları (23.10.2026, Görev 9 iç güvenlik denetimi sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
 | `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması | **14/14 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · **`gorev8` 8** · `security` 12 | **200/200 geçti** (Vitest 4.1.12) |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + **`gorev8` 1** senaryo × {1366 px, 360 px} | **49 geçti + 1 bilinçli atlama** (MFA akışı durumlu; yalnız masaüstünde) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · `gorev8` 8 · **`gorev9` 9 · `pentest` 12** · `security` 12 | **221/221 geçti** (Vitest 4.1.12) |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + `gorev8` 1 + **`gorev9` 1** senaryo × {1366 px, 360 px} | **50 geçti + 2 bilinçli atlama** (MFA akışı durumlu; yalnız masaüstünde) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
 | `pnpm audit` | tüm bağımlılıklar (üretim + geliştirme) | **0 bilinen açık** |
 | Yedek / geri yükleme | `pnpm db:backup` + `pnpm db:restore-verify` (dev seed ve 100k/1M perf DB) | **fark 0** (ayrıntı `backup-restore.md`) |
 | Performans | 100.024 hasta / 1.000.009 randevu / 50 eşzamanlı kullanıcı | gerçekçi p95 39,6 ms, yoğun p95 201,8 ms, sayfalar ≤ 1,6 sn; doygunlukta p95 565 ms (`performance.md`) |
@@ -70,6 +70,11 @@ CSP başlığında `'strict-dynamic'` var, `'unsafe-inline'` yok; nonce her iste
 ### Üretim paketi doğrulaması (Görev 8, elle koşuldu)
 `pnpm build:server` → `pnpm deploy --legacy --prod` ile ayrık dizinler → `.env` olmadan yalnız ortam değişkenleriyle: boş veritabanına `dist/migrate.js` (10 migration) + `dist/roles.js` (LEAKPROOF dahil) · API: canlılık, hazır olma, giriş, hasta arama, raporlar, finans özeti, metrikler · worker başladı · `dist/backup-cli.js backup` + `restore-verify` (fark 0) · `dist/rotate-keys.js` önizleme · Next bağımsız çıktı: `/giris` 200, nonce'lu CSP, statik parça 200, API vekili 200 · yedek döngüsü bir tur (başarı `YEDEK-OK`, kısa parola `YEDEK-HATA` ve döngü sürer) · `docker compose config` (zorunlu değişken koruması dahil) · `systemd-analyze verify` (bir hata yakalandı: `OnFailure` yanlış bölümdeydi → düzeltildi) · CI YAML ayrıştırma + `ci-env.sh` çıktısında `CHANGE_ME` kalmıyor.
 **Yapılamayan:** Docker imaj derlemesi (Docker Hub / ECR / GCR aynası bu ortamdan `Forbidden`), CI'ın GitHub'da koşması, Caddy yapılandırma doğrulaması, ClamAV.
+
+### Görev 9 — iç güvenlik denetimi testleri
+`pentest.test.ts` (12): sekreter/hekim/finans sunucu tarafında yetkisiz uçlara 403 ve iz bırakmaz; B yöneticisi A'nın hasta/geçmiş/randevu/dosyasını göremez (404, varlık sızmaz); başka kliniğin üyelik kimliği `x-viadent-context` olarak gönderilince 409; gövdeye `tenant_id` enjekte etmek başka kliniğe yazamaz; çerez yok 401 / CSRF başlığı yok 403 / uydurma çerez 401; erişimi kaldırılan üyelik anında reddedilir; bozuk girdiler (geçersiz UUID, aşırı uzun, dizi yerine metin, negatif/sembolik sayı, geçersiz tarih, yinelenen sorgu parametresi) hiçbir yerde 5xx üretmez ve iç ayrıntı sızdırmaz; aynı e-posta/IP 5 hatadan sonra 429 ve doğru parola da geçmez; aynı idempotency anahtarı farklı tutarla 409; **girdi temizliği**: NUL/ESC 422, yön değiştirme ve sıfır genişlik karakterler kaldırılır, `__proto__` atılır (prototip kirlenmez), sorgu dizesinde kontrol karakteri güvenle yok sayılır, aşırı derin/geniş gövde 422.
+`gorev9.test.ts` (9): parola değişikliği (yanlış mevcut parola 422; doğruysa değişir ve diğer oturumlar kapanır, bu oturum kalır); MFA açıkken kod zorunlu; MFA kurulum kodu 5 yanlış denemeden sonra 429; yönetici sıfırlaması (geçici parola, oturumlar kapanır, ilk girişte klinik uçları 403 `PASSWORD_CHANGE_REQUIRED`, Hesabım açık, değişiklikten sonra normal; kendine yapılamaz); takvimsel geçersiz tarih 422; boşta kalan oturum düşer ve iptal edilir, süre 0 ise düşmez; açık oturumlar listelenir (belirteç yok, bu cihaz işaretli) ve diğerleri kapatılır; parola politikası (yaygın/tekrarlı/ardışık/e-posta içeren reddedilir; politika mesajı mevcut parola doğrulamasından sonra gelir).
+`gorev9.spec.ts` (E2E): yönetici Ekip'te “Parola sıfırla” → geçici parola → kullanıcı onunla girer → Hesabım'a zorlanır (klinik sayfası geri yönlenir) → yaygın parola reddedilir → güçlü parola → Bugün.
 
 ### Güvenlik testleri (`security.test.ts`, 12)
 API başlıkları (nosniff, CSP, X-Frame-Options, no-store, x-powered-by yok) · üretimde HSTS + `HttpOnly; Secure; SameSite=Lax` · CSRF başlığı yoksa 403 · gövde sınırı 413 (genel) / içe aktarma 6 MB'a kadar kabul · hata yanıtında iç ayrıntı yok · yanlış parolada hesap varlığı sızmaz · rol öznitelikleri (app/worker/backup) ve yedek rolünde yalnız SELECT · uygulama rolü DELETE/CREATE/RLS kapatma yapamaz · oturum belirteci bytea özet, webhook sırrı şifreli · `.env.example` değersiz, depoda sır kalıbı yok · hesap başına 20 hatalı girişte 429 (IP değişse de) · `textlike` LEAKPROOF.
@@ -176,9 +181,17 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - systemd biriminde `OnFailure` `[Service]` altındaydı (sessizce yok sayılırdı) → `[Unit]`.
 - `.env.example` yedek şifrelemesini “PBKDF2” diye tanımlıyordu (gerçekte scrypt).
 
+## Görev 9'da bulunup düzeltilen hatalar
+- Parola değiştirme/sıfırlama akışının hiç olmaması (en önemli bulgu) → ADR-056.
+- NUL karakteri → 500; takvimsel geçersiz tarih → 500 → gövde temizliği + ortak tarih doğrulayıcı + veri biçimi hatalarının 422'ye eşlenmesi (ADR-057).
+- Görünmez yön/sıfır genişlik karakterler ad alanlarında.
+- Oturumda boşta kalma süresi yoktu; MFA kodunda deneme sınırı yoktu; parola politikası yalnız uzunluktu.
+- Contracts paketinde `.js` uzantılı iç import Next derlemesini kırdı (Görev 9 düzenlemesinde oluştu; tam E2E yakaladı).
+- Test verisi: yeni politika “Sentetik-Parola-123”ü (kullanıcı adında “Sentetik” geçiyor) doğru şekilde reddetti → test parolası değişti.
+
 ## Çalıştırılmayan / yapılamayan
 - Performans: temel uçlar ve sayfalar 100k/1M/50 kullanıcıda ölçüldü (Görev 7); **raporlar ve haftalık ajanda büyük veriyle ölçülmedi**; ölçüm tek makinede (DB + API + yük üreteci), TLS/internet gecikmesi yok.
-- Bağımsız sızma testi **yapılmadı**. Saatlik zamanlanmış yedek ve insanlı uçtan uca geri yükleme tatbikatı **yapılmadı** (araçlar hazır).
+- Bağımsız sızma testi **yapılmadı** (Görev 9 iç denetimi yerine geçmez). Saatlik zamanlanmış yedek ve insanlı uçtan uca geri yükleme tatbikatı **yapılmadı** (araçlar hazır).
 - Gerçek kaynak sistem dışa aktarım dosyasıyla içe aktarma **denenmedi** (yalnız sentetik).
 - Resmî ürün takip bildirimi yükümlülüğü ve kapsamı doğrulanmadı; stok yalnız iç izlenebilirlik sağlar.
 - **Gerçek sağlayıcı entegrasyonu yok:** SMS, WhatsApp, ödeme kuruluşu, e-Fatura/e-Arşiv/e-SMM, DHBS/e-Nabız, imza/doğrulama için yetkili doküman, sözleşme ve sandbox erişimi bu oturumda yoktu; sandbox testi **yapılmadı**. Tüm Görev 5 testleri MOCK adaptör ve VİADENT'in kendi webhook imza biçimiyle; gerçek sağlayıcı imza biçimi adaptörde ayrıca doğrulanmalı.

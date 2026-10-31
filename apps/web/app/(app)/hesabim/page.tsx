@@ -21,6 +21,21 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<ApiFailure | null>(null);
   const forced = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("zorunlu") === "1";
+  const pwForced = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("parola") === "1";
+  const [pw, setPw] = useState({ currentPassword: "", newPassword: "", newPassword2: "", code: "" });
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwErr, setPwErr] = useState<ApiFailure | null>(null);
+  async function changePassword() {
+    if (pwBusy) return;
+    if (pw.newPassword !== pw.newPassword2) { setPwErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Yeni parolalar aynı değil.", field_errors: { newPassword2: "Parolalar eşleşmiyor." } })); return; }
+    setPwBusy(true); setPwErr(null);
+    try {
+      await api("/me/password", { body: { currentPassword: pw.currentPassword, newPassword: pw.newPassword, ...(pw.code ? { code: pw.code } : {}) } });
+      setPw({ currentPassword: "", newPassword: "", newPassword2: "", code: "" });
+      toast.show("success", "Parola değiştirildi. Diğer oturumlarınız kapatıldı.");
+      if (pwForced) { window.location.href = "/bugun"; return; }
+    } catch (e) { setPwErr(e as ApiFailure); } finally { setPwBusy(false); }
+  }
 
   useEffect(() => {
     if (!setup) { setQr(null); return; }
@@ -49,9 +64,24 @@ export default function AccountPage() {
   return (
     <>
       <div className="page-head"><div><h1>Hesabım</h1><p>{session.user.fullName} · {session.user.email}</p></div></div>
+      {pwForced && (
+        <Alert kind="warning" title="Devam etmek için yeni parola belirleyin">Geçici parolayla giriş yaptınız. Kendi parolanızı belirleyene kadar diğer ekranlar kapalıdır.</Alert>
+      )}
       {forced && (!s || !s.enabled) && (
         <Alert kind="warning" title="Devam etmek için iki adımlı doğrulamayı açın">Kliniğiniz rolünüz için iki adımlı doğrulamayı zorunlu kılmıştır. Kurulum birkaç dakika sürer.</Alert>
       )}
+      <section className="card card-pad stack" style={{ maxWidth: 720, marginTop: 16 }}>
+        <div className="row" style={{ gap: 10 }}><KeyRound size={20} aria-hidden /><h2>Parola</h2></div>
+        <p className="muted small">Yeni parola en az 10 karakter olmalıdır. Değişiklikten sonra bu cihaz dışındaki tüm oturumlarınız kapatılır.{s?.enabled ? " İki adımlı doğrulama açık olduğu için güncel kodunuz da istenir." : ""}</p>
+        {pwErr && <Alert kind="error">{pwErr.message}</Alert>}
+        <div className="stack" style={{ maxWidth: 360 }}>
+          <TextField label="Mevcut parola" type="password" autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} error={pwErr?.fieldErrors.currentPassword} />
+          <TextField label="Yeni parola" type="password" autoComplete="new-password" value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} error={pwErr?.fieldErrors.newPassword} />
+          <TextField label="Yeni parola (tekrar)" type="password" autoComplete="new-password" value={pw.newPassword2} onChange={(e) => setPw({ ...pw, newPassword2: e.target.value })} error={pwErr?.fieldErrors.newPassword2} />
+          {s?.enabled && <TextField label="İki adımlı doğrulama kodu" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={pw.code} onChange={(e) => setPw({ ...pw, code: e.target.value.replace(/\D/g, "") })} error={pwErr?.fieldErrors.code} />}
+          <div><button className="btn btn-primary" disabled={pwBusy || pw.currentPassword.length < 1 || pw.newPassword.length < 10} onClick={() => void changePassword()}>{pwBusy ? "Değiştiriliyor…" : "Parolayı değiştir"}</button></div>
+        </div>
+      </section>
       <section className="card card-pad stack" style={{ maxWidth: 720, marginTop: 16 }}>
         <div className="row" style={{ gap: 10 }}><KeyRound size={20} aria-hidden /><h2>İki adımlı doğrulama</h2>
           {s && (s.enabled ? <span className="badge badge-success">Açık</span> : <span className="badge badge-neutral">Kapalı</span>)}

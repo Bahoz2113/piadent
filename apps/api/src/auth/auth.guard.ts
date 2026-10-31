@@ -51,6 +51,8 @@ export class AuthGuard implements CanActivate {
       });
     }
 
+    // Geçici parola (yönetici sıfırlaması): klinik verisine erişmeden önce parola değiştirilmeli (Hesabım uçları NoTenant'tır).
+    if (session.mustChangePassword) throw new AppError(403, "PASSWORD_CHANGE_REQUIRED", "Geçici parolayla girdiniz. Devam etmek için Hesabım'dan yeni parola belirleyin.");
     // Politika: bu roller iki adımlı doğrulama kurmadan klinik verisine erişemez (kurulum uçları NoTenant'tır).
     if (this.config.requireMfaRoles.includes(membership.role) && !session.mfaEnabled) {
       throw new AppError(403, "MFA_ENROLLMENT_REQUIRED", "Bu rol için iki adımlı doğrulama zorunlu. Hesabım sayfasından kurun.");

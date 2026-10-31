@@ -56,3 +56,12 @@ export const ClinicExport = z.object({ reason: z.string().trim().min(5, "Dışa 
 
 export const MfaCode = z.object({ code: z.string().trim().regex(/^\d{6}$/, "6 haneli kodu girin") });
 export const MfaLogin = z.object({ challenge: z.string().min(20).max(200), code: z.string().trim().regex(/^\d{6}$/, "6 haneli kodu girin") });
+
+/** Parola değişikliği: mevcut parola zorunlu (oturum ele geçirilse bile parola değiştirilemez); MFA açıksa güncel kod da istenir. */
+export const PasswordChange = z.object({
+  currentPassword: z.string().min(1, "Mevcut parola gerekli").max(200),
+  newPassword: z.string().min(10, "Yeni parola en az 10 karakter olmalı").max(200),
+  code: z.string().trim().regex(/^\d{6}$/, "6 haneli kodu girin").optional(),
+}).refine((v) => v.currentPassword !== v.newPassword, { message: "Yeni parola eskisiyle aynı olamaz", path: ["newPassword"] });
+/** Yönetici: üyenin parolasını sıfırlar — tek kullanımlık geçici parola üretilir, kullanıcı ilk girişte değiştirmek zorundadır. */
+export const PasswordReset = z.object({ reason: z.string().trim().min(5, "Gerekçe gerekli").max(300) });

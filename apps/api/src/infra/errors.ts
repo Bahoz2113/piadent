@@ -74,6 +74,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       body = { code: status === 404 ? "NOT_FOUND" : "HTTP_ERROR", message: status === 404 ? "Adres bulunamadı." : "İstek işlenemedi.", correlation_id };
+    } else if (pg?.code === "22021" || pg?.code === "22P02" || pg?.code === "22001" || pg?.code === "22008" || pg?.code === "22003") {
+      // Veri biçimi hataları (geçersiz bayt dizisi, metin/sayı/tarih biçimi, taşma): istemci hatasıdır, 500 değil. İkinci savunma;
+      // birincisi gövde temizliği ve şema doğrulaması.
+      status = 422;
+      body = { code: "VALIDATION_FAILED", message: "Girdi biçimi geçersiz.", correlation_id };
     } else if ((exception as { type?: string })?.type === "entity.too.large") {
       // body-parser sınırı (Express ara katmanı, Nest istisnası değil)
       status = 413;

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req, Res } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { InvitationAccept, ROLE_LABELS, type Role } from "@viadent/contracts";
+import { passwordProblem } from "@viadent/contracts";
 import { hashPassword, hashToken, verifyPassword, DUMMY_HASH } from "@viadent/db";
 import { Public } from "../auth/decorators.js";
 import { AuthService } from "../auth/auth.service.js";
@@ -73,6 +74,8 @@ export class InvitationsController {
         await clearFails(this.db.pool, key);
         userId = existing.rows[0].id;
       } else {
+        const weak = passwordProblem(input.password, { email: inv.email, name: inv.full_name });
+        if (weak) throw Errors.validation({ password: weak });
         await verifyPassword(input.password, DUMMY_HASH);
         const u = await c.query("insert into users(email, password_hash, full_name) values ($1,$2,$3) returning id",
           [inv.email.toLowerCase(), await hashPassword(input.password), inv.full_name]);

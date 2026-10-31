@@ -17,6 +17,8 @@ export interface SessionRow {
   activeMembershipId: string | null;
   lastSeenAt: Date;
   mfaEnabled: boolean;
+  /** Geçici parolayla girildi: yalnız Hesabım (parola değiştirme) açık. */
+  mustChangePassword: boolean;
 }
 
 export interface MembershipRow {
@@ -112,17 +114,22 @@ export class AuthService {
 
   async resolveSession(token: string): Promise<SessionRow | null> {
     const r = await this.db.pool.query(
-      `select s.id, s.user_id, s.active_membership_id, s.last_seen_at, u.full_name, u.email, (u.mfa_enabled_at is not null) as mfa
+      `select s.id, s.user_id, s.active_membership_id, s.last_seen_at, u.full_name, u.email, (u.mfa_enabled_at is not null) as mfa, u.must_change_password
          from sessions s join users u on u.id = s.user_id
         where s.token_hash = $1 and s.revoked_at is null and s.expires_at > now() and u.status = 'active'`,
       [hashToken(token)],
     );
     const s = r.rows[0];
     if (!s) return null;
-    if (Date.now() - new Date(s.last_seen_at).getTime() > 5 * 60_000) {
-      await this.db.pool.query("update sessions set last_seen_at = now() where id = $1", [s.id]);
+    const idleMs = Date.now() - new Date(s.last_seen_at).getTime();
+    if (this.config.sessionIdleMinutes > 0 && idleMs > this.config.sessionIdleMinutes * 60_000) {
+      // Boşta kalan oturum düşer; tekrar giriş gerekir (ADR-056).
+      await this.db.pool.query("update sessions set revoked_at = now() where id = $1 and revoked_at is null", [s.id]);
+      return null;
     }
-    return { sessionId: s.id, userId: s.user_id, userName: s.full_name, email: s.email, activeMembershipId: s.active_membership_id, lastSeenAt: s.last_seen_at, mfaEnabled: s.mfa };
+    // last_seen_at en çok 1 dk'da bir yazılır (yazma yükü); boşta süresi bu toleransla ölçülür.
+    if (idleMs > 60_000) await this.db.pool.query("update sessions set last_seen_at = now() where id = $1", [s.id]);
+    return { sessionId: s.id, userId: s.user_id, userName: s.full_name, email: s.email, activeMembershipId: s.active_membership_id, lastSeenAt: s.last_seen_at, mfaEnabled: s.mfa, mustChangePassword: s.must_change_password };
   }
 
   /** Üyelik her istekte yeniden doğrulanır: iptal edilen üyelik açık oturumda da hemen etkisizdir (AT-20). */
@@ -189,6 +196,7 @@ export class AuthService {
       memberships: memberships.map((m) => ({ id: m.id, tenantName: m.tenantName, role: m.role, roleLabel: ROLE_LABELS[m.role] })),
       permissions: active ? [...permissionsFor(active.role)] : [],
       mfa: { enabled: session.mfaEnabled, required: !!active && this.config.requireMfaRoles.includes(active.role) },
+      mustChangePassword: session.mustChangePassword,
     };
   }
 }

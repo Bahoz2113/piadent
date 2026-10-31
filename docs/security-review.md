@@ -1,4 +1,4 @@
-# Güvenlik gözden geçirmesi (Görev 7, 23.10.2026; Görev 8 güncellemesi aynı gün)
+# Güvenlik gözden geçirmesi (Görev 7, 23.10.2026; Görev 8 ve Görev 9 iç denetimi aynı gün)
 
 Kapsam: Plan §08 “Teknik güvenlik tabanı” maddeleri + Görev 7'de eklenen içe/dışa aktarma, MFA ve yedek. Yöntem: kod incelemesi + otomatik testler (`security.test.ts`, `gorev7.test.ts`, `tenant-isolation.test.ts`, önceki görev testleri) + bağımlılık taraması + depo sır taraması. **Bağımsız sızma testi yapılmadı** (yayın kapısı).
 
@@ -43,6 +43,7 @@ Kapsam: Plan §08 “Teknik güvenlik tabanı” maddeleri + Görev 7'de eklenen
 | A6 | MFA zorunluluğu varsayılan kapalı (yapılandırma) | Orta | Üretim `.env`: `VIADENT_REQUIRE_MFA_ROLES=clinic_admin,finance` — runbook ve kapı listesinde |
 | A7 | ~~API/worker tsx ile~~ → **kapandı (Görev 8)**: derlenmiş tek dosya; tam E2E derlenmiş kodla geçti | — | İmajlar CI'da ilk kez derlenmeli |
 | A8 | ~~İçe aktarma satır verisi süresiz~~ → **kısmen kapandı (Görev 8)**: worker 30 gün sonra temizler (ADR-054) | Düşük | Süreyi danışmanla kesinleştirin |
+| A11 | Kilitleme DoS'u (hesap başına 20 hatalı deneme → 15 dk kilit) | Düşük | Kademeli gecikme veya CAPTCHA değerlendirmesi |
 | A9 | Destek erişimi (VİADENT personelinin müşteri verisine erişimi) için rol, onay ve iz yok | Orta | Tanımlanana kadar destek yalnız ekran paylaşımıyla, müşteri oturumunda |
 | A10 | Ekran okuyucuyla elle erişilebilirlik testi yok (AT-18 kısmi) | — | Pilot kontrol listesinde |
 
@@ -54,6 +55,25 @@ Kapsam: Plan §08 “Teknik güvenlik tabanı” maddeleri + Görev 7'de eklenen
 | S10 | Zod 4'ün `new Function` denemesi her sayfada CSP ihlali üretiyordu (önceden ölçülmemişti) | Düşük | Tarayıcıda JIT kapalı |
 | S11 | Doğrulama hatalarında İngilizce iç mesaj (“Invalid input: expected string…”) kullanıcıya ulaşıyordu | Düşük | Türkçe zod yerel ayarı + eksik alan mesajı |
 | S12 | `.env.example` yedek şifrelemesini yanlış tanımlıyordu (“PBKDF2”; gerçekte scrypt) | Bilgi | Düzeltildi |
+
+## Görev 9 iç güvenlik denetimi (23.10.2026)
+Kapsam: tüm API uçları ve DB katmanının kod incelemesi (yetki, kiracı izolasyonu, dinamik SQL, dosya yolları, webhook doğrulaması, oturum), ardından çalışan sisteme karşı **negatif doğrulama testleri** (`pentest.test.ts`, `gorev9.test.ts`: yetkisiz erişim, çapraz klinik, oturum/CSRF, bozuk girdi, kaba kuvvet, idempotency tekrarı, girdi temizliği). **Bu bir iç denetimdir; bağımsız sızma testi (A1) yerine geçmez.**
+
+| # | Bulgu | Önem | Durum |
+|---|---|---|---|
+| S13 | **Parola değiştirme ve sıfırlama yoktu**: sızan parola değiştirilemez, kayıp parolaya yardım edilemezdi | Yüksek | Kapandı: Hesabım → Parola (mevcut parola + MFA kodu, diğer oturumlar kapanır); yönetici sıfırlaması (geçici parola, zorunlu değişiklik, denetim) — ADR-056, API + E2E testli |
+| S14 | NUL karakteri içeren metin 500 üretiyordu (PostgreSQL 22021) | Orta | Kapandı: gövde temizliği 422 + veri biçimi hataları 422'ye eşlendi — ADR-057 |
+| S15 | Yön değiştirme/sıfır genişlik karakterler ad alanlarına giriyordu (görsel aldatma) | Düşük | Kapandı: sessizce kaldırılır (testli) |
+| S16 | Oturumda boşta kalma süresi yoktu (12 sa mutlak) | Orta | Kapandı: `SESSION_IDLE_MINUTES` (90), testli |
+| S17 | Parola politikası yalnız uzunluktu (“1234567890”, e-postanın kendisi kabul) | Orta | Kapandı: yaygın/ardışık/tekrarlı/ad-e-posta içeren parola reddi; davet kabulünde de |
+| S18 | MFA kurulum/kapatma kodunda deneme sınırı yoktu (ele geçirilmiş oturumla 6 haneli kod taraması) | Orta | Kapandı: kullanıcı başına 5/15 dk |
+| S19 | Takvimsel geçersiz tarih (`2026-02-30`) regex'i geçip DB'de 500 üretiyordu | Düşük | Kapandı: ortak `isoDate` doğrulayıcı |
+| S20 | Kullanıcı kendi açık oturumlarını göremiyor/kapatamıyordu | Düşük | Kapandı: `GET /me/sessions`, `POST /me/sessions/revoke-others` |
+| S21 | Contracts paketinde `.js` uzantılı iç import Next derlemesini kırıyordu (Görev 9 düzenlemesinden) | — | Kapandı |
+
+Doğrulanıp **sorun bulunmayan** alanlar: dinamik SQL yalnız sunucu tarafı sabit listelerden (rapor süzgeçleri, lab durumları, arama sözcükleri parametreli); dosya anahtarı sunucu üretir (yol bileşeni istemciden gelmez), indirme `attachment` + `nosniff`; webhook imzası zamanlama-güvenli karşılaştırma + replay penceresi + tekilleştirme; oturum/davet/MFA belirteçleri özetli; `/session/switch` üyelik sahipliğini doğrular; hata gövdelerinde iç ayrıntı yok; `__proto__` ile prototip kirlenmesi yok; arama limiti ≤ 50; tüm para alanları şema + DB tetikleyicisi; uygulama rolünde DELETE yalnız 3 teknik tabloda.
+
+**Kabul edilen risk:** hesap başına 20 hatalı denemede 15 dk kilit, hedefli kullanıcıyı kısa süre kilitlemek için kötüye kullanılabilir (kilitleme DoS'u). Eşik ve süre bilinçli seçildi; alternatif (kademeli gecikme) sızma testi sonucuna göre değerlendirilecek.
 
 ## Çalıştırılan kontroller
 `pnpm audit` → “No known vulnerabilities found” (23.10.2026). `security.test.ts` 12/12, `gorev7.test.ts` 23/23 (MFA, dışa aktarımda sır yok, çapraz klinik). Depo sır taraması: özel anahtar, AWS/Stripe/Slack/GitHub belirteç kalıpları — 0 bulgu.

@@ -9,6 +9,7 @@ export interface SessionInfo {
   memberships: { id: string; tenantName: string; role: string; roleLabel: string }[];
   permissions: Permission[];
   mfa?: { enabled: boolean; required: boolean };
+  mustChangePassword?: boolean;
 }
 
 interface Ctx {
@@ -36,7 +37,8 @@ export function SessionProvider({ children, fallback }: { children: ReactNode; f
     api<SessionInfo>("/session")
       .then((s) => {
         setPageContext(s.activeMembership?.id ?? "");
-        // Rolü için iki adımlı doğrulama zorunlu ama kurulmamış: yalnız Hesabım sayfası açılır.
+        // Geçici parola veya zorunlu MFA kurulmamış: yalnız Hesabım açılır.
+        if (s.mustChangePassword && window.location.pathname !== "/hesabim") { window.location.href = "/hesabim?parola=1"; return; }
         if (s.mfa?.required && !s.mfa.enabled && window.location.pathname !== "/hesabim") { window.location.href = "/hesabim?zorunlu=1"; return; }
         setSession(s);
       })
@@ -47,6 +49,7 @@ export function SessionProvider({ children, fallback }: { children: ReactNode; f
       if (f.status === 401) window.location.href = "/giris";
       if (f.code === "CONTEXT_CHANGED" || f.code === "MEMBERSHIP_REVOKED") setContextChanged(true);
       if (f.code === "MFA_ENROLLMENT_REQUIRED" && window.location.pathname !== "/hesabim") window.location.href = "/hesabim?zorunlu=1";
+      if (f.code === "PASSWORD_CHANGE_REQUIRED" && window.location.pathname !== "/hesabim") window.location.href = "/hesabim?parola=1";
     });
   }, []);
 

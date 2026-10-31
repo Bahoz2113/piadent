@@ -1,9 +1,9 @@
 import { z } from "zod";
+import { isoDate } from "./zdate";
 import { FINDING_TYPES, LOCATION_KINDS, SURFACES, TOOTH_SCOPES } from "./dental";
 import { isMoney } from "./money";
 
 const uuid = z.uuid("Geçersiz kimlik");
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tarih gg.aa.yyyy biçiminde olmalı");
 const money = z.string().trim().refine(isMoney, "Tutar 1250.00 biçiminde olmalı (en çok 2 ondalık)");
 const opt = (max: number) => z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().max(max).optional());
 

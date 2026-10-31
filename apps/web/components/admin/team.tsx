@@ -33,6 +33,15 @@ export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: stri
     void act(m.id, () => api(`/team/${m.id}/mfa-reset`, { body: { reason } }), "İki adımlı doğrulama sıfırlandı.");
   }
 
+  function resetPassword(m: Member) {
+    const reason = window.prompt(`${m.fullName} için geçici parola üretilecek; tüm oturumları kapanır ve ilk girişte parola değiştirmesi istenir.\n\nKimliğini nasıl doğruladınız? (zorunlu)`);
+    if (!reason || !reason.trim()) return;
+    void act(m.id, async () => {
+      const r = await api<{ temporaryPassword: string }>(`/team/${m.id}/password-reset`, { body: { reason } });
+      window.prompt("Geçici parola (yalnız şimdi gösterilir; güvenli kanaldan iletin):", r.temporaryPassword);
+    }, "Parola sıfırlandı.");
+  }
+
   return (
     <div className="stack">
       <section className="card">
@@ -60,6 +69,7 @@ export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: stri
                     <td>{m.mfaEnabled ? <span className="badge badge-success">Açık</span> : <span className="badge badge-neutral">Kapalı</span>}</td>
                     <td className="desktop-only">{fmtDate(m.createdAt)}</td>
                     <td style={{ textAlign: "right" }}>
+                      {m.status === "active" && !m.isSelf && <button className="btn btn-sm" disabled={busy === m.id} onClick={() => resetPassword(m)} style={{ marginRight: 6 }}>Parola sıfırla</button>}
                       {m.status === "active" && !m.isSelf && m.mfaEnabled && <button className="btn btn-sm" disabled={busy === m.id} onClick={() => resetMfa(m)} style={{ marginRight: 6 }}>Doğrulayıcıyı sıfırla</button>}
                       {m.status === "active" && !m.isSelf && <button className="btn btn-sm btn-danger" disabled={busy === m.id} onClick={() => revoke(m)}><ShieldOff size={15} aria-hidden />Erişimi kaldır</button>}
                       {m.isSelf && <span className="muted small">Siz</span>}

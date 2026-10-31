@@ -128,5 +128,8 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 - `import_batches.rows_purged_at` — saklama süresi dolunca satır verisinin temizlendiği an (ADR-054); worker yalnız `import_rows.data/errors/warnings` sütunlarını güncelleyebilir.
 - Şifreli sır biçimi `v2.<kid>.…` (ADR-052) — şema değişikliği yok, mevcut `text` sütunları.
 
+## Görev 9 (0011_password)
+- `users.password_changed_at`, `users.must_change_password` (geçici parolayla giriş → yalnız Hesabım açık; ADR-056). Oturum boşta kalma süresi şema değişikliği gerektirmez (`sessions.last_seen_at` zaten var).
+
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).

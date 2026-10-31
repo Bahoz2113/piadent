@@ -58,8 +58,8 @@ test("yönetici daveti → yeni kullanıcı kabul eder ve doğru rolle girer", a
   const guest = await ctx.newPage();
   await guest.goto(new URL(link).pathname);
   await expect(guest.getByText(/· Asistan/)).toBeVisible();
-  await guest.getByRole("textbox", { name: "Yeni parola", exact: true }).fill("Sentetik-Parola-123");
-  await guest.getByRole("textbox", { name: "Parola (tekrar)", exact: true }).fill("Sentetik-Parola-123");
+  await guest.getByRole("textbox", { name: "Yeni parola", exact: true }).fill("Guvenli-Deneme-Parolasi-7");
+  await guest.getByRole("textbox", { name: "Parola (tekrar)", exact: true }).fill("Guvenli-Deneme-Parolasi-7");
   await guest.getByRole("button", { name: "Kabul et ve giriş yap" }).click();
   await expect(guest.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
   if (guest.viewportSize()!.width < 900) await guest.getByRole("button", { name: "Menüyü aç" }).click();

@@ -3,11 +3,11 @@
  * Tutarlar metin ("1250.00"), miktarlar en çok 3 ondalık metin ("2.5"); kayan nokta yok.
  */
 import { z } from "zod";
+import { isoDate } from "./zdate";
 import { isMoney, toMinor } from "./money";
 import { ALL_TEETH } from "./dental";
 
 const uuid = z.uuid("Geçersiz kimlik");
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tarih gg.aa.yyyy biçiminde olmalı");
 const positiveMoney = z.string().trim().refine(isMoney, "Tutar 1250.00 biçiminde olmalı (en çok 2 ondalık)")
   .refine((v) => !isMoney(v) || toMinor(v) > 0n, "Tutar sıfırdan büyük olmalı");
 const optText = (max: number) => z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().max(max).optional());
