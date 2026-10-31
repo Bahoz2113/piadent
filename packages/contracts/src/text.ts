@@ -63,3 +63,10 @@ export function isValidTckn(v: string): boolean {
   const d11 = n.slice(0, 10).reduce((a, b) => a + b, 0) % 10;
   return d10 === n[9] && d11 === n[10];
 }
+
+/** Görüntüleme: +905551234567 → "+90 555 123 45 67"; diğer ülkeler olduğu gibi. */
+export function formatPhone(e164: string | null): string | null {
+  if (!e164) return null;
+  const m = /^\+90(\d{3})(\d{3})(\d{2})(\d{2})$/.exec(e164);
+  return m ? `+90 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : e164;
+}
