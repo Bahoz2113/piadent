@@ -328,6 +328,74 @@ export async function seed(connectionString: string, opts: { password?: string; 
           await c.query("insert into integration_connections(tenant_id, kind, provider, mode, status, blocked_reason) values ($1,$2,'erisim-bekleniyor','sandbox','blocked',$3)",
             [tenantId, kind, reason]);
         }
+        // Görev 6: sentetik laboratuvarlar ve tedarikçi, iş emirleri (gecikmiş / kabul bekleyen / taslak), maliyet → cari borç,
+        // stok kalemleri (lot takipli implant ve anestezi kartuşu, takipsiz eldiven), girişler ve bir hasta kullanımı.
+        const sup = async (kind: string, name: string) => (await c.query(
+          "insert into suppliers(tenant_id, kind, name, contact_name, phone, note, created_by) values ($1,$2,$3,'Sentetik yetkili','+905550009999','Sentetik demo kaydı',$4) returning id",
+          [tenantId, kind, name, creator])).rows[0].id as string;
+        const labA = await sup("lab", `Ege Diş Laboratuvarı (sentetik ${t.key})`);
+        const labB = await sup("lab", `Mavi Protez Lab (sentetik ${t.key})`);
+        const med = await sup("medical", `Medikal Depo A.Ş. (sentetik ${t.key})`);
+        const today6 = localDate(now, tz);
+        const order = async (pIdx: number, supplierId: string, work: string, teeth: string[], status: string, target: string | null, extra: Record<string, unknown> = {}) => {
+          if (pIdx >= patientIds.length) return null;
+          const no = (await c.query(
+            `insert into tenant_counters(tenant_id, name, value) values ($1,'lab_order_no',1)
+             on conflict (tenant_id, name) do update set value = tenant_counters.value + 1 returning value`, [tenantId])).rows[0].value;
+          const r = await c.query(
+            `insert into lab_orders(tenant_id, order_no, patient_id, practitioner_id, supplier_id, work_type, teeth, shade, instructions, target_date, status,
+               sent_at, received_at, created_by, created_at)
+             values ($1,$2,$3,$4,$5,$6,$7,'A2','Sentetik demo talimatı',$8,$9,$10,$11,$12, now() - interval '6 days') returning id`,
+            [tenantId, no, patientIds[pIdx], pracIds[0], supplierId, work, teeth, target, status, extra.sent ?? null, extra.received ?? null, creator]);
+          await c.query("insert into lab_events(tenant_id, lab_order_id, kind, to_status, at, by_user) values ($1,$2,'created','draft', now() - interval '6 days',$3)",
+            [tenantId, r.rows[0].id, creator]);
+          if (status !== "draft") await c.query("insert into lab_events(tenant_id, lab_order_id, kind, from_status, to_status, at, by_user) values ($1,$2,'sent','draft','sent', now() - interval '5 days',$3)",
+            [tenantId, r.rows[0].id, creator]);
+          if (status === "received") await c.query("insert into lab_events(tenant_id, lab_order_id, kind, from_status, to_status, by_user) values ($1,$2,'received','sent','received',$3)",
+            [tenantId, r.rows[0].id, creator]);
+          return r.rows[0].id as string;
+        };
+        await order(0, labA, "Zirkonyum kron", ["16"], "sent", addDays(today6, -1), { sent: new Date(now.getTime() - 5 * 86400000) });
+        const recvId = await order(1, labB, "Gece plağı (sentetik)", [], "received", addDays(today6, 1),
+          { sent: new Date(now.getTime() - 5 * 86400000), received: now });
+        await order(2, labA, "Geçici kron", ["21", "22"], "draft", null);
+        if (recvId) {
+          const costId = (await c.query("select gen_random_uuid() as id")).rows[0].id;
+          const bill = await c.query(
+            `insert into supplier_entries(tenant_id, supplier_id, kind, amount, description, source, source_id, occurred_at, created_by)
+             values ($1,$2,'bill',1800.00,'İş emri 2 · Gece plağı (sentetik)','lab_cost',$3, now(),$4) returning id`, [tenantId, labB, costId, creator]);
+          await c.query(
+            "insert into lab_costs(id, tenant_id, lab_order_id, stage, amount, description, supplier_entry_id, created_by) values ($1,$2,$3,'initial',1800.00,'Gece plağı (sentetik)',$4,$5)",
+            [costId, tenantId, recvId, bill.rows[0].id, creator]);
+        }
+        const item = async (code: string, name: string, unit: string, track: boolean, min: string) => (await c.query(
+          "insert into stock_items(tenant_id, code, name, unit, category, track_lots, min_level, created_by) values ($1,$2,$3,$4,'Sentetik',$5,$6,$7) returning id",
+          [tenantId, code, name, unit, track, min, creator])).rows[0].id as string;
+        const imp = await item("IMP-01", "İmplant fikstürü 4.0×10 (sentetik)", "adet", true, "2");
+        const ans = await item("ANS-01", "Anestezi kartuşu (sentetik)", "kartus", true, "20");
+        const eld = await item("ELD-01", "Muayene eldiveni (sentetik)", "kutu", false, "5");
+        const lot = async (itemId: string, no: string, exp: string) => (await c.query(
+          "insert into stock_lots(tenant_id, item_id, lot_no, expiry_date) values ($1,$2,$3,$4) returning id", [tenantId, itemId, no, exp])).rows[0].id as string;
+        const impLot = await lot(imp, "IMPL-2026-A", addDays(today6, 400));
+        const ansLot = await lot(ans, "KRT-2611", addDays(today6, 20));
+        const mv = async (itemId: string, lotId: string | null, kind: string, qty: string, extra: { cost?: string; supplier?: string; patient?: string; reason?: string } = {}) =>
+          (await c.query(
+            `insert into stock_movements(tenant_id, item_id, lot_id, kind, quantity, unit_cost, supplier_id, patient_id, reason, occurred_at, created_by)
+             values ($1,$2,$3,$4,$5,$6,$7,$8,$9, now() - interval '2 days',$10) returning id`,
+            [tenantId, itemId, lotId, kind, qty, extra.cost ?? null, extra.supplier ?? null, extra.patient ?? null, extra.reason ?? null, creator])).rows[0].id as string;
+        const impRcpt = await mv(imp, impLot, "receipt", "5", { cost: "1500.00", supplier: med });
+        await c.query(
+          `insert into supplier_entries(tenant_id, supplier_id, kind, amount, description, document_no, source, source_id, occurred_at, created_by)
+           values ($1,$2,'bill',7500.00,'Stok girişi · İmplant fikstürü × 5 (sentetik)','SNT-0001','stock_receipt',$3, now() - interval '2 days',$4)`, [tenantId, med, impRcpt, creator]);
+        await mv(ans, ansLot, "receipt", "30", { supplier: med });
+        await mv(eld, null, "receipt", "4", { supplier: med });
+        await mv(imp, impLot, "usage", "-1", { patient: patientIds[0], reason: "Sentetik demo kullanımı" });
+        const bankId = cash.rows.find((r) => r.kind === "bank")!.id;
+        const sp = await c.query(
+          `insert into supplier_entries(tenant_id, supplier_id, kind, amount, description, cash_account_id, occurred_at, created_by)
+           values ($1,$2,'payment',3000.00,'Sentetik kısmi ödeme',$3, now() - interval '1 day',$4) returning id, occurred_at`, [tenantId, med, bankId, creator]);
+        await c.query("insert into cash_movements(tenant_id, cash_account_id, amount, source, source_id, occurred_at) values ($1,$2,-3000.00,'supplier_payment',$3,$4)",
+          [tenantId, bankId, sp.rows[0].id, sp.rows[0].occurred_at]);
         await c.query(
           "insert into audit_events(tenant_id, actor_user_id, action, entity_type, changes) values ($1,$2,'seed.synthetic','tenant',$3)",
           [tenantId, creator, JSON.stringify({ note: "Sentetik demo verisi yüklendi" })],

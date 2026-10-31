@@ -13,8 +13,8 @@ const NAV = [
   { href: "/ajanda", label: "Ajanda", icon: CalendarDays },
   { href: "/tedavi", label: "Tedavi", icon: Stethoscope },
   { href: "/finans", label: "Finans", icon: Wallet },
-  { href: "/operasyon", label: "Operasyon", icon: ClipboardList, soon: true },
-  { href: "/raporlar", label: "Raporlar", icon: BarChart3, soon: true },
+  { href: "/operasyon", label: "Operasyon", icon: ClipboardList },
+  { href: "/raporlar", label: "Raporlar", icon: BarChart3 },
   { href: "/yonetim", label: "Yönetim", icon: Settings2 },
 ];
 
@@ -36,9 +36,9 @@ export function Shell({ children }: { children: ReactNode }) {
           <span className="brand-mark" aria-hidden>V</span>
           <span className="brand-text">VİADENT<small>Kliniğin akışı, tek yerde.</small></span>
         </div>
-        {NAV.map(({ href, label, icon: Icon, soon }) => (
+        {NAV.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className="navlink" aria-current={path.startsWith(href) ? "page" : undefined} title={label}>
-            <Icon size={19} aria-hidden /><span>{label}</span>{soon && <em className="soon">Plan</em>}
+            <Icon size={19} aria-hidden /><span>{label}</span>
           </Link>
         ))}
         <button className="navlink desktop-only" style={{ background: "none", border: 0, cursor: "pointer", marginTop: 8 }} onClick={() => setCollapsed((c) => !c)} aria-pressed={collapsed}>

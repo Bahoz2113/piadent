@@ -103,7 +103,17 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 - `online_payment_requests` — ödeme bağlantısı isteği (tahsilat değildir), durum, MOCK bağlantı, bağlanan ödeme.
 - Değişiklikler: `payments.source` (manual|provider) + tekil `provider_ref`, yöntem `online`; `refunds.provider_ref`, yöntem `online`; `cash_accounts.kind = 'provider'`; `messages.integration_job_id`; görev türleri `integration_dead`, `integration_approval`. Dar `SECURITY DEFINER` `app.webhook_target(uuid)`.
 
+## Görev 6 tabloları (`0007_operations.sql`)
+- `suppliers` — laboratuvar / medikal firma / diğer; iletişim, vergi no; etkin/pasif.
+- `supplier_entries` — cari hareketi: `bill` (fatura, laboratuvar maliyeti, stok girişi; kaynak + kaynak kimliği) veya `payment` (kasa hesabı zorunlu, kasa hareketi `supplier_payment`); düzeltme tam ters kayıt (`reverses_id`, gerekçe; ters kaydın tersi yok); yalnız ekleme.
+- `lab_orders` — klinik bazında sıra no, hasta, hekim, laboratuvar, plan kalemi/prova randevusu (isteğe bağlı), iş, FDI dişler, renk, teknik talimat, hedef teslim, durum (tetikleyicili makine), revizyon sayısı, gönderim/teslim/kabul zamanları, satır sürümü.
+- `lab_events` — sıra numaralı olay günlüğü (açıldı, gönderildi, üretimde, teslim alındı, revizyon istendi, kabul, iptal, not, maliyet, hedef değişti); yalnız ekleme.
+- `lab_costs` — aşama (ilk iş / revizyon N / ek), tutar, bağlı cari borç; tam ters kayıt.
+- `commission_rule_versions.basis` (`collection` | `treatment`; hekim × geçerlilik tarihinde tek kural); `commission_accruals.basis` + `performed_procedure_id` (tedavi primi; tek ters kayıt indeksi).
+- `commission_payouts` — prim ödemesi (kasa hareketi `commission_payout`), dönem, not; tahakkuku aşamaz (tetikleyici + kilit); tam ters kayıt.
+- `stock_items` (kod, ad, birim, kategori, lot takibi, en az seviye; miktar alanı YOK), `stock_lots` (lot no, SKT), `stock_movements` (giriş/kullanım/fire/düzeltme/iade, işaretli miktar, birim maliyet, tedarikçi, hasta + gerçekleşen işlem, gerekçe; eksi stok tetikleyicisi; tam ters kayıt).
+- `cash_movements.source` + `supplier_payment`, `commission_payout`; `tasks.kind` + `lab_overdue`, `lab_review`, `lab_not_ready`, `stock_low`, `lot_expiring`.
+
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).
-- Görev 6: `lab_order`, `lab_event`, `commission_rule_version`, `commission_accrual`, `commission_payout`, `inventory_item`, `lot`, `stock_movement`.
 - Görev 7: `import_batch`.

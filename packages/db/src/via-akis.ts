@@ -7,6 +7,7 @@
  */
 import type pg from "pg";
 import { refreshGorev4 } from "./readiness.js";
+import { refreshGorev6 } from "./operations-akis.js";
 
 export interface AkisResult { created: number; closed: number }
 
@@ -198,5 +199,8 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
   const g4 = await refreshGorev4(c, tenantId, tz, now);
   created += g4.created;
   closed += g4.closed;
+  const g6 = await refreshGorev6(c, tenantId, tz, now);
+  created += g6.created;
+  closed += g6.closed;
   return { created, closed };
 }

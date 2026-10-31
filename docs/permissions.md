@@ -66,10 +66,29 @@ Notlar:
 
 Dört göz: onay yetkisi olsa bile **isteği açan kişi kendi isteğini onaylayamaz** (API `SAME_USER_APPROVAL`, DB check). Online ödeme bağlantısı `payment.write` (sekreter, finans), sağlayıcıdan iade isteği `payment.refund` (finans, yönetici) ister. Webhook ucu oturumsuzdur; yetki yerine HMAC imza + zaman penceresi + bağlantı kimliği kullanılır, kiracı bağlantıdan çözülür (ADR-039).
 
+## Operasyon ve rapor yetkileri (Görev 6)
+| Yetki | Yönetici | Hekim | Sekreter | Asistan | Finans |
+|---|---|---|---|---|---|
+| `lab.read` / `lab.write` — iş emri görme, açma, gönderme, teslim alma | ✔ / ✔ | ✔ / ✔ | ✔ / ✔ | ✔ / ✔ | ✔ / — |
+| `lab.decide` — kabul / revizyon kararı | — | ✔ | — | — | — |
+| `lab.cost` — maliyeti görme ve girme (cari borç) | ✔ | — | — | — | ✔ |
+| `supplier.manage` — tedarikçi/laboratuvar tanımı | ✔ | — | — | — | ✔ |
+| `supplier.ledger` — cari fatura/ödeme ve ters kayıt; borçlu stok girişi | ✔ | — | — | — | ✔ |
+| `commission.payout` — prim ödemesi ve ters kaydı | — | — | — | — | ✔ |
+| `stock.read` / `stock.write` / `stock.manage` | ✔ / ✔ / ✔ | ✔ / ✔ / — | — | ✔ / ✔ / — | ✔ / — / — |
+| `report.operations` — randevu, kontrol, laboratuvar, mesaj, belge sorguları | ✔ | — | ✔ | — | — |
+| `report.clinical` — tedavi, plan, aylık işlem, hekim-hasta (hekim yalnız kendi) | ✔ | ✔ | — | — | — |
+| `finance.read` — gelir–gider, nakit, ciro, borç, prim, online ödeme, cari raporları | ✔ | — | — | — | ✔ |
+| `report.analytics` — işletme analizi | ✔ | — | — | — | ✔ |
+| `report.export` — CSV (denetlenir) | ✔ | — | — | — | ✔ |
+| `audit.clinic` — klinik geneli LOG | ✔ | — | — | — | — |
+
+Hekimin klinik raporlarda yalnız kendi kayıtlarını görmesi sunucuda üyelik → hekim eşlemesiyle uygulanır; istemcinin gönderdiği hekim kimliği ezilir. Laboratuvar maliyeti yetkisiz rollerin yanıtında alan olarak hiç bulunmaz.
+
 ## Henüz uygulanmayan roller
 - **Laboratuvar dış kullanıcısı** (P1): yalnız atanmış iş ve gerekli teknik bilgi.
 - **Hasta / yetkili yakın** (P1): portal; yakınlık tek başına yetki değildir.
 - **VİADENT destek**: süreli, amaçlı, kayıtlı erişim; varsayılan hasta içeriği yok.
 
 ## Test kanıtları
-AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`), finans rolleri ve çapraz tenant (`gorev3.test.ts`, E2E `gorev3.spec.ts`), belge/dosya/iletişim rolleri ve çapraz tenant (`gorev4.test.ts`, E2E `gorev4.spec.ts`), VİA Köprü yetkileri, dört göz ve çapraz tenant (`gorev5.test.ts`, E2E `gorev5.spec.ts`). Sonuçlar: `verification.md`.
+AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`), finans rolleri ve çapraz tenant (`gorev3.test.ts`, E2E `gorev3.spec.ts`), belge/dosya/iletişim rolleri ve çapraz tenant (`gorev4.test.ts`, E2E `gorev4.spec.ts`), VİA Köprü yetkileri, dört göz ve çapraz tenant (`gorev5.test.ts`, E2E `gorev5.spec.ts`), operasyon/rapor yetkileri, hekim “yalnız kendi”, CSV izni ve çapraz tenant (`gorev6.test.ts`, E2E `gorev6.spec.ts`). Sonuçlar: `verification.md`.

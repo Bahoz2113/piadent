@@ -26,13 +26,17 @@ import { DocumentsController } from "./documents/documents.controller.js";
 import { FilesController } from "./documents/files.controller.js";
 import { CareController } from "./documents/care.controller.js";
 import { BridgeController } from "./bridge/bridge.controller.js";
+import { SuppliersController } from "./operations/suppliers.controller.js";
+import { LabController } from "./operations/lab.controller.js";
+import { StockController } from "./operations/stock.controller.js";
+import { ReportsController } from "./reports/reports.controller.js";
 
 @Module({})
 export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController],
+      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

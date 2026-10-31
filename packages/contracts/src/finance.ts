@@ -66,8 +66,13 @@ export const CashAccountUpsert = z.object({
   kind: z.enum(CASH_ACCOUNT_KINDS),
   active: z.boolean().optional(),
 });
+export const COMMISSION_BASES = ["collection", "treatment"] as const;
+export const COMMISSION_BASIS_LABELS: Record<(typeof COMMISSION_BASES)[number], string> = {
+  collection: "Tahsilat dağıtımı bazlı", treatment: "Tedavi (gerçekleşen işlem) bazlı",
+};
 export const CommissionRuleCreate = z.object({
   practitionerId: uuid.optional(),
+  basis: z.enum(COMMISSION_BASES).default("collection"),
   rate: z.string().trim().regex(/^\d{1,3}(\.\d{1,2})?$/, "Oran yüzde olarak, örn. 10 veya 12.5")
     .refine((v) => Number(v) >= 0 && Number(v) <= 100, "Oran 0–100 arası olmalı"),
   validFrom: isoDate,

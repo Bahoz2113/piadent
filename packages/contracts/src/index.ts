@@ -9,3 +9,5 @@ export * from "./treatment";
 export * from "./finance";
 export * from "./documents";
 export * from "./integrations";
+export * from "./operations";
+export * from "./reports";

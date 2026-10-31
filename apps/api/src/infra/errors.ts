@@ -42,6 +42,16 @@ const FINANCE_ERRORS: Record<string, [number, string, string]> = {
   refund_requires_deallocation: [409, "REFUND_REQUIRES_DEALLOCATION", "İade için önce dağıtımın ters kaydı gerekir."],
   receivable_has_allocations: [409, "RECEIVABLE_HAS_ALLOCATIONS", "Dağıtımı olan alacak iptal edilemez; önce dağıtım ters kayda alınmalı."],
   commission_reverse_rate_mismatch: [409, "COMMISSION_RATE_SNAPSHOT", "Prim ters kaydı orijinal oranla yapılmalı."],
+  payout_exceeds_accrued: [409, "PAYOUT_EXCEEDS_ACCRUED", "Prim ödemesi, hekimin ödenmemiş net tahakkukunu aşıyor."],
+  reversal_mismatch: [409, "REVERSAL_INVALID", "Ters kayıt orijinal kaydın tam tersi olmalı (aynı tutar, hesap ve kalem)."],
+  reversal_of_reversal: [409, "REVERSAL_INVALID", "Ters kayıt yeniden ters çevrilemez; yeni kayıt girin."],
+  stock_negative: [409, "STOCK_INSUFFICIENT", "Stok yetersiz: bu hareket bakiyeyi eksiye düşürür. Önce giriş veya sayım kaydedin."],
+  stock_lot_required: [422, "VALIDATION_FAILED", "Bu kalem lot takiplidir; lot seçin."],
+  stock_lot_not_tracked: [422, "VALIDATION_FAILED", "Bu kalem lot takipli değil; lot seçmeyin."],
+  stock_lot_mismatch: [422, "VALIDATION_FAILED", "Lot bu kaleme ait değil."],
+  lab_invalid_transition: [409, "LAB_INVALID_TRANSITION", "İş emri bu aşamadan istenen aşamaya geçemez."],
+  lab_order_immutable: [409, "IMMUTABLE_RECORD", "İş emrinin hastası ve numarası değiştirilemez."],
+  lab_supplier_locked: [409, "LAB_SUPPLIER_LOCKED", "Gönderilmiş iş emrinin laboratuvarı değiştirilemez; iptal edip yeni iş emri açın."],
 };
 
 interface PgError { code?: string; constraint?: string; message?: string }

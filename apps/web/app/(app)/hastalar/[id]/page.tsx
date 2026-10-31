@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { CalendarPlus, History, Lock, NotebookPen, Pencil, FileText, Wallet, Stethoscope, MessageSquare, LayoutList } from "lucide-react";
+import { CalendarPlus, History, Lock, NotebookPen, Pencil, FileText, Wallet, Stethoscope, MessageSquare, LayoutList, FlaskConical } from "lucide-react";
 import {
   APPOINTMENT_STATUS_LABELS, CONTACT_OUTCOME_LABELS, GENDER_LABELS, GENDERS, NATIONAL_ID_LABELS,
   type AppointmentStatus,
@@ -21,6 +21,8 @@ import { AccountTab } from "@/components/finance/account-tab";
 import { DocumentsTab } from "@/components/documents/documents-tab";
 import { CommunicationTab } from "@/components/communication/communication-tab";
 import { FollowUpsCard } from "@/components/care/follow-ups";
+import { PatientLabTab } from "@/components/operations/lab";
+import { PatientMaterials } from "@/components/operations/stock";
 import { questionLabel } from "@viadent/contracts";
 import { AlertTriangle } from "lucide-react";
 
@@ -41,6 +43,7 @@ const TABS = [
   { id: "saglik", label: "Sağlık", icon: NotebookPen },
   { id: "belgeler", label: "Belgeler", icon: FileText },
   { id: "iletisim", label: "İletişim", icon: MessageSquare },
+  { id: "lab", label: "Laboratuvar", icon: FlaskConical },
   { id: "gecmis", label: "Geçmiş", icon: History },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -174,6 +177,9 @@ function PatientInner() {
         {tab === "tedavi" && <div className="stack" style={{ gap: 16 }}><TreatmentTab patientId={p.id} onChanged={() => { void tasks.reload(); }} /><FollowUpsCard patientId={p.id} /></div>}
         {tab === "belgeler" && <DocumentsTab patientId={p.id} patientName={p.fullName} />}
         {tab === "iletisim" && <CommunicationTab patientId={p.id} />}
+        {tab === "lab" && (can("lab.read") || can("stock.read") ? (
+          <div className="stack" style={{ gap: 16 }}>{can("lab.read") && <PatientLabTab patientId={p.id} />}{can("stock.read") && <PatientMaterials patientId={p.id} />}</div>
+        ) : <div className="card"><EmptyState icon={<Lock size={28} />} title="Laboratuvar bilgisi rolünüze kapalı" /></div>)}
         {tab === "finans" && (can("account.read") ? <AccountTab patientId={p.id} patientName={p.fullName} /> : (
           <div className="card"><EmptyState icon={<Lock size={28} aria-hidden />} title="Hasta hesabı rolünüze kapalı">Borç, tahsilat ve iade bilgileri vezne ve finans yetkisi olan kullanıcılara görünür.</EmptyState></div>
         ))}

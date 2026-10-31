@@ -165,6 +165,8 @@ export default function TodayPage() {
                   {t.kind === "follow_up" && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=iletisim`}>İletişim tercihini gör</Link>}
                   {t.kind === "readiness_missing" && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=belgeler`}>Belgeleri aç</Link>}
                   {(t.kind === "integration_dead" || t.kind === "integration_approval") && can("integration.read") && <Link className="btn btn-sm btn-primary" href="/yonetim?sekme=kopru">{t.kind === "integration_approval" ? "Onay ekranını aç" : "VİA Köprü'de incele"}</Link>}
+                  {(t.kind === "lab_overdue" || t.kind === "lab_review" || t.kind === "lab_not_ready") && t.sourceId && can("lab.read") && <Link className="btn btn-sm btn-primary" href={`/operasyon?is=${t.sourceId}`}>İş emrini aç</Link>}
+                  {(t.kind === "stock_low" || t.kind === "lot_expiring") && can("stock.read") && <Link className="btn btn-sm btn-primary" href="/operasyon?sekme=stok">Stoğa git</Link>}
                   {t.kind === "file_quarantined" && t.patientId && <Link className="btn btn-sm" href={`/hastalar/${t.patientId}?sekme=belgeler`}>Dosyalara git</Link>}
                 </div>
               </li>

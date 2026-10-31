@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Headers, Inject, Param, ParseUUIDPipe, Patch, Post, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import {
-  CashAccountUpsert, CommissionRuleCreate, ExpenseCreate, addDays, addMoney, dayRangeUtc, fromMinor, localDate, toMinor,
+  CashAccountUpsert, CommissionPayoutCreate, CommissionRuleCreate, ExpenseCreate, ReverseInput, addDays, addMoney, dayRangeUtc, fromMinor, localDate, toMinor,
 } from "@viadent/contracts";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
@@ -202,10 +202,10 @@ export class FinanceController {
     return this.db.tx(ctx, async (c) => {
       const today = localDate(new Date(), ctx.timezone);
       const open = await c.query(
-        `select r.patient_id, r.due_date, (r.amount - coalesce((select sum(a.amount) from allocations a where a.receivable_id = r.id), 0))::text as open
+        `select r.patient_id, r.due_date, (r.amount - coalesce((select sum(a.amount) from allocations a where a.receivable_id = r.id), 0))::numeric(14,2)::text as open
            from receivables r where r.status = 'active'`);
       const adv = await c.query(
-        `select x.patient_id, sum(x.amount - coalesce(f.s, 0) - coalesce(a.s, 0))::text as advance
+        `select x.patient_id, sum(x.amount - coalesce(f.s, 0) - coalesce(a.s, 0))::numeric(14,2)::text as advance
            from payments x
            left join lateral (select sum(amount) as s from refunds where payment_id = x.id) f on true
            left join lateral (select sum(amount) as s from allocations where payment_id = x.id) a on true
@@ -241,15 +241,17 @@ export class FinanceController {
     return this.db.tx(ctx, async (c) => {
       const accts = await c.query(
         `select ca.id, ca.name, ca.kind, ca.active,
-                coalesce((select sum(m.amount) from cash_movements m where m.cash_account_id = ca.id and m.occurred_at < $1), 0)::text as opening,
-                coalesce((select sum(m.amount) from cash_movements m where m.cash_account_id = ca.id and m.occurred_at >= $1 and m.occurred_at < $2 and m.amount > 0), 0)::text as inflow,
-                coalesce((select sum(m.amount) from cash_movements m where m.cash_account_id = ca.id and m.occurred_at >= $1 and m.occurred_at < $2 and m.amount < 0), 0)::text as outflow
+                coalesce((select sum(m.amount) from cash_movements m where m.cash_account_id = ca.id and m.occurred_at < $1), 0)::numeric(14,2)::text as opening,
+                coalesce((select sum(m.amount) from cash_movements m where m.cash_account_id = ca.id and m.occurred_at >= $1 and m.occurred_at < $2 and m.amount > 0), 0)::numeric(14,2)::text as inflow,
+                coalesce((select sum(m.amount) from cash_movements m where m.cash_account_id = ca.id and m.occurred_at >= $1 and m.occurred_at < $2 and m.amount < 0), 0)::numeric(14,2)::text as outflow
            from cash_accounts ca order by ca.kind, ca.name`, [r0.fromUtc, r0.toUtc]);
       const mv = await c.query(
         `select m.id, m.cash_account_id, m.amount::text, m.source, m.source_id, m.occurred_at,
                 case m.source
                   when 'payment' then (select 'Tahsilat · ' || p.first_name || ' ' || p.last_name from payments x join patients p on p.id = x.patient_id where x.id = m.source_id)
                   when 'refund' then (select 'İade · ' || p.first_name || ' ' || p.last_name from refunds f join payments x on x.id = f.payment_id join patients p on p.id = x.patient_id where f.id = m.source_id)
+                  when 'supplier_payment' then (select 'Tedarikçi ödemesi · ' || s.name from supplier_entries se join suppliers s on s.id = se.supplier_id where se.id = m.source_id)
+                  when 'commission_payout' then (select 'Prim ödemesi · ' || pr.display_name from commission_payouts y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id)
                   else (select 'Gider · ' || e.category || ' · ' || e.description from expenses e where e.id = m.source_id) end as label
            from cash_movements m where m.occurred_at >= $1 and m.occurred_at < $2 order by m.occurred_at`, [r0.fromUtc, r0.toUtc]);
       return {
@@ -284,12 +286,14 @@ export class FinanceController {
     if (i.validFrom < today) throw Errors.validation({ validFrom: "Prim kuralı geriye dönük başlatılamaz; bugün veya sonrası seçin." });
     return this.db.tx(ctx, async (c) => {
       if (i.practitionerId && !(await c.query("select 1 from practitioners where id = $1", [i.practitionerId])).rowCount) throw Errors.validation({ practitionerId: "Hekim bulunamadı." });
+      const dup = await c.query("select 1 from commission_rule_versions where valid_from = $1 and practitioner_id is not distinct from $2", [i.validFrom, i.practitionerId ?? null]);
+      if (dup.rowCount) throw new AppError(409, "RULE_EXISTS", "Bu hekim (veya tüm hekimler) için aynı tarihte başlayan bir kural zaten var; başka bir tarih seçin.");
       const r = await c.query(
-        "insert into commission_rule_versions(tenant_id, practitioner_id, rate, valid_from, note, created_by) values ($1,$2,$3,$4,$5,$6) returning id",
-        [ctx.tenantId, i.practitionerId ?? null, i.rate, i.validFrom, i.note ?? null, ctx.userId],
+        "insert into commission_rule_versions(tenant_id, practitioner_id, basis, rate, valid_from, note, created_by) values ($1,$2,$3,$4,$5,$6,$7) returning id",
+        [ctx.tenantId, i.practitionerId ?? null, i.basis, i.rate, i.validFrom, i.note ?? null, ctx.userId],
       );
       await audit(c, ctx, { action: "commission_rule.create", entityType: "commission_rule_version", entityId: r.rows[0].id,
-        changes: { rate: { from: null, to: i.rate }, valid_from: { from: null, to: i.validFrom }, practitioner_id: { from: null, to: i.practitionerId ?? null } } });
+        changes: { basis: { from: null, to: i.basis }, rate: { from: null, to: i.rate }, valid_from: { from: null, to: i.validFrom }, practitioner_id: { from: null, to: i.practitionerId ?? null } } });
       return { id: r.rows[0].id };
     });
   }
@@ -300,21 +304,92 @@ export class FinanceController {
     const r0 = range(ctx, from, to, 366);
     return this.db.tx(ctx, async (c) => {
       const r = await c.query(
-        `select ac.id, ac.practitioner_id, pr.display_name, ac.base_amount::text, ac.rate::text, ac.amount::text, ac.reverses_id, ac.created_at,
-                p.first_name || ' ' || p.last_name as patient, rv.description
+        `select ac.id, ac.practitioner_id, pr.display_name, ac.basis, ac.base_amount::text, ac.rate::text, ac.amount::text, ac.reverses_id, ac.created_at,
+                p.id as patient_id, p.first_name || ' ' || p.last_name as patient, coalesce(rv.description, pp.procedure_code || ' · ' || pp.procedure_name) as description
            from commission_accruals ac join practitioners pr on pr.id = ac.practitioner_id
-           join allocations a on a.id = ac.allocation_id join receivables rv on rv.id = a.receivable_id join patients p on p.id = rv.patient_id
+           left join allocations a on a.id = ac.allocation_id left join receivables rv on rv.id = a.receivable_id
+           left join performed_procedures pp on pp.id = ac.performed_procedure_id
+           join patients p on p.id = coalesce(rv.patient_id, pp.patient_id)
           where ac.created_at >= $1 and ac.created_at < $2 order by ac.created_at`, [r0.fromUtc, r0.toUtc]);
-      const by = new Map<string, { practitionerId: string; practitioner: string; accrued: string; reversed: string; net: string }>();
+      // Ödenecek bakiye tüm zamanlar üzerinden: net tahakkuk − ödenen prim (dönem süzgecinden bağımsız).
+      const bal = await c.query(
+        `select pr.id, pr.display_name,
+                coalesce((select sum(amount) from commission_accruals x where x.practitioner_id = pr.id), 0)::numeric(14,2)::text as accrued_all,
+                coalesce((select sum(amount) from commission_payouts y where y.practitioner_id = pr.id), 0)::numeric(14,2)::text as paid_all,
+                coalesce((select sum(amount) from commission_payouts y where y.practitioner_id = pr.id and y.paid_at >= $1 and y.paid_at < $2), 0)::numeric(14,2)::text as paid_period
+           from practitioners pr`, [r0.fromUtc, r0.toUtc]);
+      type G = { practitionerId: string; practitioner: string; accrued: string; reversed: string; net: string; paidPeriod: string; payable: string };
+      const by = new Map<string, G>();
+      const g0 = (id: string, name: string) => by.get(id) ?? { practitionerId: id, practitioner: name, accrued: "0.00", reversed: "0.00", net: "0.00", paidPeriod: "0.00", payable: "0.00" };
       for (const x of r.rows) {
-        const g = by.get(x.practitioner_id) ?? { practitionerId: x.practitioner_id, practitioner: x.display_name, accrued: "0.00", reversed: "0.00", net: "0.00" };
-        if (x.reverses_id) g.reversed = addMoney(g.reversed, x.amount); else g.accrued = addMoney(g.accrued, x.amount);
+        const g = g0(x.practitioner_id, x.display_name);
+        if (x.reverses_id || toMinor(x.amount) < 0n) g.reversed = addMoney(g.reversed, x.amount); else g.accrued = addMoney(g.accrued, x.amount);
         g.net = addMoney(g.net, x.amount);
         by.set(x.practitioner_id, g);
       }
+      for (const b of bal.rows) {
+        const payable = fromMinor(toMinor(b.accrued_all) - toMinor(b.paid_all));
+        if (toMinor(payable) === 0n && toMinor(b.paid_period) === 0n && !by.has(b.id)) continue;
+        const g = g0(b.id, b.display_name);
+        g.paidPeriod = b.paid_period; g.payable = payable;
+        by.set(b.id, g);
+      }
+      const payouts = await c.query(
+        `select y.id, y.practitioner_id, pr.display_name, y.amount::text, y.period_from::text, y.period_to::text, y.paid_at, y.note, y.reverses_id, y.reason,
+                ca.name as account, u.full_name as by,
+                exists (select 1 from commission_payouts z where z.reverses_id = y.id) as reversed
+           from commission_payouts y join practitioners pr on pr.id = y.practitioner_id join cash_accounts ca on ca.id = y.cash_account_id
+           join users u on u.id = y.created_by where y.paid_at >= $1 and y.paid_at < $2 order by y.paid_at`, [r0.fromUtc, r0.toUtc]);
       return { from: r0.from, to: r0.to, groups: [...by.values()],
-        rows: r.rows.map((x) => ({ id: x.id, practitioner: x.display_name, patient: x.patient, description: x.description, base: x.base_amount, rate: x.rate,
-          amount: x.amount, reversal: !!x.reverses_id, at: x.created_at })) };
+        rows: r.rows.map((x) => ({ id: x.id, practitioner: x.display_name, basis: x.basis, patientId: x.patient_id, patient: x.patient, description: x.description,
+          base: x.base_amount, rate: x.rate, amount: x.amount, reversal: !!x.reverses_id, at: x.created_at })),
+        payouts: payouts.rows.map((y) => ({ id: y.id, practitionerId: y.practitioner_id, practitioner: y.display_name, amount: y.amount, periodFrom: y.period_from,
+          periodTo: y.period_to, paidAt: y.paid_at, note: y.note, reversal: !!y.reverses_id, reason: y.reason, reversed: y.reversed, account: y.account, by: y.by })) };
+    });
+  }
+
+  /** Prim ödemesi: kasadan çıkış; hekimin ödenmemiş net tahakkukunu aşamaz (DB tetikleyicisi + kilit). Kazanım ayrı harekettir. */
+  @Post("commission-payouts")
+  @Require("commission.payout")
+  async payout(@Ctx() ctx: RequestContext, @Body() body: unknown, @Headers("idempotency-key") key: string | undefined, @Res({ passthrough: true }) res: Response) {
+    const i = parse(CommissionPayoutCreate, body);
+    const k = requireKey(key);
+    const at = checkEventTime(i.paidAt, "paidAt");
+    return this.db.tx(ctx, async (c) => {
+      const out = await idempotent(c, ctx, "commission_payout.create", k, i, async () => {
+        if (!(await c.query("select 1 from practitioners where id = $1", [i.practitionerId])).rowCount) throw Errors.validation({ practitionerId: "Hekim bulunamadı." });
+        await activeAccount(c, i.cashAccountId);
+        const r = await c.query(
+          `insert into commission_payouts(tenant_id, practitioner_id, amount, period_from, period_to, cash_account_id, paid_at, note, created_by)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
+          [ctx.tenantId, i.practitionerId, i.amount, i.periodFrom ?? null, i.periodTo ?? null, i.cashAccountId, at, i.note ?? null, ctx.userId]);
+        await cashMovement(c, ctx, { accountId: i.cashAccountId, amount: `-${i.amount}`, source: "commission_payout", sourceId: r.rows[0].id, at });
+        await audit(c, ctx, { action: "commission_payout.create", entityType: "commission_payout", entityId: r.rows[0].id,
+          changes: { amount: { from: null, to: i.amount }, practitioner_id: { from: null, to: i.practitionerId } } });
+        return { id: r.rows[0].id as string };
+      });
+      if (out.replayed) res.setHeader("Idempotent-Replayed", "true");
+      return out.body;
+    });
+  }
+
+  @Post("commission-payouts/:id/reverse")
+  @Require("commission.payout")
+  reversePayout(@Ctx() ctx: RequestContext, @Param("id", id) pid: string, @Body() body: unknown) {
+    const i = parse(ReverseInput, body);
+    return this.db.tx(ctx, async (c) => {
+      const p = (await c.query("select * from commission_payouts where id = $1", [pid])).rows[0];
+      if (!p) throw Errors.notFound("Prim ödemesi");
+      if (p.reverses_id) throw new AppError(409, "REVERSAL_INVALID", "Ters kayıt yeniden ters çevrilemez.");
+      if ((await c.query("select 1 from commission_payouts where reverses_id = $1", [pid])).rowCount) throw new AppError(409, "ALREADY_REVERSED", "Bu ödeme zaten ters kayda alınmış.");
+      const r = await c.query(
+        `insert into commission_payouts(tenant_id, practitioner_id, amount, period_from, period_to, cash_account_id, paid_at, note, reverses_id, reason, created_by)
+         values ($1,$2,-$3::numeric,$4,$5,$6,now(),$7,$8,$9,$10) returning id, amount::text`,
+        [ctx.tenantId, p.practitioner_id, p.amount, p.period_from, p.period_to, p.cash_account_id, p.note, pid, i.reason, ctx.userId]);
+      await cashMovement(c, ctx, { accountId: p.cash_account_id, amount: fromMinor(-toMinor(r.rows[0].amount)), source: "commission_payout", sourceId: r.rows[0].id, at: new Date() });
+      await audit(c, ctx, { action: "commission_payout.reverse", entityType: "commission_payout", entityId: r.rows[0].id,
+        changes: { amount: { from: null, to: r.rows[0].amount }, reverses_id: { from: null, to: pid }, reason: { from: null, to: i.reason } } });
+      return { id: r.rows[0].id };
     });
   }
 }

@@ -53,6 +53,21 @@ export const PERMISSIONS = [
   "integration.read",        // VİA Köprü: bağlantılar, dış işler, webhook günlüğü
   "integration.manage",      // bağlantı ayarı, sır yenileme, yeniden deneme/iptal, MOCK simülasyonu
   "integration.approve",     // onay kapısı (dört göz): onay isteyen dış işi onaylama/reddetme
+  "lab.read",                // laboratuvar iş emirleri (maliyet hariç)
+  "lab.write",               // iş emri oluşturma, gönderme, teslim alma, not
+  "lab.decide",              // klinik kabul / revizyon kararı (hekim)
+  "lab.cost",                // laboratuvar maliyeti görme/girme (cari borç doğurur)
+  "supplier.manage",         // tedarikçi / laboratuvar tanımı (T15, T16, T18)
+  "supplier.ledger",         // cari fatura/ödeme kaydı ve ters kaydı
+  "commission.payout",       // hekim primi ödemesi (kasadan çıkış) ve ters kaydı
+  "stock.read",
+  "stock.write",             // giriş, kullanım, fire, sayım
+  "stock.manage",            // stok kalemi tanımı
+  "report.operations",       // randevu, kontrol, laboratuvar, mesaj, belge sorguları (tutar yok)
+  "report.clinical",         // tedavi, plan, işlem, hekim-hasta sorguları (hekim yalnız kendi kayıtları)
+  "report.analytics",        // klinik işletme analizi (metrik sözlüğü)
+  "report.export",           // rapor CSV dışa aktarımı (denetlenir)
+  "audit.clinic",            // klinik geneli LOG sorgulama (R15)
   "audit.read",
   "team.manage",
   "schedule.manage",         // hekim/koltuk, çalışma saati, kapatma, işlem türü
@@ -67,17 +82,21 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   clinic_admin: [...base, "patient.write", "appointment.write", "audit.read", "team.manage", "schedule.manage", "settings.manage", "finance.read", "catalog.manage",
     "account.read", "finance.settings",
     "document.read", "document.revoke", "template.manage", "file.read", "file.delete", "communication.write", "message.send",
-    "integration.read", "integration.manage", "integration.approve"],
+    "integration.read", "integration.manage", "integration.approve",
+    "lab.read", "lab.write", "lab.cost", "supplier.manage", "supplier.ledger", "stock.read", "stock.write", "stock.manage",
+    "report.operations", "report.clinical", "report.analytics", "report.export", "audit.clinic"],
   dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "appointment.write", "audit.read",
     "treatment.write", "treatment.decision", "procedure.complete", "diagnosis.write",
     "document.read", "document.issue", "document.decision", "document.revoke", "file.read", "file.write", "file.delete", "communication.write",
-    "followup.write", "readiness.exception"],
+    "followup.write", "readiness.exception", "lab.read", "lab.write", "lab.decide", "stock.read", "stock.write", "report.clinical"],
   // Sekreterya vezne işini yapar (tahsilat, avans dağıtımı) ama iade yapamaz ve gelir raporlarını göremez (§05).
   secretary: [...base, "patient.write", "patient.identity.unmask", "appointment.write", "treatment.decision", "account.read", "payment.write",
-    "document.read", "document.issue", "document.decision", "file.read", "file.write", "communication.write", "message.send"],
-  assistant: [...base, "patient.health.read", "anamnesis.write", "document.read", "file.read", "file.write"],
+    "document.read", "document.issue", "document.decision", "file.read", "file.write", "communication.write", "message.send",
+    "lab.read", "lab.write", "report.operations"],
+  assistant: [...base, "patient.health.read", "anamnesis.write", "document.read", "file.read", "file.write", "lab.read", "lab.write", "stock.read", "stock.write"],
   finance: [...base, "finance.read", "account.read", "payment.write", "payment.refund", "receivable.write", "expense.write", "finance.settings", "patient.identity.unmask", "message.send",
-    "integration.read", "integration.approve"],
+    "integration.read", "integration.approve", "lab.read", "lab.cost", "supplier.manage", "supplier.ledger", "commission.payout", "stock.read",
+    "report.analytics", "report.export"],
 };
 
 export function permissionsFor(role: Role): Set<Permission> {

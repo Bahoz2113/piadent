@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Lock, Plus, RotateCcw } from "lucide-react";
 import {
-  CASH_ACCOUNT_KINDS, CASH_ACCOUNT_KIND_LABELS, EXPENSE_CATEGORIES, PAYMENT_METHOD_LABELS, addDays, formatTRY, type PaymentMethod,
+  CASH_ACCOUNT_KINDS, CASH_ACCOUNT_KIND_LABELS, COMMISSION_BASIS_LABELS, EXPENSE_CATEGORIES, PAYMENT_METHOD_LABELS, addDays, formatTRY, type PaymentMethod,
 } from "@viadent/contracts";
 import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -296,35 +296,77 @@ function ExpenseDrawer({ onClose, onSaved }: { onClose: () => void; onSaved: () 
 
 // ------------------------------------------------------------------ prim
 function Commissions({ from, to }: { from: string; to: string }) {
-  const { tz } = useSession();
-  const d = useData<{ groups: { practitionerId: string; practitioner: string; accrued: string; reversed: string; net: string }[];
-    rows: { id: string; practitioner: string; patient: string; description: string; base: string; rate: string; amount: string; reversal: boolean; at: string }[] }>(`/commissions?from=${from}&to=${to}`);
+  const { tz, can } = useSession();
+  const d = useData<{ groups: { practitionerId: string; practitioner: string; accrued: string; reversed: string; net: string; paidPeriod: string; payable: string }[];
+    rows: { id: string; practitioner: string; basis: keyof typeof COMMISSION_BASIS_LABELS; patient: string; description: string; base: string; rate: string; amount: string; reversal: boolean; at: string }[];
+    payouts: { id: string; practitioner: string; amount: string; periodFrom: string | null; periodTo: string | null; paidAt: string; note: string | null; reversal: boolean; reversed: boolean; reason: string | null; account: string; by: string }[] }>(`/commissions?from=${from}&to=${to}`);
+  const accts = useData<{ items: { id: string; name: string; active: boolean }[] }>(can("commission.payout") ? "/cash-accounts" : null);
+  const [pay, setPay] = useState<null | { practitionerId: string; practitioner: string; payable: string; amount: string; cashAccountId: string; note: string; key: string }>(null);
+  const [rev, setRev] = useState<null | { id: string; reason: string }>(null);
+  const [err, setErr] = useState<ApiFailure | null>(null);
   if (d.loading && !d.data) return <div className="card"><Loading /></div>;
   if (d.error) return <div className="card"><ErrorState error={d.error} /></div>;
+  const done = () => { setPay(null); setRev(null); setErr(null); void d.reload(); };
   return (
     <div className="stack" style={{ gap: 16 }}>
+      {err && <Alert kind="error">{err.message}</Alert>}
       <section className="card">
-        <div className="card-head"><div><h2>Hekim primi tahakkuku</h2><p className="muted small">Tahsilat dağıtımı bazlı. Her satır kendi kural sürümü ve oranının snapshot'ını taşır; iade/ters kayıt orijinal oranla ters prim doğurur. Prim ödemesi ayrı harekettir (Görev 6).</p></div></div>
+        <div className="card-head"><div><h2>Hekim primi</h2><p className="muted small">Tedavi bazlı prim gerçekleşen işlemden, tahsilat bazlı prim dağıtılan tahsilattan doğar. İptal/iade orijinal oranla ters prim doğurur. Prim kazanımı ve ödemesi ayrı harekettir; ödenecek bakiye = net tahakkuk − ödenen (tüm zamanlar).</p></div></div>
         {d.data!.groups.length === 0 ? <EmptyState title="Bu aralıkta tahakkuk yok" /> : (
           <div className="table-wrap">
-            <table className="table">
-              <thead><tr><th>Hekim</th><th className="money">Tahakkuk</th><th className="money">Ters prim</th><th className="money">Net</th></tr></thead>
-              <tbody>{d.data!.groups.map((g) => <tr key={g.practitionerId}><td><strong>{g.practitioner}</strong></td><td className="money">{formatTRY(g.accrued)}</td><td className="money">{formatTRY(g.reversed)}</td><td className="money"><strong>{formatTRY(g.net)}</strong></td></tr>)}</tbody>
+            <table className="table table-wide">
+              <thead><tr><th>Hekim</th><th className="money">Tahakkuk</th><th className="money">Ters prim</th><th className="money">Net (dönem)</th><th className="money">Ödenen (dönem)</th><th className="money">Ödenecek bakiye</th><th><span className="sr-only">İşlem</span></th></tr></thead>
+              <tbody>{d.data!.groups.map((g) => <tr key={g.practitionerId}><td><strong>{g.practitioner}</strong></td><td className="money">{formatTRY(g.accrued)}</td><td className="money">{formatTRY(g.reversed)}</td>
+                <td className="money">{formatTRY(g.net)}</td><td className="money">{formatTRY(g.paidPeriod)}</td><td className="money"><strong>{formatTRY(g.payable)}</strong></td>
+                <td>{can("commission.payout") && Number(g.payable) > 0 && <button className="btn btn-sm" onClick={() => setPay({ practitionerId: g.practitionerId, practitioner: g.practitioner, payable: g.payable,
+                  amount: g.payable.replace(".", ","), cashAccountId: accts.data?.items.find((a) => a.active)?.id ?? "", note: "", key: newIdempotencyKey() })}>Prim öde</button>}</td></tr>)}</tbody>
             </table>
           </div>
         )}
       </section>
+      {d.data!.payouts.length > 0 && (
+        <section className="card">
+          <div className="card-head"><h2>Prim ödemeleri</h2></div>
+          <ul className="list" style={{ padding: "0 20px 12px" }}>{d.data!.payouts.map((p) => (
+            <li key={p.id} className="row small" style={{ justifyContent: "space-between", padding: "8px 0", gap: 8 }}>
+              <span><strong>{p.practitioner}</strong>{p.reversal && " (ters kayıt)"} · {fmtDateTime(p.paidAt, tz)} · {p.account} · {p.by}{p.reason ? ` · ${p.reason}` : ""}{p.note ? ` · ${p.note}` : ""}</span>
+              <span className="row" style={{ gap: 6 }}><strong>{formatTRY(p.amount)}</strong>
+                {can("commission.payout") && !p.reversal && !p.reversed && <button className="btn btn-sm btn-ghost" onClick={() => setRev({ id: p.id, reason: "" })}>Ters kayıt</button>}</span>
+            </li>))}</ul>
+        </section>
+      )}
       {d.data!.rows.length > 0 && (
         <section className="card">
-          <div className="card-head"><h2>Satırlar</h2></div>
+          <div className="card-head"><h2>Tahakkuk satırları</h2></div>
           <div className="table-wrap">
             <table className="table table-wide">
-              <thead><tr><th>Zaman</th><th>Hekim</th><th>Hasta</th><th>Alacak</th><th className="money">Taban</th><th className="money">Oran</th><th className="money">Prim</th></tr></thead>
-              <tbody>{d.data!.rows.map((r) => <tr key={r.id}><td>{fmtDateTime(r.at, tz)}</td><td>{r.practitioner}</td><td>{r.patient}</td><td>{r.description}{r.reversal && <div className="small muted">Ters kayıt</div>}</td>
+              <thead><tr><th>Zaman</th><th>Hekim</th><th>Temel</th><th>Hasta</th><th>Kaynak</th><th className="money">Taban</th><th className="money">Oran</th><th className="money">Prim</th></tr></thead>
+              <tbody>{d.data!.rows.map((r) => <tr key={r.id}><td>{fmtDateTime(r.at, tz)}</td><td>{r.practitioner}</td><td>{r.basis === "treatment" ? "Tedavi" : "Tahsilat"}</td><td>{r.patient}</td><td>{r.description}{r.reversal && <div className="small muted">Ters kayıt</div>}</td>
                 <td className="money">{formatTRY(r.base)}</td><td className="money">%{r.rate.replace(".00", "")}</td><td className="money">{formatTRY(r.amount)}</td></tr>)}</tbody>
             </table>
           </div>
         </section>
+      )}
+      {pay && (
+        <Drawer title="Prim ödemesi" subtitle={`${pay.practitioner} · ödenecek bakiye ${formatTRY(pay.payable)}`} onClose={() => setPay(null)}
+          footer={<><button className="btn" onClick={() => setPay(null)}>Vazgeç</button><button className="btn btn-primary" disabled={!parseMoneyInput(pay.amount) || !pay.cashAccountId}
+            onClick={() => void api("/commission-payouts", { idempotencyKey: pay.key, body: { practitionerId: pay.practitionerId, amount: parseMoneyInput(pay.amount), cashAccountId: pay.cashAccountId,
+              periodFrom: from, periodTo: to, note: pay.note || undefined } }).then(done, (e) => setErr(e as ApiFailure))}>Ödemeyi kaydet</button></>}>
+          <div className="stack">
+            <Alert kind="info">Ödeme kasadan çıkış olarak kaydedilir ve ödenmemiş net tahakkuku aşamaz. Bordro/stopaj hesabı VİADENT kapsamı dışındadır; mali müşavirle doğrulayın.</Alert>
+            <TextField label="Tutar (₺)" inputMode="decimal" required value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value })} />
+            <SelectField label="Kasa / banka" required value={pay.cashAccountId} onChange={(e) => setPay({ ...pay, cashAccountId: e.target.value })}>
+              {accts.data?.items.filter((a) => a.active).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</SelectField>
+            <TextField label="Not" value={pay.note} onChange={(e) => setPay({ ...pay, note: e.target.value })} />
+          </div>
+        </Drawer>
+      )}
+      {rev && (
+        <Drawer title="Prim ödemesini ters kayda al" onClose={() => setRev(null)}
+          footer={<><button className="btn" onClick={() => setRev(null)}>Vazgeç</button><button className="btn btn-primary" disabled={rev.reason.trim().length < 3}
+            onClick={() => void api(`/commission-payouts/${rev.id}/reverse`, { body: { reason: rev.reason } }).then(done, (e) => setErr(e as ApiFailure))}>Ters kayda al</button></>}>
+          <TextField label="Gerekçe" required value={rev.reason} onChange={(e) => setRev({ ...rev, reason: e.target.value })} />
+        </Drawer>
       )}
     </div>
   );
@@ -334,10 +376,10 @@ function Commissions({ from, to }: { from: string; to: string }) {
 function Settings({ notify }: { notify: (k: "success" | "error", t: string) => void }) {
   const { tz } = useSession();
   const accts = useData<{ items: { id: string; name: string; kind: string; active: boolean }[] }>("/cash-accounts");
-  const rules = useData<{ items: { id: string; practitionerName: string | null; rate: string; validFrom: string; note: string | null; by: string; createdAt: string }[] }>("/commission-rules");
+  const rules = useData<{ items: { id: string; practitionerName: string | null; basis: keyof typeof COMMISSION_BASIS_LABELS; rate: string; validFrom: string; note: string | null; by: string; createdAt: string }[] }>("/commission-rules");
   const res = useData<{ practitioners: { id: string; name: string }[] }>("/resources");
   const [acc, setAcc] = useState({ name: "", kind: "cash" as (typeof CASH_ACCOUNT_KINDS)[number] });
-  const [rule, setRule] = useState({ practitionerId: "", rate: "", validFrom: todayIn(tz), note: "" });
+  const [rule, setRule] = useState({ practitionerId: "", basis: "collection" as keyof typeof COMMISSION_BASIS_LABELS, rate: "", validFrom: todayIn(tz), note: "" });
   const [err, setErr] = useState<ApiFailure | null>(null);
   async function run(fn: () => Promise<unknown>, ok: string, reload: () => unknown) {
     setErr(null);
@@ -363,12 +405,12 @@ function Settings({ notify }: { notify: (k: "success" | "error", t: string) => v
         </div>
       </section>
       <section className="card">
-        <div className="card-head"><div><h2>Prim kuralı sürümleri</h2><p className="muted small">Kural silinmez/değiştirilmez; yeni sürüm bugünden veya ileri bir tarihten geçerli olur. Hekime özel kural genel kuraldan önceliklidir. Oranlar DEMO; mali müşavirle doğrulanmalı.</p></div></div>
+        <div className="card-head"><div><h2>Prim kuralı sürümleri</h2><p className="muted small">Kural silinmez/değiştirilmez; yeni sürüm bugünden veya ileri bir tarihten geçerli olur. Hekime özel kural genel kuraldan önceliklidir; bir hekim için bir günde tek kural etkindir, temeli (tedavi veya tahsilat) hangi olayın prim doğuracağını belirler — aynı iş için çift prim oluşmaz. Oranlar DEMO; mali müşavirle doğrulanmalı.</p></div></div>
         {rules.data && rules.data.items.length > 0 && (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Geçerlilik</th><th>Kapsam</th><th className="money">Oran</th><th>Not</th><th>Ekleyen</th></tr></thead>
-              <tbody>{rules.data.items.map((r) => <tr key={r.id}><td>{fmtDate(r.validFrom)}</td><td>{r.practitionerName ?? "Tüm hekimler"}</td><td className="money">%{r.rate.replace(".00", "")}</td><td>{r.note ?? "—"}</td><td>{r.by}</td></tr>)}</tbody>
+              <thead><tr><th>Geçerlilik</th><th>Kapsam</th><th>Temel</th><th className="money">Oran</th><th>Not</th><th>Ekleyen</th></tr></thead>
+              <tbody>{rules.data.items.map((r) => <tr key={r.id}><td>{fmtDate(r.validFrom)}</td><td>{r.practitionerName ?? "Tüm hekimler"}</td><td>{COMMISSION_BASIS_LABELS[r.basis]}</td><td className="money">%{r.rate.replace(".00", "")}</td><td>{r.note ?? "—"}</td><td>{r.by}</td></tr>)}</tbody>
             </table>
           </div>
         )}
@@ -376,6 +418,9 @@ function Settings({ notify }: { notify: (k: "success" | "error", t: string) => v
           <SelectField label="Kapsam" value={rule.practitionerId} onChange={(e) => setRule({ ...rule, practitionerId: e.target.value })}>
             <option value="">Tüm hekimler</option>
             {res.data?.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </SelectField>
+          <SelectField label="Temel" value={rule.basis} onChange={(e) => setRule({ ...rule, basis: e.target.value as typeof rule.basis })}>
+            {Object.entries(COMMISSION_BASIS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </SelectField>
           <TextField label="Oran (%)" inputMode="decimal" value={rule.rate} onChange={(e) => setRule({ ...rule, rate: e.target.value.replace(",", ".") })} error={err?.fieldErrors.rate} />
           <TextField label="Geçerlilik" type="date" min={todayIn(tz)} value={rule.validFrom} onChange={(e) => setRule({ ...rule, validFrom: e.target.value })} error={err?.fieldErrors.validFrom} />

@@ -92,14 +92,44 @@ export async function cancelReceivable(c: C, ctx: RequestContext, receivableId: 
 }
 
 // ------------------------------------------------------------------ dağıtım + prim
-async function commissionRule(c: C, practitionerId: string, onDate: string) {
+/**
+ * Hekimin o klinik gününde etkin prim kuralı (hekime özel olan genel kurala üstündür; aynı gün tek kural).
+ * Kuralın temeli (tahsilat/tedavi) hangi olayın prim doğuracağını belirler → aynı iş için çift prim oluşmaz (ADR-042).
+ */
+export async function effectiveCommissionRule(c: C, practitionerId: string, onDate: string) {
   const r = await c.query(
-    `select id, rate::text as rate from commission_rule_versions
-      where basis = 'collection' and valid_from <= $2 and (practitioner_id = $1 or practitioner_id is null)
-      order by (practitioner_id is not null) desc, valid_from desc limit 1`,
+    `select id, rate::text as rate, basis from commission_rule_versions
+      where valid_from <= $2 and (practitioner_id = $1 or practitioner_id is null)
+      order by (practitioner_id is not null) desc, valid_from desc, created_at desc limit 1`,
     [practitionerId, onDate],
   );
-  return r.rows[0] as { id: string; rate: string } | undefined;
+  return r.rows[0] as { id: string; rate: string; basis: "collection" | "treatment" } | undefined;
+}
+
+/** Tedavi bazlı prim: gerçekleşen işlemin snapshot bedeli üzerinden, işlem gününde etkin kuralla (AT-10). */
+export async function accrueTreatmentCommission(c: C, ctx: RequestContext, performedId: string, practitionerId: string, amount: string) {
+  const rule = await effectiveCommissionRule(c, practitionerId, localDate(new Date(), ctx.timezone));
+  if (!rule || rule.basis !== "treatment" || toMinor(amount) === 0n) return;
+  await c.query(
+    `insert into commission_accruals(tenant_id, practitioner_id, performed_procedure_id, basis, rule_version_id, base_amount, rate, amount)
+     values ($1,$2,$3,'treatment',$4,$5,$6,$7)`,
+    [ctx.tenantId, practitionerId, performedId, rule.id, amount, rule.rate, commissionAmount(amount, rule.rate)],
+  );
+}
+
+/** İşlem iptal/düzeltmesinde tedavi primi orijinal oranla tamamen ters kayda alınır (silinmez). */
+export async function reverseTreatmentCommission(c: C, ctx: RequestContext, performedId: string) {
+  const acc = (await c.query(
+    `select id, practitioner_id, rule_version_id, rate::text as rate, base_amount::text as base from commission_accruals
+      where performed_procedure_id = $1 and basis = 'treatment' and reverses_id is null
+        and not exists (select 1 from commission_accruals r where r.reverses_id = commission_accruals.id)`, [performedId])).rows[0];
+  if (!acc) return;
+  const neg = fromMinor(-toMinor(acc.base));
+  await c.query(
+    `insert into commission_accruals(tenant_id, practitioner_id, performed_procedure_id, basis, rule_version_id, base_amount, rate, amount, reverses_id)
+     values ($1,$2,$3,'treatment',$4,$5,$6,$7,$8)`,
+    [ctx.tenantId, acc.practitioner_id, performedId, acc.rule_version_id, neg, acc.rate, commissionAmount(neg, acc.rate), acc.id],
+  );
 }
 
 export async function allocate(c: C, ctx: RequestContext, paymentId: string, receivableId: string, amount: string): Promise<string> {
@@ -111,8 +141,8 @@ export async function allocate(c: C, ctx: RequestContext, paymentId: string, rec
   const rec = (await c.query("select practitioner_id, patient_id from receivables where id = $1", [receivableId])).rows[0];
   if (rec.practitioner_id) {
     // Kural, dağıtımın yapıldığı klinik gününde geçerli olan sürümdür; oran snapshot'lanır (AT-10).
-    const rule = await commissionRule(c, rec.practitioner_id, localDate(new Date(), ctx.timezone));
-    if (rule) {
+    const rule = await effectiveCommissionRule(c, rec.practitioner_id, localDate(new Date(), ctx.timezone));
+    if (rule && rule.basis === "collection") {
       await c.query(
         `insert into commission_accruals(tenant_id, practitioner_id, allocation_id, rule_version_id, base_amount, rate, amount)
          values ($1,$2,$3,$4,$5,$6,$7)`,
@@ -134,7 +164,7 @@ export async function reverseAllocation(c: C, ctx: RequestContext, allocationId:
     [ctx.tenantId, a.payment_id, a.receivable_id, neg, allocationId, reason, ctx.userId],
   );
   const id = ins.rows[0].id as string;
-  const acc = (await c.query("select id, practitioner_id, rule_version_id, rate::text as rate from commission_accruals where allocation_id = $1", [allocationId])).rows[0];
+  const acc = (await c.query("select id, practitioner_id, rule_version_id, rate::text as rate from commission_accruals where allocation_id = $1 and basis = 'collection'", [allocationId])).rows[0];
   if (acc) {
     await c.query(
       `insert into commission_accruals(tenant_id, practitioner_id, allocation_id, rule_version_id, base_amount, rate, amount, reverses_id)
@@ -158,7 +188,7 @@ export async function liveAllocations(c: C, paymentId: string) {
   return r.rows.filter((x) => Number(x.remaining) > 0) as { id: string; receivable_id: string; remaining: string }[];
 }
 
-export async function cashMovement(c: C, ctx: RequestContext, m: { accountId: string; amount: string; source: "payment" | "refund" | "expense"; sourceId: string; at: string | Date }) {
+export async function cashMovement(c: C, ctx: RequestContext, m: { accountId: string; amount: string; source: "payment" | "refund" | "expense" | "supplier_payment" | "commission_payout"; sourceId: string; at: string | Date }) {
   await c.query(
     "insert into cash_movements(tenant_id, cash_account_id, amount, source, source_id, occurred_at) values ($1,$2,$3,$4,$5,$6)",
     [ctx.tenantId, m.accountId, m.amount, m.source, m.sourceId, m.at],
