@@ -168,6 +168,64 @@ export class ImportController {
             }
           }
         }
+      } else if (kind === "treatment_history") {
+        if (!v.patient_ref && !v.file_no) errors.push({ field: "patient_ref", message: "Kaynak hasta no veya dosya no gerekli" });
+        req("date", "İşlem tarihi"); req("procedure", "İşlem"); req("practitioner", "Hekim");
+        if (v.external_ref && v.external_ref.length > 60) errors.push({ field: "external_ref", message: "Kaynak işlem no en çok 60 karakter" });
+        data.external_ref = v.external_ref || null;
+        if (v.date) {
+          const d = parseDate(v.date);
+          if (!d) errors.push({ field: "date", message: `Tarih okunamadı: “${v.date.slice(0, 20)}” (gg.aa.yyyy)` });
+          else if (d >= today) errors.push({ field: "date", message: "Yalnız geçmiş tarihli işlemler aktarılır" });
+          else { data.date = d; data.completed_at = zonedToUtc(d, "12:00", ctx.timezone).toISOString(); }
+        }
+        if (v.tooth) { if (!/^[1-8][1-8]$/.test(v.tooth.trim())) errors.push({ field: "tooth", message: `Diş numarası FDI (11–48) olmalı: “${v.tooth.slice(0, 10)}”` }); else data.tooth = v.tooth.trim(); }
+        const qty = v.quantity ? Number(v.quantity.replace(",", ".")) : 1;
+        if (!Number.isInteger(qty) || qty < 1 || qty > 50) errors.push({ field: "quantity", message: "Adet 1–50 tam sayı olmalı" });
+        data.quantity = qty;
+        if (v.amount) {
+          const m = parseMoney(v.amount);
+          if (!m.value) errors.push({ field: "amount", message: m.error ?? "Bedel geçersiz" });
+          else if (toMinor(m.value) < 0n) errors.push({ field: "amount", message: "Bedel eksi olamaz" });
+          else amount = m.value;
+        } else amount = "0.00";
+        data.note = v.note ? v.note.slice(0, 500) : null;
+        if (!errors.length) {
+          const p = await c.query(
+            v.patient_ref ? "select id, file_no from patients where external_ref = $1 and status = 'active'" : "select id, file_no from patients where file_no::text = $1 and status = 'active'",
+            [v.patient_ref || v.file_no]);
+          if (!p.rowCount) errors.push({ field: v.patient_ref ? "patient_ref" : "file_no", message: "Hasta bulunamadı (önce hasta kartlarını aktarın)" });
+          else { data.patient_id = p.rows[0].id; data.file_no = p.rows[0].file_no; }
+          const proc = await c.query("select id, code, name, tooth_scope from procedures where upper(code) = upper($1) or lower(name) = lower($1) order by active desc limit 2", [(v.procedure ?? "").trim()]);
+          if (proc.rowCount !== 1) errors.push({ field: "procedure", message: proc.rowCount ? `İşlem adı birden çok kayda uyuyor: “${(v.procedure ?? "").slice(0, 40)}”` : `İşlem katalogda yok: “${(v.procedure ?? "").slice(0, 40)}” (Yönetim → Katalog'daki kod ya da ad)` });
+          else {
+            data.procedure_id = proc.rows[0].id; data.procedure_code = proc.rows[0].code; data.procedure_name = proc.rows[0].name;
+            const scope = proc.rows[0].tooth_scope as string;
+            if ((scope === "tooth" || scope === "surface") && !data.tooth) warnings.push({ field: "tooth", message: "Diş düzeyinde işlem; diş numarası boş — ağız düzeyinde kaydedilir" });
+            data.location_kind = data.tooth ? "tooth" : "mouth";
+          }
+          const pr = await c.query(
+            `select p.id, p.display_name from practitioners p left join memberships m on m.id = p.membership_id left join users u on u.id = m.user_id
+              where lower(p.display_name) = lower($1) or lower(u.email) = lower($1) or lower(regexp_replace(p.display_name, '^(Dt|Dr|Prof|Doç|Uzm)\\.?\\s+', '')) = lower($1)
+              order by p.active desc limit 2`, [(v.practitioner ?? "").trim()]);
+          const pn = (v.practitioner ?? "").slice(0, 40);
+          if (pr.rowCount !== 1) errors.push({ field: "practitioner", message: pr.rowCount ? `Hekim adı birden çok kayda uyuyor: “${pn}”` : `Hekim bulunamadı: “${pn}”` });
+          else { data.practitioner_id = pr.rows[0].id; data.practitioner_name = pr.rows[0].display_name; }
+          if (!errors.length) {
+            const key = v.external_ref ? `ref:${v.external_ref}` : `tp:${data.patient_id}|${data.procedure_id}|${data.date}|${data.practitioner_id}|${data.tooth ?? ""}`;
+            const prev = seenRef.get(key);
+            if (prev) { status = "duplicate"; errors.push({ field: "external_ref", message: `Aynı işlem dosyada ${prev}. satırda da var` }); }
+            else {
+              seenRef.set(key, i + 1);
+              const ex = await c.query(
+                `select pp.id from performed_procedures pp where (($1::text is not null and pp.external_ref = $1)
+                    or (pp.patient_id = $2 and pp.procedure_id = $3 and pp.practitioner_id = $4 and pp.completed_at = $5::timestamptz and coalesce(pp.tooth, '') = $6))
+                   and pp.status <> 'cancelled' and not exists (select 1 from import_batches b where b.id = pp.import_batch_id and b.status = 'rolled_back') limit 1`,
+                [v.external_ref || null, data.patient_id, data.procedure_id, data.practitioner_id, data.completed_at, data.tooth ?? ""]);
+              if (ex.rowCount) { status = "already_imported"; warnings.push({ field: "external_ref", message: "Bu işlem zaten kayıtlı; tekrar yazılmaz" }); }
+            }
+          }
+        }
       } else {
         if (!v.patient_ref && !v.file_no) errors.push({ field: "patient_ref", message: "Kaynak hasta no veya dosya no gerekli" });
         req("amount", "Tutar"); req("as_of", "Bakiye tarihi");
@@ -217,7 +275,7 @@ export class ImportController {
     return {
       ...extra, rows: checked.length, valid: by("valid").length, errors: by("error").length, duplicates: by("duplicate").length,
       alreadyImported: by("already_imported").length, withWarnings: checked.filter((r) => r.warnings.length).length,
-      ...(kind === "opening_balances" ? {
+      ...(kind === "opening_balances" || kind === "treatment_history" ? {
         amountSource: sum(checked), amountValid: sum(by("valid")), amountError: sum(by("error")), amountDuplicate: sum(by("duplicate")),
         amountAlreadyImported: sum(by("already_imported")), unparsedAmountRows: checked.filter((r) => !r.amount).length,
       } : {}),
@@ -367,6 +425,28 @@ export class ImportController {
             [ctx.tenantId, d.branch_id, d.patient_id, d.practitioner_id, d.starts_at, d.ends_at, d.status, d.reason, d.note,
              d.status === "cancelled" ? "Önceki sistemden aktarıldı (iptal)" : null, d.status === "completed" ? d.ends_at : null, d.external_ref, bid, ctx.userId]);
           await c.query("update import_rows set status = 'imported', target_id = $2 where id = $1", [r.id, a.rows[0].id]);
+        } else if (b.kind === "treatment_history") {
+          const ex = await c.query(
+            `select 1 from performed_procedures pp where (($1::text is not null and pp.external_ref = $1)
+                or (pp.patient_id = $2 and pp.procedure_id = $3 and pp.practitioner_id = $4 and pp.completed_at = $5::timestamptz and coalesce(pp.tooth, '') = $6))
+               and pp.status <> 'cancelled' and not exists (select 1 from import_batches b where b.id = pp.import_batch_id and b.status = 'rolled_back') limit 1`,
+            [d.external_ref, d.patient_id, d.procedure_id, d.practitioner_id, d.completed_at, d.tooth ?? ""]);
+          const pt = await c.query("select 1 from patients where id = $1 and status = 'active'", [d.patient_id]);
+          if (ex.rowCount || !pt.rowCount) {
+            await c.query("update import_rows set status = 'skipped', warnings = warnings || $2::jsonb where id = $1",
+              [r.id, JSON.stringify([{ field: "procedure", message: "Onay anında işlem zaten var ya da hasta yok; yazılmadı" }])]);
+            skipped++; continue;
+          }
+          const amt = (await c.query("select amount::text from import_rows where id = $1", [r.id])).rows[0].amount as string | null;
+          // Alacak ÜRETİLMEZ (ADR-075): bedel yalnız bilgi amaçlı snapshot; borç açılış bakiyesiyle gelir.
+          const pp = await c.query(
+            `insert into performed_procedures(tenant_id, patient_id, appointment_id, procedure_id, procedure_code, procedure_name, location_kind, tooth, quantity, amount, price_basis,
+               practitioner_id, note, completed_by, completed_at, external_ref, import_batch_id)
+             values ($1,$2,null,$3,$4,$5,$6,$7,$8,$9,'manual',$10,$11,$12,$13,$14,$15) returning id`,
+            [ctx.tenantId, d.patient_id, d.procedure_id, d.procedure_code, d.procedure_name, d.location_kind, d.tooth ?? null, d.quantity, amt ?? "0.00",
+             d.practitioner_id, d.note, ctx.membershipId, d.completed_at, d.external_ref, bid]);
+          await c.query("update import_rows set status = 'imported', target_id = $2 where id = $1", [r.id, pp.rows[0].id]);
+          amountImported += toMinor(amt ?? "0.00");
         } else {
           const st = await c.query("select 1 from patients where id = $1 and status = 'active'", [d.patient_id]);
           const ob = await c.query("select 1 from receivables where patient_id = $1 and source = 'opening_balance' and status = 'active'", [d.patient_id]);
@@ -387,7 +467,7 @@ export class ImportController {
         }
         imported++;
       }
-      const summary = { ...b.summary, imported, skippedAtCommit: skipped, ...(b.kind === "opening_balances" ? { amountImported: fromMinor(amountImported) } : {}) };
+      const summary = { ...b.summary, imported, skippedAtCommit: skipped, ...(b.kind === "opening_balances" || b.kind === "treatment_history" ? { amountImported: fromMinor(amountImported) } : {}) };
       await c.query("update import_batches set status = 'committed', committed_by = $2, committed_at = now(), summary = $3 where id = $1", [bid, ctx.userId, JSON.stringify(summary)]);
       await audit(c, ctx, { action: "import.commit", entityType: "import_batch", entityId: bid,
         changes: { kind: { from: null, to: b.kind }, imported: { from: null, to: imported }, skipped: { from: null, to: skipped },
@@ -422,6 +502,10 @@ export class ImportController {
           for (const t of ["performed_procedures", "clinical_notes", "lab_orders", "follow_ups"]) {
             if ((await c.query(`select 1 from ${t} where appointment_id = $1 limit 1`, [r.target_id])).rowCount) { blocked.push(`${r.target_id}:${t}`); break; }
           }
+        } else if (b.kind === "treatment_history") {
+          const st = (await c.query("select status from performed_procedures where id = $1", [r.target_id])).rows[0];
+          if (st && st.status !== "completed") blocked.push(`${r.target_id}:düzeltildi`);
+          if ((await c.query("select 1 from receivables where performed_procedure_id = $1 limit 1", [r.target_id])).rowCount) blocked.push(`${r.target_id}:alacak`);
         } else if ((await c.query("select 1 from allocations where receivable_id = $1 limit 1", [r.target_id])).rowCount) blocked.push(`${r.target_id}:dağıtım`);
       }
       if (blocked.length) {
@@ -430,6 +514,8 @@ export class ImportController {
       }
       for (const r of rows) {
         if (b.kind === "patients") await c.query("update patients set status = 'archived' where id = $1", [r.target_id]);
+        else if (b.kind === "treatment_history") await c.query(
+          "update performed_procedures set status = 'cancelled', status_reason = $2 where id = $1 and import_batch_id = $3", [r.target_id, `Aktarım geri alındı: ${i.reason}`, bid]);
         else if (b.kind === "appointment_history") await c.query(
           "update appointments set status = 'cancelled', cancel_reason = $2, completed_at = null, updated_by = $3, updated_at = now() where id = $1 and import_batch_id = $4",
           [r.target_id, `Aktarım geri alındı: ${i.reason}`, ctx.userId, bid]); // silme yok: iptal + gerekçe; kaynak no korunur, yeniden aktarılabilir

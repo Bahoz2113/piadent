@@ -1,0 +1,5 @@
+﻿islem_no;kaynak_no;tarih;islem;dis;adet;bedel;hekim;not
+ESKI-I-0001;ESKI-0001;12.03.2026;DOL-01;36;1;1.800,00;Dt. Elif Aras;Önceki sistem kaydı
+ESKI-I-0002;ESKI-0001;12.03.2026;Diş taşı temizliği (tüm ağız);;1;1200;elif.aras@demo-yesil.test;
+ESKI-I-0003;ESKI-0002;19.03.2026;KAN-01;;1;3500;Dt. Elif Aras;diş numarası boş → ağız düzeyi uyarısı
+ESKI-I-0004;ESKI-0002;19.03.2026;OLMAYAN-99;11;1;100;Dt. Elif Aras;katalogda yok

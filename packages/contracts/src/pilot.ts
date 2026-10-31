@@ -4,9 +4,9 @@
  */
 import { z } from "zod";
 
-export const IMPORT_KINDS = ["patients", "opening_balances", "appointment_history"] as const;
+export const IMPORT_KINDS = ["patients", "opening_balances", "appointment_history", "treatment_history"] as const;
 export type ImportKind = (typeof IMPORT_KINDS)[number];
-export const IMPORT_KIND_LABELS: Record<ImportKind, string> = { patients: "Hasta kartları", opening_balances: "Açılış bakiyeleri (hasta borcu)", appointment_history: "Geçmiş randevular" };
+export const IMPORT_KIND_LABELS: Record<ImportKind, string> = { patients: "Hasta kartları", opening_balances: "Açılış bakiyeleri (hasta borcu)", appointment_history: "Geçmiş randevular", treatment_history: "Geçmiş işlemler (tedavi geçmişi)" };
 
 export interface ImportField { key: string; label: string; required: boolean; aliases: string[]; hint?: string }
 /** Başlık eşleme: büyük/küçük harf, Türkçe karakter, boşluk/alt çizgi farkı gözetmeden takma adlarla. */
@@ -46,6 +46,18 @@ export const IMPORT_FIELDS: Record<ImportKind, ImportField[]> = {
     { key: "status", label: "Durum", required: false, aliases: ["durum", "status"], hint: "geldi / gelmedi / iptal (boşsa geldi)" },
     { key: "reason", label: "Sebep / işlem", required: false, aliases: ["sebep", "islem", "reason", "aciklama"], hint: "Serbest metin; tedavi kaydı oluşturmaz" },
     { key: "note", label: "Not", required: false, aliases: ["not", "note"] },
+  ],
+  treatment_history: [
+    { key: "external_ref", label: "Kaynak işlem no", required: false, aliases: ["islem_no", "kaynak_islem_no", "procedure_id", "external_ref", "id"], hint: "Tekrar aktarımda mükerrer kaydı önler; yoksa hasta+işlem+tarih+hekim eşleşmesi" },
+    { key: "patient_ref", label: "Kaynak hasta no", required: false, aliases: ["kaynak_no", "kaynak hasta no", "hasta_no", "patient_ref", "hasta"], hint: "Hasta kartı aktarımındaki kaynak numarası; yoksa VİADENT dosya no" },
+    { key: "file_no", label: "VİADENT dosya no", required: false, aliases: ["dosya_no", "dosya", "file_no"] },
+    { key: "date", label: "İşlem tarihi", required: true, aliases: ["tarih", "islem_tarihi", "date", "completed_at"], hint: "gg.aa.yyyy; yalnız geçmiş" },
+    { key: "procedure", label: "İşlem (kod veya ad)", required: true, aliases: ["islem", "islem_kodu", "kod", "procedure", "procedure_code", "islem_adi"], hint: "VİADENT kataloğundaki kod (örn. DOL-01) ya da tam ad; eşleşmeyen satır hatalı" },
+    { key: "tooth", label: "Diş (FDI)", required: false, aliases: ["dis", "dis_no", "tooth", "fdi"], hint: "11–48; boşsa işlem ağız düzeyinde" },
+    { key: "quantity", label: "Adet", required: false, aliases: ["adet", "miktar", "quantity", "qty"], hint: "Boşsa 1" },
+    { key: "amount", label: "Bedel (₺, bilgi)", required: false, aliases: ["tutar", "bedel", "ucret", "amount", "price"], hint: "Kaynaktaki bedel; ALACAK ÜRETMEZ (borç açılış bakiyesiyle gelir); boşsa 0" },
+    { key: "practitioner", label: "Hekim", required: true, aliases: ["hekim", "doktor", "practitioner", "dentist", "hekim_adi"], hint: "VİADENT'teki hekim adı ya da e-posta" },
+    { key: "note", label: "Not", required: false, aliases: ["not", "note", "aciklama"] },
   ],
 };
 

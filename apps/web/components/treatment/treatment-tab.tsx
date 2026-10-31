@@ -24,7 +24,7 @@ interface Chart {
   diagnoses: { id: string; location: Loc; code: string | null; description: string; status: string; at: string; by: string }[];
   planned: { id: string; code: string; name: string; location: Loc; quantity: number; performedQty: number; versionStatus: string }[];
   performed: { id: string; code: string; name: string; location: Loc; quantity: number; amount: string; status: string; statusReason: string | null; at: string; planItemId: string | null;
-    correctsId: string | null; note: string | null; practitioner: string; visitAt: string }[];
+    correctsId: string | null; note: string | null; practitioner: string; visitAt: string; imported?: boolean }[];
 }
 interface Procedure { id: string; code: string; name: string; category: string | null; toothScope: ToothScope }
 
@@ -237,7 +237,7 @@ function PerformedCard({ chart, canWrite, onChanged }: { chart: Chart; canWrite:
             {chart.performed.map((p) => (
               <tr key={p.id} style={p.status !== "completed" ? { color: "var(--text-secondary)" } : undefined}>
                 <td>{fmtDateTime(p.at, tz)}</td>
-                <td><strong>{p.code}</strong> {p.name}{p.correctsId && <div className="small muted">Düzeltme kaydı</div>}</td>
+                <td><strong>{p.code}</strong> {p.name}{p.correctsId && <div className="small muted">Düzeltme kaydı</div>}{p.imported && <div className="small muted">Önceki sistemden aktarıldı · bedel bilgi amaçlı, alacak yok</div>}</td>
                 <td>{locationLabel(p.location)}</td>
                 <td className="money">{p.quantity}</td>
                 <td className="money">{formatTRY(p.amount)}</td>

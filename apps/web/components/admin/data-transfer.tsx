@@ -132,7 +132,8 @@ export function ImportPanel({ notify }: { notify: Notify }) {
           </table>
           <p className="small muted">Ayırıcı “;” veya “,” olabilir; Excel'in UTF-8 CSV çıktısı uygundur. Tarih gg.aa.yyyy, tutar 1.250,50 biçiminde yazılabilir.
             {kind === "opening_balances" && " Açılış bakiyesi için önce hasta kartlarını aktarın."}
-            {kind === "appointment_history" && " Geçmiş randevular için önce hasta kartlarını aktarın; hekim adı Yönetim → Hekimler'deki adla (ya da e-postayla) eşleşmeli; yalnız geçmiş tarihler."}</p>
+            {kind === "appointment_history" && " Geçmiş randevular için önce hasta kartlarını aktarın; hekim adı Yönetim → Hekimler'deki adla (ya da e-postayla) eşleşmeli; yalnız geçmiş tarihler."}
+            {kind === "treatment_history" && " Geçmiş işlemler için önce hasta kartlarını aktarın; işlem kodu/adı Yönetim → Katalog ile eşleşmeli. Aktarılan işlem alacak üretmez: bedel bilgi amaçlıdır, borç açılış bakiyesiyle aktarılır."}</p>
         </details>
         <div><button className="btn btn-primary" disabled={!file || busy || duplicateTargets.length > 0} onClick={() => void check()}><FileUp size={17} aria-hidden />{busy ? "Kontrol ediliyor…" : "Ön kontrol yap"}</button></div>
       </section>
@@ -174,7 +175,7 @@ function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: No
   if (d.error) return <section className="card"><ErrorState error={d.error} onRetry={d.reload} /></section>;
   const b = d.data!;
   const s = b.summary;
-  const money = b.kind === "opening_balances";
+  const money = b.kind === "opening_balances" || b.kind === "treatment_history";
   async function commit() {
     if (busy) return;
     if (!window.confirm(`${s.valid} geçerli satır aktarılacak. Hatalı ve mükerrer satırlar atlanır. Devam edilsin mi?`)) return;
@@ -190,7 +191,7 @@ function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: No
   }
   // Satır tablosunda gösterilecek sütunlar: türe göre anlamlı 4 alan; aksi halde eşlemedeki ilk 4
   const PREFERRED: Record<string, string[]> = { patients: ["external_ref", "first_name", "last_name", "birth_date"], opening_balances: ["patient_ref", "amount", "as_of", "description"],
-    appointment_history: ["date", "time", "practitioner_name", "status"] };
+    appointment_history: ["date", "time", "practitioner_name", "status"], treatment_history: ["date", "procedure_code", "tooth", "amount"] };
   const mapped = Object.values(b.mapping);
   const keys = (PREFERRED[b.kind] ?? []).filter((k) => mapped.includes(k) || k === "practitioner_name").length >= 2 ? PREFERRED[b.kind]! : mapped;
   const cell = (r: Row, k: string): string => {

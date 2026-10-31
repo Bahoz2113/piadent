@@ -58,10 +58,12 @@ MFA kurtarma kodları (ADR-058), T.C. kimlik no alan şifrelemesi + HMAC arama +
 
 **Görev 13 — tamamlandı (27.10.2026):** geçmiş randevu içe aktarımı (0017, ADR-072; sentetik sözleşme + örnek) · UAT senaryoları `uat-senaryolari.md` · 19 rapor + haftalık ajanda 100k/1M ölçümü, hekim-hasta 18× hızlandı, arka plan ertelendi (ADR-074) · VİA Akış eşikleri klinik ayarı (0018, ADR-073).
 
-**Görev 14 (öneri) — Pilot açılış paketi:** tedavi/ödeme geçmişi için sentetik aktarım sözleşmesi (hayali finans üretmeden), perf verisine finans/tedavi hacmi + finans raporu ölçümü, UAT senaryolarının tek akışta otomatik ön koşusu, rol başına 1 sayfalık ekran görüntülü Türkçe kılavuz, imaj derleme + CI ilk koşu (GitHub bağlanınca). Ürün sahibi paralelde: bağımsız sızma testi, barındırma, hukuk/KVKK.
+**Görev 14 — tamamlandı (27.10.2026):** tedavi geçmişi aktarımı, alacak üretmez (0019, ADR-075) · perf DB'ye 300k işlem/alacak + 240k ödeme; borç bakiye 10,3 s → 0,33 s (0020, ADR-076) · migration/FORCE RLS bulgusu (ADR-077) · pilot provası tek akış E2E · rol kılavuzları + ekran turu. İmaj derleme + CI: depo/registry olmadığı için hâlâ açık.
+
+**Görev 15 (öneri) — Dışa açık demo ortamı ve CI:** yönetilen PostgreSQL + barındırma üzerinde sentetik demo (roller, migration, seed), dosya deposu için nesne depolama adaptörü, GitHub + CI ilk koşu + imaj derleme, demo sıfırlama zamanlayıcısı. Ürün sahibi paralelde: bağımsız sızma testi, hukuk/KVKK.
 
 ## Görev 7'den kalan açık işler
-- Tedavi, ödeme geçmişi ve dosya aktarımı (kaynak sistemin gerçek dışa aktarım örneği gelince; randevu geçmişi Görev 13'te sentetik sözleşmeyle eklendi).
+- Dosya/röntgen ve belge aktarımı (kaynak örneği gelince); ödeme geçmişi bilinçli aktarılmaz (ADR-075); randevu (Görev 13) ve tedavi (Görev 14) geçmişi sentetik sözleşmeyle var.
 - Büyük raporların arka plana alınması — yalnız ölçüm tetiklerse (Görev 13: tüm raporlar p95 ≤ 300 ms, ADR-074); finans hacimli perf verisi henüz yok.
 - Üretimde `archive_command` hedefi (ikinci konum) ve WAL arşivi için alarm (`pg_stat_archiver.failed_count`) — barındırma kararıyla (tatbikat Görev 12'de).
 - Destek erişiminde platform tarafı talep **başlatma** akışı (klinik tarafı onay/dört göz Görev 10–11'de tamam).

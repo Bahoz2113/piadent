@@ -1,6 +1,6 @@
 # Yayın kapıları (Plan §11 “Yayın tanımı”, §04 “Satış kapısı”) — durum 23.10.2026
 
-> Son güncelleme: 27.10.2026, Görev 13 (pilot veri ve kullanıcı kabulü hazırlığı).
+> Son güncelleme: 27.10.2026, Görev 14 (pilot açılış paketi).
 >
 > **Karar: VİADENT bugün “tüm kliniklere satışa hazır” DEĞİLDİR.** Yazılımın P0 kapsamı çalışıyor ve testli; ancak resmî entegrasyon, veri işleme ve sözleşme kararları, klinik kullanıcı kabulü ve bağımsız güvenlik testi açık. Mevcut durum yalnız **sentetik demo** ve — aşağıdaki “pilot öncesi” kapıları kapandıktan sonra — **tek hedef klinikte kontrollü pilot** için uygundur. “Tam uyumlu”, “Bakanlık onaylı”, “e-Nabız entegre”, “e-Fatura entegre” ifadeleri kullanılmaz (ADR-051).
 
@@ -9,7 +9,7 @@ Durum: ✅ kapalı (kanıtlı) · ⚠️ kısmi · ⛔ açık · 🔒 dış eri�
 ## 1. Plan §11 yayın tanımı
 | Kapı | Durum | Kanıt / kalan |
 |---|---|---|
-| Kritik testler geçer | ✅ | API 250/250, E2E 73 (7 bilinçli atlama; axe ciddi/kritik 0; **derlenmiş üretim API/worker'ına karşı**), contracts 14, web kontrast 14, typecheck temiz, `next build` (bkz. `verification.md`). AT-01…AT-17, AT-19, AT-20 otomatik testli; AT-18 kısmi (aşağıda) |
+| Kritik testler geçer | ✅ | API 253/253, E2E 74 (8 bilinçli atlama; pilot provası tek akış; axe ciddi/kritik 0; **derlenmiş üretim API/worker'ına karşı**), contracts 14, web kontrast 14, typecheck temiz, `next build` (bkz. `verification.md`). AT-01…AT-17, AT-19, AT-20 otomatik testli; AT-18 kısmi (aşağıda) |
 | Açık kritik/yüksek güvenlik bulgusu yok | ⚠️ | İç denetim (Görev 9) 9 bulgu kapattı; Görev 10 kimlik no şifreleme, kurtarma kodları, klinik MFA politikası ve destek erişim modelini ekledi; Görev 11 düz metin kimlik sütununu kaldırdı, gerekçeli kimlik gösterimi, dört göz ve kademeli gecikme ekledi; bilinen açık kritik/yüksek yok; `pnpm audit` 0 (multer override). **Bağımsız sızma testi yapılmadı** → kapı açık sayılır (`security-review.md` A1) |
 | Finans mutabakatı | ✅ (yazılım) / ⛔ (klinik) | AT-06…AT-10, AT-19, rapor toplamı = alt kayıtlar, içe aktarma tutar mutabakatı, yedek-geri yükleme finans toplamları mutabık. **Mali müşavir onayı** (KDV gösterimi, yuvarlama, prim kesinti sırası, iade belgesi) ve pilotta paralel gün sonu mutabakatı yapılmadı |
 | Geri yükleme denenmiş | ✅ (teknik) / ⚠️ (işletim) | İzole geri yükleme + sayım/finans/dosya mutabakatı otomatik (AT-17); 100k hasta/1M randevu 93 sn. **WAL arşivleme + PITR tatbikatı yapıldı (Görev 12, `scripts/pitr-drill.sh`)**; üretimde arşiv hedefi (ikinci konum) barındırma kararı; insanlı uçtan uca tatbikat yapılmadı |
@@ -52,7 +52,7 @@ TLS ⚠️ (Caddy otomatik TLS yapılandırması hazır, sunucu yok) · secret m
 | AT-20 erişim kaldırma | ✅ | permissions-session (worker + dosya dahil) |
 
 ## 5. Performans (Plan §11)
-✅ 100.024 hasta / 1.000.009 randevu / 50 eşzamanlı kullanıcı: gerçekçi profilde p95 39,6 ms, yoğun profilde 201,8 ms; sayfalar ≤ 1,6 sn (500 ms ölçüm penceresi dahil). Görev 13: 19 rapor + haftalık ajanda ölçüldü, tümü p95 ≤ 300 ms (hekim-hasta 5,1 sn → 0,28 sn düzeltildi). ⚠️ Doygunlukta (düşünme süresiz) p95 565 ms: tek süreçli API + aynı makinede DB → üretimde ayrı DB ve ≥2 API süreci. Ayrıntı `performance.md`.
+✅ 100.024 hasta / 1.000.009 randevu / 50 eşzamanlı kullanıcı: gerçekçi profilde p95 39,6 ms, yoğun profilde 201,8 ms; sayfalar ≤ 1,6 sn (500 ms ölçüm penceresi dahil). Görev 13–14: 19 rapor + haftalık ajanda, 300k işlem/alacak hacmiyle ölçüldü; tümü p95 ≤ 350 ms (hekim-hasta 5,1 → 0,3 sn; borç bakiye 10,3 → 0,33 sn düzeltildi). ⚠️ Doygunlukta (düşünme süresiz) p95 565 ms: tek süreçli API + aynı makinede DB → üretimde ayrı DB ve ≥2 API süreci. Ayrıntı `performance.md`.
 
 ## 5b. Görev 8 ile kapanan teknik kapılar
 Derlenmiş üretim çıktısı (tsx yok) ✅ · konteyner tanımları ⚠️ (yazıldı; imaj deposuna erişim olmadığı için **derlenmedi**) · CI iş akışı ⚠️ (yazıldı; depo GitHub'a bağlı olmadığı için **koşmadı**) · saatlik yedek + günlük doğrulama zamanlayıcısı ✅ (compose döngüsü bir tur koşuldu; systemd birimleri doğrulandı) · paylaşılan giriş sınırlayıcısı ✅ · anahtar döndürme ✅ · nonce'lu CSP ✅ · içe aktarma satır verisi saklama ✅ (30 gün varsayılan, danışman onayı ⛔) · sağlık/hazır olma/metrik uçları ✅. Ayrıntı `deployment.md`.

@@ -34,12 +34,12 @@ Plan F5: “Seçilmiş klinikte eğitim, paralel kontrol, veri mutabakatı.” H
 - ☐ Hatalı satırlar kliniğe döndü, düzeltildi
 - ☐ Üretim aktarımı öncesi yedek (G1) ve doğrulaması
 - ☐ 20 hastalık örneklem karşılaştırması imzalandı
-- ☐ Randevu geçmişi aktarımı provası (araç ☑ Görev 13, `gecmis-randevu-ornek.csv`); tedavi/ödeme geçmişi kapsam kararı (bu sürümde yok; eski sistem salt okunur referans olarak kalır mı?)
+- ☐ Randevu ve tedavi geçmişi aktarımı provası (araç ☑ Görev 13–14, `gecmis-randevu-ornek.csv`, `gecmis-islem-ornek.csv`); ödeme geçmişi aktarılmaz — eski sistem salt okunur referans (ADR-075)
 
 ## 5. Kullanıcılar ve eğitim
 - ☐ Kullanıcı listesi ve roller (yönetici, hekim, asistan, sekreter, finans); davetler gönderildi
 - ☐ Yönetici ve finans MFA kurdu (Hesabım)
-- ☐ Rol bazlı eğitim (≈ 1 sa sekreter: Bugün/ajanda/hasta/tahsilat; hekim: Tedavi/anamnez/not; finans: kasa/gün sonu/prim; yönetici: ekip/katalog/belge/veri aktarımı)
+- ☐ Rol bazlı eğitim (kılavuzlar ☑ `docs/kilavuz/`; ≈ 1 sa sekreter: Bugün/ajanda/hasta/tahsilat; hekim: Tedavi/anamnez/not; finans: kasa/gün sonu/prim; yönetici: ekip/katalog/belge/veri aktarımı)
 - ☐ Kısa başvuru kartı: “sistem çalışmazsa ne yapılır” (kâğıt randevu listesi, sonra giriş)
 
 ## 6. Kabul ve ölçüm

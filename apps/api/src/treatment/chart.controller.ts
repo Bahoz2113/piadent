@@ -48,9 +48,9 @@ export class ChartController {
       );
       const pp = await c.query(
         `select pp.id, pp.procedure_code, pp.procedure_name, pp.location_kind, pp.tooth, pp.surfaces, pp.quadrant, pp.arch, pp.quantity,
-                pp.amount::text as amount, pp.price_basis, pp.status, pp.status_reason, pp.completed_at, pp.plan_item_id, pp.corrects_id, pp.note,
+                pp.amount::text as amount, pp.price_basis, pp.status, pp.status_reason, pp.completed_at, pp.plan_item_id, pp.corrects_id, pp.note, pp.import_batch_id,
                 pr.display_name as practitioner, a.starts_at as visit_at
-           from performed_procedures pp join practitioners pr on pr.id = pp.practitioner_id join appointments a on a.id = pp.appointment_id
+           from performed_procedures pp join practitioners pr on pr.id = pp.practitioner_id left join appointments a on a.id = pp.appointment_id
           where pp.patient_id = $1 order by pp.completed_at desc`,
         [patientId],
       );
@@ -60,7 +60,7 @@ export class ChartController {
         planned: pi.rows.map((x) => ({ id: x.id, code: x.procedure_code, name: x.procedure_name, location: presentLoc(x), quantity: x.quantity, performedQty: x.performed_qty, versionStatus: x.version_status })),
         performed: pp.rows.map((x) => ({ id: x.id, code: x.procedure_code, name: x.procedure_name, location: presentLoc(x), quantity: x.quantity, amount: x.amount,
           priceBasis: x.price_basis, status: x.status, statusReason: x.status_reason, at: x.completed_at, planItemId: x.plan_item_id, correctsId: x.corrects_id,
-          note: x.note, practitioner: x.practitioner, visitAt: x.visit_at })),
+          note: x.note, practitioner: x.practitioner, visitAt: x.visit_at ?? x.completed_at, imported: !!x.import_batch_id })),
       };
     });
   }

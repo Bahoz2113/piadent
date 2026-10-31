@@ -61,8 +61,22 @@ Uç bazında (gerçekçi profil, p95): arama 41,6 · hasta kartı 27,0 · randev
 
 Sonuç: tüm raporlar p95 ≤ 300 ms (hedef 500 ms); büyük raporların arka plana alınması ertelendi (ADR-074). Sınır: finans/tedavi/laboratuvar tabloları perf verisinde küçük olduğu için bu raporlar gerçek hacimle ölçülmedi — `perf-data.ts` genişletilince tekrar koşulur.
 
+## Finans hacmiyle raporlar (27.10.2026, Görev 14)
+`packages/db/src/perf-finance.ts` perf DB'ye **300.000 gerçekleşen işlem + 300.000 alacak + 240.000 ödeme/dağıtım/kasa hareketi** ekledi (defter tetikleyicileri çalışır; 264 sn). Ham çıktılar `docs/perf/reports-finance-before-…json` / `…-after-…json`.
+
+| Rapor | Önce p95 | Sonra p95 | Ne değişti |
+|---|---|---|---|
+| **Borç bakiye** (yaşlandırma, tüm hastalar) | **10.335 ms** | **333 ms** | alacak/ödemede dağıtım-iade toplamı (ADR-076) + kısmi dizinler |
+| **Klinik işletme analizi** (30 g) | 1.976 ms | 70 ms | aynı |
+| Klinik işletme analizi (1 yıl) | 1.910 ms | 177 ms | aynı |
+| Hekim – hasta (1 yıl) | 440 ms | 303 ms | — |
+| Diğer 15 rapor | ≤ 100 ms | ≤ 100 ms | — |
+| Haftalık ajanda | 231 ms | 147 ms | — |
+
+Tüm raporlar p95 ≤ 350 ms. Sınır: gelir–gider/tedavi raporları için perf verisinin tarihleri 2021–2026'ya dağıldığından son 30 gün penceresinde satır az; 1 yıl penceresi ölçüldü.
+
 ## Ölçülmeyenler / açık
-- Finans/tedavi/laboratuvar raporları büyük **finans** hacmiyle ölçülmedi (perf verisi yalnız hasta + randevu); randevu tabanlı raporlar ölçüldü (yukarıda).
+- Laboratuvar/stok/cari raporları büyük hacimle ölçülmedi (perf verisinde az satır); finans ve tedavi raporları 300k işlem/alacak ile ölçüldü (yukarıda).
 - Haftalık ajanda (~3.500 randevu) ve 500+ randevulu günde telefon görünümü ölçülmedi.
 - İnternet gecikmesi/TLS, ayrı DB sunucusu, çok süreçli API, PostgreSQL ayarı (shared_buffers vb.) — üretim topolojisi seçilince tekrar ölçülmeli.
 - Yük altında yazma yoğun senaryolar (toplu tahsilat, gün sonu) ölçülmedi.

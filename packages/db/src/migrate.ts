@@ -28,6 +28,7 @@ export async function migrate(connectionString: string, log = console.log): Prom
       }
       await client.query("begin");
       try {
+        await precheck(client, file);
         await client.query(sql);
         await client.query("insert into schema_migrations(name, checksum) values ($1, $2)", [file, sum]);
         await client.query("commit");
@@ -54,3 +55,24 @@ if (/[\\/]migrate\.(ts|js)$/.test(process.argv[1] ?? "")) {
     process.exit(1);
   });
 }
+
+/**
+ * Veri okuyan ön kontroller (ADR-077): migration'lar sahip rolüyle ve kiracı bağlamı OLMADAN koşar; FORCE RLS altında sahip de
+ * kiracı satırlarını görmez. Bu yüzden SQL içindeki "satır var mı" kontrolleri (0013'teki gibi) sessizce 0 görür. Veri gerektiren
+ * kontroller burada kiracı kiracı yapılır; yeni migration'lar veri yazarken app.for_each_tenant() kullanır (0020).
+ */
+async function precheck(client: pg.Client, file: string) {
+  if (file === "0013_drop_plain_national_id.sql") {
+    const col = await client.query("select 1 from information_schema.columns where table_name = 'patients' and column_name = 'national_id'");
+    if (!col.rowCount) return;
+    const tenants = (await client.query("select id from tenants")).rows as { id: string }[];
+    let n = 0;
+    for (const t of tenants) {
+      await client.query("select set_config('app.tenant_id', $1, true)", [t.id]);
+      n += (await client.query("select count(*)::int as n from patients where national_id is not null")).rows[0].n as number;
+    }
+    await client.query("select set_config('app.tenant_id', '', true)");
+    if (n > 0) throw new Error(`patients.national_id sütununda ${n} düz metin kayıt var; önce \`pnpm db:encrypt-ids --apply\` çalıştırın`);
+  }
+}
+

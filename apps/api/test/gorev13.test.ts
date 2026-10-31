@@ -137,3 +137,83 @@ describe("ADR-073: VİA Akış eşikleri klinik ayarı", () => {
     await admin.put("/security/akis", def.settings).expect(200);
   });
 });
+
+describe("ADR-075: tedavi geçmişi içe aktarımı (alacak üretmez)", () => {
+  let bid: string;
+  it("ön kontrol: katalog kodu/adı ve hekim eşleşir; FDI, adet, bedel doğrulanır; onayda işlem yazılır, alacak/bakiye değişmez; Hasta 360 tedavi sekmesinde görünür", async () => {
+    const d1 = day(-20), d2 = day(-15);
+    const content = [
+      "İşlem_No;Kaynak_No;Tarih;İşlem;Diş;Adet;Bedel;Hekim;Not",
+      `${run}-T1;${run}-P1;${d1};DOL-01;36;1;1.800,00;Dt. Elif Aras;Önceki sistem`,
+      `${run}-T2;${run}-P1;${d1};Diş taşı temizliği (tüm ağız);;1;1200;Elif Aras;`,
+      `${run}-T3;${run}-P2;${d2};KAN-01;;1;3500;Dt. Elif Aras;`,                 // diş boş → uyarı (ağız düzeyi)
+      `${run}-T4;${run}-P2;${d2};OLMAYAN-99;11;1;100;Dt. Elif Aras;`,            // katalogda yok
+      `${run}-T5;${run}-P2;${d2};DOL-01;99;1;100;Dt. Elif Aras;`,                // FDI geçersiz
+      `${run}-T1;${run}-P1;${d1};DOL-01;36;1;1800;Dt. Elif Aras;`,               // dosya içi mükerrer
+      "",
+    ].join("\r\n");
+    const r0 = await imp(admin, { kind: "treatment_history", content }).expect(201);
+    bid = r0.body.id;
+    const r = await admin.get(`/imports/${bid}`).expect(200);
+    const rows = r.body.rows as { rowNo: number; status: string; errors: { field: string }[]; warnings: { field: string }[]; data: Record<string, unknown>; amount: string | null }[];
+    const st = (n: number) => rows.find((x) => x.rowNo === n)!;
+    expect(st(1).status).toBe("valid"); expect(st(1).data.procedure_code).toBe("DOL-01"); expect(st(1).data.location_kind).toBe("tooth"); expect(st(1).amount).toBe("1800.00");
+    expect(st(2).status).toBe("valid"); expect(st(2).data.procedure_code).toBe("TEM-01");
+    expect(st(3).status).toBe("valid"); expect(st(3).warnings.map((w) => w.field)).toContain("tooth"); expect(st(3).data.location_kind).toBe("mouth");
+    expect(st(4).errors[0]!.field).toBe("procedure"); expect(st(5).errors[0]!.field).toBe("tooth"); expect(st(6).status).toBe("duplicate");
+    expect(r.body.summary).toMatchObject({ rows: 6, valid: 3, errors: 2, duplicates: 1, amountValid: "6500.00" });
+    const pid = (await ownerQuery(tenantA, "select id from patients where external_ref = $1", [`${run}-P1`]))[0]!.id;
+    const before = (await ownerQuery(tenantA, "select count(*)::int as n from receivables where patient_id = $1", [pid]))[0]!.n;
+    const c = await admin.post(`/imports/${bid}/commit`).expect(200);
+    expect(c.body.summary).toMatchObject({ imported: 3, skippedAtCommit: 0, amountImported: "6500.00" });
+    const pp = await ownerQuery(tenantA, "select status, appointment_id, price_basis, external_ref, amount::text as amount from performed_procedures where import_batch_id = $1 order by external_ref", [bid]);
+    expect(pp).toHaveLength(3); expect(pp.every((x) => x.status === "completed" && x.appointment_id === null && x.price_basis === "manual")).toBe(true);
+    // finans etkisi YOK
+    expect((await ownerQuery(tenantA, "select count(*)::int as n from receivables where patient_id = $1", [pid]))[0]!.n).toBe(before);
+    expect((await ownerQuery(tenantA, "select count(*)::int as n from receivables where performed_procedure_id in (select id from performed_procedures where import_batch_id = $1)", [bid]))[0]!.n).toBe(0);
+    const chart = (await dentist.get(`/patients/${pid}/chart`).expect(200)).body;
+    const mine = chart.performed.filter((x: { code: string; imported?: boolean }) => x.imported);
+    expect(mine.length).toBeGreaterThanOrEqual(2); expect(mine.some((x: { code: string }) => x.code === "DOL-01")).toBe(true);
+  });
+
+  it("tekrar: aynı işlem no 'daha önce aktarılmış'; geri alma iptal eder (silmez); düzeltilmiş/iptal edilmiş kayıt geri almayı engeller", async () => {
+    const r0 = await imp(admin, { kind: "treatment_history", content: `İşlem_No;Kaynak_No;Tarih;İşlem;Hekim\r\n${run}-T1;${run}-P1;${day(-20)};DOL-01;Dt. Elif Aras\r\n` }).expect(201);
+    expect((await admin.get(`/imports/${r0.body.id}`).expect(200)).body.rows[0].status).toBe("already_imported");
+    await admin.post(`/imports/${bid}/rollback`, { reason: "Sentetik geri alma" }).expect(200);
+    const pp = await ownerQuery(tenantA, "select status, status_reason from performed_procedures where import_batch_id = $1", [bid]);
+    expect(pp.every((x) => x.status === "cancelled" && String(x.status_reason).startsWith("Aktarım geri alındı"))).toBe(true);
+    // yeniden aktarılabilir; sonra hekim iptal ederse (durum değişti) geri alma reddedilir
+    const again = await imp(admin, { kind: "treatment_history", fileName: `tekrar-t-${run}.csv`, content: `İşlem_No;Kaynak_No;Tarih;İşlem;Hekim;Not\r\n${run}-T1;${run}-P1;${day(-20)};DOL-01;Dt. Elif Aras;yeniden\r\n` }).expect(201); // farklı içerik (aynı dosya = aynı batch kuralı)
+    expect(again.body.summary.valid).toBe(1);
+    await admin.post(`/imports/${again.body.id}/commit`).expect(200);
+    const ppId = (await ownerQuery(tenantA, "select id from performed_procedures where import_batch_id = $1", [again.body.id]))[0]!.id;
+    await dentist.post(`/procedures/${ppId}/cancel`, { reason: "Hatalı giriş (sentetik)" }).expect(200).catch(async () => {
+      await ownerQuery(tenantA, "update performed_procedures set status = 'cancelled', status_reason = 'Hatalı giriş' where id = $1", [ppId]);
+    });
+    const rb = await admin.post(`/imports/${again.body.id}/rollback`, { reason: "Deneme" });
+    expect(rb.status).toBe(409);
+  });
+});
+
+describe("ADR-076: dağıtılan/iade toplamları alacak ve ödemede tutulur", () => {
+  it("ödeme + dağıtım + iade sonrası sütunlar hesaplanan toplamlarla aynı; doğrudan değiştirme reddedilir; borç raporu aynı sayıyı verir", async () => {
+    const fin = await login(app, EMAILS.aFinance);
+    const key = () => `t-${randomUUID()}`;
+    const pid = (await ownerQuery(tenantA, "select id from patients where external_ref = $1", [`${run}-P2`]))[0]!.id;
+    const prac = (await ownerQuery(tenantA, "select id from practitioners where display_name = 'Dt. Elif Aras'"))[0]!.id;
+    const cashId = (await fin.get("/cash-accounts").expect(200)).body.items.find((a: { kind: string }) => a.kind === "cash").id;
+    const rc = (await fin.post("/receivables", { patientId: pid, amount: "1000.00", description: "Sentetik alacak (ADR-076)", practitionerId: prac }).set("idempotency-key", key()).expect(201)).body.id;
+    const py = (await fin.post("/payments", { patientId: pid, amount: "700.00", method: "cash", cashAccountId: cashId, allocations: [{ receivableId: rc, amount: "600.00" }] }).set("idempotency-key", key()).expect(201)).body;
+    const payId = (py.id ?? py.payment?.id) as string;
+    await fin.post(`/payments/${payId}/refunds`, { amount: "50.00", method: "cash", cashAccountId: cashId, reason: "Sentetik iade (ADR-076)" }).set("idempotency-key", key()).expect(201);
+    const r = (await ownerQuery(tenantA, "select allocated_amount::text as a from receivables where id = $1", [rc]))[0]!;
+    const p = (await ownerQuery(tenantA, "select allocated_amount::text as a, refunded_amount::text as f from payments where id = $1", [payId]))[0]!;
+    expect(r.a).toBe("600.00"); expect(p.a).toBe("600.00"); expect(p.f).toBe("50.00");
+    expect(await ownerQuery(tenantA, "select * from app.receivable_alloc_check")).toEqual([]);
+    await expect(ownerQuery(tenantA, "update receivables set allocated_amount = 1 where id = $1", [rc])).rejects.toThrow(/receivable_allocated_readonly/);
+    // açık borç: 1000 − 600 = 400; avans: 700 − 600 − 50 = 50 → borç raporunda görünür
+    const rep = (await fin.get("/reports/borc-bakiye").expect(200)).body;
+    const row = rep.rows.find((x: { _drill?: { patientId: string } }) => x._drill?.patientId === pid);
+    expect(row).toBeTruthy(); expect(row.debt).toBe("400.00"); expect(row.advance).toBe("50.00");
+  });
+});

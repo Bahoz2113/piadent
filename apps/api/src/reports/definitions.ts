@@ -145,8 +145,8 @@ const maxD = (x: string, y: string) => (x > y ? x : y);
 const minD = (x: string, y: string) => (x < y ? x : y);
 
 const BORC_CTE = `
-  with o as (select r.patient_id, r.due_date, r.amount - coalesce((select sum(al.amount) from allocations al where al.receivable_id = r.id), 0) as open
-               from receivables r where r.status = 'active'),
+  with o as (select r.patient_id, r.due_date, r.amount - r.allocated_amount as open
+               from receivables r where r.status = 'active' and r.amount > r.allocated_amount),
        d as (select patient_id, sum(open) as debt,
                     coalesce(sum(open) filter (where due_date > $1::date), 0) as not_due,
                     coalesce(sum(open) filter (where due_date <= $1::date and $1::date - due_date <= 30), 0) as d0_30,
@@ -154,9 +154,8 @@ const BORC_CTE = `
                     coalesce(sum(open) filter (where $1::date - due_date between 61 and 90), 0) as d61_90,
                     coalesce(sum(open) filter (where $1::date - due_date > 90), 0) as d90p
                from o where open <> 0 group by patient_id),
-       v as (select x.patient_id, sum(x.amount - coalesce((select sum(f.amount) from refunds f where f.payment_id = x.id), 0)
-                                             - coalesce((select sum(al.amount) from allocations al where al.payment_id = x.id), 0)) as advance
-               from payments x group by x.patient_id),
+       v as (select x.patient_id, sum(x.amount - x.allocated_amount - x.refunded_amount) as advance
+               from payments x where x.amount > x.allocated_amount + x.refunded_amount group by x.patient_id),
        f as (select d.*, coalesce(v.advance, 0) as advance from d left join v on v.patient_id = d.patient_id
               where d.debt > 0 and ($2::numeric is null or d.debt >= $2::numeric)
                 and ($3::text is null or (case $3 when 'notDue' then d.not_due when 'd0_30' then d.d0_30 when 'd31_60' then d.d31_60 when 'd61_90' then d.d61_90 else d.d90p end) > 0))`;
@@ -565,8 +564,7 @@ const isletme: Runner = async (a) => {
             (select coalesce(sum(amount), 0) from performed_procedures where status = 'completed' and completed_at >= $1 and completed_at < $2)::numeric(14,2)::text as treatment,
             ((select coalesce(sum(amount), 0) from payments where paid_at >= $1 and paid_at < $2)
               - (select coalesce(sum(amount), 0) from refunds where refunded_at >= $1 and refunded_at < $2))::numeric(14,2)::text as net_collections,
-            (select coalesce(sum(r.amount - coalesce((select sum(al.amount) from allocations al where al.receivable_id = r.id), 0)), 0)
-               from receivables r where r.status = 'active')::numeric(14,2)::text as open_debt`, args);
+            (select coalesce(sum(r.amount - r.allocated_amount), 0) from receivables r where r.status = 'active' and r.amount > r.allocated_amount)::numeric(14,2)::text as open_debt`, args);
   const pl = await one(a, `${PLAN_CTE} select count(*) filter (where outcome = 'accepted')::int as acc, count(*) filter (where outcome = 'rejected')::int as rej from f`,
     [a.r.fromUtc, a.r.toUtc, null]);
   const fu = await one(a, `select count(*)::int as n, count(*) filter (where status = 'done')::int as done, count(*) filter (where status = 'cancelled')::int as cancelled

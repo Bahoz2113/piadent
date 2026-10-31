@@ -58,16 +58,34 @@ Açılış bakiyesi **hayali geçmiş işlem üretmez**: kaynağı `opening_bala
 
 Kurallar: hekimin aynı zaman aralığında başka randevusu varsa (DB'de ya da dosyada) satır hatalıdır (çakışma); iptal satırları kapasite tutmaz. Onayda `completed` randevu `completed_at = bitiş`, iptal randevu “Önceki sistemden aktarıldı (iptal)” gerekçesiyle yazılır; VİA Akış görevi üretilmez. **Geri alma silmez**: randevu “Aktarım geri alındı: <gerekçe>” ile iptal edilir, kaynak no korunur ve aynı kaynak no yeniden aktarılabilir; randevu sonradan düzenlenmiş ya da işlem/not/laboratuvar/kontrol bağlanmışsa geri alma reddedilir.
 
+### Geçmiş işlemler (`treatment_history`, Görev 14 — ADR-075)
+| Alan | Zorunlu | Başlıklar | Kural |
+|---|---|---|---|
+| Kaynak işlem no | – | islem_no, procedure_id | Tekrar aktarımda mükerrer önler; yoksa hasta + işlem + tarih + hekim + diş eşleşmesi |
+| Kaynak hasta no **veya** VİADENT dosya no | biri | kaynak_no / dosya_no | Hasta önce aktarılmış olmalı |
+| İşlem tarihi | evet | tarih, islem_tarihi | gg.aa.yyyy; yalnız geçmiş; saat 12:00 klinik saat dilimi |
+| İşlem | evet | islem, kod, islem_adi | Katalog **kodu** (DOL-01) ya da tam **adı**; eşleşmeyen/çoklu eşleşen satır hatalı |
+| Diş (FDI) | – | dis, fdi | 11–48; diş düzeyinde işlemde boşsa uyarı, ağız düzeyinde yazılır |
+| Adet | – | adet, miktar | 1–50; boşsa 1 |
+| Bedel (₺) | – | tutar, bedel | Bilgi amaçlı snapshot; **alacak üretmez**; boşsa 0; eksi olamaz |
+| Hekim | evet | hekim, doktor | Ad (unvanlı/unvansız) ya da e-posta |
+| Not | – | not, aciklama | Serbest metin |
+
+Onayda `performed_procedures` satırı ziyaretsiz (`appointment_id` boş, `import_batch_id` dolu), `price_basis=manual`, durum tamamlandı. Geri alma iptal + gerekçe; düzeltilmiş/iptal edilmiş ya da sonradan alacak bağlanmış kayıt geri almayı engeller. Mutabakat kutularında bedel toplamları (kaynak = aktarılabilir + hatalı + mükerrer + daha önce) gösterilir — finansal mutabakat **değildir** (alacak yok).
+
+**Ödeme geçmişi aktarılmaz** (ADR-075): net durum açılış bakiyesiyle taşınır; eski ödemeler kaynak sistemde salt okunur kalır.
+
 ## Mutabakat
 Özet: `rows = valid + errors + duplicates + alreadyImported`. Açılış bakiyesinde tutarlar ayrıca uzlaştırılır: `amountSource = amountValid + amountError + amountDuplicate + amountAlreadyImported`; tutarı okunamayan satırlar `unparsedAmountRows` olarak ayrı sayılır. Onay sonrası `imported`, `skippedAtCommit`, `amountImported` eklenir ve DB'deki `sum(receivables.amount where import_batch_id = …)` ile eşleşir (testli).
 
 ## Örnek sentetik dosyalar
 - `docs/samples/hasta-ornek.csv` — 4 satır: 2 geçerli, 1 hatalı (tarih/cinsiyet/telefon/e-posta), 1 dosya içi mükerrer.
 - `docs/samples/acilis-bakiyesi-ornek.csv` — hasta dosyası aktarıldıktan sonra: 2 geçerli (1.550,50 ₺), 1 belirsiz tutar, 1 bulunamayan hasta.
+- `docs/samples/gecmis-islem-ornek.csv` — 2 geçerli (biri adla eşleşen işlem), 1 uyarılı (diş boş), 1 katalogda olmayan işlem.
 - `docs/samples/gecmis-randevu-ornek.csv` — hasta dosyası aktarıldıktan sonra: 2 geçerli (biri e-postayla hekim), 1 çakışma (09:15, aynı hekim), 1 bulunamayan hekim.
 
 ## Kapsam dışı (bu sürüm)
-Tedavi/işlem geçmişi, ödeme geçmişi, dosya/röntgen ve belge aktarımı: kaynak sistemin gerçek dışa aktarım biçimi görülmeden alan eşlemesi uydurulmaz (randevu geçmişi Görev 13'te sentetik sözleşmeyle eklendi; gerçek kaynak dosyası gelince başlık takma adları genişletilir). Pilot klinikle örnek dosya üzerinden ayrı iş paketi (backlog VD-014 kalanları).
+Ödeme geçmişi (bilinçli, ADR-075), dosya/röntgen ve belge aktarımı: kaynak sistemin gerçek dışa aktarım biçimi görülmeden alan eşlemesi uydurulmaz (randevu geçmişi Görev 13'te sentetik sözleşmeyle eklendi; gerçek kaynak dosyası gelince başlık takma adları genişletilir). Pilot klinikle örnek dosya üzerinden ayrı iş paketi (backlog VD-014 kalanları).
 
 ## Saklama
 `import_rows.data` normalize edilmiş kişisel veri içerir (RLS'li). Saklama süresi yetkili danışmanla belirlenecek; önerilen: pilot kabulünden sonra satır verisinin temizlenmesi (batch özeti ve sayımlar kalır). İş açık (backlog).

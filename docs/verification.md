@@ -2,6 +2,10 @@
 
 Yalnız **çalıştırılmış** testler “geçti” olarak yazılır. Ortam: Ubuntu 24.04, Node 22.22, PostgreSQL 16 (yerel küme), Chromium (Playwright 1.64). Tarih: 22.10.2026.
 
+## Kontrol listesi (her oturum)
+- Veri okuyan/yazan yeni migration var mı → `app.for_each_tenant` ya da `migrate.ts` ön kontrolü (ADR-077; bağlamsız SQL FORCE RLS altında 0 satır görür).
+- `select * from app.receivable_alloc_check` → 0 satır (ADR-076).
+
 ## Komutlar
 ```bash
 pnpm typecheck                      # 5 paket
@@ -11,15 +15,16 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (27.10.2026, Görev 13 sonrası)
+## Son koşu sonuçları (27.10.2026, Görev 14 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
 | `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması, **içe aktarma başlık çıkarımı/eşlemesi** | **15/15 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · `gorev8` 8 · `gorev9` 9 · `pentest` 12 · `gorev10` 13 · `gorev11` 7 · `gorev12` 4 · **`gorev13` 5** · `security` 12 | **250/250 geçti** (Vitest 4.1.12; `gorev13`: geçmiş randevu aktarımı — ön kontrol/onay/tekrar/çapraz klinik/geri alma-iptal/işlem görmüşse ret —, VİA Akış eşikleri — 422/403/çapraz klinik/görev üretimi 20 vs 40 dk; `gorev12`: dosya imhası 7/30 gün + DB kısıtı, işletim metrikleri — kilit/karantina sayaçları, sızıntı yok —, açık eşlemede `''` yok sayma) |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + `gorev8` 1 + `gorev9` 1 + `gorev10` 2 + `gorev11` 4 + `gorev12` 1 + `erisilebilirlik` 5 (axe) + **`gorev13` 2** senaryo × {1366 px, 360 px} | **73 geçti + 7 bilinçli atlama** (durumlu akışlar yalnız masaüstünde; `gorev11`: DateField yazım/maske/geçersiz gün/ISO yapıştırma/takvim klavye, ajanda tarih alanı, `input[type=date]` sayısı 0, kimlik no gerekçeli gösterim, dört göz onayı). `gorev7` E2E'de koşu kimliğine bağlı Türkçe büyük/küçük harf (I→ı) kaynaklı aralıklı hata giderildi (test verisi) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 · `gorev6` 22 · `gorev7` 23 · `gorev8` 8 · `gorev9` 9 · `pentest` 12 · `gorev10` 13 · `gorev11` 7 · `gorev12` 4 · **`gorev13` 8** · `security` 12 | **253/253 geçti** (Vitest 4.1.12; `gorev13` += tedavi geçmişi aktarımı — katalog/hekim eşleme, FDI, alacak üretmez, tekrar/geri alma=iptal —, ADR-076 toplam sütunları — tutarlılık, doğrudan yazma reddi, borç raporu; geçmiş randevu aktarımı — ön kontrol/onay/tekrar/çapraz klinik/geri alma-iptal/işlem görmüşse ret —, VİA Akış eşikleri — 422/403/çapraz klinik/görev üretimi 20 vs 40 dk; `gorev12`: dosya imhası 7/30 gün + DB kısıtı, işletim metrikleri — kilit/karantina sayaçları, sızıntı yok —, açık eşlemede `''` yok sayma) |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 + `gorev6` 4 + `gorev7` 4 + `gorev8` 1 + `gorev9` 1 + `gorev10` 2 + `gorev11` 4 + `gorev12` 1 + `erisilebilirlik` 5 (axe) + `gorev13` 2 + **`pilot-provasi` 1** senaryo × {1366 px, 360 px} | **74 geçti + 8 bilinçli atlama** (pilot provası: veri taşıma 4 tür → randevu → tedavi görünümü → tahsilat → rapor, tek akış) (durumlu akışlar yalnız masaüstünde; `gorev11`: DateField yazım/maske/geçersiz gün/ISO yapıştırma/takvim klavye, ajanda tarih alanı, `input[type=date]` sayısı 0, kimlik no gerekçeli gösterim, dört göz onayı). `gorev7` E2E'de koşu kimliğine bağlı Türkçe büyük/küçük harf (I→ı) kaynaklı aralıklı hata giderildi (test verisi) — temiz seed, **derlenmiş API (`NODE_ENV=production`) + derlenmiş worker** çalışırken |
 | `pnpm audit` | tüm bağımlılıklar (üretim + geliştirme) | **0 bilinen açık** (27.10) |
 | **axe (WCAG 2.1 A/AA)** | 14 ekran durumu × 2 görünüm | **ciddi/kritik ihlal 0** (ilk taramada 2 gerçek bulgu düzeltildi: yan menü kontrastı, kayan tablo odağı) |
+| **Finans hacmiyle rapor ölçümü** | `perf-finance.ts` (300k işlem/alacak, 240k ödeme) + `reports.mjs` | borç bakiye 10,3 s → 0,33 s; işletme 1,9 s → 0,2 s (`performance.md`) |
 | **Rapor/ajanda ölçümü** | `scripts/perf/reports.mjs`, 100k/1M perf DB | tüm raporlar p95 ≤ 300 ms; hekim-hasta 5.082 → 276 ms (`performance.md`) |
 | **PITR tatbikatı** | `scripts/pitr-drill.sh`, gerçek yerel küme (143 MB) | temel yedek 13 sn, hedef zamana geri yükleme 8–9 sn, işaret var/hatalı yok → **başarılı** (`backup-restore.md`) |
 | Yedek / geri yükleme | `pnpm db:backup` + `pnpm db:restore-verify` (dev seed ve 100k/1M perf DB) | **fark 0** (ayrıntı `backup-restore.md`) |
