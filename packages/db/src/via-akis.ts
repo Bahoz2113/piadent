@@ -65,7 +65,62 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
     [tenantId, now],
   )).rowCount ?? 0;
 
+  // 4) Kapatmayla çakışan gelecek randevu (kapatma randevuyu silmez/taşımaz; insan karar verir).
+  created += (await c.query(
+    `insert into tasks(tenant_id, kind, source_type, source_id, patient_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
+     select distinct on (a.id) a.tenant_id, 'closure_conflict', 'appointment', a.id, a.patient_id, 'closure_conflict:' || a.id,
+            'Kapatmayla çakışan randevu',
+            to_char(a.starts_at at time zone $2, 'DD.MM.YYYY HH24:MI') || ' randevusu kapatma ile çakışıyor: ' || cl.reason,
+            'Hastayı arayıp randevuyu taşıyın veya gerekçeyle iptal edin.',
+            'secretary', a.starts_at
+       from appointments a
+       join closures cl on cl.cancelled_at is null
+        and tstzrange(cl.starts_at, cl.ends_at, '[)') && tstzrange(a.starts_at, a.ends_at, '[)')
+        and (cl.scope = 'clinic' or cl.practitioner_id = a.practitioner_id or cl.chair_id = a.chair_id)
+      where a.tenant_id = $1 and a.status in ('planned','confirmed') and a.starts_at >= $3::timestamptz
+      order by a.id, cl.starts_at
+     on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`,
+    [tenantId, tz, now],
+  )).rowCount ?? 0;
+
+  // 5) Hekim onayı bekleyen son anamnez sürümü (klinik görev; yalnız sağlık yetkili roller görür).
+  created += (await c.query(
+    `insert into tasks(tenant_id, kind, sensitivity, source_type, source_id, patient_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
+     select v.tenant_id, 'anamnesis_review', 'clinical', 'anamnesis', v.id, v.patient_id, 'anamnesis_review:' || v.id,
+            'Anamnez hekim onayı bekliyor',
+            'Sürüm ' || v.version || ' hekim onayı olmadan kaydedildi' ||
+              case when cardinality(v.critical_flags) > 0 then '; kritik işaret var.' else '.' end,
+            'Hasta kartında Sağlık sekmesinden yanıtları gözden geçirip onaylayın.',
+            'dentist', v.created_at
+       from anamnesis_versions v
+      where v.tenant_id = $1
+        and v.version = (select max(v2.version) from anamnesis_versions v2 where v2.patient_id = v.patient_id)
+        and not exists (select 1 from anamnesis_reviews r where r.anamnesis_id = v.id)
+     on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`,
+    [tenantId],
+  )).rowCount ?? 0;
+
   // Otomatik kapanış: kaynak koşul artık geçerli değil.
+  closed += (await c.query(
+    `update tasks t set status = 'done', closed_at = now(), updated_at = now(), closed_reason = 'Çakışma giderildi'
+       from appointments a
+      where t.tenant_id = $1 and t.kind = 'closure_conflict' and t.status in ${OPEN} and a.id = t.source_id
+        and (a.status not in ('planned','confirmed') or not exists (
+              select 1 from closures cl where cl.cancelled_at is null
+                 and tstzrange(cl.starts_at, cl.ends_at, '[)') && tstzrange(a.starts_at, a.ends_at, '[)')
+                 and (cl.scope = 'clinic' or cl.practitioner_id = a.practitioner_id or cl.chair_id = a.chair_id)))`,
+    [tenantId],
+  )).rowCount ?? 0;
+  closed += (await c.query(
+    `update tasks t set status = 'done', closed_at = now(), updated_at = now(),
+            closed_reason = case when exists (select 1 from anamnesis_reviews r where r.anamnesis_id = t.source_id)
+                                 then 'Hekim onayladı' else 'Daha yeni anamnez sürümü kaydedildi' end
+      where t.tenant_id = $1 and t.kind = 'anamnesis_review' and t.status in ${OPEN}
+        and (exists (select 1 from anamnesis_reviews r where r.anamnesis_id = t.source_id)
+             or exists (select 1 from anamnesis_versions v join anamnesis_versions v2 on v2.patient_id = v.patient_id and v2.version > v.version
+                         where v.id = t.source_id))`,
+    [tenantId],
+  )).rowCount ?? 0;
   closed += (await c.query(
     `update tasks t set status = 'done', closed_at = now(), updated_at = now(),
             closed_reason = 'Kaynak güncellendi: randevu durumu ' || a.status

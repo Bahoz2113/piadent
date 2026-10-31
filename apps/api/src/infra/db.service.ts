@@ -2,7 +2,6 @@ import { Inject, Injectable, OnModuleDestroy } from "@nestjs/common";
 import pg from "pg";
 import { withContext } from "@viadent/db";
 import { CONFIG, type AppConfig } from "../config.js";
-import type { RequestContext } from "./context.js";
 
 // Tarih (date) türünü saat dilimi dönüşümü olmadan metin olarak al (Plan §06).
 pg.types.setTypeParser(1082, (v: string) => v);
@@ -18,7 +17,7 @@ export class Db implements OnModuleDestroy {
   }
 
   /** Doğrulanmış tenant bağlamında transaction. Tenant kimliği istemciden ALINMAZ. */
-  tx<T>(ctx: Pick<RequestContext, "tenantId" | "userId">, fn: (c: pg.PoolClient) => Promise<T>): Promise<T> {
+  tx<T>(ctx: { tenantId: string; userId: string | null }, fn: (c: pg.PoolClient) => Promise<T>): Promise<T> {
     return withContext(this.pool, { tenantId: ctx.tenantId, userId: ctx.userId }, fn);
   }
 

@@ -92,6 +92,9 @@ export const CONTACT_OUTCOME_LABELS: Record<(typeof CONTACT_OUTCOMES)[number], s
 
 export const AppointmentCreate = z.object({
   patientId: uuid,
+  appointmentTypeId: uuid.optional(),
+  /** Çalışma saati dışı uyarısını gördükten sonra bilinçli kayıt (audit'e yazılır). Kapatma bunu aşamaz. */
+  allowOutsideHours: z.boolean().optional(),
   practitionerId: uuid,
   chairId: uuid.optional(),
   date: isoDate,
@@ -118,7 +121,81 @@ export const AppointmentContactChange = z.object({
   contactOutcome: z.enum(CONTACT_OUTCOMES),
 });
 
-export const DayQuery = z.object({ date: isoDate.optional() });
+export const DayQuery = z.object({ date: isoDate.optional(), from: isoDate.optional(), days: z.coerce.number().int().min(1).max(14).optional() });
+
+// ---------------------------------------------------------------- kaynak ve takvim yönetimi
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$|^24:00$/, "Saat ss:dd biçiminde olmalı");
+export const WEEKDAY_LABELS = ["", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"] as const;
+
+export const PractitionerUpsert = z.object({
+  displayName: trimmed(80).min(2, "Ad en az 2 karakter"),
+  title: optionalText(60),
+  membershipId: uuid.optional(),
+  active: z.boolean().optional(),
+});
+export const ChairUpsert = z.object({ name: trimmed(60).min(1, "Ad gerekli"), active: z.boolean().optional() });
+export const AppointmentTypeUpsert = z.object({
+  name: trimmed(80).min(2, "Ad en az 2 karakter"),
+  defaultMinutes: z.number().int().min(5).max(720),
+  active: z.boolean().optional(),
+});
+export const WorkScheduleReplace = z.object({
+  blocks: z.array(z.object({ weekday: z.number().int().min(1).max(7), start: hhmm, end: hhmm }))
+    .max(28)
+    .refine((b) => b.every((x) => x.end > x.start), { message: "Bitiş başlangıçtan sonra olmalı" }),
+});
+export const ClosureCreate = z
+  .object({
+    scope: z.enum(["clinic", "practitioner", "chair"]),
+    practitionerId: uuid.optional(),
+    chairId: uuid.optional(),
+    startDate: isoDate,
+    startTime: hhmm,
+    endDate: isoDate,
+    endTime: hhmm,
+    reason: trimmed(300).min(2, "Neden gerekli"),
+  })
+  .refine((v) => v.scope !== "practitioner" || !!v.practitionerId, { message: "Hekim seçin", path: ["practitionerId"] })
+  .refine((v) => v.scope !== "chair" || !!v.chairId, { message: "Koltuk seçin", path: ["chairId"] });
+
+// ---------------------------------------------------------------- hasta yakınları
+export const RELATIONS = ["mother", "father", "legal_guardian", "spouse", "child", "sibling", "relative", "other"] as const;
+export const RELATION_LABELS: Record<(typeof RELATIONS)[number], string> = {
+  mother: "Anne", father: "Baba", legal_guardian: "Vasi / yasal temsilci", spouse: "Eş", child: "Çocuk",
+  sibling: "Kardeş", relative: "Akraba", other: "Diğer",
+};
+export const RelationCreate = z
+  .object({
+    relatedPatientId: uuid.optional(),
+    contactName: optionalText(120),
+    contactPhone: optionalText(32),
+    relation: z.enum(RELATIONS),
+    isLegalRepresentative: z.boolean().optional(),
+    representationEvidence: optionalText(300),
+    canReceiveInfo: z.boolean().optional(),
+    validUntil: z.preprocess((v) => (v === "" ? undefined : v), isoDate.optional()),
+    note: optionalText(300),
+  })
+  .refine((v) => !!v.relatedPatientId || !!v.contactName, { message: "Kayıtlı hasta seçin veya kişi adı girin", path: ["contactName"] })
+  .refine((v) => !v.isLegalRepresentative || !!v.representationEvidence, {
+    message: "Yasal temsil için dayanak belge/açıklama gerekli", path: ["representationEvidence"],
+  });
+export const RelationEnd = z.object({ reason: trimmed(300).min(2, "Neden gerekli") });
+
+// ---------------------------------------------------------------- anamnez
+export const AnamnesisSave = z.object({
+  basedOnVersion: z.number().int().min(0),
+  answers: z.record(z.string(), z.object({ value: z.enum(["yes", "no", "unknown"]), detail: optionalText(500) })),
+});
+
+// ---------------------------------------------------------------- ekip
+export const InvitationCreate = z.object({
+  email: z.email("Geçerli bir e-posta girin").max(200),
+  fullName: trimmed(120).min(2, "Ad soyad gerekli"),
+  role: z.enum(["clinic_admin", "dentist", "secretary", "assistant", "finance"]),
+});
+export const InvitationAccept = z.object({ password: z.string().min(10, "Parola en az 10 karakter olmalı").max(200) });
+export const RoleChange = z.object({ role: z.enum(["clinic_admin", "dentist", "secretary", "assistant", "finance"]) });
 
 // ---------------------------------------------------------------- klinik not
 export const ClinicalNoteCreate = z

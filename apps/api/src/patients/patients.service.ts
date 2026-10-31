@@ -208,7 +208,31 @@ export class PatientsService {
         return null;
       }
       const openTasks = await c.query("select count(*)::int as n from tasks where patient_id = $1 and status in ('open','in_progress','blocked')", [id]);
-      return { ...this.present(ctx, r.rows[0]), openTaskCount: openTasks.rows[0].n };
+      const rel = await c.query(
+        `select count(*) filter (where is_legal_representative and (valid_until is null or valid_until >= current_date))::int as reps,
+                count(*)::int as total
+           from patient_relations where patient_id = $1 and status = 'active'`,
+        [id],
+      );
+      const base = this.present(ctx, r.rows[0]);
+      // Kritik anamnez işaretleri yalnız sağlık yetkili rollere döner (sekreter/yönetici varlığını bile görmez).
+      let clinical: { criticalFlags: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null = null;
+      if (has(ctx, "patient.health.read")) {
+        const a = await c.query(
+          `select v.version, v.critical_flags, exists(select 1 from anamnesis_reviews rv where rv.anamnesis_id = v.id) as reviewed
+             from anamnesis_versions v where v.patient_id = $1 order by v.version desc limit 1`,
+          [id],
+        );
+        clinical = { criticalFlags: a.rows[0]?.critical_flags ?? [], anamnesisVersion: a.rows[0]?.version ?? null, anamnesisReviewed: a.rows[0]?.reviewed ?? false };
+      }
+      return {
+        ...base,
+        openTaskCount: openTasks.rows[0].n,
+        isMinor: base.age !== null && base.age < 18,
+        legalRepresentativeCount: rel.rows[0].reps,
+        relationCount: rel.rows[0].total,
+        clinical,
+      };
     });
   }
 
@@ -255,7 +279,7 @@ export class PatientsService {
       const r = await c.query(
         `select e.id, e.action, e.entity_type, e.entity_id, e.changes, e.created_at, u.full_name as actor_name
            from audit_events e left join users u on u.id = e.actor_user_id
-          where e.patient_id = $1 and ($2::boolean or e.entity_type <> 'clinical_note')
+          where e.patient_id = $1 and ($2::boolean or e.entity_type not in ('clinical_note','anamnesis'))
           order by e.created_at desc, e.id desc limit 200`,
         [id, has(ctx, "patient.health.read")],
       );

@@ -136,6 +136,8 @@ describe("AT-20 erişimi kaldırılan kullanıcı açık oturumla işlem yapar",
     expect((await assistant.post("/via-akis/refresh")).status).toBe(403);
     const audit = await ownerQuery(admin.session.activeMembership.tenantId, "select action from audit_events where entity_id = $1", [target.id]);
     expect(audit.map((r) => r.action)).toContain("membership.revoke");
+    // Test verisini diğer dosyalar için eski hâline getir (doğrudan sahip rolüyle; uygulama yolu değil).
+    await ownerQuery(admin.session.activeMembership.tenantId, "update memberships set status = 'active', revoked_at = null where id = $1", [target.id]);
   });
 
   it("çıkış yapılan oturum çereziyle istek reddedilir", async () => {

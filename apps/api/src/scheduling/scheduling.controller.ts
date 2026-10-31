@@ -21,7 +21,8 @@ export class SchedulingController {
   @Get("appointments")
   @Require("appointment.read")
   day(@Ctx() ctx: RequestContext, @Query() query: unknown) {
-    return this.scheduling.day(ctx, parse(DayQuery, query).date);
+    const q = parse(DayQuery, query);
+    return this.scheduling.day(ctx, q.from ?? q.date, q.days ?? 1);
   }
 
   @Get("patients/:id/appointments")

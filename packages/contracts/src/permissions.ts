@@ -19,6 +19,8 @@ export const PERMISSIONS = [
   "patient.identity.unmask", // tam kimlik no / telefon
   "patient.health.read",     // anamnez, klinik not
   "clinical_note.write",
+  "anamnesis.write",         // anamnez yanıtı kaydetme (yeni sürüm)
+  "anamnesis.review",        // hekim onayı
   "appointment.read",
   "appointment.write",
   "task.read",
@@ -27,6 +29,7 @@ export const PERMISSIONS = [
   "payment.refund",
   "audit.read",
   "team.manage",
+  "schedule.manage",         // hekim/koltuk, çalışma saati, kapatma, işlem türü
   "settings.manage",
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
@@ -35,10 +38,10 @@ const base: Permission[] = ["patient.read", "appointment.read", "task.read", "ta
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   // Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez (§05).
-  clinic_admin: [...base, "patient.write", "appointment.write", "audit.read", "team.manage", "settings.manage", "finance.read"],
-  dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "appointment.write", "audit.read"],
+  clinic_admin: [...base, "patient.write", "appointment.write", "audit.read", "team.manage", "schedule.manage", "settings.manage", "finance.read"],
+  dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "appointment.write", "audit.read"],
   secretary: [...base, "patient.write", "patient.identity.unmask", "appointment.write"],
-  assistant: [...base, "patient.health.read"],
+  assistant: [...base, "patient.health.read", "anamnesis.write"],
   finance: [...base, "finance.read", "payment.refund", "patient.identity.unmask"],
 };
 

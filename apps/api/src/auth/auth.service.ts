@@ -46,12 +46,7 @@ export class AuthService {
     }
     clearFails(key);
     const memberships = await this.listMemberships(user.id);
-    const { token, hash } = newSessionToken();
-    const expiresAt = new Date(Date.now() + this.config.sessionTtlHours * 3600_000);
-    await this.db.pool.query(
-      "insert into sessions(token_hash, user_id, active_membership_id, expires_at) values ($1,$2,$3,$4)",
-      [hash, user.id, memberships[0]?.id ?? null, expiresAt],
-    );
+    const { token, expiresAt } = await this.createSession(user.id, memberships[0]?.id ?? null);
     if (memberships[0]) {
       await this.db.tx({ tenantId: memberships[0].tenantId, userId: user.id }, (c) =>
         c.query(
@@ -60,6 +55,16 @@ export class AuthService {
         ),
       );
     }
+    return { token, expiresAt };
+  }
+
+  async createSession(userId: string, membershipId: string | null): Promise<{ token: string; expiresAt: Date }> {
+    const { token, hash } = newSessionToken();
+    const expiresAt = new Date(Date.now() + this.config.sessionTtlHours * 3600_000);
+    await this.db.pool.query(
+      "insert into sessions(token_hash, user_id, active_membership_id, expires_at) values ($1,$2,$3,$4)",
+      [hash, userId, membershipId, expiresAt],
+    );
     return { token, expiresAt };
   }
 

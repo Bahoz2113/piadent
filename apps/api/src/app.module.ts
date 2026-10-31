@@ -13,13 +13,17 @@ import { SchedulingService } from "./scheduling/scheduling.service.js";
 import { ClinicalController } from "./clinical/clinical.controller.js";
 import { TasksController } from "./tasks/tasks.controller.js";
 import { TeamController } from "./team/team.controller.js";
+import { InvitationsController } from "./team/invitations.controller.js";
+import { ResourcesController } from "./scheduling/resources.controller.js";
+import { RelationsController } from "./patients/relations.controller.js";
+import { AnamnesisController } from "./clinical/anamnesis.controller.js";
 
 @Module({})
 export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [AuthController, PatientsController, SchedulingController, ClinicalController, TasksController, TeamController],
+      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

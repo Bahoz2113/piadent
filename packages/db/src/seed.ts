@@ -145,6 +145,31 @@ export async function seed(connectionString: string, opts: { password?: string; 
              status === "completed" ? end : null],
           );
         }
+        // Görev 1: işlem türleri, çalışma saatleri (Pzt–Cum 09:00–18:00, Cmt 09:00–13:00), aile ilişkisi, demo anamnez.
+        for (const [name, minutes] of [["Kontrol muayenesi", 20], ["Dolgu", 45], ["Diş taşı temizliği", 30], ["Kanal tedavisi seansı", 60], ["Diş çekimi", 30]] as const) {
+          await c.query("insert into appointment_types(tenant_id, name, default_minutes) values ($1,$2,$3)", [tenantId, name, minutes]);
+        }
+        for (const pid of pracIds) {
+          for (let wd = 1; wd <= 6; wd++) {
+            await c.query("insert into work_schedules(tenant_id, practitioner_id, weekday, start_min, end_min) values ($1,$2,$3,$4,$5)",
+              [tenantId, pid, wd, 9 * 60, wd === 6 ? 13 * 60 : 18 * 60]);
+          }
+        }
+        // Ortak telefonu kullanan 3. ve 4. hasta: anne–çocuk ilişkisi (yasal temsil işareti YOK; kanıt gerektirir).
+        if (patientIds.length > 4) {
+          await c.query(
+            `insert into patient_relations(tenant_id, patient_id, related_patient_id, relation, can_receive_info, note, created_by)
+             values ($1,$2,$3,'mother',true,'Sentetik demo ilişkisi',$4)`,
+            [tenantId, patientIds[4], patientIds[3], creator],
+          );
+        }
+        const dentistKey = t.key === "A" ? "a_dentist" : "b_dentist";
+        await c.query(
+          `insert into anamnesis_versions(tenant_id, patient_id, version, questionnaire_version, answers, critical_flags, recorded_by)
+           values ($1,$2,1,'demo-2026.10',$3,$4,$5)`,
+          [tenantId, patientIds[0], JSON.stringify({ allergy: { value: "yes", detail: "Penisilin (sentetik demo)" }, anticoagulant: { value: "no" }, diabetes: { value: "no" } }),
+           ["allergy"], membershipIds[dentistKey]],
+        );
         await c.query(
           "insert into audit_events(tenant_id, actor_user_id, action, entity_type, changes) values ($1,$2,'seed.synthetic','tenant',$3)",
           [tenantId, creator, JSON.stringify({ note: "Sentetik demo verisi yüklendi" })],

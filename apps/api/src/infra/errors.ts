@@ -51,6 +51,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       body = { code: status === 404 ? "NOT_FOUND" : "HTTP_ERROR", message: status === 404 ? "Adres bulunamadı." : "İstek işlenemedi.", correlation_id };
+    } else if (pg?.code === "23P01" && pg.constraint === "work_schedules_no_overlap") {
+      status = 422;
+      body = { code: "VALIDATION_FAILED", message: "Aynı güne ait çalışma blokları çakışıyor.", field_errors: { blocks: "Bloklar çakışmamalı." }, correlation_id };
     } else if (pg?.code === "23P01") {
       status = 409;
       const resource = pg.constraint?.includes("chair") ? "koltuk" : "hekim";

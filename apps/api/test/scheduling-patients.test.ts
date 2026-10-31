@@ -21,7 +21,7 @@ afterAll(async () => app.close());
 
 const appt = (over: Record<string, unknown> = {}) => ({
   patientId: patients[0]!.id, practitionerId: res.practitioners[0]!.id, chairId: res.chairs[0]!.id,
-  date: tomorrowIstanbul(5), startTime: "13:00", durationMinutes: 30, reason: "Kontrol", ...over,
+  date: tomorrowIstanbul(5), startTime: "13:00", durationMinutes: 30, reason: "Kontrol", allowOutsideHours: true, ...over,
 });
 
 describe("AT-03 aynı hekim/koltuğa eşzamanlı randevu", () => {
