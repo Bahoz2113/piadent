@@ -11,7 +11,7 @@ const NAV = [
   { href: "/bugun", label: "Bugün", icon: Sun },
   { href: "/hastalar", label: "Hastalar", icon: Users },
   { href: "/ajanda", label: "Ajanda", icon: CalendarDays },
-  { href: "/tedavi", label: "Tedavi", icon: Stethoscope, soon: true },
+  { href: "/tedavi", label: "Tedavi", icon: Stethoscope },
   { href: "/finans", label: "Finans", icon: Wallet, soon: true },
   { href: "/operasyon", label: "Operasyon", icon: ClipboardList, soon: true },
   { href: "/raporlar", label: "Raporlar", icon: BarChart3, soon: true },

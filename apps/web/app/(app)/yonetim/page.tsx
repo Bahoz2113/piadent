@@ -5,12 +5,14 @@ import { EmptyState, useToast } from "@/components/ui";
 import { TeamPanel } from "@/components/admin/team";
 import { ResourcesPanel } from "@/components/admin/resources";
 import { ClosuresPanel, TypesPanel } from "@/components/admin/agenda-settings";
+import { CatalogPanel } from "@/components/admin/catalog";
 
 const TABS = [
   { id: "ekip", label: "Ekip ve davet", perm: "team.manage" },
   { id: "kaynaklar", label: "Hekim ve koltuklar", perm: "schedule.manage" },
   { id: "turler", label: "İşlem türleri", perm: "schedule.manage" },
   { id: "kapatma", label: "Kapatmalar", perm: "schedule.manage" },
+  { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
 ] as const;
 
 export default function AdminPage() {
@@ -33,6 +35,7 @@ export default function AdminPage() {
             {tab === "kaynaklar" && <ResourcesPanel notify={toast.show} />}
             {tab === "turler" && <TypesPanel notify={toast.show} />}
             {tab === "kapatma" && <ClosuresPanel notify={toast.show} />}
+            {tab === "katalog" && <CatalogPanel notify={toast.show} />}
           </div>
         </>
       )}

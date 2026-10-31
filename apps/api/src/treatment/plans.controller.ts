@@ -22,6 +22,32 @@ const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 export class PlansController {
   constructor(@Inject(Db) private readonly db: Db) {}
 
+  /** Klinik geneli plan takibi: yanıt bekleyen teklifler ve tamamlanmamış kabul edilmiş planlar. */
+  @Get("plans")
+  @Require("treatment.read")
+  overview(@Ctx() ctx: RequestContext) {
+    return this.db.tx(ctx, async (c) => {
+      const r = await c.query(
+        `select pv.id as version_id, pv.version, pv.status, pv.proposed_at, pv.decided_at, tp.id as plan_id, tp.title, tp.patient_id,
+                p.first_name || ' ' || p.last_name as patient_name, p.file_no, pr.display_name as practitioner_name,
+                coalesce((select sum(line_total) from plan_items pi where pi.plan_version_id = pv.id), 0)::text as total,
+                coalesce((select sum(pi.quantity) from plan_items pi where pi.plan_version_id = pv.id), 0)::int as item_qty,
+                coalesce((select sum(pp.quantity) from performed_procedures pp join plan_items pi on pi.id = pp.plan_item_id
+                           where pi.plan_version_id = pv.id and pp.status = 'completed'), 0)::int as done_qty,
+                (select min(a.starts_at) from appointments a where a.patient_id = tp.patient_id and a.status in ('planned','confirmed') and a.starts_at > now()) as next_appointment_at
+           from plan_versions pv join treatment_plans tp on tp.id = pv.plan_id join patients p on p.id = tp.patient_id
+           join practitioners pr on pr.id = pv.practitioner_id
+          where pv.status in ('proposed','accepted')
+          order by pv.status desc, coalesce(pv.decided_at, pv.proposed_at) desc
+          limit 300`,
+      );
+      return { items: r.rows.map((x) => ({ versionId: x.version_id, version: x.version, status: x.status, proposedAt: x.proposed_at, decidedAt: x.decided_at,
+        planId: x.plan_id, title: x.title, patientId: x.patient_id, patientName: x.patient_name, fileNo: x.file_no, practitionerName: x.practitioner_name,
+        total: x.total, itemQty: x.item_qty, doneQty: x.done_qty, nextAppointmentAt: x.next_appointment_at }))
+        .filter((x) => x.status === "proposed" || x.doneQty < x.itemQty) };
+    });
+  }
+
   @Get("patients/:patientId/plans")
   @Require("treatment.read")
   list(@Ctx() ctx: RequestContext, @Param("patientId", id) patientId: string) {

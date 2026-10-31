@@ -16,6 +16,7 @@ import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadg
 import type { Appt, Task } from "@/lib/types";
 import { RelationsCard } from "@/components/patient/relations";
 import { AnamnesisPanel } from "@/components/patient/anamnesis";
+import { TreatmentTab } from "@/components/treatment/treatment-tab";
 import { questionLabel } from "@viadent/contracts";
 import { AlertTriangle } from "lucide-react";
 
@@ -166,7 +167,8 @@ function PatientInner() {
           <div className="card"><EmptyState icon={<Lock size={28} aria-hidden />} title="Sağlık bilgileri rolünüze kapalı">Anamnez ve klinik notlar yalnız yetkili klinik kullanıcılara görünür.</EmptyState></div>
         ))}
         {tab === "gecmis" && <Timeline patientId={p.id} resources={res.data} />}
-        {(tab === "tedavi" || tab === "finans" || tab === "belgeler" || tab === "iletisim") && <NotYet tab={tab} />}
+        {tab === "tedavi" && <TreatmentTab patientId={p.id} onChanged={() => { void tasks.reload(); }} />}
+        {(tab === "finans" || tab === "belgeler" || tab === "iletisim") && <NotYet tab={tab} />}
       </div>
       {editing && <EditPatient p={p} practitioners={res.data?.practitioners ?? []} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); toast.show("success", "Hasta bilgileri güncellendi."); void patient.reload(); void tasks.reload(); }} />}
       {toast.node}
@@ -176,7 +178,6 @@ function PatientInner() {
 
 function NotYet({ tab }: { tab: string }) {
   const info: Record<string, [string, string]> = {
-    tedavi: ["Tedavi planı ve odontogram", "Görev 2 (VD-007/008): diş/yüzey modeli, plan sürümü, teklif/kabul ve gerçekleşen işlem."],
     finans: ["Hasta hesabı (VİA Net)", "Görev 3 (VD-009): alacak, ödeme, dağıtım, avans ve iade ayrı kayıtlar olarak."],
     belgeler: ["Belge ve dosyalar", "Görev 4 (VD-011): şablon sürümü, güvenli yükleme ve tarama, kanıt olayları."],
     iletisim: ["İletişim tercihleri", "Görev 4: amaç bazlı izin/tercih ve mesaj teslim durumları. Randevu iletişim sonuçları şimdilik Geçmiş sekmesinde."],
@@ -195,6 +196,8 @@ function ClinicalNotes({ patientId, canWrite }: { patientId: string; canWrite: b
   const { tz } = useSession();
   const notes = useData<{ items: { id: string; body: string; createdAt: string; authorName: string; correctsNoteId: string | null; correctionReason: string | null }[] }>(`/patients/${patientId}/clinical-notes`);
   const [body, setBody] = useState("");
+  const visits = useData<{ items: { id: string; startsAt: string; practitionerName: string }[] }>(canWrite ? `/patients/${patientId}/visits` : null);
+  const [visit, setVisit] = useState("");
   const [correcting, setCorrecting] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [err, setErr] = useState<ApiFailure | null>(null);
@@ -203,7 +206,7 @@ function ClinicalNotes({ patientId, canWrite }: { patientId: string; canWrite: b
     if (busy) return;
     setBusy(true); setErr(null);
     try {
-      await api(`/patients/${patientId}/clinical-notes`, { body: { body, ...(correcting ? { correctsNoteId: correcting, correctionReason: reason } : {}) } });
+      await api(`/patients/${patientId}/clinical-notes`, { body: { body, ...(visit && !correcting ? { appointmentId: visit } : {}), ...(correcting ? { correctsNoteId: correcting, correctionReason: reason } : {}) } });
       setBody(""); setReason(""); setCorrecting(null);
       await notes.reload();
     } catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
@@ -232,6 +235,12 @@ function ClinicalNotes({ patientId, canWrite }: { patientId: string; canWrite: b
           <h2>{correcting ? "Düzeltme notu" : "Yeni not"}</h2>
           <Alert kind="info">Demo ortamı: yalnız sentetik içerik girin.</Alert>
           {err && <Alert kind="error">{err.message}</Alert>}
+          {!correcting && visits.data && visits.data.items.length > 0 && (
+            <SelectField label="Ziyaret (isteğe bağlı)" value={visit} onChange={(e) => setVisit(e.target.value)}>
+              <option value="">Ziyarete bağlama</option>
+              {visits.data.items.map((v) => <option key={v.id} value={v.id}>{fmtDateTime(v.startsAt, tz)} · {v.practitionerName}</option>)}
+            </SelectField>
+          )}
           <TextAreaField label="Not" required value={body} onChange={(e) => setBody(e.target.value)} error={err?.fieldErrors.body} rows={6} />
           {correcting && <TextField label="Düzeltme gerekçesi" required value={reason} onChange={(e) => setReason(e.target.value)} error={err?.fieldErrors.correctionReason} />}
           <div className="row">

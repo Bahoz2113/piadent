@@ -11,7 +11,7 @@ import type { Appt, Task } from "@/lib/types";
 import { ContactBadge, EmptyState, ErrorState, Loading, StatusBadge, useToast } from "@/components/ui";
 
 
-const KIND_ICON: Record<string, typeof Clock3> = { overdue_checkin: Clock3, contact_pending: PhoneCall, missing_contact: UserRoundX, closure_conflict: Ban, anamnesis_review: Stethoscope };
+const KIND_ICON: Record<string, typeof Clock3> = { overdue_checkin: Clock3, contact_pending: PhoneCall, missing_contact: UserRoundX, closure_conflict: Ban, anamnesis_review: Stethoscope, plan_unscheduled: CalendarClock, plan_decision_pending: ClipboardCheck };
 const ROLE_LABEL: Record<string, string> = { secretary: "Sekreterya", dentist: "Hekim", assistant: "Asistan", finance: "Finans", clinic_admin: "Yönetici" };
 
 export default function TodayPage() {
@@ -161,6 +161,7 @@ export default function TodayPage() {
                   {t.kind === "missing_contact" && t.patientId && <Link className="btn btn-sm" href={`/hastalar/${t.patientId}?duzenle=1`}>Bilgi ekle</Link>}
                   {t.kind === "closure_conflict" && t.dueAt && <Link className="btn btn-sm" href={`/ajanda?tarih=${new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(t.dueAt))}`}>Ajandada aç</Link>}
                   {t.kind === "anamnesis_review" && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=saglik`}>Gözden geçir</Link>}
+                  {(t.kind === "plan_unscheduled" || t.kind === "plan_decision_pending") && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=tedavi`}>Planı aç</Link>}
                 </div>
               </li>
             );
