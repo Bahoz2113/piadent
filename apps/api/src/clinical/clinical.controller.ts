@@ -23,14 +23,15 @@ export class ClinicalController {
       const p = await c.query("select 1 from patients where id = $1", [patientId]);
       if (!p.rowCount) throw Errors.notFound("Hasta");
       const r = await c.query(
-        `select n.id, n.body, n.created_at, n.corrects_note_id, n.correction_reason, u.full_name as author_name
+        `select n.id, n.body, n.created_at, n.corrects_note_id, n.correction_reason, u.full_name as author_name, a.starts_at as visit_at
            from clinical_notes n join memberships m on m.id = n.author_membership_id join users u on u.id = m.user_id
+           left join appointments a on a.id = n.appointment_id
           where n.patient_id = $1 order by n.created_at desc`,
         [patientId],
       );
       return {
         items: r.rows.map((n) => ({ id: n.id, body: n.body, createdAt: n.created_at, authorName: n.author_name,
-          correctsNoteId: n.corrects_note_id, correctionReason: n.correction_reason })),
+          correctsNoteId: n.corrects_note_id, correctionReason: n.correction_reason, visitAt: n.visit_at })),
       };
     });
   }
@@ -46,10 +47,13 @@ export class ClinicalController {
         const prev = await c.query("select 1 from clinical_notes where id = $1 and patient_id = $2", [input.correctsNoteId, patientId]);
         if (!prev.rowCount) throw Errors.validation({ correctsNoteId: "Düzeltilecek not bulunamadı." });
       }
+      if (input.appointmentId && !(await c.query("select 1 from appointments where id = $1 and patient_id = $2", [input.appointmentId, patientId])).rowCount) {
+        throw Errors.validation({ appointmentId: "Ziyaret bu hastaya ait değil." });
+      }
       const r = await c.query(
-        `insert into clinical_notes(tenant_id, patient_id, author_membership_id, body, corrects_note_id, correction_reason)
-         values ($1,$2,$3,$4,$5,$6) returning id, created_at`,
-        [ctx.tenantId, patientId, ctx.membershipId, input.body, input.correctsNoteId ?? null, input.correctionReason ?? null],
+        `insert into clinical_notes(tenant_id, patient_id, author_membership_id, body, corrects_note_id, correction_reason, appointment_id)
+         values ($1,$2,$3,$4,$5,$6,$7) returning id, created_at`,
+        [ctx.tenantId, patientId, ctx.membershipId, input.body, input.correctsNoteId ?? null, input.correctionReason ?? null, input.appointmentId ?? null],
       );
       // Not içeriği audit'e yazılmaz; yalnız olay ve ilişki.
       await audit(c, ctx, {

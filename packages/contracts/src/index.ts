@@ -3,3 +3,6 @@ export * from "./text";
 export * from "./schemas";
 export * from "./time";
 export * from "./anamnesis";
+export * from "./dental";
+export * from "./money";
+export * from "./treatment";

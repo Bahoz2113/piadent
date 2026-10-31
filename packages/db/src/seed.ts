@@ -170,6 +170,62 @@ export async function seed(connectionString: string, opts: { password?: string; 
           [tenantId, patientIds[0], JSON.stringify({ allergy: { value: "yes", detail: "Penisilin (sentetik demo)" }, anticoagulant: { value: "no" }, diabetes: { value: "no" } }),
            ["allergy"], membershipIds[dentistKey]],
         );
+        // Görev 2: DEMO işlem kataloğu (klinik içi kodlar; resmî kod sistemi değildir) ve yayınlanmış sentetik tarife.
+        const catalog: [string, string, string, string, number, string][] = [
+          ["MUA-01", "Muayene ve tedavi planlama", "Muayene", "mouth", 20, "600.00"],
+          ["RAD-01", "Periapikal röntgen", "Radyoloji", "tooth", 10, "250.00"],
+          ["TEM-01", "Diş taşı temizliği (tüm ağız)", "Periodontoloji", "mouth", 30, "1200.00"],
+          ["DOL-01", "Kompozit dolgu (tek yüz)", "Restoratif", "surface", 30, "1800.00"],
+          ["DOL-02", "Kompozit dolgu (iki yüz)", "Restoratif", "surface", 45, "2300.00"],
+          ["KAN-01", "Kanal tedavisi (tek kanal)", "Endodonti", "tooth", 60, "3500.00"],
+          ["CEK-01", "Diş çekimi (basit)", "Cerrahi", "tooth", 30, "1500.00"],
+          ["KRN-01", "Zirkonyum kron", "Protez", "tooth", 45, "7500.00"],
+          ["FLU-01", "Flor uygulaması (çene)", "Koruyucu", "arch", 15, "500.00"],
+        ];
+        const procIds: Record<string, string> = {};
+        for (const [code, name, cat, scope, min] of catalog) {
+          const r = await c.query(
+            "insert into procedures(tenant_id, code, name, category, tooth_scope, default_minutes) values ($1,$2,$3,$4,$5,$6) returning id",
+            [tenantId, code, name, cat, scope, min],
+          );
+          procIds[code] = r.rows[0].id;
+        }
+        const tv = await c.query(
+          `insert into tariff_versions(tenant_id, name, valid_from, created_by) values ($1,'2026 Genel Tarife (sentetik)','2026-01-01',$2) returning id`,
+          [tenantId, creator],
+        );
+        for (const [code, , , , , price] of catalog) {
+          await c.query("insert into tariff_items(tenant_id, tariff_version_id, procedure_id, price) values ($1,$2,$3,$4)", [tenantId, tv.rows[0].id, procIds[code], price]);
+        }
+        await c.query("update tariff_versions set status = 'published', published_at = now(), published_by = $2 where id = $1", [tv.rows[0].id, creator]);
+        // İlk hastaya kabul edilmiş sentetik plan: 16 numaralı dişe kanal + kron, 26 MO dolgu.
+        const dentistMembership = membershipIds[t.key === "A" ? "a_dentist" : "b_dentist"]!;
+        const plan = await c.query("insert into treatment_plans(tenant_id, patient_id, title, created_by) values ($1,$2,'Başlangıç tedavi planı (sentetik)',$3) returning id",
+          [tenantId, patientIds[0], creator]);
+        const pv = await c.query(
+          "insert into plan_versions(tenant_id, plan_id, version, tariff_version_id, practitioner_id, created_by) values ($1,$2,1,$3,$4,$5) returning id",
+          [tenantId, plan.rows[0].id, tv.rows[0].id, pracIds[0], creator],
+        );
+        const items: [string, string | null, string[], number, string][] = [
+          ["KAN-01", "16", [], 1, "3500.00"], ["KRN-01", "16", [], 2, "7500.00"], ["DOL-02", "26", ["M", "O"], 1, "2300.00"],
+        ];
+        for (const [i, [code, tooth, surf, session, price]] of items.entries()) {
+          const name = catalog.find((x) => x[0] === code)![1];
+          await c.query(
+            `insert into plan_items(tenant_id, plan_version_id, procedure_id, procedure_code, procedure_name, location_kind, tooth, surfaces, unit_price, price_source, session_no, sort)
+             values ($1,$2,$3,$4,$5,'tooth',$6,$7,$8,'tariff',$9,$10)`,
+            [tenantId, pv.rows[0].id, procIds[code], code, name, tooth, surf, price, session, i],
+          );
+        }
+        await c.query("update plan_versions set status = 'proposed', proposed_at = now(), proposed_by = $2 where id = $1", [pv.rows[0].id, creator]);
+        await c.query("insert into plan_decisions(tenant_id, plan_version_id, decision, note, recorded_by) values ($1,$2,'accepted','Sentetik demo kabulü',$3)",
+          [tenantId, pv.rows[0].id, dentistMembership]);
+        await c.query("update plan_versions set status = 'accepted', decided_at = now() where id = $1", [pv.rows[0].id]);
+        await c.query(
+          `insert into odontogram_findings(tenant_id, patient_id, tooth, surfaces, finding_type, note, recorded_by) values
+             ($1,$2,'16','{}','caries','Derin çürük (sentetik)',$3), ($1,$2,'36','{}','missing',null,$3), ($1,$2,'46','{O}','filling',null,$3)`,
+          [tenantId, patientIds[0], dentistMembership],
+        );
         await c.query(
           "insert into audit_events(tenant_id, actor_user_id, action, entity_type, changes) values ($1,$2,'seed.synthetic','tenant',$3)",
           [tenantId, creator, JSON.stringify({ note: "Sentetik demo verisi yüklendi" })],

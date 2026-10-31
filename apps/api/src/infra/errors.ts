@@ -64,6 +64,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (pg?.code === "23514" && pg.message?.includes("birth_date_in_future")) {
       status = 422;
       body = { code: "VALIDATION_FAILED", message: "Doğum tarihi gelecekte olamaz.", field_errors: { birthDate: "Doğum tarihi gelecekte olamaz." }, correlation_id };
+    } else if (pg?.code === "55000" && /_(not_draft|frozen|invalid_transition|immutable|closed)/.test(pg.message ?? "")) {
+      // DB değişmezlik tetikleyicisi (API kontrolünün arkasındaki ikinci savunma).
+      status = 409;
+      body = { code: "IMMUTABLE_RECORD", message: "Bu kayıt kilitli (teklif edilmiş/kabul edilmiş/yayınlanmış) ve değiştirilemez.", correlation_id };
     } else if (pg?.code === "40001" || pg?.code === "40P01") {
       status = 409;
       body = { code: "RETRY", message: "Eşzamanlı bir işlem nedeniyle kaydedilemedi. Tekrar deneyin.", correlation_id };

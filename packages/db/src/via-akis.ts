@@ -100,7 +100,55 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
     [tenantId],
   )).rowCount ?? 0;
 
+  // 6) Kabul edilmiş, tamamlanmamış plan; hastanın gelecekte randevusu yok (R04 önerisi).
+  created += (await c.query(
+    `insert into tasks(tenant_id, kind, source_type, source_id, patient_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
+     select pv.tenant_id, 'plan_unscheduled', 'plan_version', pv.id, tp.patient_id, 'plan_unscheduled:' || pv.id,
+            'Kabul edilen planın randevusu yok',
+            'Kabul edilmiş tedavi planında tamamlanmamış işlem var; ileri tarihli randevu bulunmuyor.',
+            'Hastayı arayıp bir sonraki seans için randevu verin.',
+            'secretary', pv.decided_at + interval '2 days'
+       from plan_versions pv join treatment_plans tp on tp.id = pv.plan_id
+      where pv.tenant_id = $1 and pv.status = 'accepted'
+        and exists (select 1 from plan_items pi where pi.plan_version_id = pv.id
+                     and pi.quantity > coalesce((select sum(pp.quantity) from performed_procedures pp where pp.plan_item_id = pi.id and pp.status = 'completed'), 0))
+        and not exists (select 1 from appointments a where a.patient_id = tp.patient_id and a.status in ('planned','confirmed') and a.starts_at > $2::timestamptz)
+     on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`,
+    [tenantId, now],
+  )).rowCount ?? 0;
+
+  // 7) 3 günden uzun süredir yanıt bekleyen teklif.
+  created += (await c.query(
+    `insert into tasks(tenant_id, kind, source_type, source_id, patient_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
+     select pv.tenant_id, 'plan_decision_pending', 'plan_version', pv.id, tp.patient_id, 'plan_decision_pending:' || pv.id,
+            'Teklif yanıtı bekleniyor',
+            'Tedavi teklifi ' || to_char(pv.proposed_at at time zone $3, 'DD.MM.YYYY') || ' tarihinde sunuldu; kabul veya ret kaydı yok.',
+            'Hastayla görüşüp kararını (kabul / ret / kararsız) kaydedin.',
+            'secretary', pv.proposed_at + interval '3 days'
+       from plan_versions pv join treatment_plans tp on tp.id = pv.plan_id
+      where pv.tenant_id = $1 and pv.status = 'proposed' and pv.proposed_at < $2::timestamptz - interval '3 days'
+     on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`,
+    [tenantId, now, tz],
+  )).rowCount ?? 0;
+
   // Otomatik kapanış: kaynak koşul artık geçerli değil.
+  closed += (await c.query(
+    `update tasks t set status = 'done', closed_at = now(), updated_at = now(),
+            closed_reason = case when pv.status <> 'accepted' then 'Plan sürümü durumu: ' || pv.status else 'Randevu verildi veya plan tamamlandı' end
+       from plan_versions pv join treatment_plans tp on tp.id = pv.plan_id
+      where t.tenant_id = $1 and t.kind = 'plan_unscheduled' and t.status in ${OPEN} and pv.id = t.source_id
+        and (pv.status <> 'accepted'
+             or exists (select 1 from appointments a where a.patient_id = tp.patient_id and a.status in ('planned','confirmed') and a.starts_at > $2::timestamptz)
+             or not exists (select 1 from plan_items pi where pi.plan_version_id = pv.id
+                             and pi.quantity > coalesce((select sum(pp.quantity) from performed_procedures pp where pp.plan_item_id = pi.id and pp.status = 'completed'), 0)))`,
+    [tenantId, now],
+  )).rowCount ?? 0;
+  closed += (await c.query(
+    `update tasks t set status = 'done', closed_at = now(), updated_at = now(), closed_reason = 'Teklif durumu: ' || pv.status
+       from plan_versions pv
+      where t.tenant_id = $1 and t.kind = 'plan_decision_pending' and t.status in ${OPEN} and pv.id = t.source_id and pv.status <> 'proposed'`,
+    [tenantId],
+  )).rowCount ?? 0;
   closed += (await c.query(
     `update tasks t set status = 'done', closed_at = now(), updated_at = now(), closed_reason = 'Çakışma giderildi'
        from appointments a

@@ -21,6 +21,12 @@ export const PERMISSIONS = [
   "clinical_note.write",
   "anamnesis.write",         // anamnez yanıtı kaydetme (yeni sürüm)
   "anamnesis.review",        // hekim onayı
+  "treatment.read",          // plan/teklif ve gerçekleşen işlem listesi (tanı/bulgu hariç)
+  "treatment.write",         // plan taslağı, kalem, teklif sunma, yeni sürüm
+  "treatment.decision",      // hastanın kabul/ret/kararsız yanıtını kaydetme
+  "procedure.complete",      // gerçekleşen işlem kaydı / iptal / düzeltme
+  "diagnosis.write",         // tanı ve odontogram bulgusu
+  "catalog.manage",          // işlem kataloğu ve tarife sürümleri
   "appointment.read",
   "appointment.write",
   "task.read",
@@ -34,13 +40,14 @@ export const PERMISSIONS = [
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
-const base: Permission[] = ["patient.read", "appointment.read", "task.read", "task.write"];
+const base: Permission[] = ["patient.read", "appointment.read", "task.read", "task.write", "treatment.read"];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   // Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez (§05).
-  clinic_admin: [...base, "patient.write", "appointment.write", "audit.read", "team.manage", "schedule.manage", "settings.manage", "finance.read"],
-  dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "appointment.write", "audit.read"],
-  secretary: [...base, "patient.write", "patient.identity.unmask", "appointment.write"],
+  clinic_admin: [...base, "patient.write", "appointment.write", "audit.read", "team.manage", "schedule.manage", "settings.manage", "finance.read", "catalog.manage"],
+  dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "appointment.write", "audit.read",
+    "treatment.write", "treatment.decision", "procedure.complete", "diagnosis.write"],
+  secretary: [...base, "patient.write", "patient.identity.unmask", "appointment.write", "treatment.decision"],
   assistant: [...base, "patient.health.read", "anamnesis.write"],
   finance: [...base, "finance.read", "payment.refund", "patient.identity.unmask"],
 };

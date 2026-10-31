@@ -204,6 +204,7 @@ export const ClinicalNoteCreate = z
     body: z.string().trim().min(1, "Not boş olamaz").max(20000),
     correctsNoteId: uuid.optional(),
     correctionReason: optionalText(500),
+    appointmentId: uuid.optional(),
   })
   .refine((v) => !v.correctsNoteId || !!v.correctionReason, {
     message: "Düzeltme nedeni gerekli",
