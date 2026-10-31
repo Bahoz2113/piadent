@@ -16,7 +16,7 @@ export class ApiFailure extends Error {
   get fieldErrors() { return this.body.field_errors ?? {}; }
 }
 
-export async function api<T = unknown>(path: string, init: { method?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
+export async function api<T = unknown>(path: string, init: { method?: string; body?: unknown; signal?: AbortSignal; idempotencyKey?: string } = {}): Promise<T> {
   const method = init.method ?? (init.body !== undefined ? "POST" : "GET");
   const headers: Record<string, string> = { accept: "application/json" };
   if (pageContext) headers["x-viadent-context"] = pageContext;
@@ -24,13 +24,17 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
     headers["x-viadent-request"] = "1";
     headers["content-type"] = "application/json";
   }
+  if (init.idempotencyKey) headers["idempotency-key"] = init.idempotencyKey;
   let res: Response;
   try {
     res = await fetch(`/api/v1${path}`, { method, headers, body: init.body !== undefined ? JSON.stringify(init.body) : undefined, credentials: "same-origin", signal: init.signal });
   } catch (e) {
     if ((e as Error).name === "AbortError") throw e;
     // Bağlantı yokken kayıt başarılı gibi gösterilmez (Plan §01).
-    const f = new ApiFailure(0, { code: "NETWORK", message: "Sunucuya ulaşılamadı. Bağlantınızı kontrol edin; işlem kaydedilmedi." });
+    // Finans komutunda yanıt gelmediyse sonuç bilinmez: aynı anahtarla tekrar göndermek çift kayıt oluşturmaz (AT-06).
+    const f = new ApiFailure(0, init.idempotencyKey
+      ? { code: "NETWORK", message: "Sunucudan yanıt alınamadı; işlemin kaydedilip kaydedilmediği bilinmiyor. Aynı formdan tekrar gönderin — çift kayıt oluşmaz." }
+      : { code: "NETWORK", message: "Sunucuya ulaşılamadı. Bağlantınızı kontrol edin; işlem kaydedilmedi." });
     listeners.forEach((l) => l(f));
     throw f;
   }
@@ -42,4 +46,9 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
     throw f;
   }
   return data as T;
+}
+
+/** Form açıldığında bir kez üretilen tekilleştirme anahtarı: çift tıklama ve ağ tekrarında aynı işlem tek kayıt olur. */
+export function newIdempotencyKey(): string {
+  return `w-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 }

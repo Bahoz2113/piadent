@@ -17,6 +17,7 @@ import type { Appt, Task } from "@/lib/types";
 import { RelationsCard } from "@/components/patient/relations";
 import { AnamnesisPanel } from "@/components/patient/anamnesis";
 import { TreatmentTab } from "@/components/treatment/treatment-tab";
+import { AccountTab } from "@/components/finance/account-tab";
 import { questionLabel } from "@viadent/contracts";
 import { AlertTriangle } from "lucide-react";
 
@@ -168,7 +169,10 @@ function PatientInner() {
         ))}
         {tab === "gecmis" && <Timeline patientId={p.id} resources={res.data} />}
         {tab === "tedavi" && <TreatmentTab patientId={p.id} onChanged={() => { void tasks.reload(); }} />}
-        {(tab === "finans" || tab === "belgeler" || tab === "iletisim") && <NotYet tab={tab} />}
+        {tab === "finans" && (can("account.read") ? <AccountTab patientId={p.id} patientName={p.fullName} /> : (
+          <div className="card"><EmptyState icon={<Lock size={28} aria-hidden />} title="Hasta hesabı rolünüze kapalı">Borç, tahsilat ve iade bilgileri vezne ve finans yetkisi olan kullanıcılara görünür.</EmptyState></div>
+        ))}
+        {(tab === "belgeler" || tab === "iletisim") && <NotYet tab={tab} />}
       </div>
       {editing && <EditPatient p={p} practitioners={res.data?.practitioners ?? []} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); toast.show("success", "Hasta bilgileri güncellendi."); void patient.reload(); void tasks.reload(); }} />}
       {toast.node}
@@ -178,7 +182,6 @@ function PatientInner() {
 
 function NotYet({ tab }: { tab: string }) {
   const info: Record<string, [string, string]> = {
-    finans: ["Hasta hesabı (VİA Net)", "Görev 3 (VD-009): alacak, ödeme, dağıtım, avans ve iade ayrı kayıtlar olarak."],
     belgeler: ["Belge ve dosyalar", "Görev 4 (VD-011): şablon sürümü, güvenli yükleme ve tarama, kanıt olayları."],
     iletisim: ["İletişim tercihleri", "Görev 4: amaç bazlı izin/tercih ve mesaj teslim durumları. Randevu iletişim sonuçları şimdilik Geçmiş sekmesinde."],
   };

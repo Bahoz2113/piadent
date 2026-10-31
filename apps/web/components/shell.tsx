@@ -12,7 +12,7 @@ const NAV = [
   { href: "/hastalar", label: "Hastalar", icon: Users },
   { href: "/ajanda", label: "Ajanda", icon: CalendarDays },
   { href: "/tedavi", label: "Tedavi", icon: Stethoscope },
-  { href: "/finans", label: "Finans", icon: Wallet, soon: true },
+  { href: "/finans", label: "Finans", icon: Wallet },
   { href: "/operasyon", label: "Operasyon", icon: ClipboardList, soon: true },
   { href: "/raporlar", label: "Raporlar", icon: BarChart3, soon: true },
   { href: "/yonetim", label: "Yönetim", icon: Settings2 },

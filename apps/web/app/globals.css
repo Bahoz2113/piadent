@@ -346,6 +346,20 @@ table.table { width: 100%; border-collapse: collapse; }
 .kpi { font-size: 1.75rem; font-weight: 700; line-height: 1.2; margin: 2px 0; }
 .progress { height: 6px; background: var(--surface-muted); border-radius: 999px; overflow: hidden; min-width: 80px; }
 .progress > span { display: block; height: 100%; background: var(--brand-primary); }
-.table-wide { min-width: 720px; }
+.table-wide { min-width: 880px; }
 .table-wide td { vertical-align: top; }
 @media (max-width: 640px) { .odonto-wrap::after { content: "← kaydırın →"; display: block; text-align: center; font-size: .75rem; color: var(--text-secondary); margin-top: 4px; } }
+
+/* VİA Net */
+.net-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.net-tile { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font: inherit; color: inherit; }
+button.net-tile { cursor: pointer; }
+button.net-tile:hover { border-color: var(--border-strong); }
+.net-tile.is-active { border-color: var(--brand-primary); box-shadow: 0 0 0 1px var(--brand-primary); }
+.net-why { color: var(--brand-primary); display: inline-flex; align-items: center; gap: 4px; }
+.net-warning { color: var(--warning); }
+.net-info { color: var(--info); }
+.explain { margin-top: 12px; padding: 12px 14px; background: var(--surface-muted); border-radius: var(--radius); font-size: .9rem; }
+.explain ul { margin: 6px 0 6px 18px; padding: 0; }
+.alloc-line { display: grid; grid-template-columns: 1fr 120px; gap: 8px; align-items: center; }
+.alloc-line .input { text-align: right; }
