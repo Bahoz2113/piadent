@@ -22,13 +22,16 @@ import { PlansController } from "./treatment/plans.controller.js";
 import { ChartController } from "./treatment/chart.controller.js";
 import { AccountController } from "./finance/account.controller.js";
 import { FinanceController } from "./finance/finance.controller.js";
+import { DocumentsController } from "./documents/documents.controller.js";
+import { FilesController } from "./documents/files.controller.js";
+import { CareController } from "./documents/care.controller.js";
 
 @Module({})
 export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController],
+      controllers: [AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

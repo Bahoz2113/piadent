@@ -82,10 +82,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
       const [st, code, message] = FINANCE_ERRORS[(pg.message ?? "").trim()]!;
       status = st;
       body = { code, message, correlation_id };
-    } else if (pg?.code === "55000" && /_(not_draft|frozen|invalid_transition|immutable|closed)/.test(pg.message ?? "")) {
+    } else if (pg?.code === "55000" && /_(not_draft|frozen|invalid_transition|immutable|closed|not_scanned)/.test(pg.message ?? "")) {
       // DB değişmezlik tetikleyicisi (API kontrolünün arkasındaki ikinci savunma).
       status = 409;
-      body = { code: "IMMUTABLE_RECORD", message: "Bu kayıt kilitli (teklif/kabul/yayın veya finans hareketi) ve değiştirilemez; düzeltme ters kayıtla yapılır.", correlation_id };
+      body = { code: "IMMUTABLE_RECORD", message: "Bu kayıt kilitli (teklif/kabul/yayın, finans hareketi, onaylı şablon veya üretilmiş belge) ve değiştirilemez; düzeltme yeni sürüm veya ters kayıtla yapılır.", correlation_id };
     } else if (pg?.code === "40001" || pg?.code === "40P01") {
       status = 409;
       body = { code: "RETRY", message: "Eşzamanlı bir işlem nedeniyle kaydedilemedi. Tekrar deneyin.", correlation_id };

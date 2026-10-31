@@ -4,7 +4,8 @@ import type { INestApplication } from "@nestjs/common";
 import pg from "pg";
 import { EMAILS, login, ownerQuery, startApp, tomorrowIstanbul, type Client } from "./helpers.js";
 import { WORKER_URL } from "./env.js";
-import { processOutbox } from "../../worker/src/jobs.js";
+import { processOutbox, scanAllTenants } from "../../worker/src/jobs.js";
+import { zonedToUtc } from "@viadent/contracts";
 
 let app: INestApplication;
 let sec: Client;
@@ -172,6 +173,14 @@ describe("VİA Akış", () => {
   });
 
   it("geciken randevu 'Geldi' işaretlenince görev kaynaktan kapanır", async () => {
+    // Test günün saatinden bağımsız olsun: tarama, klinik saatiyle bugün 23:30'daymış gibi çalıştırılır
+    // (seed'deki 10:00/14:00/15:30 planlı randevular gecikmiş sayılır).
+    const scanPool = new pg.Pool({ connectionString: WORKER_URL, max: 2 });
+    try {
+      await scanAllTenants(scanPool, zonedToUtc(tomorrowIstanbul(0), "23:30", "Europe/Istanbul"));
+    } finally {
+      await scanPool.end();
+    }
     const tasks = (await sec.get("/tasks").expect(200)).body.items;
     const overdue = tasks.find((t: { kind: string }) => t.kind === "overdue_checkin");
     expect(overdue).toBeTruthy();

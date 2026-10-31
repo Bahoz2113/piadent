@@ -337,5 +337,7 @@ describe("T20 davet ve rol değişikliği", () => {
     await fin.post("/patients", { firstName: "Rol", lastName: "Testi" }).expect(201);
     const audit = await ownerQuery(tenantA, "select changes from audit_events where entity_id = $1 and action = 'membership.role'", [target.id]);
     expect(audit[0].changes.role).toEqual({ from: "finance", to: "secretary" });
+    // Paylaşılan test veritabanı: diğer dosyalar finans rolüne güvenir, eski hâline döndür.
+    await admin.post(`/team/${target.id}/role`, { role: "finance" }).expect(200);
   });
 });

@@ -7,7 +7,8 @@ import { randomBytes } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
-import { normalizeSearch, zonedToUtc, localDate, addDays } from "@viadent/contracts";
+import { normalizeSearch, zonedToUtc, localDate, addDays, normalizeDocumentText } from "@viadent/contracts";
+import { createHash } from "node:crypto";
 import { loadEnv, requireEnv } from "./env.js";
 import { hashPassword } from "./password.js";
 
@@ -261,6 +262,57 @@ export async function seed(connectionString: string, opts: { password?: string; 
             [tenantId, patientIds[4], cash.rows.find((r) => r.kind === "bank")!.id, creator]);
           await c.query("insert into cash_movements(tenant_id, cash_account_id, amount, source, source_id, occurred_at) values ($1,$2,300.00,'payment',$3,$4)",
             [tenantId, cash.rows.find((r) => r.kind === "bank")!.id, adv.rows[0].id, adv.rows[0].paid_at]);
+        }
+        // Görev 4: VİADENT belge türü kataloğu (kendi sınıflandırmamız; Ek B başlıkları yalnız izlenebilirlikte eşlenir),
+        // iki SENTETİK DEMO şablon (gerçek bilgilendirme/onam metni DEĞİL), VİA Hazır kuralları, iletişim izni ve kontrol.
+        const docTypes: [string, string, string, boolean, string | null][] = [
+          ["GENEL-ONAM", "Genel tedavi bilgilendirme ve onam", "consent", true, null],
+          ["CERRAHI-ONAM", "Cerrahi işlem bilgilendirme ve onam", "consent", true, null],
+          ["ENDO-ONAM", "Kanal tedavisi bilgilendirme ve onam", "consent", true, null],
+          ["RESTORATIF-ONAM", "Restoratif ve estetik işlem bilgilendirme ve onam", "consent", true, null],
+          ["PROTEZ-ONAM", "Protez işlemleri bilgilendirme ve onam", "consent", true, null],
+          ["IMPLANT-ONAM", "İmplant tedavisi bilgilendirme ve onam", "consent", true, null],
+          ["PERIO-ONAM", "Periodontal tedavi bilgilendirme ve onam", "consent", true, null],
+          ["ORTO-ONAM", "Ortodontik tedavi bilgilendirme ve onam", "consent", true, null],
+          ["PEDO-ONAM", "Çocuk hasta (veli/vasi) bilgilendirme ve onam", "consent", true, null],
+          ["TRAVMA-ONAM", "Acil / travma tedavisi bilgilendirme ve onam", "consent", true, null],
+          ["OZEL-ISLEM-ONAM", "İşleme özgü bilgilendirme ve onam (diğer)", "consent", true, null],
+          ["ISLEM-SONRASI", "İşlem sonrası bakım ve kullanım bilgilendirmesi", "information", false, null],
+          ["KVKK-AYDINLATMA", "Kişisel verilerin işlenmesine ilişkin aydınlatma", "privacy", false, null],
+          ["GORSEL-IZIN", "Görsel kayıt ve kullanım izni", "privacy", true, null],
+          ["HASTA-BILGI", "Hasta bilgi formu", "administrative", false, null],
+          ["ISTIRAHAT", "İstirahat / durum belgesi", "administrative", false, "dentist"],
+          ["SIGORTA-BILGI", "Özel sağlık sigortası bilgi formu", "insurance", false, null],
+        ];
+        const typeIds: Record<string, string> = {};
+        for (const [code, name, cat, acc, issuer] of docTypes) {
+          const r = await c.query("insert into document_types(tenant_id, code, name, category, requires_acceptance, issuer_role) values ($1,$2,$3,$4,$5,$6) returning id",
+            [tenantId, code, name, cat, acc, issuer]);
+          typeIds[code] = r.rows[0].id;
+        }
+        const demoBody = (title: string) => normalizeDocumentText(
+          `SENTETİK DEMO BELGESİ — klinik veya hukuki içerik değildir.\n\nBelge: ${title} (DEMO)\nHasta: {{hasta.ad_soyad}} (Dosya {{hasta.dosya_no}}, doğum tarihi {{hasta.dogum_tarihi}})\n` +
+          `Klinik: {{klinik.ad}} · Hekim: {{hekim.ad}} · Tarih: {{belge.tarih}}\n\nBağlı plan kalemleri:\n{{plan.kalemler}}\n\n` +
+          `Bu bölüm, kliniğin klinik ve hukuk danışmanlarınca onaylanmış gerçek metinle değiştirilmelidir. VİADENT bu metnin içeriğini üretmez ve hukuki uygunluk iddiası taşımaz.`);
+        for (const [code, title] of [["GENEL-ONAM", "Genel tedavi bilgilendirme ve onam"], ["ENDO-ONAM", "Kanal tedavisi bilgilendirme ve onam"]] as const) {
+          const tp = await c.query("insert into templates(tenant_id, document_type_id, name, created_by) values ($1,$2,$3,$4) returning id",
+            [tenantId, typeIds[code], `${title} — DEMO şablon`, creator]);
+          const body = demoBody(title);
+          await c.query(
+            `insert into template_versions(tenant_id, template_id, version, status, body, body_hash, is_demo, change_note, created_by, approved_by, approved_at)
+             values ($1,$2,1,'approved',$3,$4,true,'Sentetik ilk sürüm',$5,$5, now())`,
+            [tenantId, tp.rows[0].id, body, createHash("sha256").update(body, "utf8").digest("hex"), creator]);
+        }
+        await c.query(
+          `insert into readiness_rules(tenant_id, kind, procedure_id, document_type_id, created_by) values ($1,'document_for_procedure',$2,$3,$4)`,
+          [tenantId, procIds["KAN-01"], typeIds["ENDO-ONAM"], creator]);
+        await c.query("insert into readiness_rules(tenant_id, kind, max_age_days, created_by) values ($1,'anamnesis_reviewed',365,$2)", [tenantId, creator]);
+        await c.query(
+          `insert into communication_preferences(tenant_id, patient_id, purpose, channel, status, source, note, recorded_by)
+           values ($1,$2,'appointment_reminder','sms','granted','in_person','Sentetik demo izni',$3)`, [tenantId, patientIds[0], creator]);
+        if (patientIds.length > 1) {
+          await c.query("insert into follow_ups(tenant_id, patient_id, due_date, reason, practitioner_id, created_by) values ($1,$2,$3,'6 aylık rutin kontrol (sentetik)',$4,$5)",
+            [tenantId, patientIds[1], addDays(localDate(now, tz), 10), pracIds[0], creator]);
         }
         await c.query(
           "insert into audit_events(tenant_id, actor_user_id, action, entity_type, changes) values ($1,$2,'seed.synthetic','tenant',$3)",

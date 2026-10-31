@@ -6,6 +6,7 @@
  *  - Görev başlığı hasta adı içermez; ad okuma anında yetkiyle birleştirilir.
  */
 import type pg from "pg";
+import { refreshGorev4 } from "./readiness.js";
 
 export interface AkisResult { created: number; closed: number }
 
@@ -194,5 +195,8 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
     [tenantId],
   )).rowCount ?? 0;
 
+  const g4 = await refreshGorev4(c, tenantId, tz, now);
+  created += g4.created;
+  closed += g4.closed;
   return { created, closed };
 }

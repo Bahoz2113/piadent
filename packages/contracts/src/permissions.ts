@@ -38,6 +38,18 @@ export const PERMISSIONS = [
   "receivable.write",        // elle alacak, alacak iptali
   "expense.write",           // gider ve gider ters kaydı
   "finance.settings",        // kasa/banka hesapları, prim kuralı sürümleri
+  "document.read",           // hasta belgeleri ve kanıt olayları
+  "document.issue",          // onaylı şablondan hasta belgesi üretme
+  "document.decision",       // yüz yüze kabul/ret kaydı (kanıt olayı)
+  "document.revoke",         // belgeyi gerekçeyle iptal
+  "template.manage",         // belge türü, şablon sürümü, VİA Hazır kuralları
+  "file.read",               // idari dosyalar (klinik dosyalar ayrıca patient.health.read ister)
+  "file.write",              // dosya yükleme
+  "file.delete",             // dosyayı gerekçeyle silindi işaretleme
+  "communication.write",     // iletişim tercihi kaydı
+  "message.send",            // mesaj kuyruğa alma (şimdilik yalnız MOCK sağlayıcı)
+  "followup.write",          // kontrol planlama
+  "readiness.exception",     // VİA Hazır eksiğine gerekçeli istisna
   "audit.read",
   "team.manage",
   "schedule.manage",         // hekim/koltuk, çalışma saati, kapatma, işlem türü
@@ -50,13 +62,17 @@ const base: Permission[] = ["patient.read", "appointment.read", "task.read", "ta
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   // Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez (§05).
   clinic_admin: [...base, "patient.write", "appointment.write", "audit.read", "team.manage", "schedule.manage", "settings.manage", "finance.read", "catalog.manage",
-    "account.read", "finance.settings"],
+    "account.read", "finance.settings",
+    "document.read", "document.revoke", "template.manage", "file.read", "file.delete", "communication.write", "message.send"],
   dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "appointment.write", "audit.read",
-    "treatment.write", "treatment.decision", "procedure.complete", "diagnosis.write"],
+    "treatment.write", "treatment.decision", "procedure.complete", "diagnosis.write",
+    "document.read", "document.issue", "document.decision", "document.revoke", "file.read", "file.write", "file.delete", "communication.write",
+    "followup.write", "readiness.exception"],
   // Sekreterya vezne işini yapar (tahsilat, avans dağıtımı) ama iade yapamaz ve gelir raporlarını göremez (§05).
-  secretary: [...base, "patient.write", "patient.identity.unmask", "appointment.write", "treatment.decision", "account.read", "payment.write"],
-  assistant: [...base, "patient.health.read", "anamnesis.write"],
-  finance: [...base, "finance.read", "account.read", "payment.write", "payment.refund", "receivable.write", "expense.write", "finance.settings", "patient.identity.unmask"],
+  secretary: [...base, "patient.write", "patient.identity.unmask", "appointment.write", "treatment.decision", "account.read", "payment.write",
+    "document.read", "document.issue", "document.decision", "file.read", "file.write", "communication.write", "message.send"],
+  assistant: [...base, "patient.health.read", "anamnesis.write", "document.read", "file.read", "file.write"],
+  finance: [...base, "finance.read", "account.read", "payment.write", "payment.refund", "receivable.write", "expense.write", "finance.settings", "patient.identity.unmask", "message.send"],
 };
 
 export function permissionsFor(role: Role): Set<Permission> {

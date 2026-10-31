@@ -15,6 +15,8 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean } = 
   app.disable("x-powered-by");
   app.use(cookieParser());
   app.useBodyParser("json", { limit: "256kb" });
+  // Dosya içeriği yalnız application/octet-stream ile ve 20 MB + pay sınırıyla kabul edilir (PUT /files/:id/content).
+  app.useBodyParser("raw", { type: "application/octet-stream", limit: "21mb" });
   app.use((req: Request, res: Response, next: NextFunction) => {
     const incoming = req.get("x-correlation-id");
     req.correlationId = incoming && /^[\w-]{8,64}$/.test(incoming) ? incoming : randomUUID();
