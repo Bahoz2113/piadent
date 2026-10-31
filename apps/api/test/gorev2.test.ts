@@ -300,6 +300,23 @@ describe("H04/H05 tanı ve odontogram bulgusu", () => {
     expect((await b.get(`/patients/${patientId}/chart`)).status).toBe(404);
     const anyVersion = (await ownerQuery(tenantA, "select id from plan_versions where status = 'draft' limit 1"))[0].id;
     expect((await b.post(`/plan-versions/${anyVersion}/items`, { procedureId: procs["KAN-01"]!.id, location: { kind: "tooth", tooth: "16" } })).status).toBe(404);
+    const one = async (sql: string) => (await ownerQuery(tenantA, sql))[0].id as string;
+    const [proposed, diag, finding, tariff, performed, plan] = await Promise.all([
+      one("select id from plan_versions where status in ('proposed','accepted') limit 1"), one("select id from diagnoses limit 1"),
+      one("select id from odontogram_findings limit 1"), one("select id from tariff_versions limit 1"),
+      one("select id from performed_procedures limit 1"), one("select id from treatment_plans limit 1"),
+    ]);
+    expect((await b.post(`/plan-versions/${proposed}/decision`, { decision: "rejected" })).status).toBe(404);
+    expect((await b.post(`/plans/${plan}/versions`, {})).status).toBe(404);
+    expect((await b.post(`/diagnoses/${diag}/status`, { status: "entered_in_error", reason: "x deneme" })).status).toBe(404);
+    expect((await b.post(`/findings/${finding}/status`, { status: "entered_in_error", reason: "x deneme" })).status).toBe(404);
+    expect((await b.get(`/tariffs/${tariff}`)).status).toBe(404);
+    expect((await b.post(`/performed/${performed}/cancel`, { reason: "x deneme" })).status).toBe(404);
+    expect((await b.post(`/performed/${performed}/correct`, { reason: "x deneme", quantity: 1 })).status).toBe(404);
+    expect((await b.post(`/plan-versions/${proposed}/cancel`, { reason: "x deneme" })).status).toBe(404);
+    const bPlans = await b.get("/plans");
+    expect(bPlans.status).toBe(200);
+    expect((bPlans.body.items as { patientId: string }[]).some((x) => x.patientId === patientId)).toBe(false);
   });
 });
 

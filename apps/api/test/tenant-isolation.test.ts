@@ -94,14 +94,18 @@ describe("RLS ikinci savunma katmanı (W04)", () => {
     expect(r.rows[0]).toEqual({ rolsuper: false, rolbypassrls: false, owned: 0 });
   });
 
-  it("tüm tenant tablolarında (19) RLS etkin ve FORCE açık", async () => {
+  it("tenant_id taşıyan her tabloda RLS etkin ve FORCE açık (otomatik keşif; yeni tablo unutulamaz)", async () => {
     const r = await pool.query(
-      `select relname, relrowsecurity, relforcerowsecurity from pg_class
-        where relname = any($1::text[]) order by relname`,
-      [["patients", "appointments", "tasks", "practitioners", "chairs", "clinical_notes", "branches", "memberships", "audit_events", "outbox_events", "tenant_counters", "tenants",
-        "appointment_types", "work_schedules", "closures", "patient_relations", "anamnesis_versions", "anamnesis_reviews", "invitations"]],
+      `select c.relname, c.relrowsecurity, c.relforcerowsecurity
+         from pg_class c join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relkind = 'r'
+          and (exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped) or c.relname = 'tenants')
+        order by c.relname`,
     );
-    expect(r.rows).toHaveLength(19);
+    const names = r.rows.map((x) => x.relname as string);
+    for (const t of ["patients", "invitations", "procedures", "tariff_versions", "tariff_items", "diagnoses", "odontogram_findings",
+      "treatment_plans", "plan_versions", "plan_items", "plan_decisions", "performed_procedures"]) expect(names).toContain(t);
+    expect(names.length).toBeGreaterThanOrEqual(29);
     for (const row of r.rows) expect([row.relname, row.relrowsecurity, row.relforcerowsecurity]).toEqual([row.relname, true, true]);
   });
 

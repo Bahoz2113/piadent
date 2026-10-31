@@ -23,6 +23,8 @@ test("hekim: anamnezi görür ve onaylar; sekreter sağlık sekmesine erişemez"
   await expect(page.getByText(/Alerji \(ilaç/).first()).toBeVisible(); // başlıktaki kritik uyarı
   await page.getByRole("tab", { name: "Sağlık" }).click();
   const approve = page.getByRole("button", { name: "Gözden geçirdim, onayla" });
+  // Panel yüklenene kadar bekle: ya onay düğmesi ya da önceden verilmiş onay görünür (yarış koşulu olmasın).
+  await expect(approve.or(page.getByText(/Hekim onayı: /))).toBeVisible();
   if (await approve.isVisible()) await approve.click();
   await expect(page.getByText(/Hekim onayı: /)).toBeVisible();
   await noOverflow(page);

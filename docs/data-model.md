@@ -37,16 +37,35 @@ Kaynak gerçek: `packages/db/migrations/*.sql`. Bu belge özet ve kurallardır.
 | `anamnesis_reviews` | Hekim onayı | sürüm başına bir onay |
 | `invitations` | Ekip daveti (T20) | yalnız token özeti; 72 saat; açık davet e-posta başına tekil; `app.invitation_tenant()` dar SECURITY DEFINER |
 
-`tasks.kind` genişledi: `closure_conflict`, `anamnesis_review` (sensitivity `clinical`).
+`tasks.kind` genişledi: `closure_conflict`, `anamnesis_review` (sensitivity `clinical`); Görev 2: `plan_unscheduled`, `plan_decision_pending`.
+
+## Görev 2 tabloları (`0003_treatment.sql`)
+Hepsi `tenant_id` + RLS (ENABLE + FORCE) + `(tenant_id, id)` bileşik FK.
+| Tablo | Amaç | Kural |
+|---|---|---|
+| `procedures` | İşlem kataloğu | `(tenant, code)` tekil; `tooth_scope` ∈ tooth/surface/quadrant/arch/mouth; kod ve kapsam API'de değişmez |
+| `tariff_versions` / `tariff_items` | Sürümlü tarife (genel veya hekime özel) | yayında olanın kalemi/başlığı tetikleyiciyle donar; fiyat `numeric(14,2)` |
+| `odontogram_findings` | Mevcut durum (çürük, dolgu, eksik…) | silinmez; `current → historic \| entered_in_error` + gerekçe |
+| `diagnoses` | Tanı | konum + açıklama + isteğe bağlı kod; `active → resolved \| entered_in_error` |
+| `treatment_plans` | Plan başlığı | uygulama rolü yalnız SELECT/INSERT |
+| `plan_versions` | Sürüm + durum | tetikleyici geçişleri sınırlar; plan başına tek taslak, tek kabul |
+| `plan_items` | Kalem: konum, adet, seans, birim fiyat snapshot'ı, indirim+gerekçe, elle fiyat+açıklama | `line_total` üretilmiş sütun; taslak dışında değiştirilemez/silinemez |
+| `plan_decisions` | Kabul/ret/kararsız beyanı | yalnız ekleme |
+| `performed_procedures` | Gerçekleşen işlem | ziyarete (randevu) bağlı; bedel snapshot; yalnız `completed → cancelled \| corrected`; düzeltme `corrects_id` ile |
+| `clinical_notes.appointment_id` | Notu ziyarete bağlama | bileşik FK |
+
+Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arch` (check kısıtları türle tutarlılığı zorlar).
 
 ## Durum makineleri (uygulanan)
 **Randevu:** `planned → confirmed | checked_in | no_show | cancelled`; `confirmed → checked_in | no_show | cancelled`; `checked_in → in_progress | completed`; `in_progress → completed`. `completed`, `no_show`, `cancelled` terminal. Saati gelmemiş randevu `no_show` olamaz.
 **İletişim sonucu:** `not_contacted | informed | unreachable` — durumdan bağımsız; “Bilgi verildi” geldi anlamına gelmez.
+**Plan sürümü:** `draft → proposed | cancelled`; `proposed → accepted | rejected | superseded | cancelled`; `accepted → superseded | cancelled` (DB tetikleyicisi).
+**Gerçekleşen işlem:** `completed → cancelled | corrected`.
+**Tarife:** `draft → published → retired`.
 **Görev:** `open | in_progress | blocked | done | cancelled`; kapalı görev yeniden açılmaz; iptal gerekçe ister.
 
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
-- Görev 1 kalanı: `identity_document` (çoklu belge), `visit` (Görev 2 ile).
-- Görev 2: `procedure_catalog`, `tariff_version`, `treatment_plan`, `plan_version`, `plan_item`, `performed_procedure`, `diagnosis`, `odontogram_finding`.
+- Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).
 - Görev 3: `receivable`, `payment`, `allocation`, `refund`, `cash_movement`, `expense`, `idempotency_key` — `numeric(14,2)`, para birimi + kur snapshot alanları.
 - Görev 4: `template`, `template_version`, `patient_document`, `consent_request`, `evidence_event`, `file_asset`, `file_version`, `file_access_event`, `communication_preference`.
 - Görev 5: `message`, `delivery_event`, `integration_job`, `webhook_event`.

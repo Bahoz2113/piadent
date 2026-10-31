@@ -39,7 +39,7 @@ AT-02 ve VD-006 başlangıcı için yalnız-ekleme klinik not + gerekçeli düze
 Lisans doğrulanmadan web fontu gömülmedi; sistem yazı tipi yığını (Segoe UI / system-ui / Roboto / Noto Sans) Türkçe glifleri destekliyor. İkonlar `lucide-react` (ISC). Lisansı doğrulanmış bir font (ör. OFL) yerel olarak barındırılarak eklenebilir.
 
 ## ADR-013 Henüz geliştirilmemiş modüllerin gösterimi
-Tedavi/Finans/Operasyon/Raporlar menüde “Plan” etiketiyle; sayfada gerçek durum ve planlanan kapsam yazılı. Sahte rakamlı “hazır” ekran gösterilmez (Plan §09).
+Finans/Operasyon/Raporlar menüde “Plan” etiketiyle (Tedavi Görev 2 ile etiketten çıktı); sayfada gerçek durum ve planlanan kapsam yazılı. Sahte rakamlı “hazır” ekran gösterilmez (Plan §09).
 
 ## ADR-014 Seed parolası
 Parola koda/seed'e gömülmez. `VIADENT_DEMO_PASSWORD` yoksa rastgele üretilir ve git dışı `.demo-credentials` dosyasına (0600) yazılır. Test veritabanı ayrı (`viadent_test`) ve yalnız testte kullanılan sentetik parolayla kurulur.
@@ -61,3 +61,21 @@ E-posta sağlayıcısı yok → mesaj gönderilmez. Davet 32 bayt rastgele token
 
 ## ADR-020 Mobil hesap ve klinik seçici
 Telefonda üst çubuktaki kullanıcı/rol/klinik seçici gizliydi; çok klinikli kullanıcı telefonda klinik değiştiremiyordu. Gezinme çekmecesine hesap bloğu ve klinik seçici eklendi.
+
+## ADR-021 Diş modeli ve özgün odontogram (Görev 2)
+Numaralama **FDI / ISO 3950** (iki haneli; uluslararası standart, lisans gerektirmez). Daimi (11–48) ve süt (51–85) dişler; yüzeyler M, D, O (arka) / I (ön), B, L — dişe göre geçerli yüzey kümesi sunucuda doğrulanır. Konum türleri: `tooth` (+yüzey), `quadrant`, `arch`, `mouth`; işlemin `tooth_scope` alanı hangi konumun zorunlu olduğunu belirler (dişsiz işlemler: temizlik tüm ağız, flor çene vb.). Bulgu (mevcut durum), tanı, planlı kalem ve gerçekleşen işlem **ayrı tablolardır**; biri diğerini ezmez. Odontogram çizimi VİADENT'e özgü SVG'dir (kare + 5 bölge, üst çenede vestibül üstte, meziyal orta hatta doğru); bilgi renk + desen + kısa sembol + erişilebilir ad (`aria-label`) ile verilir. Kaynak envanterde odontogram **ekranı görüldü**; çizimi, renkleri ve sembolleri kopyalanmadı. Bulgu türleri ve semboller **DEMO** listedir; pilot hekimle doğrulanacak.
+
+## ADR-022 İşlem kataloğu ve sürümlü tarife
+Katalogda kod ve konum kapsamı oluşturulduktan sonra değişmez (geçmiş planlar bu tanıma dayanır; değişiklik = yeni işlem). Tarife sürümü: taslak → yayında → yürürlükten kalktı. Yayınlanan tarifenin kalemleri ve başlığı DB tetikleyicisiyle donar; fiyat değişikliği kopyala → yeni geçerlilik tarihi → yayınla ile yapılır. Fiyat arama: yalnız yayında olan, `valid_from ≤ tarih` olan en yeni sürüm; **hekime özel tarife aynı tarihteki genel tarifeden önceliklidir**. Plan kalemine fiyat **snapshot** olarak yazılır (tarife sürümü kimliğiyle); tarifede olmayan işlem için elle fiyat + zorunlu açıklama. Para DB'de `numeric(14,2)`, API'de "1250.00" metni, istemcide kuruş cinsinden `bigint` — kayan nokta yok. Kaynakta tarife ekranları yalnız **menü** olarak görüldü; bu davranış VİADENT tasarımıdır. Katalog ve fiyatlar sentetik DEMO'dur.
+
+## ADR-023 Tanı kaydı: kod sistemi seçilmedi
+Tanı = konum + serbest açıklama + isteğe bağlı kısa kod. **Resmî kod listesi (ICD-10, SNOMED CT vb.) eklenmedi ve böyle bir uyum iddia edilmez** — lisans/kaynak ve klinisyen onayı açık iş. Tanı ve bulgu silinmez; durum `active → resolved | entered_in_error` (bulguda `current → historic | entered_in_error`), gerekçe zorunlu, eden ve zaman saklanır. Audit tanı metnini taşımaz. Tanı ve odontogram yalnız `patient.health.read` rollerine görünür; sekreter plan ve teklifi görür, klinik haritayı görmez. Kaynak envanterde tanı ekranı **açılmadı** (yalnız menü); bu davranış rakip özelliği olarak sunulamaz, VİADENT tasarımıdır.
+
+## ADR-024 Plan sürümü, teklif ve kabul (AT-05)
+Plan → sürümler. Durumlar: taslak → teklif sunuldu → kabul / ret; ayrıca “yeni sürümle değişti” ve iptal. Yalnız taslak düzenlenir; teklif sunulan ve sonrası sürümlerin kalemleri ve fiyatları **DB tetikleyicisiyle** değiştirilemez (API atlatılsa bile). İzinli geçişler tetikleyicide tanımlı. Değişiklik isteği = mevcut sürümden snapshot'larla kopyalanan **yeni taslak sürüm**; eski kabul, yeni sürüm kabul edilene kadar geçerli kalır, sonra “yeni sürümle değişti” olur. Plan başına en fazla bir taslak ve bir kabul (kısmi tekil indeks). Karar kaydı (kabul / ret / kararsız) ayrı, yalnız eklenen tablodur; “kararsız” teklifi açık bırakır. Eşzamanlı iki kabul isteğinden biri 409 alır (plan satır kilidi; testli). Karar kaydı **hastanın beyanıdır, imzalı onam değildir** — onam/imza Görev 4. Kaynakta teklif/kabul akışı **görülmedi**; bu VİADENT tasarımıdır, rakip özelliği olarak sunulmaz.
+
+## ADR-025 Gerçekleşen işlem ve yuvarlama
+Gerçekleşen işlem **geliş kaydı yapılmış bir ziyarete** (checked_in / in_progress / completed randevu) bağlanmak zorundadır. Planlı kalem yalnız **kabul edilmiş** sürümden gerçekleştirilebilir; kalan adet aşılamaz. Bedel snapshot: kısmi gerçekleşmede `round(kalem_tutarı × adet / toplam_adet, 2)`, **son adet kalanı alır** — toplam her zaman kalem tutarına kuruşu kuruşuna eşittir (ör. 2999.99 = 1000.00 + 1000.00 + 999.99; testli). Plansız işlem tarifeden fiyatlanır. Kayıt silinmez: iptal (gerekçeli, kalan adet serbest kalır) veya düzeltme (eski kayıt `corrected`, yeni kayıt `corrects_id` ile bağlı). Hasta hesabına borç kaydı **Görev 3 (VİA Net)**; burada planlanan bedel gelir sayılmaz.
+
+## ADR-026 Tedavi kaynaklı VİA Akış görevleri
+İki yeni tür: `plan_unscheduled` (kabul edilmiş planda tamamlanmamış işlem var ve ileri tarihli randevu yok) ve `plan_decision_pending` (teklif 3 günden uzun yanıtsız). Kaynak koşul çözülünce görev kendiliğinden kapanır (randevu verildi / karar kaydedildi / plan tamamlandı). Eşik (3 gün) şimdilik sabit; klinik ayarına taşınacak. Tedavi takibi ekranı (`/tedavi`) bu listeleri gösterir; bedeller plan bedelidir, tahsilat değildir.

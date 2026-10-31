@@ -20,6 +20,12 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 | `audit.read` | ✔ | ✔ | – | – | – |
 | `team.manage` (davet, rol, erişim kaldırma), `settings.manage` | ✔ | – | – | – | – |
 | `schedule.manage` (hekim/koltuk, çalışma saati, kapatma, işlem türü) | ✔ | – | – | – | – |
+| `treatment.read` (plan, teklif, gerçekleşen işlem listesi; tanı/bulgu hariç) | ✔ | ✔ | ✔ | ✔ | ✔ |
+| `treatment.write` (plan oluşturma, taslak kalem, teklif, yeni sürüm) | – | ✔ | – | – | – |
+| `treatment.decision` (hastanın kabul/ret/kararsız beyanını kaydetme) | – | ✔ | ✔ | – | – |
+| `procedure.complete` (gerçekleşen işlem, iptal, düzeltme) | – | ✔ | – | – | – |
+| `diagnosis.write` (tanı ve odontogram bulgusu) | – | ✔ | – | – | – |
+| `catalog.manage` (işlem kataloğu, tarife sürümleri) | ✔ | – | – | – | – |
 
 Notlar:
 - “Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez” (Plan §05) → yönetici klinik notları **okuyamaz** (testli).
@@ -27,6 +33,8 @@ Notlar:
 - Hasta özetindeki kritik anamnez işaretleri (`clinical`) yalnız `patient.health.read` rollerine döner; diğer rollerde alan `null`.
 - Rol değişikliği ve erişim kaldırma kişinin kendisine uygulanamaz; üyelik her istekte okunduğundan bir sonraki istekte geçerlidir.
 - VİA Akış: `general` görevler herkese; `clinical` görevler `patient.health.read`, `finance` görevler `finance.read` ister (sunucuda filtrelenir).
+- Odontogram ve tanı (`/patients/:id/chart`) `patient.health.read` ister: sekreter plan ve teklif bedelini görür, klinik haritayı görmez; yönetici de görmez (testli, ADR-023).
+- Asistan şimdilik işlem kaydetmez; hekim adına kayıt (asistan girer, hekim onaylar) pilot geri bildirimiyle değerlendirilecek.
 - Ödeme/iade uçları Görev 3'te eklenecek; `payment.refund` iznini kullanacak. Finansın iade eşiği için ikinci onay seçeneği planlandı.
 
 ## Henüz uygulanmayan roller
@@ -35,4 +43,4 @@ Notlar:
 - **VİADENT destek**: süreli, amaçlı, kayıtlı erişim; varsayılan hasta içeriği yok.
 
 ## Test kanıtları
-AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`). Sonuçlar: `verification.md`.
+AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`). Sonuçlar: `verification.md`.

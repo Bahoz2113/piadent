@@ -158,6 +158,7 @@ export class CatalogController {
   @Require("catalog.manage")
   retire(@Ctx() ctx: RequestContext, @Param("id", id) tid: string) {
     return this.db.tx(ctx, async (c) => {
+      if (!(await c.query("select 1 from tariff_versions where id = $1", [tid])).rowCount) throw Errors.notFound("Tarife");
       const r = await c.query("update tariff_versions set status = 'retired' where id = $1 and status = 'published' returning id", [tid]);
       if (!r.rowCount) throw new AppError(409, "TARIFF_NOT_PUBLISHED", "Yalnız yayınlanmış tarife emekliye ayrılabilir.");
       await audit(c, ctx, { action: "tariff.retire", entityType: "tariff_version", entityId: tid, changes: { status: { from: "published", to: "retired" } } });

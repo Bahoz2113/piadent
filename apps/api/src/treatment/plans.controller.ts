@@ -325,6 +325,7 @@ export class PlansController {
   cancel(@Ctx() ctx: RequestContext, @Param("id", id) versionId: string, @Body() body: unknown) {
     const i = parse(PlanCancelInput, body);
     return this.db.tx(ctx, async (c) => {
+      if (!(await c.query("select 1 from plan_versions where id = $1", [versionId])).rowCount) throw Errors.notFound("Plan sürümü");
       const r = await c.query(
         `update plan_versions pv set status = 'cancelled', status_reason = $2 from treatment_plans tp
           where pv.id = $1 and tp.id = pv.plan_id and pv.status in ('draft','proposed','accepted') returning tp.patient_id, pv.plan_id`,

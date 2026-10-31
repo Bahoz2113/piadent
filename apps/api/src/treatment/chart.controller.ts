@@ -230,6 +230,7 @@ export class ChartController {
   cancelPerformed(@Ctx() ctx: RequestContext, @Param("id", id) pid: string, @Body() body: unknown) {
     const i = parse(PerformCancelInput, body);
     return this.db.tx(ctx, async (c) => {
+      if (!(await c.query("select 1 from performed_procedures where id = $1", [pid])).rowCount) throw Errors.notFound("İşlem kaydı");
       const r = await c.query("update performed_procedures set status = 'cancelled', status_reason = $2 where id = $1 and status = 'completed' returning patient_id", [pid, i.reason]);
       if (!r.rowCount) throw new AppError(409, "NOT_COMPLETED", "Yalnız tamamlanmış kayıt iptal edilebilir.");
       await audit(c, ctx, { action: "procedure.cancel", entityType: "performed_procedure", entityId: pid, patientId: r.rows[0].patient_id, changes: { status: { from: "completed", to: "cancelled" }, reason: { from: null, to: i.reason } } });
@@ -246,6 +247,7 @@ export class ChartController {
     const raw = (body ?? {}) as Record<string, unknown>;
     const reason = parse(PerformCancelInput, { reason: raw.reason }).reason;
     return this.db.tx(ctx, async (c) => {
+      if (!(await c.query("select 1 from performed_procedures where id = $1", [pid])).rowCount) throw Errors.notFound("İşlem kaydı");
       const old = await c.query("select * from performed_procedures where id = $1 and status = 'completed' for update", [pid]);
       if (!old.rowCount) throw new AppError(409, "NOT_COMPLETED", "Yalnız tamamlanmış kayıt düzeltilebilir.");
       const o = old.rows[0];
