@@ -8,7 +8,7 @@ import {
   type AppointmentStatus,
 } from "@viadent/contracts";
 import { api, ApiFailure, download } from "@/lib/api";
-import { formatPhone } from "@viadent/contracts";
+import { auditActionLabel, formatPhone } from "@viadent/contracts";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, initials } from "@/lib/format";
@@ -48,11 +48,6 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
-const ACTION_LABELS: Record<string, string> = {
-  "patient.create": "Hasta kaydı oluşturuldu", "patient.update": "Hasta bilgileri güncellendi",
-  "appointment.create": "Randevu oluşturuldu", "appointment.status": "Randevu durumu değişti", "appointment.contact": "İletişim sonucu kaydedildi",
-  "clinical_note.create": "Klinik not eklendi", "clinical_note.correct": "Klinik not düzeltmesi eklendi", "task.status": "Takip görevi güncellendi",
-};
 const FIELD_LABELS: Record<string, string> = {
   first_name: "Ad", last_name: "Soyad", birth_date: "Doğum tarihi", gender: "Cinsiyet", national_id: "Kimlik no", phone_e164: "Telefon",
   email: "E-posta", city: "Şehir", primary_practitioner_id: "Sorumlu hekim", referral_source: "Nereden duydu", starts_at: "Randevu zamanı",
@@ -290,7 +285,7 @@ function Timeline({ patientId, resources }: { patientId: string; resources: { pr
             <li key={e.id}>
               <span className="tl-dot" aria-hidden />
               <div>
-                <strong>{ACTION_LABELS[e.action] ?? e.action}</strong>
+                <strong>{auditActionLabel(e.action)}</strong>
                 <div className="muted small">{e.actorName} · {fmtDateTime(e.at, tz)}</div>
                 {Object.entries(e.changes ?? {}).length > 0 && (
                   <ul className="change" style={{ margin: "4px 0 0", paddingLeft: 16 }}>

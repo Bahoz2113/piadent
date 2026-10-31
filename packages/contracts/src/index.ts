@@ -16,3 +16,4 @@ export * from "./reports";
 export * from "./pilot";
 export * from "./import-map";
 export * from "./password";
+export * from "./audit";

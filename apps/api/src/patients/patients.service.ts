@@ -7,7 +7,7 @@ import {
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
-import { audit, diff, enqueue } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, audit, diff, enqueue } from "../audit/audit.js";
 import { decryptField, encryptField, indexHash } from "@viadent/db";
 
 export interface DuplicateCandidate {
@@ -303,9 +303,9 @@ export class PatientsService {
       const r = await c.query(
         `select e.id, e.action, e.entity_type, e.entity_id, e.changes, e.created_at, u.full_name as actor_name
            from audit_events e left join users u on u.id = e.actor_user_id
-          where e.patient_id = $1 and ($2::boolean or e.entity_type not in ('clinical_note','anamnesis'))
+          where e.patient_id = $1 and ($2::boolean or e.entity_type <> all($3::text[]))
           order by e.created_at desc, e.id desc limit 200`,
-        [id, has(ctx, "patient.health.read")],
+        [id, has(ctx, "patient.health.read"), CLINICAL_ENTITY_TYPES],
       );
       return r.rows.map((e) => ({
         id: String(e.id), action: e.action, entityType: e.entity_type, entityId: e.entity_id,
