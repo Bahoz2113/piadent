@@ -3,12 +3,9 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { CalendarPlus, History, Lock, NotebookPen, Pencil, FileText, Wallet, Stethoscope, MessageSquare, LayoutList, FlaskConical, FileDown } from "lucide-react";
-import {
-  APPOINTMENT_STATUS_LABELS, CONTACT_OUTCOME_LABELS, GENDER_LABELS, GENDERS, NATIONAL_ID_LABELS,
-  type AppointmentStatus,
-} from "@viadent/contracts";
+import { GENDER_LABELS, GENDERS, NATIONAL_ID_LABELS } from "@viadent/contracts";
 import { api, ApiFailure, download } from "@/lib/api";
-import { auditActionLabel, formatPhone } from "@viadent/contracts";
+import { auditActionLabel, auditFieldLabel, auditValueLabel, formatPhone } from "@viadent/contracts";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, initials } from "@/lib/format";
@@ -47,12 +44,6 @@ const TABS = [
   { id: "gecmis", label: "Geçmiş", icon: History },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
-
-const FIELD_LABELS: Record<string, string> = {
-  first_name: "Ad", last_name: "Soyad", birth_date: "Doğum tarihi", gender: "Cinsiyet", national_id: "Kimlik no", phone_e164: "Telefon",
-  email: "E-posta", city: "Şehir", primary_practitioner_id: "Sorumlu hekim", referral_source: "Nereden duydu", starts_at: "Randevu zamanı",
-  practitioner_id: "Hekim", chair_id: "Koltuk", status: "Durum", contact_outcome: "İletişim sonucu", cancel_reason: "İptal nedeni", corrects_note_id: "Düzeltilen not",
-};
 
 function PatientInner() {
   const { id } = useParams<{ id: string }>() ?? { id: "" };
@@ -266,16 +257,9 @@ function Timeline({ patientId, resources }: { patientId: string; resources: { pr
   const { tz } = useSession();
   const h = useData<{ items: HistoryItem[] }>(`/patients/${patientId}/history`);
   const names = new Map<string, string>([...(resources?.practitioners ?? []), ...(resources?.chairs ?? [])].map((r) => [r.id, r.name]));
-  const show = (field: string, v: unknown): string => {
-    if (v === null || v === undefined || v === "") return "Belirtilmedi";
-    if (field === "status") return APPOINTMENT_STATUS_LABELS[v as AppointmentStatus] ?? String(v);
-    if (field === "contact_outcome") return CONTACT_OUTCOME_LABELS[v as keyof typeof CONTACT_OUTCOME_LABELS] ?? String(v);
-    if (field === "gender") return GENDER_LABELS[v as (typeof GENDERS)[number]] ?? String(v);
-    if (field === "starts_at") return fmtDateTime(String(v), tz);
-    if (field === "birth_date") return fmtDate(String(v));
-    if (field.endsWith("_id")) return names.get(String(v)) ?? "Kayıt";
-    return String(v);
-  };
+  // Etiket ve değer çevirisi tek kaynaktan (@viadent/contracts audit.ts — QA-003).
+  const show = (field: string, v: unknown, entityType: string): string =>
+    auditValueLabel(field, v, { entityType, names, formatDateTime: (iso) => fmtDateTime(iso, tz), formatDate: (iso) => fmtDate(iso) });
   return (
     <section className="card">
       <div className="card-head"><div><h2>VİA İz — hasta geçmişi</h2><p className="muted small">Kim, ne zaman, neyi değiştirdi. Yalnız değişen alanlar gösterilir.</p></div></div>
@@ -290,7 +274,7 @@ function Timeline({ patientId, resources }: { patientId: string; resources: { pr
                 {Object.entries(e.changes ?? {}).length > 0 && (
                   <ul className="change" style={{ margin: "4px 0 0", paddingLeft: 16 }}>
                     {Object.entries(e.changes).map(([k, v]) => (
-                      <li key={k}>{FIELD_LABELS[k] ?? k}: {e.action.endsWith(".create") ? <ins>{show(k, v.to)}</ins> : <><del>{show(k, v.from)}</del> → <ins>{show(k, v.to)}</ins></>}</li>
+                      <li key={k}>{auditFieldLabel(k)}: {e.action.endsWith(".create") || v.from === null || v.from === undefined ? <ins>{show(k, v.to, e.entityType)}</ins> : <><del>{show(k, v.from, e.entityType)}</del> → <ins>{show(k, v.to, e.entityType)}</ins></>}</li>
                     ))}
                   </ul>
                 )}

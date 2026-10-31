@@ -211,7 +211,9 @@ table.table { width: 100%; border-collapse: collapse; }
 .tab { min-height: 44px; padding: 0 var(--s4); border: 0; background: none; cursor: pointer; font-weight: 600; color: var(--text-secondary); border-bottom: 3px solid transparent; white-space: nowrap; }
 .tab[aria-selected="true"] { color: var(--brand-primary); border-bottom-color: var(--brand-primary); }
 .timeline { list-style: none; margin: 0; padding: 0; }
-.timeline li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: var(--s3); padding: var(--s3) 0; }
+/* Yalnız üst düzey olay satırları grid; iç "değişen alanlar" listesi (ul.change > li) normal akışta kalır (QA-003). */
+.timeline > li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: var(--s3); padding: var(--s3) 0; }
+.timeline .change li { display: list-item; overflow-wrap: anywhere; }
 .timeline .tl-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--brand-primary); margin-top: 6px; box-shadow: 0 0 0 3px var(--primary-tint); }
 .change { font-size: 13.5px; color: var(--text-secondary); }
 .change del { color: var(--error); text-decoration: line-through; }

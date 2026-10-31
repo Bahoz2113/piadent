@@ -71,6 +71,12 @@ test("sekreter: hasta oluştur → randevu ver → çakışma reddi → VİA İz
   await page.getByRole("tab", { name: "Geçmiş" }).click();
   await expect(page.getByText("Hasta kaydı oluşturuldu")).toBeVisible();
   await expect(page.getByText("Randevu oluşturuldu")).toBeVisible();
+  // QA-003: "değişen alanlar" iç liste öğeleri grid'e düşmez (etiket/değer çakışması yok) ve alan adı ham anahtar değil.
+  const changeRow = page.locator(".timeline .change li").first();
+  await expect(changeRow).toBeVisible();
+  await expect(changeRow).toHaveCSS("display", "list-item");
+  await expect(changeRow).not.toContainText(/^(first_name|starts_at|practitioner_id|chair_id)/);
+  await expect(page.locator(".timeline .change li", { hasText: "Randevu zamanı:" }).first()).toBeVisible();
   await page.getByRole("tab", { name: "Sağlık" }).click();
   await expect(page.getByText("Sağlık bilgileri rolünüze kapalı")).toBeVisible();
   await noHorizontalOverflow(page);

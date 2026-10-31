@@ -1,3 +1,16 @@
+import { APPOINTMENT_STATUS_LABELS, CONTACT_OUTCOME_LABELS, GENDER_LABELS, RELATION_LABELS } from "./schemas";
+import { CASH_ACCOUNT_KIND_LABELS, COMMISSION_BASIS_LABELS, PAYMENT_METHOD_LABELS } from "./finance";
+import {
+  COMM_CHANNEL_LABELS, COMM_PURPOSE_LABELS, COMM_SOURCE_LABELS, DOCUMENT_STATUS_LABELS, FILE_CATEGORY_LABELS, FILE_STATUS_LABELS,
+  FOLLOW_UP_STATUS_LABELS, MESSAGE_STATUS_LABELS, type CommChannel, type CommPurpose,
+} from "./documents";
+import { INTEGRATION_KIND_LABELS, ONLINE_PAYMENT_STATUS_LABELS, OPERATION_LABELS, TRANSPORT_LABELS } from "./integrations";
+import { LAB_COST_STAGE_LABELS, LAB_STATUS_LABELS, SUPPLIER_KIND_LABELS } from "./operations";
+import { DECISION_LABELS, PLAN_STATUS_LABELS } from "./treatment";
+import { IMPORT_KIND_LABELS } from "./pilot";
+import { ROLE_LABELS } from "./permissions";
+import { formatTRY, isMoney } from "./money";
+
 /**
  * Denetim izi (VİA İz) eylem etiketleri — tek kaynak (QA-002).
  * API `audit(c, ctx, { action })` çağrılarındaki her eylem burada Türkçe etiketlidir; web ve raporlar buradan okur.
@@ -166,4 +179,130 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
 /** Eylem kodunu Türkçe etikete çevirir; tanımsız kod için okunur geri dönüş: "Diğer işlem (kod)". */
 export function auditActionLabel(action: string): string {
   return AUDIT_ACTION_LABELS[action] ?? `Diğer işlem (${action})`;
+}
+
+// ------------------------------------------------------------------ değişen alan etiketleri (QA-003)
+/**
+ * Denetim kaydındaki `changes` nesnesinin alan anahtarları — tek kaynak.
+ * API'deki `audit(..., { changes: { ... } })` nesneleri ve `diff(before, next, [...])` sütun listelerinden türetilir;
+ * apps/web/test/audit-labels.test.ts kaynağı tarayıp her anahtarın burada olduğunu doğrular.
+ */
+export const AUDIT_FIELD_LABELS: Record<string, string> = {
+  // Hasta kartı ve yakınlar
+  first_name: "Ad", last_name: "Soyad", birth_date: "Doğum tarihi", gender: "Cinsiyet", national_id: "Kimlik no", phone_e164: "Telefon",
+  email: "E-posta", city: "Şehir", primary_practitioner_id: "Sorumlu hekim", referral_source: "Nereden duydu", field: "Alan",
+  relation: "Yakınlık", is_legal_representative: "Yasal temsilci", can_receive_info: "Bilgi alabilir", ended_reason: "Sonlandırma nedeni",
+  // Randevu ve kaynaklar
+  starts_at: "Randevu zamanı", practitioner_id: "Hekim", chair_id: "Koltuk", status: "Durum", contact_outcome: "İletişim sonucu",
+  cancel_reason: "İptal nedeni", reason: "Gerekçe", display_name: "Görünen ad", title: "Unvan / başlık", membership_id: "Ekip üyesi",
+  default_minutes: "Varsayılan süre (dk)", blocks: "Çizelge bloğu sayısı", affected: "Etkilenen randevu", scope: "Kapsam", active: "Aktif",
+  outside_working_hours: "Mesai dışı randevu",
+  // Klinik ve tedavi
+  corrects_note_id: "Düzeltilen not", corrects_id: "Düzeltilen işlem", tooth: "Diş", procedure: "İşlem kodu", critical_count: "Kritik yanıt sayısı",
+  version: "Sürüm", changed: "Değişen kalem", decision: "Karar", unit_price: "Birim fiyat", discount: "İndirim", item_count: "Kalem sayısı", code: "Kod",
+  anamnesis: "Anamnez",
+  // Finans
+  amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
+  basis: "Prim esası", rate: "Oran (%)", valid_from: "Geçerlilik başlangıcı", category: "Kategori", kind: "Tür", name: "Ad",
+  // Belge, dosya, iletişim
+  template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
+  purpose: "Amaç", channel: "Kanal", due_date: "Vade", sha256: "Dosya özeti (SHA-256)", file_sha256: "Dosya özeti (SHA-256)",
+  // Laboratuvar, stok, cari
+  supplier_id: "Tedarikçi", work_type: "İş türü", order_no: "İş emri no", stage: "Aşama", teeth: "Dişler", shade: "Renk",
+  instructions: "Talimatlar", target_date: "Hedef tarih", appointment_id: "Randevu", item_id: "Stok kalemi", quantity: "Miktar",
+  counted: "Sayılan miktar", min_level: "Asgari seviye", lot_id: "Lot / parti", contact_name: "İlgili kişi", phone: "Telefon", tax_no: "Vergi no", note: "Not",
+  // Ekip ve güvenlik
+  role: "Rol", mfa: "İki aşamalı doğrulama", require_mfa_roles: "MFA zorunlu roller", hours: "Süre (saat)", expires_at: "Son geçerlilik", four_eyes: "Dört göz onayı",
+  overdueCheckinMinutes: "Geciken geliş uyarısı (dk)", missingContactDays: "Eksik iletişim penceresi (gün)",
+  planUnscheduledDays: "Plan sonrası randevu süresi (gün)", proposalPendingDays: "Teklif yanıt süresi (gün)",
+  // Entegrasyon, aktarım, rapor
+  provider: "Sağlayıcı", secret: "Gizli anahtar", config: "Bağlantı ayarları", operation: "İşlem", approval: "Onay", transport_status: "İletim durumu",
+  imported: "Aktarılan satır", skipped: "Atlanan satır", valid: "Geçerli satır", rows: "Satır sayısı", omitted: "Dışarıda bırakılan",
+  sections: "Bölümler", tables: "Tablolar", report: "Rapor", params: "Parametreler",
+};
+
+/** Alan anahtarını Türkçe etikete çevirir; `amaç:kanal` (iletişim tercihi) ve `document:<id>` (hazırlık) gibi türetilmiş anahtarları da çözer. */
+export function auditFieldLabel(field: string): string {
+  const direct = AUDIT_FIELD_LABELS[field];
+  if (direct) return direct;
+  const m = field.match(/^([a-z_]+):([a-z_0-9-]+)$/);
+  if (m) {
+    if (m[1] === "document") return "Hazırlık belgesi";
+    const p = COMM_PURPOSE_LABELS[m[1] as CommPurpose]; const ch = COMM_CHANNEL_LABELS[m[2] as CommChannel];
+    if (p && ch) return `${p} · ${ch}`;
+  }
+  return field.replace(/_/g, " ");
+}
+
+const MONEY_FIELDS = new Set(["amount", "unit_price", "discount"]);
+const DATETIME_FIELDS = new Set(["starts_at", "expires_at"]);
+const DATE_FIELDS = new Set(["birth_date", "due_date", "valid_from", "target_date"]);
+const HASH_FIELDS = new Set(["body_hash", "content_hash", "sha256", "file_sha256"]);
+const ID_FIELDS = new Set(["corrects_id", "corrects_note_id", "reverses_id"]);
+
+const GENERIC_STATUS: Record<string, string> = {
+  active: "Aktif", pending: "Bekliyor", cancelled: "İptal", ended: "Sonlandırıldı", revoked: "İptal edildi", retired: "Yürürlükten kaldırıldı",
+  published: "Yayımlandı", draft: "Taslak", approved: "Onaylandı", proposed: "Teklif sunuldu", current: "Güncel", superseded: "Yeni sürümle değişti",
+  completed: "Tamamlandı", deleted: "Silindi", dead: "Başarısız (deneme sınırı)", queued: "Sırada", open: "Açık", paid: "Ödendi", posted: "İşlendi",
+  reversed: "Ters kayıtla düzeltildi", accepted: "Kabul edildi", rejected: "Reddedildi", expired: "Süresi doldu", missing: "Eksik", excepted: "İstisna verildi",
+  granted: "İzin verildi", withdrawn: "İzin geri çekildi",
+};
+const STATUS_BY_ENTITY: Record<string, Record<string, string>> = {
+  appointment: APPOINTMENT_STATUS_LABELS, treatment_plan: PLAN_STATUS_LABELS, plan_version: PLAN_STATUS_LABELS, lab_order: LAB_STATUS_LABELS,
+  patient_document: DOCUMENT_STATUS_LABELS, file: FILE_STATUS_LABELS, follow_up: FOLLOW_UP_STATUS_LABELS, online_payment_request: ONLINE_PAYMENT_STATUS_LABELS,
+  message: MESSAGE_STATUS_LABELS, integration_job: TRANSPORT_LABELS,
+};
+const SOURCE_LABELS: Record<string, string> = {
+  performed_procedure: "Gerçekleşen işlemden", manual: "Elle", provider_webhook: "Sağlayıcı bildirimi", lab_cost: "Laboratuvar maliyeti",
+  stock_receipt: "Stok girişi", ...COMM_SOURCE_LABELS,
+};
+const KIND_LABELS: Record<string, string> = {
+  ...SUPPLIER_KIND_LABELS, ...CASH_ACCOUNT_KIND_LABELS, ...INTEGRATION_KIND_LABELS, ...IMPORT_KIND_LABELS,
+  anamnesis: "Anamnez", document: "Belge", document_type: "Belge türü",
+};
+const APPROVAL_LABELS: Record<string, string> = { pending: "Onay bekliyor", approved: "Onaylandı", rejected: "Reddedildi", not_required: "Onay gerekmez" };
+const SCOPE_LABELS: Record<string, string> = { clinic: "Tüm klinik", practitioner: "Hekim", chair: "Koltuk" };
+const ENUM_BY_FIELD: Record<string, Record<string, string>> = {
+  method: PAYMENT_METHOD_LABELS, source: SOURCE_LABELS, kind: KIND_LABELS, gender: GENDER_LABELS, contact_outcome: CONTACT_OUTCOME_LABELS,
+  relation: RELATION_LABELS, decision: DECISION_LABELS, basis: COMMISSION_BASIS_LABELS, stage: LAB_COST_STAGE_LABELS, role: ROLE_LABELS,
+  purpose: COMM_PURPOSE_LABELS, channel: COMM_CHANNEL_LABELS, request_status: DOCUMENT_STATUS_LABELS, transport_status: TRANSPORT_LABELS,
+  approval: APPROVAL_LABELS, operation: OPERATION_LABELS, scope: SCOPE_LABELS, category: FILE_CATEGORY_LABELS, field: { national_id: "Kimlik no" },
+};
+
+export interface AuditValueOptions {
+  /** Kaydın `entity_type` değeri; `status` gibi varlığa göre değişen enum'ları seçer. */
+  entityType?: string;
+  /** Kimlik → ad eşlemesi (hekim, koltuk, tedarikçi…). Eşleşmeyen kimlik kısa (#ilk8) gösterilir. */
+  names?: ReadonlyMap<string, string> | Record<string, string>;
+  /** Klinik saat dilimine göre tarih/saat biçimi; verilmezse ham metin kullanılır. */
+  formatDateTime?: (iso: string) => string;
+  formatDate?: (iso: string) => string;
+}
+
+function nameOf(names: AuditValueOptions["names"], id: string): string | undefined {
+  if (!names) return undefined;
+  return names instanceof Map ? names.get(id) : (names as Record<string, string>)[id];
+}
+
+/** Değişen alan değerini Türkçe, okunur metne çevirir (para `1.000,00 ₺`, enum etiketi, kısa kimlik, Evet/Hayır). */
+export function auditValueLabel(field: string, value: unknown, opts: AuditValueOptions = {}): string {
+  if (value === null || value === undefined || value === "") return "Belirtilmedi";
+  if (typeof value === "boolean") return value ? "Evet" : "Hayır";
+  if (Array.isArray(value)) return value.length === 0 ? "Yok" : value.map((v) => auditValueLabel(field, v, opts)).join(", ");
+  if (typeof value === "object") return Object.keys(value as object).length === 0 ? "Yok" : JSON.stringify(value);
+  const s = String(value);
+  if (MONEY_FIELDS.has(field)) return isMoney(s) ? formatTRY(s) : s;
+  if (field === "rate") return `%${s}`;
+  if (field === "secret") return "••••";
+  if (field.endsWith("_id") || ID_FIELDS.has(field)) return nameOf(opts.names, s) ?? (s.length > 8 ? `#${s.slice(0, 8)}` : s);
+  if (HASH_FIELDS.has(field)) return `${s.slice(0, 8)}…`;
+  if (DATETIME_FIELDS.has(field)) return opts.formatDateTime ? opts.formatDateTime(s) : s;
+  if (DATE_FIELDS.has(field)) return opts.formatDate ? opts.formatDate(s) : s;
+  if (field === "status") return (opts.entityType && STATUS_BY_ENTITY[opts.entityType]?.[s]) ?? GENERIC_STATUS[s] ?? s;
+  if (field === "require_mfa_roles") return s.split(",").map((r) => ROLE_LABELS[r.trim() as keyof typeof ROLE_LABELS] ?? r.trim()).join(", ");
+  const table = ENUM_BY_FIELD[field];
+  if (table) return table[s] ?? s;
+  // Türetilmiş anahtarlar: `amaç:kanal` (granted/withdrawn), `document:<id>` ve `anamnesis` (missing/excepted).
+  if (field === "anamnesis" || field.includes(":")) return GENERIC_STATUS[s] ?? s;
+  return s;
 }
