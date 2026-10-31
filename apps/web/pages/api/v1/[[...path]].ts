@@ -6,7 +6,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
 
-export const config = { api: { bodyParser: false, externalResolver: true, responseLimit: false } };
+export const config = { api: { bodyParser: false, externalResolver: true, responseLimit: false }, maxDuration: 300 };
 
 type Handler = (req: IncomingMessage, res: ServerResponse) => Promise<void>;
 let api: Handler | null = null;
