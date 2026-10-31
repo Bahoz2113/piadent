@@ -1,5 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
+import { BrandLogo } from "@/components/brand";
 import { useEffect, useState } from "react";
 import { api, ApiFailure } from "@/lib/api";
 import { Alert, Loading, TextField } from "@/components/ui";
@@ -29,7 +30,7 @@ export default function InvitePage() {
   return (
     <div className="login-wrap">
       <aside className="login-side">
-        <div className="brand"><span className="brand-mark" aria-hidden>V</span><span>PİA-DENT</span></div>
+        <BrandLogo />
         <div><h1>Ekibe hoş geldiniz.</h1><p style={{ marginTop: 12, opacity: 0.85, maxWidth: 420 }}>Davet bağlantısı tek kullanımlıktır.</p></div>
         <p className="small" style={{ opacity: 0.7 }}>Kliniğin akışı, tek yerde.</p>
       </aside>

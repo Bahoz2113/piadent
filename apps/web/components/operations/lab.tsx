@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { printHeaderHtml } from "@/components/brand";
 import { FlaskConical, Plus, Printer } from "lucide-react";
 import { LAB_ACTION_LABELS, LAB_COST_STAGE_LABELS, LAB_STATUS_LABELS, LAB_TRANSITIONS, formatTRY, type LabAction, type LabStatus } from "@viadent/contracts";
 import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
@@ -81,6 +82,7 @@ function printSheet(sheet: Record<string, unknown>) {
   const w = window.open("", "_blank");
   if (!w) return;
   w.document.title = `İş föyü ${String(sheet.orderNo)}`;
+  w.document.body.insertAdjacentHTML("afterbegin", printHeaderHtml());
   const pre = w.document.createElement("pre");
   pre.style.cssText = "white-space:pre-wrap;font:14px/1.6 system-ui;margin:32px";
   pre.textContent = [`LABORATUVAR İŞ FÖYÜ · ${String(sheet.clinic)}`, "", `Laboratuvar: ${String(sheet.supplier)}`, `Hasta / iş: ${String(sheet.patientRef)}`,

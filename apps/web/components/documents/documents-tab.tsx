@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { printHeaderHtml } from "@/components/brand";
 import { Download, FilePlus2, FileText, Printer, RotateCcw, ShieldAlert, Trash2, Upload } from "lucide-react";
 import {
   ACCEPTANCE_METHODS, ACCEPTANCE_METHOD_LABELS, DOCUMENT_CATEGORY_LABELS, DOCUMENT_STATUS_LABELS, EVIDENCE_LABELS, FILE_CATEGORIES, FILE_CATEGORY_LABELS,
@@ -150,6 +151,7 @@ function DocumentDrawer({ docId, patientId, onClose, onChanged }: { docId: strin
     const w = window.open("", "_blank");
     if (w) {
       w.document.title = d.data.title;
+      w.document.body.insertAdjacentHTML("afterbegin", printHeaderHtml());
       const pre = w.document.createElement("pre");
       pre.style.cssText = "white-space:pre-wrap;font:14px/1.5 system-ui;margin:32px";
       pre.textContent = `${d.data.content}\nBelge özeti (SHA-256): ${d.data.contentHash}\nŞablon sürümü: ${d.data.templateVersion}`;

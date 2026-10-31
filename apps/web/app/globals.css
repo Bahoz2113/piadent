@@ -66,8 +66,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   display: flex; flex-direction: column; padding: var(--s4) var(--s3); gap: var(--s2); overflow-y: auto;
 }
 .brand { display: flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s2) var(--s4); font-weight: 700; letter-spacing: 0.06em; }
-.brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--brand-primary); display: grid; place-items: center; position: relative; flex: none; }
-.brand-mark::after { content: ""; position: absolute; width: 8px; height: 8px; right: -2px; top: -2px; border-radius: 50%; background: var(--brand-accent); }
+.brand-mark { width: 30px; height: 30px; display: grid; place-items: center; flex: none; }
+.brand-mark svg { display: block; border-radius: 9px; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14); }
 .brand small { display: block; font-weight: 400; letter-spacing: 0; color: rgba(255, 255, 255, 0.82); font-size: 12px; }
 .navlink {
   display: flex; align-items: center; gap: var(--s3); min-height: 44px; padding: 0 var(--s3);

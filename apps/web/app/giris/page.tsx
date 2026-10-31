@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { BrandLogo } from "@/components/brand";
 import { api, ApiFailure } from "@/lib/api";
 import { Alert, TextField } from "@/components/ui";
 
@@ -38,7 +39,7 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <aside className="login-side">
-        <div className="brand"><span className="brand-mark" aria-hidden>V</span><span>PİA-DENT</span></div>
+        <BrandLogo />
         <div>
           <h1>Kliniğin akışı, tek yerde.</h1>
           <p style={{ marginTop: 12, opacity: 0.85, maxWidth: 420 }}>Bugün ne yapılacağı, hastanın sıradaki adımı ve hesabın nerede olduğu — tek bakışta.</p>

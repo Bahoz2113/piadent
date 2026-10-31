@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { BrandLogo } from "./brand";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -32,10 +33,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className={`shell ${navOpen ? "nav-open" : ""} ${collapsed ? "collapsed" : ""}`}>
       <a href="#icerik" className="skip-link">İçeriğe geç</a>
       <nav className="sidenav" aria-label="Ana gezinme">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden>V</span>
-          <span className="brand-text">PİA-DENT<small>Kliniğin akışı, tek yerde.</small></span>
-        </div>
+        <BrandLogo tagline="Kliniğin akışı, tek yerde." />
         {NAV.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className="navlink" aria-current={path.startsWith(href) ? "page" : undefined} title={label}>
             <Icon size={19} aria-hidden /><span>{label}</span>
