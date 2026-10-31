@@ -11,13 +11,13 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (23.10.2026, Görev 4 sonrası)
+## Son koşu sonuçları (23.10.2026, Görev 5 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
 | `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması | **14/14 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 | **118/118 geçti** |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 senaryo × {1366 px, 360 px} | **28/28 geçti** (temiz seed, worker çalışırken) |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 · `gorev4` 19 · `gorev5` 17 | **135/135 geçti** |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 + `gorev4` 3 + `gorev5` 2 senaryo × {1366 px, 360 px} | **32/32 geçti** (temiz seed, worker çalışırken) |
 | Typecheck | contracts, db, api, worker, web | **temiz** |
 | `next build` | üretim derlemesi | **başarılı** |
 
@@ -42,6 +42,12 @@ Katalog 17 tür, hepsi DEMO/incelenmemiş, yalnız 2 sentetik onaylı şablon; f
 ### Görev 4 E2E (`gorev4.spec.ts`, 1366 px + 360 px; worker çalışırken)
 Sekreter: DEMO şablonu plan kalemleriyle önizler (DEMO uyarısı) → üretir → personel beyanı işaretlenmeden kabul kaydedilemez → kabul kaydedilir, “elektronik imza değildir” notu · temiz PNG yükler → gerçek kuyrukta taranıp “Kullanılabilir” olur · EICAR → “Karantinada”, indir düğmesi yok · İletişim: seed izni “İzin var”, MOCK uyarısı, mesaj kuyruğa alınır → “Sağlayıcıya iletildi (teslim bilinmiyor)”, “Teslim edildi” hiç görünmez · Hekim kontrol planlar · Yönetici şablon ve VİA Hazır kurallarını ve DEMO/inceleme uyarısını görür · taşma yok.
 
+### Görev 5 testlerinin kapsadığı kurallar (`gorev5.test.ts`, 17 — gerçek PostgreSQL, uygulama + worker rolleri, gerçek HTTP webhook ucu)
+**Sözleşme:** MOCK adaptör aynı anahtarla aynı referans, sorgu aynı sonucu verir; kabul/ret/zaman aşımı/ulaşılamıyor davranışları; ödeme bağlantısı `.invalid` alan adında · kayıt: MOCK dışı sağlayıcıya adaptör yok, `live` mod kapı kapalıyken açılmaz, kapalı bağlantı çalışmaz · HMAC: doğru imza, değişmiş gövde, yanlış anahtar, 301 sn eski zaman damgası, imzasız · **genel bakış:** dış gönderim kapısı kapalı; e-Fatura/DHBS/WhatsApp “blocked”, etkinleştirme 409 `CONNECTION_BLOCKED`; yanıtta sır yok; sekreter 403, finans bağlantı değiştiremez · bağlantı kapalıyken veya WhatsApp için mesaj 409 `PROVIDER_NOT_CONFIGURED` (sessiz “gönderildi” yok) · **AT-12/13 SMS:** gönderim → submitted, iş accepted/pending; teslim bildirimi → delivered, iş succeeded; aynı olay kimliği → `duplicate`; geç gelen “başarısız” → `ignored_stale`, mesaj delivered kalır; teslim olayları queued→submitted→delivered · **ters sıra:** teslim bildirimi worker sonucu yazmadan gelir → idempotency anahtarıyla eşleşir, sonraki “kabul” durumu geri almaz · **gerçek HTTP uç (oturumsuz, CSRF'siz):** imzasız 401, yanlış imza 401, 10 dk eski zaman damgası 401 (replay), bozuk JSON 400, bilinmeyen hedef 404, reddedilenler etki doğurmaz ve gerekçeleri kaydedilir; geçerli → 200 `processed`, aynısı tekrar → `duplicate`; sır yenilenince eski anahtarla imza 401; B kliniği A'nın işini göremez/simüle edemez · **zaman aşımı:** sonuç `unknown`, mesaj kuyrukta kalır, geri çekilme dolmadan tekrar yok; sonra **durum sorgusu** kabulü bulur — deneme sırası `submit:timeout, status_query:accepted` (kör yeniden gönderim yok); sorgu “kayıt yok” derse aynı anahtarla yeniden gönderim (`submit:timeout, status_query:not_found, submit:accepted`) · **geçici hata:** artan aralıklarla 6 deneme → dead, sonuç failed, mesaj failed, yöneticiye `integration_dead` görevi; sekreter yeniden deneyemez; yönetici yeniden dener → accepted, görev kapanır · sağlayıcı reddi tek deneme, mesaj failed · **online ödeme:** idempotent istek tek kayıt; worker → link_ready + MOCK bağlantı; bağlantı ≠ tahsilat (ödeme 0); imzalı “ödendi” → tek ödeme (online, provider kaynaklı, `mockpay_` referans), avans 500, borç 0; ikinci “ödendi” ve sonra “başarısız” → stale · tutar uyuşmazlığı ödeme oluşturmaz, inceleme görevi · **sağlayıcı iadesi (dört göz):** held + pending; worker göndermez; isteyen onaylayamaz (409 `SAME_USER_APPROVAL`), sekreter 403, **DB check doğrudan SQL'de de reddeder**; bekleyen iade dahil fazla iade 409; yönetici onayı → worker → accepted ama defter değişmez; `refund.succeeded` → iade 200, avans 300; tekrar → stale · reddedilen iade hiç gönderilmez (0 deneme); manuel ödeme sağlayıcıdan iade edilemez · çapraz tenant: B onaylayamaz/iptal edemez/online ödeme listesini göremez (404), B iş listesinde A'nın işi yok; hekim iş listesine 403.
+
+### Görev 5 E2E (`gorev5.spec.ts`, 1366 px + 360 px; worker çalışırken)
+Yönetici VİA Köprü: kapı KAPALI, WhatsApp/e-Fatura “Erişim bekliyor” ve etkinleştirme düğmesi yok, SMS MOCK · Finans hastaya MOCK ödeme bağlantısı ister → worker işler → “Bağlantı hazır” + `mock.invalid` → yönetici iş ayrıntısından imzalı “ödendi” bildirimini simüle eder (“İşlendi”), ikinci bildirim “Eski/ters sıra” → hastanın ödemeler tablosunda tek “Online” ödeme → finans sağlayıcıdan 50 ₺ iade ister → VİA Köprü'de “Onay bekliyor” ve “Kendi isteğinizi onaylayamazsınız”, Onayla düğmesi yok → yönetici onaylar → worker → “Sağlayıcı kabul etti” → iade bildirimi → hesapta −50,00 · taşma yok.
+
 ## Kabul testleri eşlemesi
 | Test | Durum | Kanıt |
 |---|---|---|
@@ -56,8 +62,8 @@ Sekreter: DEMO şablonu plan kalemleriyle önizler (DEMO uyarısı) → üretir 
 | AT-09 eşzamanlı dağıtım | **geçti** | gorev3.test.ts (5 tur + ters yön + doğrudan SQL) |
 | AT-10 kur / prim oranı değişimi | **geçti (prim)** | gorev3.test.ts. Kur kısmı: çoklu para birimi davranışı kapalı (ADR-028); TRY dışı değer reddi test edildi, kur snapshot davranışı açılınca test edilecek |
 | AT-11 dosya yükleme hatası / zararlı dosya | **geçti** | gorev4.test.ts + E2E (temel tarayıcı; clamd yalnız sözleşme testiyle — gerçek ClamAV bu ortamda yok) |
-| AT-12 SMS teslim sonucu gelmez | **geçti (MOCK)** | gorev4.test.ts + E2E: submitted → unknown, delivered uydurulmaz. Gerçek sağlayıcı Görev 5 |
-| AT-13 webhook tekrar/ters sıra/geçersiz imza | açık | Görev 5 |
+| AT-12 SMS teslim sonucu gelmez | **geçti (MOCK)** | gorev4.test.ts + E2E: submitted → unknown, delivered uydurulmaz. gorev5.test.ts: zaman aşımı → unknown → durum sorgusu, teslim yalnız imzalı bildirimle; dead → failed/unknown. Gerçek sağlayıcı erişim bekliyor |
+| AT-13 webhook tekrar/ters sıra/geçersiz imza | **geçti (MOCK sağlayıcı, gerçek HTTP uç)** | gorev5.test.ts: aynı olay → duplicate; ters sıra/geç olay terminal durumu bozmaz; erken bildirim anahtarla eşlenir; geçersiz/eksik imza, eski zaman damgası, yenilenmiş sır 401; bozuk gövde 400; ödeme/iade çift bildirimi tek kayıt + E2E |
 | AT-14 onaydan sonra şablon değişir | **geçti** | gorev4.test.ts (API + doğrudan SQL) |
 | AT-16, AT-17 | açık | Görev 7 |
 | AT-15 klinik değiştirme, eski sekme | **geçti** | eski bağlamla okuma/yazma 409; yeni bağlamda yalnız yeni kliniğin verisi; rol yeni kliniğe göre |
@@ -66,7 +72,7 @@ Sekreter: DEMO şablonu plan kalemleriyle önizler (DEMO uyarısı) → üretir 
 | AT-20 erişimi kaldırılan kullanıcı | **geçti** (API) | açık oturumla sonraki istek 403 `MEMBERSHIP_REVOKED`; çıkış sonrası 401. Worker kullanıcı adına iş yürütmüyor; dosya erişimi Görev 4 |
 
 ## RLS / güvenlik kontrolleri (geçti)
-Uygulama rolü superuser/BYPASSRLS/tablo sahibi değil · `tenant_id` taşıyan **53 tablonun tamamında** RLS + FORCE (test artık tabloları otomatik keşfediyor; yeni tablo unutulursa kırılır) · bağlamsız sorgu 0 satır · havuzda bağlam sızmıyor · yanlış tenant_id ile INSERT reddediliyor · audit UPDATE/DELETE reddediliyor · istemci gövdesindeki `tenantId` yok sayılıyor · CSRF başlığı zorunlu · token DB'de düz değil · 5 hatalı girişte kilit.
+Uygulama rolü superuser/BYPASSRLS/tablo sahibi değil · `tenant_id` taşıyan **58 tablonun tamamında** RLS + FORCE (test artık tabloları otomatik keşfediyor; yeni tablo unutulursa kırılır) · bağlamsız sorgu 0 satır · havuzda bağlam sızmıyor · yanlış tenant_id ile INSERT reddediliyor · audit UPDATE/DELETE reddediliyor · istemci gövdesindeki `tenantId` yok sayılıyor · CSRF başlığı zorunlu · token DB'de düz değil · 5 hatalı girişte kilit.
 
 ## Elle yapılan görsel kontrol
 Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar, Hasta 360, Geçmiş, Ajanda, Yeni hasta çekmecesi incelendi. Bulunan ve düzeltilen hatalar: masaüstünde mobil menü düğmesi görünmesi, 360 px'de aramanın daralması, çekmecenin erişilebilir adının olmaması (E2E yakaladı), telefonun biçimsiz gösterimi.
@@ -102,7 +108,14 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - Göreli `STORAGE_DIR` API ve worker'da farklı dizinlere çözülüyordu → depo köküne göre çözülür.
 - Önceden var olan iki test kararsızlığı: rol değişikliği testi finans kullanıcısını kalıcı olarak sekretere çeviriyordu (dosya sırasına göre Görev 3 testleri 403 alıyordu) → test eski rolü geri yükler; “geciken randevu” testi günün saatine bağlıydı (10:00'dan önce başarısız) → tarama sabit klinik saatiyle çalıştırılır.
 
+## Görev 5'te bulunup düzeltilen hatalar
+- **Bozuk JSON'lu webhook kayıtsız reddediliyordu:** genel JSON gövde ayrıştırıcısı isteği uygulamaya ulaşmadan 400 ile kesiyordu; ret gerekçesi (`malformed`) kaydedilmiyor, imza ham bayt yerine yeniden serileştirilmiş gövdeye bağımlı kalabiliyordu. Test yakaladı (ret sayısı 0). Webhook yolu artık ham gövdeyi kendisi okur (256 KB sınır), JSON'u imza doğrulandıktan sonra ayrıştırır.
+- Tasarım incelemesinde `webhook_rejections` başta global tabloydu (kiracılar arası meta veri sızıntısı riski) → kiracıya bağlı + RLS; RLS kapsamı 58 tabloya çıktı ve otomatik keşif testi geçti.
+- Deneme sınırı dolan SMS işinde mesaj durumu güncellenmiyordu → zaman aşımıyla biterse “bilinmiyor”, diğer hatalarda “başarısız”.
+- E2E: Hasta 360'a dönüşte etkin sekme sıfırlanıyor (bilinen davranış) → test sekmeyi yeniden seçer; “Yenile” seçicisi “Anahtarı yenile” ile çakışıyordu → tam eşleşme.
+
 ## Çalıştırılmayan / yapılamayan
+- **Gerçek sağlayıcı entegrasyonu yok:** SMS, WhatsApp, ödeme kuruluşu, e-Fatura/e-Arşiv/e-SMM, DHBS/e-Nabız, imza/doğrulama için yetkili doküman, sözleşme ve sandbox erişimi bu oturumda yoktu; sandbox testi **yapılmadı**. Tüm Görev 5 testleri MOCK adaptör ve VİADENT'in kendi webhook imza biçimiyle; gerçek sağlayıcı imza biçimi adaptörde ayrıca doğrulanmalı.
 - Gerçek ClamAV (clamd) bu ortamda kurulu değil (imza veritabanı indirilemiyor); yalnız sahte clamd ile protokol sözleşmesi test edildi.
 - Yazdırma penceresi E2E'de açılmadı (tarayıcı diyaloğu otomasyonu kilitler); `printed` kanıt olayı API testinde doğrulandı.
 - Performans hedefi (100.000 hasta, p95 500 ms) **ölçülmedi**.

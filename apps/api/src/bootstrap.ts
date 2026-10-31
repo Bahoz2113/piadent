@@ -10,10 +10,23 @@ import type { AppConfig } from "./config.js";
 export async function createApp(config: AppConfig, opts: { logger?: boolean } = {}) {
   const app = await NestFactory.create<NestExpressApplication>(AppModule.forConfig(config), {
     logger: opts.logger === false ? false : ["error", "warn", "log"],
+    rawBody: true, // webhook imzası ham gövde üzerinden doğrulanır
   });
   app.set("trust proxy", "loopback");
   app.disable("x-powered-by");
   app.use(cookieParser());
+  // Webhook gövdesi JSON olarak ayrıştırılmadan ham alınır: imza ham bayt üzerinde doğrulanır, bozuk JSON da kayıtlı ret olur.
+  app.use("/api/v1/webhooks", (req: Request & { rawBody?: Buffer; _body?: boolean }, res: Response, next: NextFunction) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    req.on("data", (b: Buffer) => {
+      size += b.length;
+      if (size > 256 * 1024) { res.status(413).json({ code: "PAYLOAD_TOO_LARGE", message: "İstek gövdesi çok büyük." }); req.destroy(); return; }
+      chunks.push(b);
+    });
+    req.on("end", () => { if (res.headersSent) return; req.rawBody = Buffer.concat(chunks); req.body = {}; req._body = true; next(); });
+    req.on("error", next);
+  });
   app.useBodyParser("json", { limit: "256kb" });
   // Dosya içeriği yalnız application/octet-stream ile ve 20 MB + pay sınırıyla kabul edilir (PUT /files/:id/content).
   app.useBodyParser("raw", { type: "application/octet-stream", limit: "21mb" });

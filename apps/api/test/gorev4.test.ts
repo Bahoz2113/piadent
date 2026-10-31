@@ -11,12 +11,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import pg from "pg";
-import { ClamdScanner, BasicScanner, LocalDiskStorage, documentsMaintenance, withContext } from "@viadent/db";
+import { ClamdScanner, BasicScanner, LocalDiskStorage, documentsMaintenance, processIntegrationJobs, withContext } from "@viadent/db";
 import { EMAILS, adminQuery, login, ownerQuery, startApp, type Client } from "./helpers.js";
 import { Db } from "../src/infra/db.service.js";
 import { APP_URL, WORKER_URL } from "./env.js";
 import { processOutbox, scanAllTenants, type WorkerDeps } from "../../worker/src/jobs.js";
-import { MockMessagingAdapter } from "../../worker/src/messaging.js";
 import { setStorageForTests } from "../src/documents/files.controller.js";
 
 let app: INestApplication;
@@ -25,7 +24,7 @@ let tenantA: string;
 let pracId: string;
 const dir = mkdtempSync(join(tmpdir(), "viadent-files-"));
 const storage = new LocalDiskStorage(dir);
-const deps: WorkerDeps = { storage, scanner: new BasicScanner(), messaging: new MockMessagingAdapter() };
+const deps: WorkerDeps = { storage, scanner: new BasicScanner() };
 const key = () => `t-${randomUUID()}`;
 const sha = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");
 
@@ -41,7 +40,7 @@ const day = (offset: number) => {
 };
 async function worker() {
   const pool = new pg.Pool({ connectionString: WORKER_URL, max: 2 });
-  try { while ((await processOutbox(pool, 50, deps)) > 0) { /* kuyruğu boşalt */ } } finally { await pool.end(); }
+  try { while ((await processOutbox(pool, 50, deps)) + (await processIntegrationJobs(pool)) > 0) { /* kuyrukları boşalt */ } } finally { await pool.end(); }
 }
 async function scan(now = new Date()) {
   const pool = new pg.Pool({ connectionString: WORKER_URL, max: 2 });

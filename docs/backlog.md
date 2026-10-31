@@ -15,7 +15,7 @@ Durum sözlüğü: **tamamlandı** = kabul kriteri sağlandı ve test edildi · 
 | VD-009 Ödeme, dağıtım, iade | **tamamlandı** (ilk kapsam, TRY) | Alacak/ödeme/dağıtım/avans/iade/kasa/gider ayrı; idempotency; DB tutar tetikleyicileri; eşzamanlı dağıtım; AT-06..AT-10, AT-19 gerçek DB'de testli. Açık: iade ikinci onay eşiği, banka/POS mutabakatı, makbuz/e-belge (Görev 5), ticari indirim/alacak düzeltmesi kaydı, çoklu para birimi davranışı. |
 | VD-010 VİA Akış / Net / İz | **kısmi** | Akış (7 tür: geciken geliş, teyit, eksik iletişim, kapatma çakışması, anamnez onayı, randevusuz kabul edilmiş plan, yanıtsız teklif; dedupe, otomatik kapanış, rol/hassasiyet filtresi) ✔; İz (hasta bazlı, maskeli, rol kontrollü) ✔; Net: hasta hesabı (açılabilir toplamlar, hareket defteri, mutabakat), klinik özeti (işlem ≠ tahsilat), bakiyeler + yaşlandırma, kasa, gider, prim tahakkuku ✔ (Görev 3). |
 | VD-011 Dosya ve belge sürümü | **tamamlandı** (ilk kapsam) | Belge türü / şablon sürümü / hasta belgesi / onay isteği / kanıt ayrı; SHA-256; AT-14 ✔. Özel depo, yükleme ≠ seçme, tarama portu (temel + clamd), karantina, erişim izi; AT-11 ✔. Açık: üretimde ClamAV kurulumu, S3 adaptörü, saklama/imha işi, PDF çıktısı, görüntüleyici, uzaktan onay kanalı (Görev 5). |
-| VD-012 Outbox ve entegrasyon merkezi | **kısmi** | Outbox + retry/backoff + dead durumu (iç olaylar) ✔; dosya tarama ve MOCK mesaj işleri, mesaj süre aşımı → bilinmiyor (AT-12) ✔ (Görev 4). Dış sağlayıcı adaptörleri, webhook, idempotency Görev 5. |
+| VD-012 Outbox ve entegrasyon merkezi | **tamamlandı** (MOCK kapsamı; gerçek sağlayıcılar **engelli**) | Port/adapter, MOCK SMS + online ödeme, dış iş kuyruğu (idempotency, retry/backoff, dead-letter, zaman aşımı → durum sorgusu/mutabakat), imzalı webhook (tekrar, ters sıra, replay, geçersiz imza), dört göz onay kapısı, canlı gönderim kapısı, VİA Köprü ekranı; AT-12/AT-13 testli (Görev 5). Gerçek SMS/WhatsApp/ödeme/e-belge/DHBS adaptörü: yetkili doküman + test erişimi bekliyor. |
 | VD-013 Laboratuvar ve prim | **kısmi** | Tahsilat bazlı prim tahakkuku + ters prim + sürümlü kural (Görev 3) ✔. Laboratuvar, tedavi bazlı prim, prim ödemesi Görev 6. |
 | VD-014 İçe aktarma ve pilot | açık | Görev 7 |
 
@@ -31,10 +31,19 @@ VD-008 ve VD-009 tamamlandı (ilk kapsam, TRY), VD-013 kısmi (prim tahakkuku). 
 ## Tamamlanan iş paketi: Görev 4 (23.10.2026)
 VD-011 tamamlandı (ilk kapsam). H11, H15 çalışıyor; H10, H13, A02, A03, R14, R22 kısmi; Ek B 43 başlık VİADENT türüne eşlendi (kısmi), B03/B43 uygulanmayacak. VİA Hazır temeli (P1), iletişim tercihi, MOCK mesaj. ADR-032…036. Testler: API 117, E2E 28.
 
+## Tamamlanan iş paketi: Görev 5 (23.10.2026)
+VD-012 tamamlandı (MOCK kapsamı). R24 kısmi (online ödeme isteği ≠ tahsilat, MOCK), R14 kısmi sürüyor (gerçek sağlayıcı yok); E01/E02/E03 engelli kalır (gerekçe VİA Köprü ekranında). AT-13 geçti, AT-12 sağlayıcı bildirimiyle genişledi. ADR-037…040. Testler: API 135, E2E 32.
+
 ## Sıradaki tek iş paketi
-**Görev 5 — Sağlayıcılar ve VİA Köprü (VD-012):** port/adapter ile SMS/WhatsApp, ödeme, e-belge, imza/doğrulama sağlayıcıları; yetkili doküman ve test erişimi yoksa açık etiketli mock + sözleşme testleri; outbox, idempotency, retry/backoff, dead-letter, mutabakat, imzalı webhook (AT-12/13; zaman aşımı, ters sıra, çift olay); dış gönderim ayrı onay kapısında. Prompttaki Görev 5 metniyle başlat.
+**Görev 6 — Operasyon ve raporlar (VD-013, V08/V09):** laboratuvar iş emri, revizyon, teslim ve maliyet; sürümlü hekim primi ve iade ters primi (tahakkuk var, tedavi bazlı prim ve prim ödemesi açık); filtreli temel raporlar ve kaynağa iniş; stok gerekiyorsa lot/birim/hareket (miktar doğrudan ezilmez); Ek A rapor ve tanımlama ID'leri traceability'de tek tek; rapor toplamları alt kayıtlarla mutabık testli. Prompttaki Görev 6 metniyle başlat.
 
 ## Küçük açık işler
+- VİA Köprü: gerçek sağlayıcı adaptörleri (seçim + sözleşme + sandbox + webhook dokümanı geldikçe; her biri için sözleşme testi MOCK testleriyle aynı senaryoları geçmeli).
+- Sağlayıcı iadesinde zaman aşımı/bilinmiyor durumunda sağlayıcıdan iade durumu sorgusu (MOCK `query` var; gerçek API'ye göre).
+- Online ödeme bağlantısının süresi dolma işi (`expires_at` alanı var, iş yok) ve hastaya bağlantı gönderimi (SMS kanalıyla, izin + onay kapısıyla).
+- Webhook ret sayısı için hız sınırı/uyarı eşiği; webhook olay kaydı saklama süresi.
+- Sır anahtarı (`VIADENT_SECRET_KEY`) döndürme prosedürü ve KMS/secret manager.
+- Klinik geneli mesaj sorgu ekranı (R14) ve online ödeme raporu (R24) — Görev 6.
 - Üretimde clamd (ClamAV) kurulumu ve imza güncellemesi; tarama kuyruğu gecikme izleme.
 - Dosya saklama süresi ve “silindi” dosyaların imha işi; S3 uyumlu özel bucket adaptörü (sunucu tarafı şifreleme).
 - Belge PDF çıktısı (şu an tarayıcı yazdırması) ve taranmış nüshanın belgeye yüklemeden bağlanması akışı.

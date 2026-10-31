@@ -15,7 +15,7 @@ corepack enable
 pnpm install
 cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
 ```
-`.env` içindeki `CHANGE_ME_*` değerlerini yerel parolalarla değiştirin. Docker kullanıyorsanız `ADMIN_DATABASE_URL` parolası `infra/docker-compose.yml` içindeki `POSTGRES_ADMIN_PASSWORD` (varsayılan `viadent_local_admin`) ile aynı olmalı.
+`.env` içindeki `CHANGE_ME_*` değerlerini yerel parolalarla değiştirin ve `VIADENT_SECRET_KEY` için `.env.example`'daki komutla bir anahtar üretin (seed ve VİA Köprü sağlayıcı sırlarını bununla şifreler; boşsa seed durur). Docker kullanıyorsanız `ADMIN_DATABASE_URL` parolası `infra/docker-compose.yml` içindeki `POSTGRES_ADMIN_PASSWORD` (varsayılan `viadent_local_admin`) ile aynı olmalı.
 
 ```bash
 pnpm db:up        # PostgreSQL'i Docker'da başlatır
@@ -27,7 +27,7 @@ pnpm db:seed      # iki sentetik klinik; parola .demo-credentials dosyasına yaz
 ## Çalıştırma (üç terminal)
 ```bash
 pnpm dev:api      # http://127.0.0.1:4000/api/v1
-pnpm dev:worker   # outbox + VİA Akış taraması
+pnpm dev:worker   # outbox + VİA Köprü dış işleri (MOCK) + VİA Akış taraması
 pnpm dev:web      # http://localhost:3000
 ```
 

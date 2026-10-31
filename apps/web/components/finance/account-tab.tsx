@@ -8,10 +8,11 @@ import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
 import { minor, money, parseMoneyInput } from "./money-input";
+import { OnlinePayments, ProviderRefundDrawer } from "./online-payments";
 
 interface Receivable { id: string; source: string; description: string; amount: string; status: string; cancelReason: string | null; dueDate: string; createdAt: string;
   practitionerName: string | null; allocated: string; open: string }
-interface Payment { id: string; amount: string; method: PaymentMethod; paidAt: string; note: string | null; accountName: string; receivedBy: string;
+interface Payment { id: string; amount: string; method: PaymentMethod | "online"; paidAt: string; note: string | null; accountName: string; receivedBy: string;
   allocated: string; refunded: string; available: string }
 interface Allocation { id: string; paymentId: string; receivableId: string; amount: string; reversesId: string | null; reason: string | null; at: string; by: string }
 interface LedgerRow { at: string; kind: string; ref: string; description: string; amount: string; openDebtAfter: string; advanceAfter: string }
@@ -29,13 +30,15 @@ const KIND_LABEL: Record<string, string> = {
 };
 const METHOD_ACCOUNT: Record<PaymentMethod, CashAccount["kind"] | null> = { cash: "cash", card_manual: "pos_manual", bank_transfer: "bank", other: null };
 
+const methodLabel = (m: PaymentMethod | "online") => (m === "online" ? "Online (sağlayıcı)" : PAYMENT_METHOD_LABELS[m]);
+
 type Explain = "debt" | "advance" | "paid" | null;
 
 export function AccountTab({ patientId, patientName }: { patientId: string; patientName: string }) {
   const { can } = useSession();
   const acc = useData<Account>(`/patients/${patientId}/account`);
   const [explain, setExplain] = useState<Explain>(null);
-  const [drawer, setDrawer] = useState<null | { kind: "pay" } | { kind: "allocate"; paymentId?: string } | { kind: "refund"; payment: Payment }
+  const [drawer, setDrawer] = useState<null | { kind: "pay" } | { kind: "allocate"; paymentId?: string } | { kind: "refund"; payment: Payment } | { kind: "provider_refund"; payment: Payment }
     | { kind: "receivable" } | { kind: "cancel"; rec: Receivable } | { kind: "reverse"; alloc: Allocation }>(null);
   const [toast, setToast] = useState<string | null>(null);
   const done = (msg: string) => { setDrawer(null); setToast(msg); void acc.reload(); };
@@ -111,7 +114,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
                 {a.payments.map((p) => (
                   <tr key={p.id}>
                     <td>{fmtDateTime(p.paidAt)}<div className="small muted">{p.receivedBy}</div></td>
-                    <td>{PAYMENT_METHOD_LABELS[p.method]}</td>
+                    <td>{p.method === "online" ? <>Online <span className="badge badge-warning">MOCK sağlayıcı</span></> : PAYMENT_METHOD_LABELS[p.method]}</td>
                     <td>{p.accountName}</td>
                     <td className="money">{formatTRY(p.amount)}</td>
                     <td className="money">{formatTRY(p.allocated)}</td>
@@ -119,7 +122,9 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
                     <td className="money"><strong>{formatTRY(p.available)}</strong></td>
                     <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
                       {can("payment.write") && minor(p.available) > 0n && openRecs.length > 0 && <button className="btn btn-sm btn-ghost" onClick={() => setDrawer({ kind: "allocate", paymentId: p.id })}>Dağıt</button>}
-                      {can("payment.refund") && minor(p.amount) - minor(p.refunded) > 0n && <button className="btn btn-sm btn-ghost" onClick={() => setDrawer({ kind: "refund", payment: p })}><Undo2 size={14} aria-hidden />İade</button>}
+                      {can("payment.refund") && minor(p.amount) - minor(p.refunded) > 0n && (p.method === "online"
+                        ? <button className="btn btn-sm btn-ghost" onClick={() => setDrawer({ kind: "provider_refund", payment: p })}><Undo2 size={14} aria-hidden />Sağlayıcıdan iade</button>
+                        : <button className="btn btn-sm btn-ghost" onClick={() => setDrawer({ kind: "refund", payment: p })}><Undo2 size={14} aria-hidden />İade</button>)}
                     </td>
                   </tr>
                 ))}
@@ -128,6 +133,8 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
           </div>
         )}
       </section>
+
+      <OnlinePayments patientId={patientId} onChanged={() => void acc.reload()} />
 
       {a.ledger.length > 0 && (
         <section className="card">
@@ -160,6 +167,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
       {drawer?.kind === "pay" && <PaymentDrawer patientId={patientId} patientName={patientName} openRecs={openRecs} onClose={() => setDrawer(null)}
         onSaved={(adv) => done(minor(adv) > 0n ? `Tahsilat kaydedildi. ${formatTRY(adv)} avans olarak kaldı.` : "Tahsilat kaydedildi ve dağıtıldı.")} />}
       {drawer?.kind === "allocate" && <AllocateDrawer payments={advPayments} initialPayment={drawer.paymentId} openRecs={openRecs} onClose={() => setDrawer(null)} onSaved={() => done("Dağıtım kaydedildi.")} />}
+      {drawer?.kind === "provider_refund" && <ProviderRefundDrawer payment={drawer.payment} onClose={() => setDrawer(null)} onSaved={(note) => done(note)} />}
       {drawer?.kind === "refund" && <RefundDrawer payment={drawer.payment} onClose={() => setDrawer(null)} onSaved={() => done("İade kaydedildi.")} />}
       {drawer?.kind === "receivable" && <ReceivableDrawer patientId={patientId} onClose={() => setDrawer(null)} onSaved={() => done("Alacak eklendi.")} />}
       {drawer?.kind === "cancel" && <ReasonDrawer title="Alacağı iptal et" subtitle={`${drawer.rec.description} · ${formatTRY(drawer.rec.amount)}. Dağıtılmış tahsilat varsa ters kayıtla avansa döner.`}
@@ -189,7 +197,7 @@ function ExplainPanel({ kind, a }: { kind: Exclude<Explain, null>; a: Account })
   if (kind === "advance") return (
     <div className="explain">
       <p><strong>Avans = ödemeler − iadeler − dağıtılan</strong> = {formatTRY(t.paid)} − {formatTRY(t.refunded)} − {formatTRY(money(minor(t.paid) - minor(t.refunded) - minor(t.advance)))} = <strong>{formatTRY(t.advance)}</strong></p>
-      <ul>{a.payments.map((p) => <li key={p.id}>{fmtDate(p.paidAt)} {PAYMENT_METHOD_LABELS[p.method]}: {formatTRY(p.amount)} − iade {formatTRY(p.refunded)} − dağıtım {formatTRY(p.allocated)} = {formatTRY(p.available)}</li>)}</ul>
+      <ul>{a.payments.map((p) => <li key={p.id}>{fmtDate(p.paidAt)} {methodLabel(p.method)}: {formatTRY(p.amount)} − iade {formatTRY(p.refunded)} − dağıtım {formatTRY(p.allocated)} = {formatTRY(p.available)}</li>)}</ul>
     </div>
   );
   return (
@@ -308,7 +316,7 @@ function AllocateDrawer({ payments, initialPayment, openRecs, onClose, onSaved }
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}
         <SelectField label="Ödeme" value={pid} onChange={(e) => { setPid(e.target.value); setLines({}); setKey(newIdempotencyKey()); }}>
-          {payments.map((x) => <option key={x.id} value={x.id}>{fmtDate(x.paidAt)} · {PAYMENT_METHOD_LABELS[x.method]} · kullanılabilir {formatTRY(x.available)}</option>)}
+          {payments.map((x) => <option key={x.id} value={x.id}>{fmtDate(x.paidAt)} · {methodLabel(x.method)} · kullanılabilir {formatTRY(x.available)}</option>)}
         </SelectField>
         {p && <AllocationLines recs={openRecs} lines={lines} setLines={setLines} budget={minor(p.available)} />}
       </div>
@@ -321,7 +329,7 @@ function RefundDrawer({ payment, onClose, onSaved }: { payment: Payment; onClose
   const [key] = useState(newIdempotencyKey);
   const refundable = money(minor(payment.amount) - minor(payment.refunded));
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<PaymentMethod>(payment.method);
+  const [method, setMethod] = useState<PaymentMethod>(payment.method === "online" ? "other" : payment.method);
   const [account, setAccount] = useState("");
   const [reason, setReason] = useState("");
   const [err, setErr] = useState<ApiFailure | null>(null);

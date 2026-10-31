@@ -4,7 +4,7 @@ import type { Request } from "express";
 import type { Permission } from "@viadent/contracts";
 import { AuthService } from "./auth.service.js";
 import { AppError, Errors } from "../infra/errors.js";
-import { NO_TENANT, PERMS, PUBLIC } from "./decorators.js";
+import { NO_TENANT, PERMS, PUBLIC, WEBHOOK } from "./decorators.js";
 
 export const SESSION_COOKIE = "vd_session";
 const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -23,7 +23,8 @@ export class AuthGuard implements CanActivate {
     const mutating = !SAFE.has(req.method);
 
     // CSRF: değiştiren istekler özel başlık taşımalı (çerez SameSite=Lax + başlık).
-    if (mutating && req.get("x-viadent-request") !== "1") {
+    const webhook = this.reflector.getAllAndOverride<boolean>(WEBHOOK, targets);
+    if (mutating && !webhook && req.get("x-viadent-request") !== "1") {
       throw new AppError(403, "CSRF_HEADER_MISSING", "İstek doğrulanamadı.");
     }
     if (this.reflector.getAllAndOverride<boolean>(PUBLIC, targets)) return true;

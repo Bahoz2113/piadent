@@ -10,7 +10,7 @@ import type { RequestContext } from "../infra/context.js";
 import { audit, enqueue } from "../audit/audit.js";
 import {
   activeAccount, allocate, cancelReceivable, cashMovement, checkEventTime, createReceivable, idempotent, liveAllocations, lockAccount,
-  requireKey, reverseAllocation,
+  refundPayment, requireKey, reverseAllocation,
 } from "./ledger.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
@@ -243,34 +243,9 @@ export class AccountController {
         if (!p) throw Errors.notFound("Ödeme");
         await activeAccount(c, i.cashAccountId);
         await lockAccount(c, p.patient_id);
-        const s = (await c.query(
-          `select p.amount::text as amount, coalesce((select sum(a.amount) from allocations a where a.payment_id = p.id), 0)::text as allocated,
-                  coalesce((select sum(f.amount) from refunds f where f.payment_id = p.id), 0)::text as refunded
-             from payments p where p.id = $1`, [paymentId])).rows[0];
-        const refundable = toMinor(s.amount) - toMinor(s.refunded);
-        const want = toMinor(i.amount);
-        if (want > refundable) throw new AppError(409, "REFUND_EXCEEDS_PAYMENT", `Bu ödemeden en çok ${fromMinor(refundable)} TRY iade edilebilir.`, { amount: `En çok ${fromMinor(refundable)}` });
-        let need = want - (refundable - toMinor(s.allocated)); // dağıtılmamış kısım yetmiyorsa ters kayıt gereken tutar
-        const reversed: { allocationId: string; amount: string }[] = [];
-        for (const a of await liveAllocations(c, paymentId)) {
-          if (need <= 0n) break;
-          const take = toMinor(a.remaining) < need ? toMinor(a.remaining) : need;
-          const rid = await reverseAllocation(c, ctx, a.id, fromMinor(take), `İade: ${i.reason}`);
-          reversed.push({ allocationId: rid, amount: fromMinor(take) });
-          need -= take;
-        }
-        const at = new Date();
-        const f = await c.query(
-          `insert into refunds(tenant_id, payment_id, amount, method, cash_account_id, reason, refunded_at, created_by)
-           values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
-          [ctx.tenantId, paymentId, i.amount, i.method, i.cashAccountId, i.reason, at, ctx.userId],
-        );
-        const fid = f.rows[0].id as string;
-        await cashMovement(c, ctx, { accountId: i.cashAccountId, amount: `-${i.amount}`, source: "refund", sourceId: fid, at });
-        await audit(c, ctx, { action: "payment.refund", entityType: "refund", entityId: fid, patientId: p.patient_id,
-          changes: { amount: { from: null, to: i.amount }, payment_id: { from: null, to: paymentId }, reason: { from: null, to: i.reason } } });
+        const out = await refundPayment(c, ctx, paymentId, { amount: i.amount, method: i.method, cashAccountId: i.cashAccountId, reason: i.reason });
         await enqueue(c, ctx.tenantId, "via_net.changed", { patientId: p.patient_id });
-        return { id: fid, reversedAllocations: reversed };
+        return { id: out.id, reversedAllocations: out.reversedAllocations };
       });
       replayHeader(res, r);
       return r.body;

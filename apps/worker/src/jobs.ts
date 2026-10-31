@@ -1,10 +1,9 @@
 import pg from "pg";
 import { documentsMaintenance, refreshViaAkis, scanFile, scannerFromEnv, storageFromEnv, withContext, type ScannerPort, type StoragePort } from "@viadent/db";
-import { MockMessagingAdapter, type MessagingPort } from "./messaging.js";
 
-export interface WorkerDeps { storage: StoragePort; scanner: ScannerPort; messaging: MessagingPort }
+export interface WorkerDeps { storage: StoragePort; scanner: ScannerPort }
 let defaultDeps: WorkerDeps | null = null;
-const deps = (d?: WorkerDeps) => d ?? (defaultDeps ??= { storage: storageFromEnv(), scanner: scannerFromEnv(), messaging: new MockMessagingAdapter() });
+const deps = (d?: WorkerDeps) => d ?? (defaultDeps ??= { storage: storageFromEnv(), scanner: scannerFromEnv() });
 
 const MAX_ATTEMPTS = 8;
 
@@ -32,10 +31,9 @@ export async function processOutbox(pool: pg.Pool, batch = 50, d?: WorkerDeps): 
   const byTenant = new Map<string, typeof claimed>();
   for (const ev of claimed) {
     // via_net.changed: hesap değişti → VİA Akış koşulları yeniden değerlendirilir (finans görevleri buradan genişler).
-    if (ev.topic === "file.scan" || ev.topic === "message.send") {
+    if (ev.topic === "file.scan") {
       try {
-        await withContext<unknown>(pool, { tenantId: ev.tenant_id, userId: null }, (c) =>
-          ev.topic === "file.scan" ? scanFile(c, ev.tenant_id, ev.payload.fileId!, deps(d).storage, deps(d).scanner) : sendMessage(c, ev.tenant_id, ev.payload.messageId!, deps(d).messaging));
+        await withContext<unknown>(pool, { tenantId: ev.tenant_id, userId: null }, (c) => scanFile(c, ev.tenant_id, ev.payload.fileId!, deps(d).storage, deps(d).scanner));
         await finish(pool, [ev.id], "done");
       } catch (e) {
         await retry(pool, ev, (e as Error).message.slice(0, 300));
@@ -64,38 +62,6 @@ async function retry(pool: pg.Pool, ev: { id: number; attempts: number }, msg: s
   if (ev.attempts >= MAX_ATTEMPTS) await finish(pool, [ev.id], "dead", msg);
   else await pool.query("update outbox_events set status = 'pending', last_error = $2, available_at = now() + make_interval(secs => $3) where id = $1",
     [ev.id, msg, Math.min(2 ** ev.attempts, 300)]);
-}
-
-/**
- * Mesaj gönderimi (şimdilik yalnız MOCK sağlayıcı). Kuyruktaki mesaj gönderim anında amaç+kanal iznini yeniden kontrol eder;
- * sağlayıcı kabul ederse "submitted" olur — "delivered" yalnız sağlayıcının teslim bildirimiyle (Görev 5) yazılır (AT-12).
- */
-export async function sendMessage(c: import("pg").PoolClient, tenantId: string, messageId: string, messaging: MessagingPort) {
-  const m = (await c.query("select id, patient_id, purpose, channel, body, status from messages where id = $1 for update", [messageId])).rows[0];
-  if (!m || m.status !== "queued") return;
-  const pref = (await c.query(
-    "select status from communication_preferences where patient_id = $1 and purpose = $2 and channel = $3 order by recorded_at desc limit 1",
-    [m.patient_id, m.purpose, m.channel])).rows[0];
-  if (pref?.status !== "granted") {
-    await c.query("update messages set status = 'cancelled', status_reason = 'Gönderim anında iletişim izni yok', status_at = now() where id = $1", [messageId]);
-    await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'cancelled','system','İzin geri çekilmiş')", [tenantId, messageId]);
-    return;
-  }
-  const p = (await c.query("select phone_e164, email from patients where id = $1", [m.patient_id])).rows[0];
-  const to = m.channel === "email" ? p?.email : p?.phone_e164;
-  if (!to) {
-    await c.query("update messages set status = 'failed', status_reason = 'Alıcı bilgisi yok', status_at = now() where id = $1", [messageId]);
-    await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'failed','system','Alıcı bilgisi yok')", [tenantId, messageId]);
-    return;
-  }
-  const r = await messaging.submit({ channel: m.channel, to, body: m.body, idempotencyKey: messageId });
-  if (r.accepted) {
-    await c.query("update messages set status = 'submitted', provider_message_id = $2, submitted_at = now(), status_at = now(), status_reason = null where id = $1", [messageId, r.providerMessageId]);
-    await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'submitted','provider',$3)", [tenantId, messageId, `${messaging.name}: kabul edildi`]);
-  } else {
-    await c.query("update messages set status = 'failed', status_reason = $2, status_at = now() where id = $1", [messageId, r.error]);
-    await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'failed','provider',$3)", [tenantId, messageId, r.error]);
-  }
 }
 
 async function finish(pool: pg.Pool, ids: number[], status: "done" | "dead", error?: string) {

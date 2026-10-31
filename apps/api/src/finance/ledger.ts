@@ -5,7 +5,7 @@
  */
 import { createHash } from "node:crypto";
 import type pg from "pg";
-import { IDEMPOTENCY_KEY_RE, commissionAmount, localDate } from "@viadent/contracts";
+import { IDEMPOTENCY_KEY_RE, commissionAmount, fromMinor, localDate, toMinor } from "@viadent/contracts";
 import type { RequestContext } from "../infra/context.js";
 import { AppError } from "../infra/errors.js";
 import { audit } from "../audit/audit.js";
@@ -177,4 +177,38 @@ export function checkEventTime(iso: string | undefined, field: string): Date {
   if (at.getTime() > now + 5 * 60_000) throw new AppError(422, "VALIDATION_FAILED", "İşlem tarihi gelecekte olamaz.", { [field]: "Gelecek tarih olamaz." });
   if (at.getTime() < now - 30 * 86_400_000) throw new AppError(422, "VALIDATION_FAILED", "30 günden eski işlem bu ekrandan girilemez.", { [field]: "En fazla 30 gün geriye." });
   return at;
+}
+
+/**
+ * İade (AT-07 algoritması, manuel ve sağlayıcı iadesi ortak): önce ödemenin dağıtılmamış kısmı; yetmezse en yeni dağıtımdan
+ * başlayarak ters kayıt. Çağıran hesabı kilitlemiş olmalıdır. Tutar sınırı DB tetikleyicisinde de denetlenir.
+ */
+export async function refundPayment(c: C, ctx: RequestContext, paymentId: string,
+  r: { amount: string; method: string; cashAccountId: string; reason: string; providerRef?: string | null; source?: string }) {
+  const s = (await c.query(
+    `select p.patient_id, p.amount::text as amount, coalesce((select sum(a.amount) from allocations a where a.payment_id = p.id), 0)::text as allocated,
+            coalesce((select sum(f.amount) from refunds f where f.payment_id = p.id), 0)::text as refunded
+       from payments p where p.id = $1`, [paymentId])).rows[0];
+  const refundable = toMinor(s.amount) - toMinor(s.refunded);
+  const want = toMinor(r.amount);
+  if (want > refundable) throw new AppError(409, "REFUND_EXCEEDS_PAYMENT", `Bu ödemeden en çok ${fromMinor(refundable)} TRY iade edilebilir.`, { amount: `En çok ${fromMinor(refundable)}` });
+  let need = want - (refundable - toMinor(s.allocated));
+  const reversed: { allocationId: string; amount: string }[] = [];
+  for (const a of await liveAllocations(c, paymentId)) {
+    if (need <= 0n) break;
+    const take = toMinor(a.remaining) < need ? toMinor(a.remaining) : need;
+    reversed.push({ allocationId: await reverseAllocation(c, ctx, a.id, fromMinor(take), `İade: ${r.reason}`), amount: fromMinor(take) });
+    need -= take;
+  }
+  const at = new Date();
+  const f = await c.query(
+    `insert into refunds(tenant_id, payment_id, amount, method, cash_account_id, reason, refunded_at, created_by, provider_ref)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
+    [ctx.tenantId, paymentId, r.amount, r.method, r.cashAccountId, r.reason, at, ctx.userId, r.providerRef ?? null]);
+  const fid = f.rows[0].id as string;
+  await cashMovement(c, ctx, { accountId: r.cashAccountId, amount: `-${r.amount}`, source: "refund", sourceId: fid, at });
+  await audit(c, ctx, { action: "payment.refund", entityType: "refund", entityId: fid, patientId: s.patient_id,
+    changes: { amount: { from: null, to: r.amount }, payment_id: { from: null, to: paymentId }, reason: { from: null, to: r.reason },
+      ...(r.source ? { source: { from: null, to: r.source } } : {}) } });
+  return { id: fid, patientId: s.patient_id as string, reversedAllocations: reversed };
 }

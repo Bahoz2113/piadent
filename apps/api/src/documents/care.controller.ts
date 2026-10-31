@@ -10,6 +10,7 @@ import { AppError, Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
 import { audit, enqueue } from "../audit/audit.js";
 import { idempotent, requireKey } from "../finance/ledger.js";
+import { activeConnection, createJob } from "../bridge/bridge.controller.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const maskEmail = (e: string) => e.replace(/^(.).*(@.*)$/, "$1***$2");
@@ -75,14 +76,19 @@ export class CareController {
           "select status from communication_preferences where patient_id = $1 and purpose = $2 and channel = $3 order by recorded_at desc limit 1",
           [i.patientId, i.purpose, i.channel])).rows[0];
         if (pref?.status !== "granted") throw new AppError(422, "CONSENT_MISSING", "Bu amaç ve kanal için hastanın kayıtlı iletişim izni yok. Önce iletişim tercihini kaydedin.");
+        const cn = await activeConnection(c, i.channel); // kanal başına sağlayıcı bağlantısı; yoksa 409 (sessiz başarı yok)
         const to = i.channel === "email" ? p.email : p.phone_e164;
         if (!to) throw new AppError(422, "RECIPIENT_MISSING", i.channel === "email" ? "Hastanın e-posta adresi yok." : "Hastanın telefonu yok.");
         const m = await c.query(
           `insert into messages(tenant_id, patient_id, purpose, channel, recipient_masked, body, provider, created_by)
            values ($1,$2,$3,$4,$5,$6,'mock',$7) returning id, status`,
           [ctx.tenantId, i.patientId, i.purpose, i.channel, i.channel === "email" ? maskEmail(to) : maskPhone(to), i.body, ctx.userId]);
-        await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'queued','system','Kuyruğa alındı (MOCK sağlayıcı)')", [ctx.tenantId, m.rows[0].id]);
-        await enqueue(c, ctx.tenantId, "message.send", { messageId: m.rows[0].id });
+        await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'queued','system',$3)",
+          [ctx.tenantId, m.rows[0].id, cn.provider === "mock" ? "Kuyruğa alındı (MOCK sağlayıcı)" : "Kuyruğa alındı"]);
+        // Sağlayıcıya yalnız alıcı ve metin gider; anahtar mesaj kimliğidir (yeniden denemede sağlayıcı tarafında tekilleşir).
+        const jobId = await createJob(c, ctx, { connectionId: cn.id, operation: "sms.send", sourceType: "message", sourceId: m.rows[0].id,
+          key: `msg_${m.rows[0].id}`, payload: { channel: i.channel, body: i.body }, requiresApproval: false });
+        await c.query("update messages set integration_job_id = $2 where id = $1", [m.rows[0].id, jobId]);
         await audit(c, ctx, { action: "message.queue", entityType: "message", entityId: m.rows[0].id, patientId: i.patientId,
           changes: { purpose: { from: null, to: i.purpose }, channel: { from: null, to: i.channel } } });
         return { id: m.rows[0].id as string, status: "queued", provider: "mock" };

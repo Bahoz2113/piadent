@@ -57,10 +57,19 @@ Notlar:
 - Belge türü hekime özel olabilir (`issuer_role = dentist`, ör. istirahat belgesi): sekreter hazırlayamaz (403).
 - Klinik dosyalar (röntgen, klinik fotoğraf, klinik belge) sekreter/yönetici/finans listelerinde görünmez ve doğrudan istekte 404 döner; yönetici idari dosyaları görür.
 
+## VİA Köprü yetkileri (Görev 5)
+| Yetki | Yönetici | Finans | Diğerleri |
+|---|---|---|---|
+| `integration.read` — bağlantılar, dış işler, webhook günlüğü | ✔ | ✔ | — |
+| `integration.manage` — bağlantı aç/kapat, MOCK davranışı, sır yenileme, yeniden deneme/iptal, MOCK bildirim simülasyonu | ✔ | — | — |
+| `integration.approve` — onay kapısındaki işi onaylama/reddetme | ✔ | ✔ | — |
+
+Dört göz: onay yetkisi olsa bile **isteği açan kişi kendi isteğini onaylayamaz** (API `SAME_USER_APPROVAL`, DB check). Online ödeme bağlantısı `payment.write` (sekreter, finans), sağlayıcıdan iade isteği `payment.refund` (finans, yönetici) ister. Webhook ucu oturumsuzdur; yetki yerine HMAC imza + zaman penceresi + bağlantı kimliği kullanılır, kiracı bağlantıdan çözülür (ADR-039).
+
 ## Henüz uygulanmayan roller
 - **Laboratuvar dış kullanıcısı** (P1): yalnız atanmış iş ve gerekli teknik bilgi.
 - **Hasta / yetkili yakın** (P1): portal; yakınlık tek başına yetki değildir.
 - **VİADENT destek**: süreli, amaçlı, kayıtlı erişim; varsayılan hasta içeriği yok.
 
 ## Test kanıtları
-AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`), finans rolleri ve çapraz tenant (`gorev3.test.ts`, E2E `gorev3.spec.ts`), belge/dosya/iletişim rolleri ve çapraz tenant (`gorev4.test.ts`, E2E `gorev4.spec.ts`). Sonuçlar: `verification.md`.
+AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`), finans rolleri ve çapraz tenant (`gorev3.test.ts`, E2E `gorev3.spec.ts`), belge/dosya/iletişim rolleri ve çapraz tenant (`gorev4.test.ts`, E2E `gorev4.spec.ts`), VİA Köprü yetkileri, dört göz ve çapraz tenant (`gorev5.test.ts`, E2E `gorev5.spec.ts`). Sonuçlar: `verification.md`.

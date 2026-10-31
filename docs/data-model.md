@@ -94,8 +94,16 @@ Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arc
 **Alacak:** `active → cancelled` (dağıtımlar önce ters kayda alınır).
 **Görev:** `open | in_progress | blocked | done | cancelled`; kapalı görev yeniden açılmaz; iptal gerekçe ister.
 
+## Görev 5 tabloları (`0006_integrations.sql`)
+- `integration_connections` — tür × sağlayıcı × mod (mock/sandbox/live) × durum (active/disabled/blocked + gerekçe); webhook sırrı AES-256-GCM şifreli; MOCK davranış ayarı `config`.
+- `integration_jobs` — dış iş: işlem, kaynak (mesaj/online ödeme/ödeme), tekil `(tenant, operation, idempotency_key)`, onay durumu + isteyen/onaylayan (`approved_by <> requested_by` check), taşıma durumu ve nihai sonuç ayrı, deneme sayısı/sınırı, sonraki deneme, sağlayıcı referansı.
+- `integration_attempts` — her gönderim/durum sorgusu denemesi ve sonucu (değiştirilemez günlük).
+- `webhook_events` — doğrulanmış sağlayıcı olayı; tekil `(tenant, connection, provider_event_id)`; sonuç (processed/duplicate/ignored_stale/ignored_unknown/error); gövde özeti.
+- `webhook_rejections` — doğrulanamayan istekler (yalnız gerekçe ve zaman; içerik saklanmaz), kiracıya bağlı.
+- `online_payment_requests` — ödeme bağlantısı isteği (tahsilat değildir), durum, MOCK bağlantı, bağlanan ödeme.
+- Değişiklikler: `payments.source` (manual|provider) + tekil `provider_ref`, yöntem `online`; `refunds.provider_ref`, yöntem `online`; `cash_accounts.kind = 'provider'`; `messages.integration_job_id`; görev türleri `integration_dead`, `integration_approval`. Dar `SECURITY DEFINER` `app.webhook_target(uuid)`.
+
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).
-- Görev 5: `message`, `delivery_event`, `integration_job`, `webhook_event`.
 - Görev 6: `lab_order`, `lab_event`, `commission_rule_version`, `commission_accrual`, `commission_payout`, `inventory_item`, `lot`, `stock_movement`.
 - Görev 7: `import_batch`.

@@ -9,6 +9,7 @@ import { resolve } from "node:path";
 import pg from "pg";
 import { normalizeSearch, zonedToUtc, localDate, addDays, normalizeDocumentText } from "@viadent/contracts";
 import { createHash } from "node:crypto";
+import { encryptSecret, newWebhookSecret } from "./bridge.js";
 import { loadEnv, requireEnv } from "./env.js";
 import { hashPassword } from "./password.js";
 
@@ -313,6 +314,19 @@ export async function seed(connectionString: string, opts: { password?: string; 
         if (patientIds.length > 1) {
           await c.query("insert into follow_ups(tenant_id, patient_id, due_date, reason, practitioner_id, created_by) values ($1,$2,$3,'6 aylık rutin kontrol (sentetik)',$4,$5)",
             [tenantId, patientIds[1], addDays(localDate(now, tz), 10), pracIds[0], creator]);
+        }
+        // Görev 5: VİA Köprü — MOCK SMS ve online ödeme bağlantıları (gerçek gönderim/çekim yok), sağlayıcı tahsilat hesabı,
+        // erişim bekleyen sağlayıcılar “blocked” olarak kayıtlı (dürüst durum).
+        for (const kind of ["sms", "payment"]) {
+          await c.query(
+            "insert into integration_connections(tenant_id, kind, provider, mode, status, webhook_secret_enc, secret_rotated_at) values ($1,$2,'mock','mock','active',$3, now())",
+            [tenantId, kind, encryptSecret(newWebhookSecret())]);
+        }
+        await c.query("insert into cash_accounts(tenant_id, name, kind) values ($1,'Online ödeme — MOCK sağlayıcı','provider')", [tenantId]);
+        for (const [kind, reason] of [["e_invoice", "Yetkili e-belge entegratörü sözleşmesi ve test hesabı yok"], ["health_registry", "DHBS/SBYS güncel kapsam teyidi ve test erişimi yok"],
+          ["whatsapp", "Resmî WhatsApp Business Platform erişimi yok"]] as const) {
+          await c.query("insert into integration_connections(tenant_id, kind, provider, mode, status, blocked_reason) values ($1,$2,'erisim-bekleniyor','sandbox','blocked',$3)",
+            [tenantId, kind, reason]);
         }
         await c.query(
           "insert into audit_events(tenant_id, actor_user_id, action, entity_type, changes) values ($1,$2,'seed.synthetic','tenant',$3)",

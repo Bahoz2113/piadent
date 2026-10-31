@@ -1,5 +1,6 @@
 import pg from "pg";
 import { loadEnv } from "@viadent/db";
+import { processIntegrationJobs } from "@viadent/db";
 import { processOutbox, scanAllTenants } from "./jobs.js";
 
 loadEnv();
@@ -14,7 +15,7 @@ let lastScan = 0;
 async function loop() {
   while (!stopping) {
     try {
-      const n = await processOutbox(pool);
+      const n = (await processOutbox(pool)) + (await processIntegrationJobs(pool));
       if (Date.now() - lastScan > 60_000) {
         await scanAllTenants(pool);
         lastScan = Date.now();
@@ -29,5 +30,5 @@ async function loop() {
 }
 
 for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => { stopping = true; });
-console.log("[worker] VİADENT worker başladı (outbox + VİA Akış taraması)");
+console.log("[worker] VİADENT worker başladı (outbox + VİA Köprü dış işleri + VİA Akış taraması)");
 void loop();

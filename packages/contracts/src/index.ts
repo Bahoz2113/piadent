@@ -8,3 +8,4 @@ export * from "./money";
 export * from "./treatment";
 export * from "./finance";
 export * from "./documents";
+export * from "./integrations";

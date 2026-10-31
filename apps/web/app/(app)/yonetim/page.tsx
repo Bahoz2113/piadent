@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "@/lib/session";
 import { EmptyState, useToast } from "@/components/ui";
 import { TeamPanel } from "@/components/admin/team";
@@ -7,6 +7,7 @@ import { ResourcesPanel } from "@/components/admin/resources";
 import { ClosuresPanel, TypesPanel } from "@/components/admin/agenda-settings";
 import { CatalogPanel } from "@/components/admin/catalog";
 import { TemplatesPanel } from "@/components/admin/templates";
+import { IntegrationsPanel } from "@/components/admin/integrations";
 
 const TABS = [
   { id: "ekip", label: "Ekip ve davet", perm: "team.manage" },
@@ -15,12 +16,17 @@ const TABS = [
   { id: "kapatma", label: "Kapatmalar", perm: "schedule.manage" },
   { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
   { id: "belge", label: "Belge şablonları", perm: "template.manage" },
+  { id: "kopru", label: "Entegrasyonlar (VİA Köprü)", perm: "integration.read" },
 ] as const;
 
 export default function AdminPage() {
   const { can, session } = useSession();
   const tabs = TABS.filter((t) => can(t.perm));
   const [tab, setTab] = useState<string>(tabs[0]?.id ?? "");
+  useEffect(() => {
+    const want = new URLSearchParams(window.location.search).get("sekme");
+    if (want && tabs.some((t) => t.id === want)) setTab(want);
+  }, [tabs.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const toast = useToast();
   return (
     <>
@@ -39,6 +45,7 @@ export default function AdminPage() {
             {tab === "kapatma" && <ClosuresPanel notify={toast.show} />}
             {tab === "katalog" && <CatalogPanel notify={toast.show} />}
             {tab === "belge" && <TemplatesPanel notify={toast.show} />}
+            {tab === "kopru" && <IntegrationsPanel notify={toast.show} />}
           </div>
         </>
       )}
