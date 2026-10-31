@@ -9,6 +9,7 @@ import { AppError, Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
 import { audit, enqueue } from "../audit/audit.js";
 import { locCols, lookupPrice, presentLoc } from "./pricing.js";
+import { cancelReceivable, createReceivable, lockAccount } from "../finance/ledger.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const VISIT_STATUSES = ["checked_in", "in_progress", "completed"];
@@ -220,8 +221,16 @@ export class ChartController {
     );
     await audit(c, ctx, { action: correctsId ? "procedure.correct" : "procedure.complete", entityType: "performed_procedure", entityId: r.rows[0].id, patientId,
       changes: { procedure: { from: null, to: proc.code }, amount: { from: null, to: r.rows[0].amount }, ...(correctsId ? { corrects_id: { from: null, to: correctsId } } : {}) } });
+    // Gerçekleşen işlem = hasta hesabında alacak (VİA Net). Aynı transaction; planlanan bedel alacak değildir.
+    let receivableId: string | null = null;
+    if (Number(r.rows[0].amount) > 0) {
+      await lockAccount(c, patientId);
+      receivableId = await createReceivable(c, ctx, { patientId, source: "performed_procedure", performedProcedureId: r.rows[0].id,
+        description: `${proc.code} · ${proc.name}${loc.tooth ? ` · diş ${loc.tooth}` : ""}`, amount: r.rows[0].amount, practitionerId, dueDate: visit.rows[0].day });
+    }
     await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "procedure.complete" });
-    return { id: r.rows[0].id, amount: r.rows[0].amount, priceBasis: basis };
+    await enqueue(c, ctx.tenantId, "via_net.changed", { patientId });
+    return { id: r.rows[0].id, amount: r.rows[0].amount, priceBasis: basis, receivableId };
   }
 
   @Post("performed/:id/cancel")
@@ -233,10 +242,20 @@ export class ChartController {
       if (!(await c.query("select 1 from performed_procedures where id = $1", [pid])).rowCount) throw Errors.notFound("İşlem kaydı");
       const r = await c.query("update performed_procedures set status = 'cancelled', status_reason = $2 where id = $1 and status = 'completed' returning patient_id", [pid, i.reason]);
       if (!r.rowCount) throw new AppError(409, "NOT_COMPLETED", "Yalnız tamamlanmış kayıt iptal edilebilir.");
+      await this.cancelLinkedReceivable(c, ctx, pid, r.rows[0].patient_id, `işlem iptali: ${i.reason}`);
       await audit(c, ctx, { action: "procedure.cancel", entityType: "performed_procedure", entityId: pid, patientId: r.rows[0].patient_id, changes: { status: { from: "completed", to: "cancelled" }, reason: { from: null, to: i.reason } } });
       await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "procedure.cancel" });
       return { ok: true };
     });
+  }
+
+  /** İşlem iptal/düzeltmesinde bağlı alacak da iptal edilir; dağıtılmış tahsilat ters kayıtla avansa döner (para kaybolmaz). */
+  private async cancelLinkedReceivable(c: import("pg").PoolClient, ctx: RequestContext, performedId: string, patientId: string, reason: string) {
+    const rec = await c.query("select id from receivables where performed_procedure_id = $1 and status = 'active'", [performedId]);
+    if (!rec.rowCount) return;
+    await lockAccount(c, patientId);
+    await cancelReceivable(c, ctx, rec.rows[0].id, reason);
+    await enqueue(c, ctx.tenantId, "via_net.changed", { patientId });
   }
 
   /** Düzeltme: önceki kayıt 'corrected' olur (silinmez), yeni kayıt ona bağlanır; tek transaction. */
@@ -252,6 +271,7 @@ export class ChartController {
       if (!old.rowCount) throw new AppError(409, "NOT_COMPLETED", "Yalnız tamamlanmış kayıt düzeltilebilir.");
       const o = old.rows[0];
       await c.query("update performed_procedures set status = 'corrected', status_reason = $2 where id = $1", [pid, reason]);
+      await this.cancelLinkedReceivable(c, ctx, pid, o.patient_id, `işlem düzeltmesi: ${reason}`);
       const input = parse(PerformInput, {
         appointmentId: raw.appointmentId ?? o.appointment_id,
         planItemId: o.plan_item_id ?? undefined,

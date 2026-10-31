@@ -6,3 +6,4 @@ export * from "./anamnesis";
 export * from "./dental";
 export * from "./money";
 export * from "./treatment";
+export * from "./finance";

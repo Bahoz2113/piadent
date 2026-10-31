@@ -71,3 +71,29 @@ describe("kurallar", () => {
     expect(PatientCreate.safeParse({ firstName: "A", lastName: "B", email: "", phone: "" }).success).toBe(true);
   });
 });
+
+describe("finans (Görev 3)", () => {
+  it("prim: 600 × %10 = 60; 100 iade → −10; yarım kuruş yukarı yuvarlanır", async () => {
+    const { commissionAmount } = await import("../src/index.js");
+    expect(commissionAmount("600.00", "10")).toBe("60.00");
+    expect(commissionAmount("-100.00", "10")).toBe("-10.00");
+    expect(commissionAmount("0.05", "10")).toBe("0.01");
+    expect(commissionAmount("333.33", "12.5")).toBe("41.67");
+  });
+  it("rol matrisi: sekreter tahsilat alır ama iade yapamaz ve gelir raporunu göremez; hekim finans görmez", () => {
+    expect(can("secretary", "payment.write")).toBe(true);
+    expect(can("secretary", "payment.refund")).toBe(false);
+    expect(can("secretary", "finance.read")).toBe(false);
+    expect(can("finance", "payment.refund")).toBe(true);
+    expect(can("dentist", "account.read")).toBe(false);
+    expect(can("clinic_admin", "payment.write")).toBe(false);
+  });
+  it("ödeme: sıfır/negatif tutar ve TRY dışı para birimi reddedilir", async () => {
+    const { PaymentCreate } = await import("../src/index.js");
+    const base = { patientId: "0b8f2f8e-6a8e-4c3c-9d5f-1a2b3c4d5e6f", method: "cash", cashAccountId: "0b8f2f8e-6a8e-4c3c-9d5f-1a2b3c4d5e6f" };
+    expect(PaymentCreate.safeParse({ ...base, amount: "0.00" }).success).toBe(false);
+    expect(PaymentCreate.safeParse({ ...base, amount: "-5" }).success).toBe(false);
+    expect(PaymentCreate.safeParse({ ...base, amount: "10.00", currency: "USD" }).success).toBe(false);
+    expect(PaymentCreate.safeParse({ ...base, amount: "10.00" }).success).toBe(true);
+  });
+});

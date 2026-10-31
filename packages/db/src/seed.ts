@@ -226,6 +226,42 @@ export async function seed(connectionString: string, opts: { password?: string; 
              ($1,$2,'16','{}','caries','Derin çürük (sentetik)',$3), ($1,$2,'36','{}','missing',null,$3), ($1,$2,'46','{O}','filling',null,$3)`,
           [tenantId, patientIds[0], dentistMembership],
         );
+        // Görev 3: sentetik kasa/banka, DEMO prim kuralı ve küçük bir hesap senaryosu (1.000 alacak / 600 tahsilat / 300 avans).
+        const cash = await c.query(
+          `insert into cash_accounts(tenant_id, name, kind) values ($1,'Ana kasa (sentetik)','cash'), ($1,'Banka hesabı (sentetik)','bank'),
+             ($1,'POS — manuel kayıt (sentetik)','pos_manual') returning id, kind`, [tenantId]);
+        const cashId = cash.rows.find((r) => r.kind === "cash")!.id;
+        const rule = await c.query(
+          `insert into commission_rule_versions(tenant_id, rate, valid_from, note, created_by) values ($1, 10, '2026-01-01', 'DEMO: tahsilat bazlı %10 (sentetik)', $2) returning id`,
+          [tenantId, creator]);
+        if (patientIds.length >= 5) {
+          const due = addDays(localDate(now, tz), -40);
+          const rcv = await c.query(
+            `insert into receivables(tenant_id, patient_id, source, description, amount, practitioner_id, due_date, created_by, created_at)
+             values ($1,$2,'manual','Sentetik demo alacağı (protez ön ödemesi)',1000.00,$3,$4,$5, now() - interval '40 days') returning id`,
+            [tenantId, patientIds[3], pracIds[0], due, creator]);
+          await c.query(
+            `insert into receivables(tenant_id, patient_id, source, description, amount, practitioner_id, due_date, created_by)
+             values ($1,$2,'manual','Sentetik demo alacağı (kontrol paketi)',850.00,$3,$4,$5)`,
+            [tenantId, patientIds[2], pracIds[0], addDays(localDate(now, tz), 14), creator]);
+          const pay = await c.query(
+            `insert into payments(tenant_id, patient_id, amount, method, cash_account_id, paid_at, note, received_by)
+             values ($1,$2,600.00,'cash',$3, now() - interval '3 days','Sentetik demo tahsilatı',$4) returning id, paid_at`,
+            [tenantId, patientIds[3], cashId, creator]);
+          await c.query("insert into cash_movements(tenant_id, cash_account_id, amount, source, source_id, occurred_at) values ($1,$2,600.00,'payment',$3,$4)",
+            [tenantId, cashId, pay.rows[0].id, pay.rows[0].paid_at]);
+          const al = await c.query("insert into allocations(tenant_id, payment_id, receivable_id, amount, created_by, created_at) values ($1,$2,$3,600.00,$4, now() - interval '3 days') returning id",
+            [tenantId, pay.rows[0].id, rcv.rows[0].id, creator]);
+          await c.query(
+            `insert into commission_accruals(tenant_id, practitioner_id, allocation_id, rule_version_id, base_amount, rate, amount, created_at)
+             values ($1,$2,$3,$4,600.00,10,60.00, now() - interval '3 days')`, [tenantId, pracIds[0], al.rows[0].id, rule.rows[0].id]);
+          const adv = await c.query(
+            `insert into payments(tenant_id, patient_id, amount, method, cash_account_id, paid_at, note, received_by)
+             values ($1,$2,300.00,'bank_transfer',$3, now() - interval '1 day','Sentetik demo ön ödeme (avans)',$4) returning id, paid_at`,
+            [tenantId, patientIds[4], cash.rows.find((r) => r.kind === "bank")!.id, creator]);
+          await c.query("insert into cash_movements(tenant_id, cash_account_id, amount, source, source_id, occurred_at) values ($1,$2,300.00,'payment',$3,$4)",
+            [tenantId, cash.rows.find((r) => r.kind === "bank")!.id, adv.rows[0].id, adv.rows[0].paid_at]);
+        }
         await c.query(
           "insert into audit_events(tenant_id, actor_user_id, action, entity_type, changes) values ($1,$2,'seed.synthetic','tenant',$3)",
           [tenantId, creator, JSON.stringify({ note: "Sentetik demo verisi yüklendi" })],

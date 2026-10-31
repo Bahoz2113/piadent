@@ -31,6 +31,19 @@ export function parse<T>(schema: { safeParse(v: unknown): { success: true; data:
   return r.data;
 }
 
+const FINANCE_ERRORS: Record<string, [number, string, string]> = {
+  allocation_exceeds_payment: [409, "ALLOCATION_EXCEEDS_PAYMENT", "Dağıtım, ödemenin kullanılabilir tutarını aşıyor. Sayfayı yenileyip kalan tutara göre tekrar deneyin."],
+  allocation_exceeds_receivable: [409, "ALLOCATION_EXCEEDS_RECEIVABLE", "Dağıtım, alacağın açık bakiyesini aşıyor. Sayfayı yenileyip tekrar deneyin."],
+  allocation_patient_mismatch: [422, "VALIDATION_FAILED", "Ödeme ve alacak aynı hastaya ait olmalı."],
+  allocation_receivable_cancelled: [409, "RECEIVABLE_NOT_ACTIVE", "İptal edilmiş alacağa dağıtım yapılamaz."],
+  allocation_reverse_invalid: [409, "ALLOCATION_REVERSE_INVALID", "Ters kayıt yalnız aynı ödeme ve alacaktaki bir dağıtım için yapılabilir."],
+  allocation_reverse_exceeds: [409, "ALLOCATION_REVERSE_EXCEEDS", "Ters kayıt, dağıtımın kalan tutarını aşıyor."],
+  refund_exceeds_payment: [409, "REFUND_EXCEEDS_PAYMENT", "İade, ödemenin iade edilebilir tutarını aşıyor."],
+  refund_requires_deallocation: [409, "REFUND_REQUIRES_DEALLOCATION", "İade için önce dağıtımın ters kaydı gerekir."],
+  receivable_has_allocations: [409, "RECEIVABLE_HAS_ALLOCATIONS", "Dağıtımı olan alacak iptal edilemez; önce dağıtım ters kayda alınmalı."],
+  commission_reverse_rate_mismatch: [409, "COMMISSION_RATE_SNAPSHOT", "Prim ters kaydı orijinal oranla yapılmalı."],
+};
+
 interface PgError { code?: string; constraint?: string; message?: string }
 
 @Catch()
@@ -64,10 +77,15 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (pg?.code === "23514" && pg.message?.includes("birth_date_in_future")) {
       status = 422;
       body = { code: "VALIDATION_FAILED", message: "Doğum tarihi gelecekte olamaz.", field_errors: { birthDate: "Doğum tarihi gelecekte olamaz." }, correlation_id };
+    } else if (pg?.code === "23514" && FINANCE_ERRORS[(pg.message ?? "").trim()]) {
+      // Finans tutar sınırı DB tetikleyicisinden (API kontrolü atlatılsa ya da eşzamanlı istek gelse bile).
+      const [st, code, message] = FINANCE_ERRORS[(pg.message ?? "").trim()]!;
+      status = st;
+      body = { code, message, correlation_id };
     } else if (pg?.code === "55000" && /_(not_draft|frozen|invalid_transition|immutable|closed)/.test(pg.message ?? "")) {
       // DB değişmezlik tetikleyicisi (API kontrolünün arkasındaki ikinci savunma).
       status = 409;
-      body = { code: "IMMUTABLE_RECORD", message: "Bu kayıt kilitli (teklif edilmiş/kabul edilmiş/yayınlanmış) ve değiştirilemez.", correlation_id };
+      body = { code: "IMMUTABLE_RECORD", message: "Bu kayıt kilitli (teklif/kabul/yayın veya finans hareketi) ve değiştirilemez; düzeltme ters kayıtla yapılır.", correlation_id };
     } else if (pg?.code === "40001" || pg?.code === "40P01") {
       status = 409;
       body = { code: "RETRY", message: "Eşzamanlı bir işlem nedeniyle kaydedilemedi. Tekrar deneyin.", correlation_id };

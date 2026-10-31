@@ -26,7 +26,8 @@ export async function processOutbox(pool: pg.Pool, batch = 50): Promise<number> 
   }
   const byTenant = new Map<string, typeof claimed>();
   for (const ev of claimed) {
-    if (ev.topic !== "via_akis.refresh") {
+    // via_net.changed: hesap değişti → VİA Akış koşulları yeniden değerlendirilir (finans görevleri buradan genişler).
+    if (ev.topic !== "via_akis.refresh" && ev.topic !== "via_net.changed") {
       await finish(pool, [ev.id], "dead", `bilinmeyen konu: ${ev.topic}`);
       continue;
     }
