@@ -11,12 +11,12 @@ Durum sözlüğü: **tamamlandı** = kabul kriteri sağlandı ve test edildi · 
 | VD-005 Ajanda ve kaynaklar | **tamamlandı** (ilk kapsam) | Çakışma (AT-03), çalışma saatleri, kapatma (eşzamanlılık testli), işlem türü, hekim/koltuk yönetimi, gün+hafta görünümü, mobil liste ✔. Açık: sürükle-bırak taşıma, ay görünümü, bekleme listesi (VİA Denge, P1). |
 | VD-006 Anamnez ve klinik not | **kısmi** | Sürümlü anamnez + hekim onayı + kritik uyarı ✔, yalnız-ekleme not + düzeltme ✔, notun ziyarete bağlanması ✔ (Görev 2). Açık: soru setinin klinisyen onayı, taslak otomatik kaydı. |
 | VD-007 Plan ve odontogram | **tamamlandı** (ilk kapsam) | Özgün odontogram (FDI, daimi/süt/karma, yüzey seçimi), bulgu + tanı (gerekçeli durum geçmişi), katalog + sürümlü/hekime özel tarife, plan → teklif → karar → yeni sürüm; kabul edilen sürüm API ve DB'de değişmez (AT-05 testli). Açık: tanı kod sistemi (ADR-023), klinik içeriğin hekim onayı, plan PDF/teklif çıktısı (Görev 4), seans → randevu otomatik önerisi. |
-| VD-008 Gerçekleşen işlem ve hesap | **kısmi** | Ziyarete bağlı gerçekleşen işlem, bedel snapshot'ı ve kuruş yuvarlaması, gerekçeli iptal/düzeltme ✔. **Hasta hesabına borç kaydı yok** → Görev 3 (VİA Net). |
-| VD-009 Ödeme, dağıtım, iade | açık | Görev 3 |
-| VD-010 VİA Akış / Net / İz | **kısmi** | Akış (7 tür: geciken geliş, teyit, eksik iletişim, kapatma çakışması, anamnez onayı, randevusuz kabul edilmiş plan, yanıtsız teklif; dedupe, otomatik kapanış, rol/hassasiyet filtresi) ✔; İz (hasta bazlı, maskeli, rol kontrollü) ✔; Net Görev 3. |
+| VD-008 Gerçekleşen işlem ve hesap | **tamamlandı** (ilk kapsam) | Ziyarete bağlı gerçekleşen işlem, bedel snapshot'ı, kuruş yuvarlaması, gerekçeli iptal/düzeltme ✔; işlem aynı transaction'da hasta alacağı üretir, iptal/düzeltmede alacak iptal + dağıtım ters kaydı ✔ (Görev 3). |
+| VD-009 Ödeme, dağıtım, iade | **tamamlandı** (ilk kapsam, TRY) | Alacak/ödeme/dağıtım/avans/iade/kasa/gider ayrı; idempotency; DB tutar tetikleyicileri; eşzamanlı dağıtım; AT-06..AT-10, AT-19 gerçek DB'de testli. Açık: iade ikinci onay eşiği, banka/POS mutabakatı, makbuz/e-belge (Görev 5), ticari indirim/alacak düzeltmesi kaydı, çoklu para birimi davranışı. |
+| VD-010 VİA Akış / Net / İz | **kısmi** | Akış (7 tür: geciken geliş, teyit, eksik iletişim, kapatma çakışması, anamnez onayı, randevusuz kabul edilmiş plan, yanıtsız teklif; dedupe, otomatik kapanış, rol/hassasiyet filtresi) ✔; İz (hasta bazlı, maskeli, rol kontrollü) ✔; Net: hasta hesabı (açılabilir toplamlar, hareket defteri, mutabakat), klinik özeti (işlem ≠ tahsilat), bakiyeler + yaşlandırma, kasa, gider, prim tahakkuku ✔ (Görev 3). |
 | VD-011 Dosya ve belge sürümü | açık | Görev 4 |
 | VD-012 Outbox ve entegrasyon merkezi | **kısmi** | Outbox + retry/backoff + dead durumu (iç olaylar) ✔. Dış sağlayıcı adaptörleri, webhook, idempotency Görev 5. |
-| VD-013 Laboratuvar ve prim | açık | Görev 6 |
+| VD-013 Laboratuvar ve prim | **kısmi** | Tahsilat bazlı prim tahakkuku + ters prim + sürümlü kural (Görev 3) ✔. Laboratuvar, tedavi bazlı prim, prim ödemesi Görev 6. |
 | VD-014 İçe aktarma ve pilot | açık | Görev 7 |
 
 ## Tamamlanan iş paketi: Görev 1 (22.10.2026)
@@ -25,10 +25,17 @@ Durum sözlüğü: **tamamlandı** = kabul kriteri sağlandı ve test edildi · 
 ## Tamamlanan iş paketi: Görev 2 (22.10.2026)
 VD-007 tamamlandı (ilk kapsam), VD-008 kısmi (hesap Görev 3). H04, T01, T02, T03 çalışıyor; H05, H08, R04 kısmi. ADR-021…026. Testler: API 78, E2E 18 (bkz. `verification.md`).
 
+## Tamamlanan iş paketi: Görev 3 (22.10.2026)
+VD-008 ve VD-009 tamamlandı (ilk kapsam, TRY), VD-013 kısmi (prim tahakkuku). H06, R02, R11, T07 çalışıyor; O03, R01, R20, T08, T09, T12 kısmi. ADR-027…031. Testler: API 99, E2E 22.
+
 ## Sıradaki tek iş paketi
-**Görev 3 — Finans / VİA Net (VD-009):** gerçekleşen işlemden hasta alacağı (receivable), ödeme, dağıtım (allocation), avans, iade (ters kayıt, `payment.refund`), kasa hareketi; idempotency anahtarı, transaction + audit, silme yok; AT-06…AT-09 ve günlük ciro ≠ tahsilat (R11, AT-19). Gerçek ödeme/POS yok — yalnız etiketli mock.
+**Görev 4 — Belge, dosya ve takip (VD-011):** şablon sürümü ve belge örneği (onam/bilgilendirme içerik üretmeden, demo şablon), güvenli dosya yükleme (yükleme ≠ seçme; tarama/karantina, AT-11), belge kanıt olayları ve hash (AT-14), amaç bazlı iletişim tercihi, kontrol/takip görevi (H11). Prompttaki Görev 4 metniyle başlat.
 
 ## Küçük açık işler
+- İade için ikinci onay eşiği (Plan §05), makbuz çıktısı, banka/POS ekstre mutabakatı.
+- Ticari indirim / alacak düzeltmesi kaydı (iade ile karıştırılmadan).
+- VİA Akış finans görevleri (vadesi geçmiş borç, dağıtılmamış avans) — `via_net.changed` olayı hazır.
+- `<input type="date">` başlık biçimi tarayıcı yerel ayarına bağlı (headless Chromium'da aa/gg/yyyy); özel tarih seçici.
 - Tanı kod sistemi seçimi (lisans + klinisyen onayı) ve bulgu/katalog içeriğinin pilot hekimle doğrulanması.
 - Plan kalemini düzenleme çekmecesi (API'de `PATCH /plan-items/:id` var; arayüz şimdilik sil + yeniden ekle).
 - Gerçekleşen işlem düzeltmesi için arayüz (API var; arayüzde yalnız iptal).

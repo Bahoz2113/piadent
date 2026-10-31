@@ -11,13 +11,13 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
-## Son koşu sonuçları (22.10.2026, Görev 2 sonrası)
+## Son koşu sonuçları (22.10.2026, Görev 3 sonrası)
 | Paket | Test | Sonuç |
 |---|---|---|
-| `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi | **11/11 geçti** |
+| `@viadent/contracts` | Türkçe normalize, telefon, TCKN biçimi, saat dilimi (gece yarısı, DST), durum makinesi, rol matrisi, prim yuvarlaması, finans rolleri, ödeme şeması | **14/14 geçti** |
 | `@viadent/web` (vitest) | WCAG kontrast — 11 metin/zemin çifti ≥ 4.5:1, beyaz/birincil, turuncu vurgu kısıtı, odak ≥ 3:1 | **14/14 geçti** |
-| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 | **78/78 geçti** |
-| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 senaryo × {1366 px, 360 px} | **18/18 geçti** |
+| `@viadent/api` | `tenant-isolation` 12 · `permissions-session` 12 · `scheduling-patients` 18 · `gorev1` 19 · `gorev2` 17 · `gorev3` 21 | **99/99 geçti** |
+| `@viadent/web` (Playwright) | `critical-flow` 2 + `gorev1` 4 + `gorev2` 3 + `gorev3` 2 senaryo × {1366 px, 360 px} | **22/22 geçti** (temiz seed) |
 | Typecheck | contracts, db, api, worker, web | **temiz** |
 | `next build` | üretim derlemesi | **başarılı** |
 
@@ -30,22 +30,33 @@ Katalog yalnız yöneticide, kod tekil ve değiştirilemez · yayınlanmış tar
 ### Görev 2 E2E (`gorev2.spec.ts`, 1366 px + 360 px)
 Hekim: odontogramda seed bulgusu erişilebilir adla (“Diş 16; Çürük…”) → kabul edilmiş kalemi bugünkü ziyarete bağlayıp gerçekleştirme → yeni plan → odontogramdan diş 37 + O yüzeyi → tarife fiyatı görünür → teklif → kabul → silme düğmesi kaybolur · Sekreter: klinik harita kapalı uyarısı, plan görünür, “Gerçekleştir/Yeni plan” yok · Tedavi takibi listesi ve yönetici katalog/tarife ekranı (yayınlanmış tarife salt okunur) · her ekranda 360 px yatay taşma yok.
 
+### Görev 3 testlerinin kapsadığı kurallar (`gorev3.test.ts`, 21 — gerçek PostgreSQL, uygulama rolü)
+**AT-07** 1.000 alacak → 600 dağıtım → açık borç 400 → 100 iade → dağıtım ters kaydı → açık borç 500, alacak tutarı 1.000 kalır, ters kayıt gerekçeli ve izlenebilir, kasa hareketleri +600/−100, audit zinciri, hareket defteri mutabık · prim 600×%10 = 60, iade −10 · iade fazlası 409 · doğrudan SQL iade tetikleyiciyle reddedilir · uygulama rolü ödeme/dağıtım/iade güncelleyemez/silemez, alacak tutarı değişmez · **AT-06** aynı anahtar iki kez → tek ödeme + tek kasa hareketi, yanıt aynı ve `Idempotent-Replayed`; aynı anahtar farklı içerik 409; anahtarsız 428; 5 eşzamanlı aynı istek → tek kayıt · **AT-08** alacak yokken 300 → avans 300, borç 0 (eksi değil); alacak gelince otomatik karışmaz; kısmi dağıtım; alacak ve ödeme sınırı aşılamaz; dağıtım geri alma avansı geri verir; ters kayıt tekrar ters çevrilemez · **AT-09** iki kullanıcı aynı ödemeyi aynı anda iki alacağa (5 tur) → [201, 409], toplam ≤ ödeme; iki ödemeden aynı alacağa eşzamanlı → alacak aşılmaz; API'siz doğrudan aşan dağıtımı tetikleyici reddeder · işlem tamamlanınca alacak, işlem iptalinde alacak iptal + tahsilat avansa · **AT-02** sekreter iade/elle alacak/gelir raporu 403, hekim/asistan hesap 403, yönetici rapor görür ama tahsilat giremez, reddedilen iade iz bırakmaz · çapraz tenant: B'nin hesabı/ödemesi/alacağı/kasası 404/422, bakiyelerde görünmez · **AT-19** 23:59:30 ve 00:00:30 doğru güne; satır toplamı = metrik; iki gün = aralık · işlem tutarı ve tahsilat ayrı, net = tahsilat − iade, iptal edilen işlem ayrı · gelecek tarihli / 40 gün önceki ödeme ve 100 günlük rapor 422 · gider + ters kaydı kasada net sıfır, kapanış = açılış + giriş + çıkış · bakiyeler: borç ve avans ayrı, seed yaşlandırması 31–60 · **AT-10** geriye dönük prim kuralı 422; %10 → %20 sonrası yeni dağıtım %20, önceki tahakkuk %10 kalır, eski dağıtımın ters kaydı %10 ile; sekreter kural ekleyemez.
+
+### Görev 3 E2E (`gorev3.spec.ts`, 1366 px + 360 px)
+Finans bakiye listesinden hastaya → sekreter tahsilat alır, öneriyle dağıtır, iade düğmesi görmez, “Açık borç” kutusundan formül açılır, mutabakat notu görünür → finans 50 ₺ iade eder, dağıtım ters kaydı defterde görünür → /finans özetinde Tahsilat kutusu kaynak ödemelere açılır · hekim hasta hesabını ve klinik finansı göremez · 360 px taşma yok.
+
 ## Kabul testleri eşlemesi
 | Test | Durum | Kanıt |
 |---|---|---|
 | AT-01 çapraz tenant (hasta ID, geçmiş, randevu, not, arama, randevu bağlama; erişim reddi audit'i) | **geçti** | tenant-isolation.test.ts. Dosya ve export uçları henüz yok → Görev 4/6'da genişletilecek |
-| AT-02 sekreter API ile klinik not | **geçti** | permissions-session.test.ts. İade ucu henüz yok → Görev 3 |
+| AT-02 sekreter API ile klinik not / iade | **geçti** | permissions-session.test.ts (not) + gorev3.test.ts (iade 403, iz bırakmaz) |
 | AT-03 eşzamanlı randevu | **geçti** | 6 eşzamanlı istek → 1 × 201, 5 × 409; koltuk çakışması; `[)` sınırı; iptal kapasite bırakır |
 | AT-04 gelecek doğum tarihi / ortak telefon | **geçti** | API + DB tetikleyicisi + E2E (arayüz mesajı) |
 | AT-05 kabul edilmiş plan fiyatı değişmez | **geçti** | gorev2.test.ts (API + doğrudan SQL tetikleyici, tarife değişimi, yeni sürüm, eşzamanlı kabul) + E2E |
-| AT-06..AT-14, AT-16, AT-17 | açık | İlgili modüller yok (Görev 3–7) |
+| AT-06 aynı ödeme anahtarı | **geçti** | gorev3.test.ts (tekrar, farklı içerik, 5 eşzamanlı) |
+| AT-07 1.000 / 600 / 100 iade | **geçti** | gorev3.test.ts + E2E |
+| AT-08 alacaksız ödeme → avans | **geçti** | gorev3.test.ts |
+| AT-09 eşzamanlı dağıtım | **geçti** | gorev3.test.ts (5 tur + ters yön + doğrudan SQL) |
+| AT-10 kur / prim oranı değişimi | **geçti (prim)** | gorev3.test.ts. Kur kısmı: çoklu para birimi davranışı kapalı (ADR-028); TRY dışı değer reddi test edildi, kur snapshot davranışı açılınca test edilecek |
+| AT-11..AT-14, AT-16, AT-17 | açık | İlgili modüller yok (Görev 4–7) |
 | AT-15 klinik değiştirme, eski sekme | **geçti** | eski bağlamla okuma/yazma 409; yeni bağlamda yalnız yeni kliniğin verisi; rol yeni kliniğe göre |
 | AT-18 360 px, klavye, ekran okuyucu | **kısmi** | E2E: 6 ana sayfada 360 px'de yatay taşma yok (ölçüt düzeltildi, aşağıya bkz.), “İçeriğe geç”, dialog erişilebilir adı, durumlar metin+renk, çalışma saati dışı/kapatma desen+metinle. Ekran okuyucuyla elle test ve renk körlüğü simülasyonu **yapılmadı** |
-| AT-19 gece yarısı raporu | **kısmi** | Gün sınırı birim testi geçti; rapor modülü yok |
+| AT-19 gece yarısı raporu | **geçti** (finans özeti) | gorev3.test.ts: 23:59:30 / 00:00:30, satır = toplam, iki gün = aralık. Diğer raporlar Görev 6 |
 | AT-20 erişimi kaldırılan kullanıcı | **geçti** (API) | açık oturumla sonraki istek 403 `MEMBERSHIP_REVOKED`; çıkış sonrası 401. Worker kullanıcı adına iş yürütmüyor; dosya erişimi Görev 4 |
 
 ## RLS / güvenlik kontrolleri (geçti)
-Uygulama rolü superuser/BYPASSRLS/tablo sahibi değil · `tenant_id` taşıyan **29 tablonun tamamında** RLS + FORCE (test artık tabloları otomatik keşfediyor; yeni tablo unutulursa kırılır) · bağlamsız sorgu 0 satır · havuzda bağlam sızmıyor · yanlış tenant_id ile INSERT reddediliyor · audit UPDATE/DELETE reddediliyor · istemci gövdesindeki `tenantId` yok sayılıyor · CSRF başlığı zorunlu · token DB'de düz değil · 5 hatalı girişte kilit.
+Uygulama rolü superuser/BYPASSRLS/tablo sahibi değil · `tenant_id` taşıyan **39 tablonun tamamında** RLS + FORCE (test artık tabloları otomatik keşfediyor; yeni tablo unutulursa kırılır) · bağlamsız sorgu 0 satır · havuzda bağlam sızmıyor · yanlış tenant_id ile INSERT reddediliyor · audit UPDATE/DELETE reddediliyor · istemci gövdesindeki `tenantId` yok sayılıyor · CSRF başlığı zorunlu · token DB'de düz değil · 5 hatalı girişte kilit.
 
 ## Elle yapılan görsel kontrol
 Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar, Hasta 360, Geçmiş, Ajanda, Yeni hasta çekmecesi incelendi. Bulunan ve düzeltilen hatalar: masaüstünde mobil menü düğmesi görünmesi, 360 px'de aramanın daralması, çekmecenin erişilebilir adının olmaması (E2E yakaladı), telefonun biçimsiz gösterimi.
@@ -66,6 +77,14 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - Menüde Tedavi hâlâ “Plan” etiketiyle görünüyordu.
 - Dört uç (gerçekleşen işlem iptal/düzeltme, plan sürümü iptali, tarife kaldırma) bulunamayan/başka kliniğe ait kimlikte 404 yerine 409 dönüyordu. RLS nedeniyle varlık sızmıyordu (var olmayan kimlik de aynı yanıtı alıyordu) ama sözleşme tutarsızdı → önce varlık kontrolü; çapraz tenant testi 6 uç daha kapsayacak şekilde genişletildi.
 - `gorev1.spec` anamnez senaryosu temiz seed'de yarış koşuluna düşüyordu (onay düğmesine panel yüklenmeden bakılıyordu) → test bekleyecek şekilde düzeltildi; temiz seed + tam koşu 18/18.
+
+## Görev 3'te bulunup düzeltilen hatalar
+- Dağıtım/iade tetikleyicisindeki satır kilidi (`FOR UPDATE`) uygulama rolünde UPDATE yetkisi istediği için 500 dönüyordu; ödemeye UPDATE yetkisi vermek yerine kilit alan iki tetikleyici dar `SECURITY DEFINER` yapıldı (ADR-027). Gider ters kaydında gereksiz kilit kaldırıldı (tekil indeks yeterli).
+- 0004 backfill'i sahip rolüyle FORCE RLS altında hiç satır görmeyecekti; backfill süresince ilgili tablolar geçici olarak FORCE dışı bırakılıp hemen geri alındı (dev veritabanında 2/2 doğrulandı).
+- Worker bilinmeyen outbox konusunu “dead” yapıyordu; `via_net.changed` VİA Akış yenilemesi olarak işleniyor.
+- Ağ hatasında “işlem kaydedilmedi” demek finans komutunda yanlıştı (yanıt kaybolmuş olabilir) → idempotent isteklerde “sonuç bilinmiyor, tekrar gönderin — çift kayıt oluşmaz”.
+- 360 px'de hesap tabloları okunamaz biçimde daralıyordu → geniş tablolar en az 880 px, kendi kabında kayar.
+- E2E: seçici “İade” metnini toplam kutusunun erişilebilir adında da buluyordu; tutar okuma yeniden yüklemeyle yarışıyordu.
 
 ## Çalıştırılmayan / yapılamayan
 - Performans hedefi (100.000 hasta, p95 500 ms) **ölçülmedi**.

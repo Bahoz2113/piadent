@@ -56,17 +56,31 @@ Hepsi `tenant_id` + RLS (ENABLE + FORCE) + `(tenant_id, id)` bileşik FK.
 
 Konum sütunları: `location_kind`, `tooth`, `surfaces text[]`, `quadrant`, `arch` (check kısıtları türle tutarlılığı zorlar).
 
+## Görev 3 tabloları (`0004_finance.sql`)
+| Tablo | Amaç | Kural |
+|---|---|---|
+| `cash_accounts` | Kasa / banka / POS (manuel) | TRY; hareketi olan hesabın türü değişmez |
+| `receivables` | Alacak (işlemden veya elle) | tutar > 0 ve değişmez; `active → cancelled` (gerekçe); işlem başına tek alacak; kur alanları hazır, TRY dışı reddedilir |
+| `payments` | Tahsilat | yalnız ekleme; yöntem nakit / kart (manuel) / havale / diğer |
+| `allocations` | Ödeme → alacak dağıtımı | yalnız ekleme; ters kayıt negatif + `reverses_id` + gerekçe; tetikleyici: ödeme ve alacak sınırı, aynı hasta, kilitli |
+| `refunds` | İade | yalnız ekleme; tetikleyici: ödemeyi aşamaz, önce dağıtım ters kaydı |
+| `expenses` | Gider | yalnız ekleme; ters kayıt negatif + `reverses_id` (tekil) |
+| `cash_movements` | Kasa hareketi (+ giriş / − çıkış) | kaynak başına tek hareket |
+| `idempotency_keys` | Tekilleştirme | (tenant, işlem, anahtar) birincil anahtar; istek hash'i + yanıt |
+| `commission_rule_versions` | Prim kuralı sürümü | yalnız ekleme; geçerlilik tarihi; hekime özel veya genel |
+| `commission_accruals` | Prim tahakkuku | dağıtım başına bir satır; oran snapshot'ı; ters prim orijinal oranla |
+
 ## Durum makineleri (uygulanan)
 **Randevu:** `planned → confirmed | checked_in | no_show | cancelled`; `confirmed → checked_in | no_show | cancelled`; `checked_in → in_progress | completed`; `in_progress → completed`. `completed`, `no_show`, `cancelled` terminal. Saati gelmemiş randevu `no_show` olamaz.
 **İletişim sonucu:** `not_contacted | informed | unreachable` — durumdan bağımsız; “Bilgi verildi” geldi anlamına gelmez.
 **Plan sürümü:** `draft → proposed | cancelled`; `proposed → accepted | rejected | superseded | cancelled`; `accepted → superseded | cancelled` (DB tetikleyicisi).
 **Gerçekleşen işlem:** `completed → cancelled | corrected`.
 **Tarife:** `draft → published → retired`.
+**Alacak:** `active → cancelled` (dağıtımlar önce ters kayda alınır).
 **Görev:** `open | in_progress | blocked | done | cancelled`; kapalı görev yeniden açılmaz; iptal gerekçe ister.
 
 ## Planlanan tablolar (Plan §07 sözlüğü, sırasıyla)
 - Görev 1 kalanı: `identity_document` (çoklu belge). Ayrı `visit` tablosu açılmadı: ziyaret = geliş kaydı yapılmış randevu (ADR-025).
-- Görev 3: `receivable`, `payment`, `allocation`, `refund`, `cash_movement`, `expense`, `idempotency_key` — `numeric(14,2)`, para birimi + kur snapshot alanları.
 - Görev 4: `template`, `template_version`, `patient_document`, `consent_request`, `evidence_event`, `file_asset`, `file_version`, `file_access_event`, `communication_preference`.
 - Görev 5: `message`, `delivery_event`, `integration_job`, `webhook_event`.
 - Görev 6: `lab_order`, `lab_event`, `commission_rule_version`, `commission_accrual`, `commission_payout`, `inventory_item`, `lot`, `stock_movement`.

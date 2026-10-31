@@ -15,8 +15,13 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 | `appointment.read` | ✔ | ✔ | ✔ | ✔ | ✔ |
 | `appointment.write` | ✔ | ✔ | ✔ | – | – |
 | `task.read` / `task.write` | ✔ | ✔ | ✔ | ✔ | ✔ |
-| `finance.read` | ✔ | – | – | – | ✔ |
-| `payment.refund` | – | – | – | – | ✔ |
+| `finance.read` (klinik özeti, bakiyeler, kasa, gider listesi, prim raporu) | ✔ | – | – | – | ✔ |
+| `account.read` (hasta hesabı: alacak/ödeme/avans/iade) | ✔ | – | ✔ | – | ✔ |
+| `payment.write` (tahsilat, avans dağıtımı, dağıtım ters kaydı) | – | – | ✔ | – | ✔ |
+| `payment.refund` (iade) | – | – | – | – | ✔ |
+| `receivable.write` (elle alacak, alacak iptali) | – | – | – | – | ✔ |
+| `expense.write` (gider, gider ters kaydı) | – | – | – | – | ✔ |
+| `finance.settings` (kasa/banka hesabı, prim kuralı sürümü) | ✔ | – | – | – | ✔ |
 | `audit.read` | ✔ | ✔ | – | – | – |
 | `team.manage` (davet, rol, erişim kaldırma), `settings.manage` | ✔ | – | – | – | – |
 | `schedule.manage` (hekim/koltuk, çalışma saati, kapatma, işlem türü) | ✔ | – | – | – | – |
@@ -35,7 +40,8 @@ Notlar:
 - VİA Akış: `general` görevler herkese; `clinical` görevler `patient.health.read`, `finance` görevler `finance.read` ister (sunucuda filtrelenir).
 - Odontogram ve tanı (`/patients/:id/chart`) `patient.health.read` ister: sekreter plan ve teklif bedelini görür, klinik haritayı görmez; yönetici de görmez (testli, ADR-023).
 - Asistan şimdilik işlem kaydetmez; hekim adına kayıt (asistan girer, hekim onaylar) pilot geri bildirimiyle değerlendirilecek.
-- Ödeme/iade uçları Görev 3'te eklenecek; `payment.refund` iznini kullanacak. Finansın iade eşiği için ikinci onay seçeneği planlandı.
+- Sekreterya vezne işini yapar (tahsilat, dağıtım) ama iade yapamaz ve klinik gelir raporlarını göremez (Plan §05; AT-02 iade testi). Yönetici raporları ve ayarları görür, tahsilat girmez (rol ayrılığı). Hekim varsayılan olarak hasta hesabını ve primi görmez (“ayrı izin”).
+- Finansın iade eşiği için ikinci onay seçeneği planlandı (henüz yok).
 
 ## Henüz uygulanmayan roller
 - **Laboratuvar dış kullanıcısı** (P1): yalnız atanmış iş ve gerekli teknik bilgi.
@@ -43,4 +49,4 @@ Notlar:
 - **VİADENT destek**: süreli, amaçlı, kayıtlı erişim; varsayılan hasta içeriği yok.
 
 ## Test kanıtları
-AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`). Sonuçlar: `verification.md`.
+AT-01 (`tenant-isolation.test.ts`), AT-02/AT-15/AT-20 (`permissions-session.test.ts`), anamnez/davet/rol/kaynak yetkileri (`gorev1.test.ts`), tedavi rolleri ve çapraz tenant (`gorev2.test.ts`, E2E `gorev2.spec.ts`), finans rolleri ve çapraz tenant (`gorev3.test.ts`, E2E `gorev3.spec.ts`). Sonuçlar: `verification.md`.
