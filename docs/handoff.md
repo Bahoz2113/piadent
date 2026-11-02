@@ -1,6 +1,6 @@
 # Devir notu (handoff)
 
-**Son güncelleme:** 02.11.2026 · Oturum 20 (Faz 0–4 tamamlandı; CEZERİ koşusu `qa-20261102-1209-12fc6fd` 7 tur → **TESLİME ADAY**, insan onayı ve canlıya alma bekliyor) · Önceki: 27.10.2026 · Oturum 15 (Görev 14 — pilot açılış paketi: tedavi geçmişi aktarımı, finans hacmiyle rapor ölçümü + borç raporu 30× hızlandı, pilot provası E2E, rol kılavuzları; ADR-077 migration/RLS bulgusu; bağımsız sızma testi ve pilot kapıları açık) · Dal: `main` · Son commit: `git log -1`
+**Son güncelleme:** 02.11.2026 · Oturum 20 (Faz 0–4 tamamlandı; CEZERİ koşusu `qa-20261102-1209-12fc6fd` 7 tur → **TESLİME ADAY**; ürün sahibi onayıyla canlı demoya alındı) · Önceki: 27.10.2026 · Oturum 15 (Görev 14 — pilot açılış paketi: tedavi geçmişi aktarımı, finans hacmiyle rapor ölçümü + borç raporu 30× hızlandı, pilot provası E2E, rol kılavuzları; ADR-077 migration/RLS bulgusu; bağımsız sızma testi ve pilot kapıları açık) · Dal: `main` · Son commit: `git log -1`
 
 ## Durum özeti
 Oturum 1: tenant/rol/oturum → hasta → hekim/koltuk/randevu → PİA Akış → PİA İz çekirdeği.
@@ -155,7 +155,7 @@ ADR-001…078 (`decisions.md`). Görev 15: serverless demo modu (078). Görev 14
   - QA-109 (S3) karantina görevi → `clinical` + hekim (ADR-091, migration 0030).
   - QA-110 (S3) hazırlık kuralı klinik çıktı türünü reddeder (ADR-092, migration 0031).
 - Son tur (95ac8de): tüm zorunlu vakalar PASS; API 364/364, contracts 15, web 72, E2E 89 + 9 atlama (0 hata, retries=0), RLS 75/75 FORCE, yedek→izole geri yükleme `differences=[]` + bağımsız mutabakat EŞLEŞTİ. Gate: **TESLİME ADAY** (`release.md`).
-- **Canlıya alınmadı.** Canlı demo (Vercel `viadent-demo` + Supabase `piadent-demo`) hâlâ eski sürümde; 0021–0031 canlı DB'de yok. Yayın ürün sahibi onayıyla: Supabase'e 0021–0031 → `origin/main`'e commit-tree ile yayın → canlı doğrulama. Pilot öncesi anahtar döndürme.
+- **Canlıya alındı (ürün sahibi onayıyla, 02.11.2026):** Supabase'e 0021–0031 (sahip rolüyle, sağlamalı), `origin/main` @ `010dafa`, Vercel üretim READY; ayrıntı `deployment.md` §10. Canlıda tıklamalı uçtan uca kontrol ürün sahibine kaldı. Pilot öncesi anahtar döndürme açık.
 - Açık ürün kararları (bugs.md "Kayıtlı riskler"): `export.clinic` tam veri (ADR-088 §3), sağlık yetkisi olmayan yöneticinin `clinical` görev yükseltmesini görmemesi, karantina görevinin rol bazlı ataması.
 - Temizlik: test DB'leri `viadent_fix`, `viadent_fix_test` (düzeltici yığını) silinebilir.
 
