@@ -5,6 +5,7 @@
 import { Controller, Get, Inject, Param, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import { REPORTS, REPORT_BY_ID, addDays, csvCell, dayRangeUtc, localDate, type ReportColumn } from "@viadent/contracts";
+import { buildXlsx, type XlsxCell } from "./xlsx.js";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { Errors } from "../infra/errors.js";
@@ -90,6 +91,22 @@ export class ReportsController {
     const { def, from, to, result } = await this.run(ctx, id, q, EXPORT_LIMIT);
     if (result.truncated) throw Errors.validation({ to: `Dışa aktarım en çok ${EXPORT_LIMIT} satırdır; aralığı daraltın.` }, "Satır sınırı aşıldı.");
     const cols = result.columns;
+    const format = (q as Record<string, string | undefined>).format === "xlsx" ? "xlsx" : "csv";
+    if (format === "xlsx") {
+      // XLSX (ADR-087): CSV ile aynı satır ve toplamlar; para sütunları sayısal (2 ondalık), diğerleri metin. Formül/dış bağlantı yok.
+      const cell = (v: unknown, type: ReportColumn["type"]): XlsxCell => v === null || v === undefined || v === "" ? null
+        : type === "money" ? { n: String(v), money: true } : type === "int" || type === "qty" ? { n: String(v) } : { v: fmtCell(v, type, ctx.timezone) };
+      const footer: XlsxCell[][] = Object.entries(result.totalLabels).map(([k, [label, type]]) => [{ v: `TOPLAM · ${label}` }, cell(result.totals[k], type)]);
+      footer.push([{ v: `PİA-DENT · ${def.title} · ${from} – ${to} · ${ctx.tenantName} · ${ctx.timezone}` }]);
+      const buf = buildXlsx({ name: def.title, header: cols.map((c) => c.label), rows: result.rows.map((row) => cols.map((c) => cell(row[c.key], c.type))), footer });
+      await this.db.tx(ctx, (c) => audit(c, ctx, { action: "report.export", entityType: "report", changes: {
+        report: { from: null, to: def.id }, params: { from: null, to: Object.fromEntries(Object.entries({ ...q, from, to }).filter(([k]) => /^[a-zA-Z]{2,20}$/.test(k))) },
+        rows: { from: null, to: result.rows.length } } }));
+      res.setHeader("content-type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("content-disposition", `attachment; filename="viadent-${def.id}-${from}-${to}.xlsx"`);
+      res.send(buf);
+      return;
+    }
     const lines = [cols.map((c) => csvCell(c.label)).join(";")];
     for (const row of result.rows) lines.push(cols.map((c) => csvCell(fmtCell(row[c.key], c.type, ctx.timezone))).join(";"));
     if (Object.keys(result.totals).length) {

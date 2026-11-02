@@ -30,11 +30,11 @@ Kaynaklar: `PiaDent_Claude_Eksik_Tamamlama_Nihai_Dosyasi.pdf`, `PiaDent_Mevcut_S
 ## Faz 4 — Operasyon, raporlar, PİA Akış, UX (P1/P2)
 | İş | Kabul |
 |---|---|
-| 4.1 Rapor kartlarında ham kodları kaldır (D2) | `sourceIds` yalnız `title` ipucunda/denetim ihracında; E2E "R\d\d" metni ana içerikte yok |
-| 4.2 Rapor XLSX çıktısı (D1) | CSV ile aynı satır/toplam; xlsx testi |
-| 4.3 PİA Akış SLA/yükseltme (C5) | `due_at` aşımında görev `overdue`, yönetici kuyruğuna kopya, Bugün ekranında sayaç; worker testi |
-| 4.4 Mobil tablo kart görünümü (D5) | ≤480px'te öncelikli kolonlar kart; axe + E2E telefon-360 |
-| 4.5 İşlem başına stok sarf reçetesi (C4) | Katalog kalemine sarf listesi; işlem tamamlanınca otomatik `usage` (geri alınabilir) |
+| 4.1 Rapor kartlarında ham kodları kaldır (D2) ✔ 02.11 | `sourceIds` yalnız `title` ipucunda/denetim ihracında; E2E "R\d\d" metni ana içerikte yok |
+| 4.2 Rapor XLSX çıktısı (D1) ✔ 02.11 (bağımlılıksız yazıcı, 2 test) | CSV ile aynı satır/toplam; xlsx testi |
+| 4.3 PİA Akış SLA/yükseltme (C5) ✔ 02.11 (3 test) | `due_at` aşımında görev `overdue`, yönetici kuyruğuna kopya, Bugün ekranında sayaç; worker testi |
+| 4.4 Mobil tablo kart görünümü (D5) ✔ 02.11 (E2E 360 px) | ≤480px'te öncelikli kolonlar kart; axe + E2E telefon-360 |
+| 4.5 İşlem başına stok sarf reçetesi (C4) ✔ 02.11 (3 test) | Katalog kalemine sarf listesi; işlem tamamlanınca otomatik `usage` (geri alınabilir) |
 | 4.6 `docs/kilavuz` ekran görüntüleri yeni marka | Betikle yeniden üretim |
 | 4.7 Görünüm kişiselleştirme (D7) ✔ 02.11 (ADR-082) | Vurgu paleti/şema/ölçek kullanıcı düzeyi; her palet × şema AA kontrast testi; koyu şemada axe |
 Çıkış kapısı: tam CEZERİ koşusu, TESLİME ADAY; ardından insan kapıları.

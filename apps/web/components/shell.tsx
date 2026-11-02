@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { AppearanceDrawer } from "@/components/appearance-drawer";
+import { TableLabels } from "@/components/table-labels";
 
 const NAV = [
   { href: "/bugun", label: "Bugün", icon: Sun },
@@ -87,6 +88,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <button className="btn btn-ghost icon-btn" onClick={() => void logout()} aria-label="Çıkış yap" title="Çıkış yap"><LogOut size={19} /></button>
         </header>
         {appearanceOpen && <AppearanceDrawer onClose={() => setAppearanceOpen(false)} />}
+        <TableLabels />
         {contextChanged && (
           <div className="alert alert-warning" role="alert" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
             <RefreshCw size={18} aria-hidden />

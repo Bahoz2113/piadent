@@ -86,24 +86,26 @@ export const MfaLogin = z.object({ challenge: z.string().min(20).max(200),
 /** Klinik güvenlik politikası (yönetici): MFA zorunlu roller. */
 export const TenantSecurityPolicy = z.object({ requireMfaRoles: z.array(z.enum(["clinic_admin", "dentist", "secretary", "assistant", "finance", "support"])).max(6) });
 /** PİA Akış eşikleri (ADR-073): klinik ayarı; alan yoksa varsayılan. */
-export const AKIS_DEFAULTS = { overdueCheckinMinutes: 10, missingContactDays: 7, planUnscheduledDays: 2, proposalPendingDays: 3 } as const;
+export const AKIS_DEFAULTS = { overdueCheckinMinutes: 10, missingContactDays: 7, planUnscheduledDays: 2, proposalPendingDays: 3, escalationHours: 24 } as const;
 export const AKIS_SETTING_LABELS: Record<keyof typeof AKIS_DEFAULTS, { label: string; hint: string; unit: string; min: number; max: number }> = {
   overdueCheckinMinutes: { label: "Geciken geliş uyarısı", hint: "Planlı randevunun saati bu kadar dakika geçince sekretere görev düşer", unit: "dk", min: 5, max: 120 },
   missingContactDays: { label: "Eksik iletişim bilgisi penceresi", hint: "Önümüzdeki bu kadar gün içinde randevusu olan, telefonu ve e-postası olmayan hasta için görev", unit: "gün", min: 1, max: 30 },
   planUnscheduledDays: { label: "Kabul edilen plan için randevu süresi", hint: "Plan kabulünden bu kadar gün sonra hâlâ ileri randevu yoksa görevin vadesi dolar", unit: "gün", min: 1, max: 30 },
   proposalPendingDays: { label: "Teklif yanıt bekleme süresi", hint: "Sunulan tedavi teklifi bu kadar gün yanıtsız kalınca görev düşer", unit: "gün", min: 1, max: 30 },
+  escalationHours: { label: "Yükseltme süresi (SLA)", hint: "Vadesi bu kadar saattir geçmiş açık görev yöneticiye yükseltilir; görev kopyalanmaz, yönetici kuyruğunda da görünür", unit: "saat", min: 1, max: 168 },
 };
 export const AkisSettings = z.object({
   overdueCheckinMinutes: z.number().int().min(5).max(120),
   missingContactDays: z.number().int().min(1).max(30),
   planUnscheduledDays: z.number().int().min(1).max(30),
   proposalPendingDays: z.number().int().min(1).max(30),
+  escalationHours: z.number().int().min(1).max(168),
 });
 export type AkisSettingsT = z.infer<typeof AkisSettings>;
 export function akisSettingsFrom(raw: unknown): AkisSettingsT {
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const pick = (k: keyof typeof AKIS_DEFAULTS) => { const v = Number(o[k]); const { min, max } = AKIS_SETTING_LABELS[k]; return Number.isInteger(v) && v >= min && v <= max ? v : AKIS_DEFAULTS[k]; };
-  return { overdueCheckinMinutes: pick("overdueCheckinMinutes"), missingContactDays: pick("missingContactDays"), planUnscheduledDays: pick("planUnscheduledDays"), proposalPendingDays: pick("proposalPendingDays") };
+  return { overdueCheckinMinutes: pick("overdueCheckinMinutes"), missingContactDays: pick("missingContactDays"), planUnscheduledDays: pick("planUnscheduledDays"), proposalPendingDays: pick("proposalPendingDays"), escalationHours: pick("escalationHours") };
 }
 
 /** Süreli destek erişimi verme (yönetici): var olan kullanıcı e-postası, süre (saat), gerekçe. */

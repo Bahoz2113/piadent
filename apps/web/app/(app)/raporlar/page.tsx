@@ -88,17 +88,17 @@ export default function ReportsPage() {
     const prev = s.at(-1);
     if (prev) { setParams(prev.params); void run(prev.id, prev.params); } else { setRes(null); window.history.replaceState(null, "", "/raporlar"); }
   }
-  async function exportCsv() {
+  async function exportCsv(format: "csv" | "xlsx" = "csv") {
     if (!current) return;
     setErr(null);
     try {
-      const q = new URLSearchParams(params).toString();
+      const q = new URLSearchParams(format === "xlsx" ? { ...params, format } : params).toString();
       const r = await fetch(`/api/v1/reports/${current.id}/export${q ? `?${q}` : ""}`, { credentials: "same-origin", headers: { "x-viadent-context": getPageContext() } });
       if (!r.ok) { const b = await r.json().catch(() => ({ code: "HTTP_ERROR", message: "Dışa aktarılamadı." })); throw new ApiFailure(r.status, b); }
       const blob = await r.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `viadent-${current.id}.csv`;
+      a.download = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `viadent-${current.id}.${format}`;
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (e) { setErr(e as ApiFailure); }
@@ -124,7 +124,7 @@ export default function ReportsPage() {
                     <button key={r.id} className="report-card" onClick={() => open(r.id, {})}>
                       <strong>{r.title}</strong>
                       <div className="small muted" style={{ margin: "4px 0" }}>{r.description}</div>
-                      <div className="src">{r.sourceIds.join(" · ")}{r.ownOnly ? " · yalnız kendi kayıtlarınız" : ""}</div>
+                      {r.ownOnly && <div className="src">yalnız kendi kayıtlarınız</div>}
                     </button>))}</div>
                 </section>
               );
@@ -135,7 +135,7 @@ export default function ReportsPage() {
         <div className="stack" style={{ gap: 16 }}>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <button className="btn btn-sm" onClick={back}><ArrowLeft size={15} aria-hidden />{stack.length > 1 ? "Önceki rapor" : "Rapor listesi"}</button>
-            <h2 style={{ margin: 0 }}>{def.title}</h2><span className="small muted">{def.sourceIds.join(" · ")}</span>
+            <h2 style={{ margin: 0 }}>{def.title}</h2>
           </div>
           <section className="card card-pad">
             <form className="filters" onSubmit={(e) => { e.preventDefault(); setStack((s) => [...s.slice(0, -1), { id: def.id, params }]); void run(def.id, params); }}>
@@ -158,7 +158,8 @@ export default function ReportsPage() {
                 );
               })}
               <button className="btn btn-primary" type="submit" disabled={busy}><Play size={15} aria-hidden />Çalıştır</button>
-              {cat.canExport && <button type="button" className="btn" onClick={() => void exportCsv()} disabled={busy || !res}><Download size={15} aria-hidden />CSV</button>}
+              {cat.canExport && <><button type="button" className="btn" onClick={() => void exportCsv("csv")} disabled={busy || !res}><Download size={15} aria-hidden />CSV</button>
+              <button type="button" className="btn" onClick={() => void exportCsv("xlsx")} disabled={busy || !res} title="Excel (XLSX) — aynı satır ve toplamlar"><Download size={15} aria-hidden />Excel</button></>}
             </form>
             {def.ownOnly && <p className="small muted" style={{ marginTop: 8 }}>Hekim olarak yalnız kendi kayıtlarınız listelenir (sunucu tarafında uygulanır).</p>}
           </section>

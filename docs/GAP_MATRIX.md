@@ -45,19 +45,19 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | C1 | Ajanda: hekim/koltuk, randevu türü, kapatma, çakışma, durum makinesi | MEVCUT | `scheduling.controller.ts`, `resources.controller.ts:22-233`; CEZERİ V03/P02 PASS | — |
 | C2 | Hazırlık kuralları, takip, iletişim tercihi, mesaj (mock) | MEVCUT | `care.controller.ts:27-207` | Gerçek SMS/WhatsApp: KAPSAM DIŞI (sözleşme) |
 | C3 | Laboratuvar iş emri (durum, iş föyü, maliyet→cari) | MEVCUT | `lab.controller.ts:49-297`; `0007_operations.sql:80,102` plan kalemi bağı | — |
-| C4 | Stok (giriş, kullanım→hasta/işlem, fire, sayım, ters kayıt) | MEVCUT | `stock.controller.ts:24-243`; `0007_operations.sql:271-289` + `patient_id`, `performed_procedure_id` FK | Otomatik sarf (işlem başına reçete) yok → KISMI olarak Faz 4 adayı |
-| C5 | PİA Akış (görev motoru, ayarlar) | KISMI | `tasks.controller.ts:19-73`; `0018_akis_settings.sql` | PDF: SLA/yükseltme (escalation) yok — `due_at` var, gecikince atama/bildirim yok |
+| C4 | Stok (giriş, kullanım→hasta/işlem, fire, sayım, ters kayıt, **sarf reçetesi**) | MEVCUT (02.11, ADR-087) | `stock.controller.ts`; `0029_procedure_consumables.sql`; `chart.controller.ts consumeStock()`; test `consumables.test.ts` 3 | Yetersiz stok işlemi engellemez, görev düşer |
+| C5 | PİA Akış (görev motoru, ayarlar, **SLA yükseltme**) | MEVCUT (02.11, ADR-087) | `0028_task_escalation.sql`; `via-akis.ts` adım 9; `tasks.controller.ts`; test `task-escalation.test.ts` 3 | Yükseltme kopyasız, yönetici kuyruğunda |
 | C6 | İçe/dışa aktarma (CSV, KVKK hasta ihracı, klinik ihracı, geri alma) | MEVCUT | `import.controller.ts:286-481`, `export.controller.ts:57-87` | — |
 
 ## D. Raporlar, UI, marka
 
 | # | Madde | Sınıf | Kanıt | Not |
 |---|---|---|---|---|
-| D1 | Rapor kataloğu (19 rapor, drill-down, CSV) | MEVCUT | `contracts/reports.ts:23-78`; `reports.controller.ts:87-99` | PDF: XLSX/PDF çıktı yok → KISMI (Faz 4) |
-| D2 | **Rapor kartlarında ham kaynak kodları (R22, T07…)** | **BOZUK (UX)** | `raporlar/page.tsx:127,138` `sourceIds.join(" · ")` kullanıcıya gösteriliyor | İç izlenebilirlik kodu; UI'dan kaldır/ipucuna taşı |
+| D1 | Rapor kataloğu (20 rapor, drill-down, CSV, **XLSX**) | MEVCUT (02.11, ADR-087) | `reports/xlsx.ts`; `reports.controller.ts export()`; test `report-xlsx.test.ts` 2 | PDF çıktı: tarayıcı yazdırma (ayrı PDF motoru yok) |
+| D2 | Rapor kartlarında ham kaynak kodları | **DÜZELTİLDİ (02.11)** | `raporlar/page.tsx` kodlar kaldırıldı; E2E `mobil-kart.spec.ts` ana içerikte `\b[RTGHOV]\d{2}\b` yok | API/denetimde izlenebilirlik kalır |
 | D3 | Anamnez soru şablonu yönetimi | **MEVCUT (02.11, ADR-084)** | `0024_anamnesis_templates.sql`, `clinical/anamnesis-templates.controller.ts`, `components/admin/anamnesis-templates.tsx`; test `anamnesis-templates.test.ts` 5, E2E `anamnez-sablonu.spec.ts` | Yayın yalnız hekim; eski kayıtlar kendi sürümünde |
 | D4 | Klinik çıktı şablonları (epikriz, reçete yazısı, hasta bilgi föyü) | **MEVCUT (02.11, ADR-085)** | `0025_clinical_output_types.sql`, `documents.controller.ts render()` yeni alanlar + sağlık kapısı; test `clinical-output.test.ts` 4, E2E `klinik-cikti.spec.ts` | e-reçete değil; tanı kodu serbest |
-| D5 | Mobil: geniş tablolar | KISMI | `globals.css:144` `.table-wrap{overflow-x:auto}` + kırılımlar 264-318; E2E `telefon-360` projesi | PDF: kart görünümü/kolon gizleme yok; yatay kaydırma var |
+| D5 | Mobil: geniş tablolar | MEVCUT (02.11, ADR-087) | `components/table-labels.tsx` + `globals.css` ≤640 px kart kuralları; E2E `mobil-kart.spec.ts` (360 px grid, taşma yok) | — |
 | D6 | Marka yazımı | KARAR VERİLDİ (02.11) | Ürün sahibi: **PİA-DENT** (ADR-081 notu) | PDF'deki "PiaDent" geçersiz |
 | D7 | Tema/ölçek/renk şeması kişiselleştirme | **MEVCUT (02.11, ADR-082)** | `contracts/appearance.ts`, `0022_user_appearance.sql`, `auth/appearance.controller.ts`, `components/appearance-drawer.tsx`, `lib/appearance.ts`; testler `appearance-contrast.test.ts` 33, API 4, E2E `gorunum.spec.ts` | 7 palet × 4 şema × 5 ölçek; logo sabit |
 | D8 | Hasta portalı / online randevu | KAPSAM DIŞI | yok | Faz 4+ (ayrı güvenlik modeli gerekir) |
@@ -86,6 +86,6 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | e-İmza | yok | `signature` tanımlı | — |
 
 ## Özet sayım
-MEVCUT 35 (B4, D7, D3, D4 02.11'de eklendi) · KISMI 4 (C4, C5, D1, D5) · EKSİK 0 · BOZUK 1 (D2 ham rapor kodları) · KAPSAM DIŞI 6 · KARAR 0 (D6 → PİA-DENT).
+MEVCUT 39 · KISMI 0 · EKSİK 0 · BOZUK 0 (D2 düzeltildi) · KAPSAM DIŞI 6 (gerçek sağlayıcılar, hesap planı, çek/senet/döviz, tema dışı süslemeler, hasta portalı, ICD doğrulamalı kod listesi) · KARAR 0. Tüm PDF fazları 02.11.2026'da tamamlandı; CEZERİ koşusu ve canlı yayın bekliyor.
 
 Video incelemesinin "P0 eksik" dediği 7 kalemden 5'i (anamnez, tanı, odontogram, diş/yüzey işlem girişi, plan yaşam döngüsü) kodda mevcut ve test altında; gerçek 2 P0 açığı: **makbuz çıktısı (B4)** ve **fatura taslağı iç modeli (B5)**.

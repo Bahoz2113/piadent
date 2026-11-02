@@ -119,7 +119,10 @@ describe("ADR-073: PİA Akış eşikleri klinik ayarı", () => {
     expect((await bAdmin.get("/security/akis").expect(200)).body.settings.overdueCheckinMinutes).toBe(10); // Mavi etkilenmez
     // bugün 20 dk ve 40 dk önce başlamış planlı randevu (doğrudan DB; çalışma saati kuralından bağımsız)
     const pid = (await ownerQuery(tenantA, "select id from patients where external_ref = $1", [`${run}-P1`]))[0]!.id;
-    const prac = (await ownerQuery(tenantA, "select id, branch_id from practitioners where display_name = 'Dt. Kerem Tunç'"))[0]!;
+    // Saat-bağımsızlık: son 45 dk penceresinde seed randevusu olmayan bir hekim seçilir (çakışma kısıtı: appointments_practitioner_no_overlap).
+    const prac = (await ownerQuery(tenantA, `select p.id, p.branch_id from practitioners p where p.active
+      and not exists (select 1 from appointments a where a.practitioner_id = p.id and a.status not in ('cancelled','no_show')
+                        and a.starts_at < now() + interval '5 minutes' and a.ends_at > now() - interval '45 minutes') order by p.display_name limit 1`))[0]!;
     const now = new Date();
     const mk = async (minsAgo: number) => (await ownerQuery(tenantA,
       `insert into appointments(tenant_id, branch_id, patient_id, practitioner_id, starts_at, ends_at, status, created_by)

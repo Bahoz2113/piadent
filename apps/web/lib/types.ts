@@ -3,6 +3,7 @@ import type { AppointmentStatus } from "@viadent/contracts";
 export interface Task {
   id: string; kind: string; sourceType: string; sourceId: string | null; patientId: string | null; patientName: string | null; patientFileNo: number | null;
   title: string; reason: string; nextStep: string; assigneeRole: string | null; dueAt: string | null; status: string; mine: boolean;
+  overdue?: boolean; escalated?: boolean; escalatedAt?: string | null; escalatedToRole?: string | null;
 }
 export interface Appt {
   id: string; patientId: string; patientName?: string; patientFileNo?: number; practitionerId: string; practitionerName?: string;

@@ -264,3 +264,12 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 | `0026_integration_ops.sql`, `0027_invoice_issued_cancel.sql` | uygulandı |
 | `vitest run test/adapter-contract.test.ts` | **15/15**: 9 sözleşme vakası (MOCK), OPERATIONS=7 ve MOCK sağlık kaydını desteklemez, canlı kapı (env kapalı → "kapısı kapalı"; bilinmeyen sağlayıcı → "doğrulanmış adaptör yok"; pasif bağlantı), e-belge MOCK akışı: submit→pending_provider (beklerken iptal 409) → worker → issued `MOCK…` (satır kilidi, ikinci gönderim 409) → iptal isteği → cancelled (numara korunur) → ret `rejected`+gerekçe, zaman aşımı bekliyor (numara yok) |
 | `vitest run test/invoices.test.ts` | 10/10 (değişmedi) |
+
+## Faz 4 — Operasyon/UX paketi (02.11.2026, ADR-087)
+| Komut | Sonuç |
+|---|---|
+| `0028_task_escalation.sql`, `0029_procedure_consumables.sql` | uygulandı |
+| `vitest run test/task-escalation.test.ts` | 3/3: ayar sınırı 1–168; +1 saat yükseltilmez, +3 saat (eşik 2) yöneticiye yükseltilir, kopya yok, rol korunur, yönetici ve sekreter için `mine`; yönetici görevi kendine yükseltilmez |
+| `vitest run test/report-xlsx.test.ts` | 2/2: geçerli ZIP/OOXML (python zipfile `testzip`), sayfa adı, satır sayısı ≥ CSV, para hücreleri sayısal; bilinmeyen format CSV'ye düşer; yetkisiz 403 |
+| `vitest run test/consumables.test.ts` | 3/3: reçete tanımı (tekrar 422, hekim 403), işlemde 2 usage (lot seçili), yetersiz stokta işlem kaydedilir + 1 `stock_shortage` görevi |
+| `pnpm --filter @viadent/api test` | **315/315** (gorev5 `e_invoice.mock` beklentisi ADR-086'ya göre güncellendi; gorev13 saat-bağımlı hekim seçimi düzeltildi — seed 11:00 randevusuyla çakışıyordu, ürün hatası değil) |

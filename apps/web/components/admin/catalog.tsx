@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Copy, Plus } from "lucide-react";
+import { Copy, Package, Plus, Trash2 } from "lucide-react";
 import { TOOTH_SCOPES, TOOTH_SCOPE_LABELS, formatTRY, isMoney, type ToothScope } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -15,6 +15,7 @@ const TARIFF_STATUS: Record<Tariff["status"], [string, string]> = { draft: ["Tas
 
 export function CatalogPanel({ notify }: { notify: Notify }) {
   const procs = useData<{ items: Procedure[] }>("/procedures?all=1");
+  const [consum, setConsum] = useState<{ id: string; code: string; name: string } | null>(null);
   const [editing, setEditing] = useState<Procedure | "new" | null>(null);
   if (procs.loading && !procs.data) return <div className="card"><Loading /></div>;
   if (procs.error) return <div className="card"><ErrorState error={procs.error} /></div>;
@@ -34,7 +35,7 @@ export function CatalogPanel({ notify }: { notify: Notify }) {
                   <td><strong>{p.code}</strong></td><td>{p.name}</td><td>{p.category ?? "—"}</td><td>{TOOTH_SCOPE_LABELS[p.toothScope]}</td>
                   <td>{p.defaultMinutes ? `${p.defaultMinutes} dk` : "—"}</td>
                   <td>{p.active ? <span className="badge badge-success">Etkin</span> : <span className="badge badge-neutral">Pasif</span>}</td>
-                  <td><button className="btn btn-sm btn-ghost" onClick={() => setEditing(p)}>Düzenle</button></td>
+                  <td style={{ whiteSpace: "nowrap" }}><button className="btn btn-sm btn-ghost" onClick={() => setEditing(p)}>Düzenle</button><button className="btn btn-sm btn-ghost" onClick={() => setConsum(p)} title="Sarf reçetesi: işlem tamamlanınca düşülecek stok kalemleri"><Package size={14} aria-hidden />Sarf</button></td>
                 </tr>
               ))}
             </tbody>
@@ -43,6 +44,7 @@ export function CatalogPanel({ notify }: { notify: Notify }) {
       </section>
       <TariffsCard procedures={procs.data!.items} notify={notify} />
       {editing && <ProcedureDrawer p={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); notify("success", "İşlem kaydedildi."); void procs.reload(); }} />}
+      {consum && <ConsumablesDrawer p={consum} onClose={() => setConsum(null)} onSaved={() => { setConsum(null); notify("success", "Sarf reçetesi kaydedildi."); }} />}
     </div>
   );
 }
@@ -183,6 +185,40 @@ function TariffItemsDrawer({ tariffId, procedures, onClose, onSaved }: { tariffI
           </div>
         </div>
       )}
+    </Drawer>
+  );
+}
+
+/** Sarf reçetesi (ADR-087): işleme bağlı stok kalemleri ve adetleri; işlem tamamlanınca otomatik düşülür, yetersizse asistana görev. */
+function ConsumablesDrawer({ p, onClose, onSaved }: { p: { id: string; code: string; name: string }; onClose: () => void; onSaved: () => void }) {
+  const cur = useData<{ items: { stockItemId: string; quantity: string; name: string; unit: string }[] }>(`/procedures/${p.id}/consumables`);
+  const stock = useData<{ items: { id: string; name: string; unit: string; active: boolean }[] }>("/stock/items");
+  const [rows, setRows] = useState<{ stockItemId: string; quantity: string }[] | null>(null);
+  const [err, setErr] = useState<ApiFailure | null>(null); const [busy, setBusy] = useState(false);
+  useEffect(() => { if (cur.data && rows === null) setRows(cur.data.items.map((i) => ({ stockItemId: i.stockItemId, quantity: String(Number(i.quantity)) }))); }, [cur.data, rows]);
+  const items = rows ?? [];
+  async function save() {
+    setBusy(true); setErr(null);
+    try { await api(`/procedures/${p.id}/consumables`, { method: "PUT", body: { items: items.filter((r) => r.stockItemId).map((r) => ({ stockItemId: r.stockItemId, quantity: Number(r.quantity.replace(",", ".")) })) } }); onSaved(); }
+    catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
+  }
+  return (
+    <Drawer title={`Sarf reçetesi · ${p.code}`} subtitle={p.name} onClose={onClose}
+      footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy || rows === null} onClick={() => void save()}>Kaydet</button></>}>
+      <div className="stack">
+        {err && <Alert kind="error">{err.message}{err.fieldErrors.items && <div className="small">{err.fieldErrors.items}</div>}</Alert>}
+        <p className="small muted">İşlem tamamlanınca bu kalemler hastaya bağlı stok kullanımı olarak düşer (işlem adediyle çarpılır). Stok yetersizse işlem yine kaydedilir; asistana "sarf düşülemedi" görevi düşer.</p>
+        {items.map((r, i) => (
+          <div key={i} className="row" style={{ gap: 6, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <SelectField label={`Stok kalemi ${i + 1}`} value={r.stockItemId} onChange={(e) => setRows((xs) => (xs ?? []).map((x, j) => (j === i ? { ...x, stockItemId: e.target.value } : x)))} style={{ minWidth: 220 }}>
+              <option value="">Seçin</option>
+              {(stock.data?.items ?? []).filter((s) => s.active).map((s) => <option key={s.id} value={s.id}>{s.name} ({s.unit})</option>)}
+            </SelectField>
+            <TextField label="Adet" inputMode="decimal" value={r.quantity} onChange={(e) => setRows((xs) => (xs ?? []).map((x, j) => (j === i ? { ...x, quantity: e.target.value } : x)))} style={{ width: 90 }} />
+            <button type="button" className="btn btn-sm btn-ghost icon-btn" aria-label={`Kalem ${i + 1} sil`} onClick={() => setRows((xs) => (xs ?? []).filter((_, j) => j !== i))}><Trash2 size={14} /></button>
+          </div>))}
+        <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRows((xs) => [...(xs ?? []), { stockItemId: "", quantity: "1" }])}><Plus size={14} aria-hidden />Kalem ekle</button>
+      </div>
     </Drawer>
   );
 }
