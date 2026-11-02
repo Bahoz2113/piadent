@@ -138,3 +138,9 @@ ADR-001…078 (`decisions.md`). Görev 15: serverless demo modu (078). Görev 14
 
 ## Sıradaki tek iş paketi
 **Görev 14 (öneri) — Pilot açılış paketi:** tedavi/ödeme geçmişi içe aktarımı için sentetik sözleşme (yalnız kayıt, hayali finans üretmeden: tamamlanmış işlem + ödenmiş tutar özeti), perf verisine finans/tedavi hacmi ekleyip finans raporlarını ölçme, demo verisiyle “pilot günü” provası (UAT senaryolarının otomatik ön koşusu: tüm senaryo adımlarını E2E'de tek akışta), kullanıcı eğitimi için ekran görüntülü kısa kılavuz (rol başına 1 sayfa, Türkçe), imaj derleme + CI'nin ilk gerçek koşusu (GitHub bağlanınca). Paralelde ürün sahibi: bağımsız sızma testi, barındırma, hukuk/KVKK.
+
+## Oturum 19 (02.11.2026) — Faz 0 envanteri + Faz 2.1 makbuz
+- Üç PDF (görsel indeks, inceleme raporu, eksik tamamlama) okundu. Faz 0 çıktıları: `docs/CURRENT_STATE.md`, `docs/GAP_MATRIX.md` (her madde kod kanıtıyla), `docs/IMPLEMENTATION_PLAN.md`. İnceleme raporunun "kanıt yok" dediği 5 P0 kalem (anamnez, tanı, odontogram, diş/yüzey işlem, plan döngüsü) kodda mevcut; gerçek P0 açıkları makbuz (kapandı) ve fatura taslağı (Faz 2.2).
+- Marka yazımı ürün sahibince **PİA-DENT** olarak teyit edildi (PDF'deki "PiaDent" geçersiz).
+- Faz 2.1 makbuz: `0021_receipts.sql`, `receipts.controller.ts`, `receipt-print.ts`, Finans sekmesi düğmeleri; testler verification.md. **Canlıya (Supabase/Vercel) henüz uygulanmadı** — migration 0021 canlı DB'de yok; ürün sahibi onayı bekleniyor (yayın: `main`'e commit-tree + Supabase'de migration).
+- Sonraki: Faz 2.2 fatura taslağı iç modeli (sahte numara yok), Faz 1 anamnez şablonu, D2 rapor ham kodları; ardından CEZERİ koşusu.

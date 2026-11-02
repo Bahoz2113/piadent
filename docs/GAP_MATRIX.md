@@ -30,7 +30,7 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | B1 | Alacak (tahakkuk) oluşturma/iptal; işlemden otomatik alacak | MEVCUT | `account.controller.ts:111-129`; `source in ('performed_procedure','manual')` | — |
 | B2 | Tahsilat (idempotency, dağıtım, ters kayıt) | MEVCUT | `account.controller.ts:147-207`; `0020_receivable_allocated.sql`; CEZERİ V04/P01 PASS | — |
 | B3 | İade (ters kayıt, sağlayıcı iadesi mock) | MEVCUT | `account.controller.ts:234`; `bridge.controller.ts:348` | — |
-| B4 | **Tahsilat makbuzu çıktısı** | **EKSİK** | `components/finance/account-tab.tsx` içinde yazdırma yok (grep "Makbuz" = 0) | PDF P0: makbuz şablonu + yazdır/PDF; `printHeaderHtml` (`brand.tsx:28`) hazır |
+| B4 | Tahsilat/iade makbuzu çıktısı | **MEVCUT (02.11, ADR-081)** | `0021_receipts.sql` (TM/IM seri, tetikleyici, değişmez); `finance/receipts.controller.ts`; `components/finance/receipt-print.ts`; test `receipts.test.ts` 9, E2E `makbuz.spec.ts` | Faz 2.1 tamamlandı; CEZERİ koşusu bekliyor |
 | B5 | Fatura / e-Fatura / e-Arşiv / e-SMM | KAPSAM DIŞI (bilinçli) | `contracts/integrations.ts:21` `e_invoice: { mock:false, waitingFor: "GİB entegratörü sözleşmesi…" }`; `docs/release-gates.md §3` | Taslak fatura kaydı (kesilmemiş, sağlayıcıya gitmeyen) bile yok → Faz 2'de "fatura taslağı" iç modeli eklenecek; gerçek gönderim sözleşme kapısına bağlı |
 | B6 | Kasa/banka hesapları, gider, nakit akışı, bakiye | MEVCUT | `finance.controller.ts:32-237` | Çek/senet, döviz, POS komisyonu: KAPSAM DIŞI (TRY tek para birimi — ADR) |
 | B7 | Hekim primi (kural, tahakkuk, ödeme, ters kayıt) | MEVCUT | `finance.controller.ts:267-376`; `0007_operations.sql:180-182` işlem→prim bağı | Hekim bazlı tarife yok |
@@ -58,7 +58,7 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | D3 | Anamnez soru şablonu yönetimi | EKSİK | anamnez sabit şema | Faz 1 |
 | D4 | Klinik çıktı şablonları (epikriz, reçete, hasta bilgi föyü) | KISMI | belge motoru var (`documents.controller.ts`), kategori setinde klinik çıktı yok | Faz 1 |
 | D5 | Mobil: geniş tablolar | KISMI | `globals.css:144` `.table-wrap{overflow-x:auto}` + kırılımlar 264-318; E2E `telefon-360` projesi | PDF: kart görünümü/kolon gizleme yok; yatay kaydırma var |
-| D6 | **Marka yazımı** | **KARAR GEREKLİ** | Kod: "PİA-DENT" (ADR-079, kullanıcı talebi 31.10). PDF: "PiaDent" | Kullanıcı onayı olmadan değiştirilmez |
+| D6 | Marka yazımı | KARAR VERİLDİ (02.11) | Ürün sahibi: **PİA-DENT** (ADR-081 notu) | PDF'deki "PiaDent" geçersiz |
 | D7 | Tema/ölçek/renk şeması kişiselleştirme | KAPSAM DIŞI | tek marka paleti (ADR-080) | Erişilebilirlik kontrast testi var (`contrast.test.ts`) |
 | D8 | Hasta portalı / online randevu | KAPSAM DIŞI | yok | Faz 4+ (ayrı güvenlik modeli gerekir) |
 
@@ -86,6 +86,6 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | e-İmza | yok | `signature` tanımlı | — |
 
 ## Özet sayım
-MEVCUT 31 · KISMI 5 (C4, C5, D1, D4, D5) · EKSİK 2 (B4 makbuz, D3 anamnez şablonu) · BOZUK 1 (D2 ham rapor kodları) · KAPSAM DIŞI 7 · KARAR 1 (D6 marka).
+MEVCUT 32 (B4 02.11'de eklendi) · KISMI 5 (C4, C5, D1, D4, D5) · EKSİK 1 (D3 anamnez şablonu) · BOZUK 1 (D2 ham rapor kodları) · KAPSAM DIŞI 7 · KARAR 0 (D6 → PİA-DENT).
 
 Video incelemesinin "P0 eksik" dediği 7 kalemden 5'i (anamnez, tanı, odontogram, diş/yüzey işlem girişi, plan yaşam döngüsü) kodda mevcut ve test altında; gerçek 2 P0 açığı: **makbuz çıktısı (B4)** ve **fatura taslağı iç modeli (B5)**.

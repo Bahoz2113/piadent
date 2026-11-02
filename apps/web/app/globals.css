@@ -420,3 +420,4 @@ tr.drill:hover td { background: var(--primary-tint); }
 .date-day:disabled { color: var(--text-secondary); opacity: .45; cursor: not-allowed; }
 .date-day.is-empty { pointer-events: none; }
 .date-pop-foot { display: flex; gap: var(--s2); justify-content: flex-end; margin-top: var(--s2); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }

@@ -4,7 +4,7 @@ Kaynaklar: `PiaDent_Claude_Eksik_Tamamlama_Nihai_Dosyasi.pdf`, `PiaDent_Mevcut_S
 
 ## Faz 0 — Envanter (BU BELGE) ✔
 Çıktılar: `CURRENT_STATE.md`, `GAP_MATRIX.md`, bu plan. Kod değişikliği yok.
-**Açık karar (kullanıcı):** marka yazımı — kodda "PİA-DENT", PDF'de "PiaDent". Karar gelmeden yeniden adlandırma yapılmaz.
+**Karar (02.11.2026):** marka yazımı **PİA-DENT** (ürün sahibi teyit etti).
 
 ## Faz 1 — Klinik çekirdek tamamlama (P0/P1)
 | İş | Kapsam | Kabul ölçütü |
@@ -17,7 +17,7 @@ Kaynaklar: `PiaDent_Claude_Eksik_Tamamlama_Nihai_Dosyasi.pdf`, `PiaDent_Mevcut_S
 ## Faz 2 — Finans çekirdek (P0)
 | İş | Kapsam | Kabul ölçütü |
 |---|---|---|
-| 2.1 **Tahsilat makbuzu (B4)** | Her tahsilat/iade için `receipt_no` (tenant+yıl sıralı, boşluksuz), yazdırılabilir makbuz (printHeaderHtml), Finans sekmesinde "Makbuz" düğmesi, denetim kaydı | Aynı tahsilat tekrar yazdırılınca aynı no; iade makbuzu ters işareti gösterir; test: numaralandırma eşzamanlılık (2 oturum) |
+| 2.1 **Tahsilat makbuzu (B4)** ✔ 02.11 (ADR-081; API 9 test, E2E 2) | Her tahsilat/iade için `receipt_no` (tenant+yıl sıralı, boşluksuz), yazdırılabilir makbuz (printHeaderHtml), Finans sekmesinde "Makbuz" düğmesi, denetim kaydı | Aynı tahsilat tekrar yazdırılınca aynı no; iade makbuzu ters işareti gösterir; test: numaralandırma eşzamanlılık (2 oturum) |
 | 2.2 **Fatura taslağı iç modeli (B5)** | `invoices` (draft/issued-mock/cancelled), kalem = alacak/işlem, KDV oranı, seri/no yalnız sağlayıcı yanıtıyla; UI'da "Taslak — e-belge sağlayıcısı bağlı değil" etiketi | Gerçek numara üretilmez; gönder düğmesi sağlayıcı yokken pasif + açıklama; test |
 | 2.3 Mali müşavir dışa aktarımı (B10) | CSV: tahsilat/iade/gider/ prim dönem raporu | Rapor kataloğuna eklenir; CSV tutarları `finance/summary` ile birebir |
 Çıkış kapısı: CEZERİ P01 genişletilir (makbuz no), yeni P04 "fatura taslağı sahte başarı üretmez".

@@ -23,6 +23,7 @@ import { CatalogController } from "./treatment/catalog.controller.js";
 import { PlansController } from "./treatment/plans.controller.js";
 import { ChartController } from "./treatment/chart.controller.js";
 import { AccountController } from "./finance/account.controller.js";
+import { ReceiptsController } from "./finance/receipts.controller.js";
 import { FinanceController } from "./finance/finance.controller.js";
 import { DocumentsController } from "./documents/documents.controller.js";
 import { FilesController } from "./documents/files.controller.js";
@@ -41,7 +42,7 @@ export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, SecurityController],
+      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, ReceiptsController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, SecurityController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

@@ -82,6 +82,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "receivable.cancel": "Alacak kaydı iptal edildi",
   "payment.create": "Tahsilat alındı",
   "payment.refund": "İade yapıldı",
+  "receipt.print": "Makbuz yazdırıldı",
   "allocation.create": "Tahsilat alacağa eşlendi",
   "allocation.reverse": "Tahsilat eşlemesi geri alındı",
   "online_payment.create": "Çevrim içi ödeme talebi oluşturuldu",
@@ -202,7 +203,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   version: "Sürüm", changed: "Değişen kalem", decision: "Karar", unit_price: "Birim fiyat", discount: "İndirim", item_count: "Kalem sayısı", code: "Kod",
   anamnesis: "Anamnez",
   // Finans
-  amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
+  amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receipt_no: "Makbuz no", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
   basis: "Prim esası", rate: "Oran (%)", valid_from: "Geçerlilik başlangıcı", category: "Kategori", kind: "Tür", name: "Ad",
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",

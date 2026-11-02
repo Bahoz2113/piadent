@@ -220,3 +220,13 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - Yazdırma penceresi E2E'de açılmadı (tarayıcı diyaloğu otomasyonu kilitler); `printed` kanıt olayı API testinde doğrulandı.
 - Windows üzerinde kurulum bu oturumda **denenmedi** (geliştirme Linux konteynerde yapıldı); README adımları Docker Desktop + Node 22 + pnpm varsayar.
 - Ekran okuyucu (NVDA/VoiceOver) testi yapılmadı.
+
+## Faz 2.1 — Makbuz (02.11.2026, ADR-081)
+| Komut | Sonuç |
+|---|---|
+| `pnpm --filter @viadent/db migrate` (0021_receipts) | uygulandı; seed verisi geriye dönük `TM-2026-000001…` |
+| `pnpm typecheck` | 5/5 Done |
+| `vitest run test/receipts.test.ts` | **9/9**: ardışık numara, 6 eşzamanlı tahsilat boşluksuz, idempotent tekrar numara tüketmez, başarısız istek (422) numara tüketmez, IM serisi + tahsilat makbuzuna atıf, dağıtım satırları, `receipt.print` denetim kaydı, asistan 403 / B kliniği 404, update/delete `receipt_immutable`, app rolünde yalnız SELECT |
+| `pnpm --filter @viadent/api test` | **269/269** (gorev7 yedek doğrulaması `receipt_counters` SELECT yetkisi eklenince geçti) |
+| web 25 · contracts 15 | geçti |
+| `npx playwright test` (temiz seed, API+worker+web derlenmiş) | **78 geçti + 8 atlama** — yeni `makbuz.spec.ts` (masaüstü + 360 px): tahsilat → listede `TM-…` → Makbuz düğmesi → açılan pencerede no/tutar/"fatura yerine geçmez" |
