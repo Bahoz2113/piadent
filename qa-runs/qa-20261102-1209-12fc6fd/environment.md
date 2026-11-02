@@ -1,0 +1,11 @@
+# Ortam — qa-20261102-1209-12fc6fd
+- Sürüm: `12fc6fd47406e3e3142248490550298abf27af03` (main, push edildi: origin/gelistirme-gecmisi)
+- Kirli dosya: yalnız bu koşu klasörü (qa-runs/qa-20261102-1209-12fc6fd/, izlenmeyen); ürün kodu temiz
+- Zaman: 02.11.2026 12:09 (Europe/Istanbul)
+- Node v22.22.0, pnpm 10.28.0, PostgreSQL 16.15, Chromium (Playwright 1.64, /opt/pw-browsers/chromium)
+- Ortam: yerel test; API :4000 (NODE_ENV=production, tsx), worker (production), web :3000 (next build + start). DB: yerel PostgreSQL 'viadent' (sentetik seed, her koşu öncesi db:reset + migrate + seed) ve API test DB 'viadent_test' (global-setup ile yeniden kurulur).
+- Migration: 29 dosya (0001–0029); hepsi uygulandı.
+- Dış servisler: yalnız MOCK bağlantılar (SMS, ödeme, e-belge); VIADENT_EXTERNAL_SEND_ENABLED=false → canlı gönderim kapalı (sağlık: /health/ready "ready", db ok). e-Nabız/sağlık kaydı: adaptör yok.
+- Kullanıcılar: seed'in sentetik demo hesapları (yonetici/hekim/sekreter/asistan/finans @demo-yesil.test, yonetici/hekim @demo-mavi.test). Parola .demo-credentials (git dışı) dosyasından ortam değişkeniyle okunur; kanıtlara yazılmaz.
+- Önceki koşu: qa-runs/qa-20261031-1706-0309309 (TESLİME ADAY, 01b4c00) — değiştirilmedi.
+- Canlı demo (Vercel/Supabase) bu koşunun dışında: üretime gönderim yok.

@@ -1,0 +1,39 @@
+{
+ "types": {
+  "EPIKRIZ": {
+   "issuerRole": "dentist",
+   "category": "clinical_output"
+  },
+  "HASTA-FOYU": {
+   "issuerRole": "dentist",
+   "category": "clinical_output"
+  },
+  "RECETE": {
+   "issuerRole": "dentist",
+   "category": "clinical_output"
+  }
+ },
+ "previewHasDiag": true,
+ "rawTextKept": true,
+ "secPrev": 403,
+ "long": 422,
+ "doc": 201,
+ "secListHas": false,
+ "admListHas": false,
+ "secGet": 404,
+ "admGet": 404,
+ "secPrint": 200,
+ "integrity": true,
+ "receteIbare": true,
+ "histLeak": true,
+ "histSample": [
+  {
+   "action": "document.issue",
+   "entityType": "patient_document"
+  },
+  {
+   "action": "patient.create",
+   "entityType": "patient"
+  }
+ ]
+}

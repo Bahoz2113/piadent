@@ -1,0 +1,24 @@
+{
+ "doc": "(yeni HASTA-FOYU)",
+ "secGet": 404,
+ "secPrint": 200,
+ "secPrintMissing": 404,
+ "secDecision": 409,
+ "admGet": 404,
+ "admRevoke": 200,
+ "evidenceSeenByDentist": [
+  {
+   "kind": "issued",
+   "actor": "‹maskeli›"
+  },
+  {
+   "kind": "printed",
+   "actor": "‹maskeli›"
+  },
+  {
+   "kind": "revoked",
+   "actor": "‹maskeli›"
+  }
+ ],
+ "docStatusAfter": "revoked"
+}
