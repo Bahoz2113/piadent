@@ -28,7 +28,8 @@
   "N07",
   "N08",
   "N09",
-  "N10"
+  "N10",
+  "N11"
  ],
  "profiles": [
   {
@@ -90,11 +91,13 @@
   "N07": "PİA Akış SLA: eşik sınırları (0/169 → 422), eşik öncesi yükseltme yok, sonrası yöneticiye yükseltme (kopya yok, rol korunur); hekim ayarı değiştiremez.",
   "N08": "Rapor XLSX: geçerli OOXML (bağımsız ayrıştırıcıyla açılır), satır ve toplam CSV ile aynı, para sayısal, formül yok; yetkisiz 403.",
   "N09": "Mobil kart görünümü (360 px): geniş tablolar kart, yatay taşma yok, işlem düğmeleri tıklanabilir; masaüstünde tablo; rapor ekranlarında ham iç kod (R22, T07…) yok.",
-  "N10": "Sarf reçetesi: reçete tanımı (yetki, tekrar kalem), işlemde otomatik kullanım (lot/SKT), stok yetersizse işlem kaydedilir + tek görev; düzeltme kaydı sarfı tekrarlamaz; stok bakiyesi API = UI."
+  "N10": "Sarf reçetesi: reçete tanımı (yetki, tekrar kalem), işlemde otomatik kullanım (lot/SKT), stok yetersizse işlem kaydedilir + tek görev; düzeltme kaydı sarfı tekrarlamaz; stok bakiyesi API = UI.",
+  "N11": "Dosya hassasiyeti tutarlılığı (tur 3 ile eklendi, QA-106/107): sağlık yetkisi olmayan rol için klinik hassasiyetli dosyalar ve klinik çıktı belgesine bağlı dosyalar liste, ayrıntı, içerik, silme ve KVKK hasta dışa aktarımında tutarlı biçimde görünmez (var olmayanla aynı yanıt, omitted işareti); idari dosyalar görünür; hekim hepsini görür."
  },
  "notes": [
   "Önceki koşunun 16 zorunlu vakası aynen korunur; 10 yeni vaka bu sürümün yeni kapsamıdır.",
   "R01 artık 32 test dosyası; R04/R05 E2E 96 test (87 + 9 bilinçli atlama).",
-  "Yan etki sınırı: yalnız yerel test DB'leri; canlı demo ve üretime dokunulmaz."
+  "Yan etki sınırı: yalnız yerel test DB'leri; canlı demo ve üretime dokunulmaz.",
+  "2026-11-02 tur 3: kapsam genişletildi — N11 eklendi (dosya hassasiyeti tutarlılığı; QA-106/107 bu turda bulundu). Önceki vakalar ve beklentiler değişmedi."
  ]
 }

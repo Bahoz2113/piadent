@@ -24,3 +24,18 @@
 - Kurallar: ürün yamasını izole worktree'de yap; uygulanmış migration'ı değiştirme (gerekirse yeni `0030_*`); test beklentilerini, kilitli planı, geçmiş kanıtları değiştirme; üretime/canlıya gönderim yok.
 - **Ortam uyarısı:** tester'ın servisleri :3000/:4000 ve DB'leri `viadent`, `viadent_test` üzerinde. Kendi testlerini **ayrı DB adlarıyla** koş (worktree `.env` içinde DB adlarını `viadent_fix` yap → test DB `viadent_fix_test`; önceki turdan kalmış olabilir, gerekirse sıfırla); :3000/:4000 süreçlerini durdurma; küme genelinde bağlantı sonlandırma yapma.
 - Geri dönüş: yeni commit SHA, değişen dosyalar, çalıştırılan komutlar ve gerçek sonuçları `fix2.md` olarak bu klasöre yaz; durum FIX_READY. Kapatma yalnız tester yeniden sınamasıyla.
+
+---
+
+# Devir 3 — qa-20261102-1209-12fc6fd tur 3 → cezeri-duzeltici
+
+- Sınanan sürüm: `bb49098` (ürün = fix2 `9327d9e`). Gate: **BEKLET** (açık S2/S3; tarayıcı ve tam regresyon bir sonraki revizyonda).
+- Kapanan: QA-104, QA-105 → VERIFIED (`evidence/tur3/N05-komsu.json`).
+- Açık: **QA-106 (S2)**, **QA-107 (S3)** — ayrıntı ve kök neden ipucu `bugs.md`; kanıt `evidence/tur3/file-sensitivity-probe.json`, `evidence/tur3/linked-file-probe.json`. Kapsam N11 olarak plana eklendi.
+- Kabul ölçütleri (tester yeniden sınar; gevşetilmez):
+  1. QA-106: `patient.health.read` olmayan dışa aktaranda `POST /patients/:id/export` `sections.files` içinde `sensitivity = 'clinical'` dosya yok; `omitted` içinde açık işaret (ör. `files:clinical`) ve not; counts/checksums tutarlı; denetim kaydı işareti taşır; idari dosyalar kalır; sağlık yetkili dışa aktarım tam.
+  2. QA-107: klinik çıktı belgesine (`patient_document_id` → `document_types.category = 'clinical_output'`) bağlı dosya, kategorisinden bağımsız olarak sağlık yetkisi olmayan rol için klinik sayılır: `GET /patients/:id/files` listesinde yok; `GET /files/:id`, `GET /files/:id/content`, `POST /files/:id/delete` ve varsa yükleme tamamlama/diğer dosya uçları var olmayan dosyayla aynı yanıtı verir (404) ve yan etki üretmez; dışa aktarımla tutarlı. Hekim mevcut davranışı korur. Seçilen yaklaşım (sorguda birleştirme ya da bağlantıda hassasiyeti `clinical`'a yükseltme) ADR ile yazılır; yükseltme seçilirse mevcut kayıtlar için yeni migration (`0030_*`) gerekir.
+  3. Regresyon testleri ekle (`apps/api/test/qa-106-107-file-sensitivity.test.ts`): yukarıdaki her uç için sekreter/yönetici 404 = var olmayan; hekim 200; dışa aktarım işaretleri.
+- Kurallar ve ortam uyarısı: Devir 2 ile aynı (izole worktree, `viadent_fix`/`viadent_fix_test`, ayrı port; :3000/:4000 ve `viadent`/`viadent_test`'e dokunma; uygulanmış migration değişmez; `qa-runs/` altında yalnız `fix3.md`; canlıya gönderim yok).
+- **Dal tabanı:** worktree `origin/main` (canlı demo geçmişi) üzerinden açılabilir; ortak ata yok. Çalışma dalını mutlaka `main` ucundan aç (`git checkout -b fix/qa-20261102-tur3 <main ucu>`).
+- Geri dönüş: `fix3.md` (SHA'lar, değişen dosyalar, komutlar, gerçek sonuçlar, riskler, FIX_READY).

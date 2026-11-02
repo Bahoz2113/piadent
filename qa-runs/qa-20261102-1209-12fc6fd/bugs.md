@@ -1,12 +1,14 @@
-# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf)
+# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098)
 
 | ID | Önem | Durum | Vaka | Başlık | Sorumlu |
 |---|---|---|---|---|---|
 | QA-101 | S1 | VERIFIED (tur 2, 08438cf) | N05 | Sağlık yetkisi olmayan rol klinik çıktı belgesinde yazma işlemi yapabiliyor (yönetici iptal 200; sekreter "yazdırıldı" kanıtı 200) | Kodlama (cezeri-duzeltici) |
 | QA-102 | S2 | VERIFIED (tur 2, 08438cf) | N05 | Klinik çıktı belgesinin varlığı/olayları sağlık yetkisi olmayan rollere hasta geçmişinde (PİA İz) görünüyor | Kodlama |
 | QA-103 | S3 | VERIFIED (tur 2, 08438cf) | N02 | Sağlayıcının düzenlediği (MOCK) / iptal ettiği faturada da "TASLAK — resmî belge değildir" uyarısı, "e-Belge sağlayıcısı bağlı değil" metni ve "Taslağı yazdır" (TASLAK filigranı) gösteriliyor | Kodlama |
-| QA-104 | S1 | OPEN | N05 (komşu) | KVKK hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik çıktı belgelerinin içeriğini, onay/kanıt olaylarını ve bağlı dosya kayıtlarını alıyor | Kodlama (cezeri-duzeltici) |
-| QA-105 | S2 | OPEN | N05 (komşu) | Onam/belge raporu klinik çıktı belgelerini (hasta, tür "Epikriz / tedavi özeti", başlık) sağlık yetkisi olmayan role listeliyor | Kodlama |
+| QA-104 | S1 | VERIFIED (tur 3, bb49098) | N05 (komşu) | KVKK hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik çıktı belgelerinin içeriğini, onay/kanıt olaylarını ve bağlı dosya kayıtlarını alıyor | Kodlama (cezeri-duzeltici) |
+| QA-105 | S2 | VERIFIED (tur 3, bb49098) | N05 (komşu) | Onam/belge raporu klinik çıktı belgelerini (hasta, tür "Epikriz / tedavi özeti", başlık) sağlık yetkisi olmayan role listeliyor | Kodlama |
+| QA-106 | S2 | OPEN | N05 (komşu) / fix2 risk 1 | Hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik hassasiyetli dosyaların (radyograf vb.) metaverisini (ad, kategori, SHA-256) alıyor; aynı kullanıcı dosya listesinde bunları görmüyor | Kodlama (cezeri-duzeltici) |
+| QA-107 | S3 | OPEN | N05 (komşu) / fix1 risk 3 | Klinik çıktı belgesine bağlanmış idari kategorili dosya (document_scan) sekretere listede, ayrıntıda görünüyor ve klinik belge kimliğini (`patientDocumentId`) açığa veriyor; dışa aktarım ise aynı dosyayı gizliyor (tutarsız) | Kodlama |
 
 ## QA-101 (S1) — Klinik çıktı belgesi yazma uçlarında sağlık kapısı yok
 - **Ortam/sürüm:** yerel test, `12fc6fd`, sentetik hasta "Epikriz Sınama" (A kliniği).
@@ -51,6 +53,26 @@
 - **Etki:** hangi hastaya epikriz/klinik föy düzenlendiği (sağlık işleminin varlığı ve başlığı) sağlık yetkisi olmayan role görünüyor; içerik görünmüyor → S2.
 - **Kanıt:** `evidence/tur2/N05-kesin-eslesme.json` (onamSecretary 2 satır), `evidence/tur2b/N05-komsu.json` (onamSecretaryHasClinical=true).
 - **Kök neden ipucu:** `apps/api/src/reports/definitions.ts` `onam` (satır ~492) ve `ONAM_CTE`: kategori süzgeci yok; `notClinicalOutputDocSql` benzeri koşul veya `category <> 'clinical_output'`.
+
+## Tur 3 yeniden sınama (bb49098 = ürün 9327d9e, temiz seed)
+- **QA-104 VERIFIED:** yönetici dışa aktarımında epikriz/föy id'si ve içeriği yok; `omitted` içinde `patient_documents:clinical_output`, `consent_requests:clinical_output`, `evidence_events:clinical_output`, `files:clinical_output`. Kanıt `evidence/tur3/N05-komsu.json`.
+- **QA-105 VERIFIED:** sekreter onam raporunda klinik çıktı satırı yok. Kanıt `evidence/tur3/N05-komsu.json`.
+- Diğer tüm HTTP/N vakaları PASS (`evidence/tur3/http-summary.json`, `n-summary.json`).
+
+## QA-106 (S2) — Dışa aktarımda klinik hassasiyetli dosya metaverisi
+- **Ortam/sürüm:** yerel test, `bb49098`, temiz seed; tester sondası `qa-runs/.scripts/file-sensitivity-probe.mjs` (düzeltici fix2 risk 1'de bildirmişti; tester bağımsız yeniden üretti).
+- **Adımlar:** (1) Hekim yeni sentetik hastaya `radiograph` (sensitivity `clinical`) ve `identity` (administrative) dosyası başlatır (201/201). (2) Yönetici `GET /patients/:id/files` → yalnız kimlik dosyası (radyograf görünmez — doğru). (3) Yönetici `POST /patients/:id/export` → `sections.files` içinde `clinical:radiograph` satırı (ad `panoramik-sonda-….jpg`, kategori, özet) var.
+- **Beklenen:** sağlık yetkisi olmayan dışa aktaranda `sensitivity = 'clinical'` dosyalar dosya listesiyle tutarlı biçimde dışlanır ve `omitted` içinde belirtilir (ör. `files:clinical`); idari dosyalar kalır. Sağlık yetkili dışa aktarım tamdır.
+- **Etki:** dosya içeriği değil, metaveri (dosya adı, kategori, SHA-256) sızıyor; dosya adı tanı/işlem bilgisi taşıyabilir → S2.
+- **Kanıt:** `evidence/tur3/file-sensitivity-probe.json` (adminListSeesClinical=false, adminExportHasClinicalFile=true).
+- **Kök neden ipucu:** `apps/api/src/pilot/export.controller.ts` `files` sorgusu `sensitivity` süzmüyor (files.controller `visible()` kuralı: administrative veya `patient.health.read`).
+
+## QA-107 (S3) — Klinik çıktıya bağlı idari dosya sekretere görünüyor
+- **Adımlar:** (1) Hekim API ile `POST /files` `{category: "document_scan", patientDocumentId: <düzenlenmiş epikriz id>}` → 201 (sağlık yetkili olduğu için izinli). (2) Sekreter `GET /patients/:id/files` → dosya listede, `name` = "epikriz-imzali-tarama.pdf", `patientDocumentId` = epikriz id. (3) Sekreter `GET /files/:id` → 200. (4) Yönetici dışa aktarımında aynı dosya yok (fix2 ile gizleniyor).
+- **Beklenen:** klinik çıktı belgesine bağlı dosya, kategorisinden bağımsız olarak sağlık yetkisi olmayan rol için klinik sayılır: listede yok, ayrıntı/içerik/silme uçlarında var olmayan dosyayla aynı yanıt (404) — dışa aktarımla tutarlı (ADR-085/088). Alternatif olarak bağlantı kurulurken dosya `clinical` hassasiyetine yükseltilebilir; seçim ADR'de yazılmalı.
+- **Etki:** arayüz bu bağlantıyı kurmuyor (web'de `patientDocumentId` kullanılmıyor); yalnız sağlık yetkili kullanıcının doğrudan API çağrısıyla oluşuyor. Gizli belgenin kimliği ve hekimin idari diye etiketlediği taramanın içeriği sekretere açılabiliyor → S3.
+- **Kanıt:** `evidence/tur3/linked-file-probe.json`.
+- **Kök neden ipucu:** `apps/api/src/documents/files.controller.ts` `visible()` yalnız `sensitivity`'ye bakıyor; `list` (satır ~104), `files/:id`, `files/:id/content`, `files/:id/delete` ve yükleme tamamlama uçları `patient_document_id` → `document_types.category = 'clinical_output'` birleştirmesini dikkate almalı (`notClinicalOutputDocIdSql` yeniden kullanılabilir).
 
 ## Ortam / betik notları (ürün kusuru değil)
 - Tarayıcı betiğinin ilk iki koşusunda N02/N05 "FAIL" tester betiği hatasıydı (hasta adı "Epikriz Sınama" metin aramasına takıldı; diyalog seçici; "Belge düzenlendi" etiketi kalıpta yoktu). Betik düzeltildi; son koşu `evidence/tur1/browser-n-summary.json`.
