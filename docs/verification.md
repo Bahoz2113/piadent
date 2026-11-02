@@ -274,3 +274,7 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 | `vitest run test/consumables.test.ts` | 3/3: reçete tanımı (tekrar 422, hekim 403), işlemde 2 usage (lot seçili), yetersiz stokta işlem kaydedilir + 1 `stock_shortage` görevi |
 | `pnpm --filter @viadent/api test` | **315/315** (gorev5 `e_invoice.mock` beklentisi ADR-086'ya göre güncellendi; gorev13 saat-bağımlı hekim seçimi düzeltildi — seed 11:00 randevusuyla çakışıyordu, ürün hatası değil) |
 | `npx playwright test` (temiz seed, API+worker+web derlenmiş) | **87 geçti + 9 bilinçli atlama, 0 hata** (yeni: makbuz, görünüm, fatura taslağı, anamnez şablonu, klinik çıktı, mobil kart). Bulunan ve düzeltilen: kart modunda `.table td{height:48px}` hücreleri üst üste bindiriyordu (stok satırında Sayım düğmesine tıklanamıyordu) → `height:auto`; fatura kart başlığı 360 px'te taşıyordu → sarma. Aynı DB'de ikinci E2E koşusu gorev3'te önceki koşunun tam iadeli satırını seçer (bilinen VD-030 ön koşulu; temiz seed şart). |
+
+## QA-106/107 — Dosya görünürlüğü (02.11.2026, ADR-089; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 3)
+- Yeni regresyon: `apps/api/test/qa-106-107-file-sensitivity.test.ts` (7 test). Yamasız kodda **6 başarısız / 1 geçen**; yamalı **7/7 geçti**.
+- API tam paket (izole `viadent_fix_test`): **32 dosya, 340/340 geçti**. `pnpm -r typecheck` temiz (5 paket). Web kodu değişmedi; web/E2E koşulmadı.

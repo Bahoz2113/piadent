@@ -6,12 +6,14 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
-import { audit, enqueue } from "../audit/audit.js";
+import { audit, enqueue, nonClinicalFileSql } from "../audit/audit.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const MAX_UPLOAD_FAILURES = 5;
 let storage: StoragePort | null = null;
 const store = () => (storage ??= storageFromEnv());
+/** `f` takma adlı file_assets satırı için görünürlük; `$2` = `patient.health.read`. */
+const VISIBLE = `($2::boolean or ${nonClinicalFileSql("f")})`;
 /** Testlerde geçici dizin kullanmak için. */
 export function setStorageForTests(s: StoragePort) { storage = s; }
 
@@ -19,11 +21,14 @@ export function setStorageForTests(s: StoragePort) { storage = s; }
  * Dosya (VD-011, AT-11). Durumlar: initiated → uploaded → (tarama) available | quarantined | rejected; → deleted.
  * Dosya seçmek "yüklendi" değildir; içerik sunucuya tam gelmeden ve tarama bitmeden dosya indirilemez.
  * Klinik kategoriler yalnız sağlık yetkili rollere görünür; yetkisiz kullanıcı varlığını da göremez (404).
+ * QA-107 (ADR-089): klinik çıktı belgesine bağlı dosya da kategorisinden bağımsız klinik sayılır; tüm dosya uçları kaydı
+ * `VISIBLE` koşuluyla okur, görünmeyen dosya var olmayanla aynı yanıtı (404) verir ve yan etki yazılmadan döner.
  */
 @Controller()
 export class FilesController {
   constructor(@Inject(Db) private readonly db: Db) {}
 
+  /** Yükleme başlatırken (henüz kayıt yok) kategori hassasiyeti; kayıtlı dosyalarda `VISIBLE` SQL koşulu kullanılır. */
   private visible(ctx: RequestContext, sensitivity: string) {
     return sensitivity === "administrative" || has(ctx, "patient.health.read");
   }
@@ -65,8 +70,9 @@ export class FilesController {
   @Require("file.write")
   async upload(@Ctx() ctx: RequestContext, @Param("id", id) fid: string, @Req() req: Request) {
     const data = Buffer.isBuffer(req.body) ? (req.body as Buffer) : null;
-    const f = await this.db.tx(ctx, async (c) => (await c.query("select status, declared_size, object_key, sensitivity, upload_failures from file_assets where id = $1", [fid])).rows[0]);
-    if (!f || !this.visible(ctx, f.sensitivity)) throw Errors.notFound("Dosya");
+    const f = await this.db.tx(ctx, async (c) => (await c.query(`select status, declared_size, object_key, upload_failures from file_assets f where f.id = $1 and ${VISIBLE}`,
+      [fid, has(ctx, "patient.health.read")])).rows[0]);
+    if (!f) throw Errors.notFound("Dosya");
     if (f.status !== "initiated") throw new AppError(409, "FILE_NOT_UPLOADABLE", "Bu dosyanın içeriği zaten alındı veya yükleme kapandı.");
     if (!data || data.length !== Number(f.declared_size)) {
       // Başarısız yükleme kaydı ayrı transaction'da: yanlış başarı yok, tekrar yolu açık; sınır aşılırsa reddedilir.
@@ -105,7 +111,7 @@ export class FilesController {
         `select f.id, f.category, f.sensitivity, f.original_name, f.declared_type, f.declared_size, f.size_bytes, f.sha256, f.status, f.status_reason,
                 f.scan_engine, f.scanned_at, f.created_at, f.available_at, f.upload_failures, f.patient_document_id, u.full_name as uploaded_by
            from file_assets f join users u on u.id = f.uploaded_by
-          where f.patient_id = $1 and ($2::boolean or f.sensitivity = 'administrative') order by f.created_at desc`,
+          where f.patient_id = $1 and ${VISIBLE} order by f.created_at desc`,
         [patientId, has(ctx, "patient.health.read")]);
       return { items: r.rows.map((f) => ({ id: f.id, category: f.category, sensitivity: f.sensitivity, name: f.original_name, contentType: f.declared_type,
         size: Number(f.size_bytes ?? f.declared_size), sha256: f.sha256, status: f.status, statusReason: f.status_reason, scanEngine: f.scan_engine,
@@ -118,8 +124,9 @@ export class FilesController {
   @Require("file.read")
   detail(@Ctx() ctx: RequestContext, @Param("id", id) fid: string) {
     return this.db.tx(ctx, async (c) => {
-      const f = (await c.query("select id, sensitivity, status, status_reason, original_name, sha256, scan_engine from file_assets where id = $1", [fid])).rows[0];
-      if (!f || !this.visible(ctx, f.sensitivity)) throw Errors.notFound("Dosya");
+      const f = (await c.query(`select id, status, status_reason, original_name, sha256, scan_engine from file_assets f where f.id = $1 and ${VISIBLE}`,
+        [fid, has(ctx, "patient.health.read")])).rows[0];
+      if (!f) throw Errors.notFound("Dosya");
       const ev = await c.query(
         `select e.action, e.detail, e.at, u.full_name as actor from file_access_events e left join users u on u.id = e.actor_user_id
           where e.file_id = $1 order by e.at, e.id`, [fid]);
@@ -132,8 +139,9 @@ export class FilesController {
   @Require("file.read")
   async download(@Ctx() ctx: RequestContext, @Param("id", id) fid: string, @Res() res: Response) {
     const f = await this.db.tx(ctx, async (c) => {
-      const row = (await c.query("select id, sensitivity, status, object_key, detected_type, original_name, sha256, patient_id from file_assets where id = $1", [fid])).rows[0];
-      if (!row || !this.visible(ctx, row.sensitivity)) throw Errors.notFound("Dosya");
+      const row = (await c.query(`select id, status, object_key, detected_type, original_name, sha256, patient_id from file_assets f where f.id = $1 and ${VISIBLE}`,
+        [fid, has(ctx, "patient.health.read")])).rows[0];
+      if (!row) throw Errors.notFound("Dosya");
       if (row.status !== "available") {
         await this.event(c, ctx, fid, "access_denied", `durum: ${row.status}`);
         return { denied: row.status as string };
@@ -160,8 +168,8 @@ export class FilesController {
   remove(@Ctx() ctx: RequestContext, @Param("id", id) fid: string, @Body() body: unknown) {
     const i = parse(FileDelete, body);
     return this.db.tx(ctx, async (c) => {
-      const f = (await c.query("select sensitivity, status, patient_id from file_assets where id = $1", [fid])).rows[0];
-      if (!f || !this.visible(ctx, f.sensitivity)) throw Errors.notFound("Dosya");
+      const f = (await c.query(`select status, patient_id from file_assets f where f.id = $1 and ${VISIBLE}`, [fid, has(ctx, "patient.health.read")])).rows[0];
+      if (!f) throw Errors.notFound("Dosya");
       if (f.status === "deleted") throw new AppError(409, "FILE_DELETED", "Dosya zaten silinmiş.");
       if (f.status === "uploaded") throw new AppError(409, "FILE_SCANNING", "Tarama sürerken silinemez; tarama bitince tekrar deneyin.");
       await c.query("update file_assets set status = 'deleted', status_reason = $2, deleted_at = now(), deleted_by = $3 where id = $1", [fid, i.reason, ctx.userId]);

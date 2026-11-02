@@ -8,7 +8,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
-import { audit, enqueue } from "../audit/audit.js";
+import { audit, enqueue, nonClinicalFileSql } from "../audit/audit.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const hash = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
@@ -319,7 +319,9 @@ export class DocumentsController {
       if (hash(d.content) !== d.content_hash) throw new AppError(409, "INTEGRITY_FAILED", "Belge metni hash ile uyuşmuyor; karar kaydedilemez. Destekle paylaşın.");
       let fileId: string | undefined;
       if (i.decision === "accepted" && i.fileId) {
-        const f = (await c.query("select status, patient_id, category from file_assets where id = $1", [i.fileId])).rows[0];
+        // QA-107 (ADR-089): sağlık yetkisi olmayan rol için görünmeyen dosya var olmayanla aynı doğrulama hatasını verir.
+        const f = (await c.query(`select status, patient_id, category from file_assets f where f.id = $1 and ($2::boolean or ${nonClinicalFileSql("f")})`,
+          [i.fileId, has(ctx, "patient.health.read")])).rows[0];
         if (!f || f.patient_id !== d.patient_id || f.status !== "available") throw Errors.validation({ fileId: "Taranmış nüsha bu hastanın kullanılabilir dosyası olmalı." });
         fileId = i.fileId;
       }

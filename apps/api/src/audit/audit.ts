@@ -35,6 +35,14 @@ export const notClinicalOutputDocIdSql = (docIdExpr: string) =>
   `not exists (select 1 from patient_documents cod join document_types cdt on cdt.id = cod.document_type_id
            where cod.id = ${docIdExpr} and cdt.category = 'clinical_output')`;
 
+/**
+ * QA-106/107 (ADR-089): sağlık yetkisi olmayan rol için görünür dosya = idari hassasiyetli **ve** klinik çıktı belgesine bağlı değil
+ * (bağlı dosya kategorisinden bağımsız klinik sayılır). Dosya listesi/uçları, dosyayı kanıt olarak bağlayan uç ve hasta dışa aktarımı
+ * aynı koşulu kullanır: `($n::boolean or ${nonClinicalFileSql("f")})`, `$n` = `patient.health.read`.
+ */
+export const nonClinicalFileSql = (alias: string) =>
+  `(${alias}.sensitivity = 'administrative' and ${notClinicalOutputDocIdSql(`${alias}.patient_document_id`)})`;
+
 /** Audit, domain değişikliğiyle AYNI transaction içinde yazılır. */
 export async function audit(c: pg.PoolClient, ctx: Pick<RequestContext, "tenantId" | "userId" | "membershipId" | "correlationId">, a: AuditInput) {
   await c.query(
