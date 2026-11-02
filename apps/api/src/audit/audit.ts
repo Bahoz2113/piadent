@@ -16,6 +16,17 @@ export interface AuditInput {
  */
 export const CLINICAL_ENTITY_TYPES: readonly string[] = ["anamnesis", "clinical_note", "clinical_chart"];
 
+/**
+ * QA-102: klinik çıktı belgesi (ADR-085, `document_types.category = 'clinical_output'`) olayları da sağlık içeriğidir;
+ * varlık türü `patient_document` olduğundan türe göre değil belge kategorisine göre süzülür. Sağlık yetkisi yoksa
+ * `CLINICAL_ENTITY_TYPES` süzgeciyle birlikte kullanılır. `alias`: audit_events tablo takma adı (boş = nitelemesiz).
+ */
+export const notClinicalOutputDocSql = (alias = "e") => {
+  const p = alias ? `${alias}.` : "";
+  return `not (${p}entity_type = 'patient_document' and exists (select 1 from patient_documents cod join document_types cdt on cdt.id = cod.document_type_id
+           where cod.id = ${p}entity_id and cdt.category = 'clinical_output'))`;
+};
+
 /** Audit, domain değişikliğiyle AYNI transaction içinde yazılır. */
 export async function audit(c: pg.PoolClient, ctx: Pick<RequestContext, "tenantId" | "userId" | "membershipId" | "correlationId">, a: AuditInput) {
   await c.query(

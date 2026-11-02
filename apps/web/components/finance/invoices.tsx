@@ -9,6 +9,7 @@ import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDateTime } from "@/lib/format";
+import { invoicePrintHtml, invoiceView } from "@/lib/invoice-view";
 import { Alert, Drawer, SelectField, TextAreaField, TextField } from "@/components/ui";
 import { printHeaderHtml } from "@/components/brand";
 import { parseMoneyInput } from "./money-input";
@@ -22,7 +23,6 @@ interface InvoiceDetail extends Omit<InvoiceRow, "lineCount"> {
 interface Receivable { id: string; description: string; amount: string; status: string; open: string }
 type LineDraft = { description: string; quantity: string; unitPrice: string; vatRate: (typeof VAT_RATES)[number]; receivableId?: string };
 const TONE: Record<InvoiceStatus, string> = { draft: "neutral", pending_provider: "warning", issued: "success", rejected: "error", cancelled: "neutral" };
-const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export function Invoices({ patientId, receivables }: { patientId: string; receivables: Receivable[] }) {
   const { can } = useSession();
@@ -149,31 +149,23 @@ function InvoiceDrawer({ id, onClose, onChanged }: { id: string; onClose: () => 
   function print() {
     const x = d.data; if (!x) return;
     const w = window.open("", "_blank"); if (!w) return;
-    w.document.title = `Fatura taslağı · ${x.patient.fullName}`;
+    w.document.title = `${invoiceView(x).printTitle} · ${x.patient.fullName}`;
     w.document.body.insertAdjacentHTML("afterbegin", printHeaderHtml(x.clinic.name));
-    w.document.body.insertAdjacentHTML("beforeend", `<main style="margin:24px 32px;font:14px/1.5 system-ui;color:#172b27;max-width:760px;position:relative">
-      <div style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;opacity:.08;font:800 72px system-ui;transform:rotate(-20deg)">TASLAK</div>
-      <h2 style="margin:0 0 4px;font-size:20px">${esc(INVOICE_DOC_TYPE_LABELS[x.docType])} — TASLAK</h2>
-      <p style="margin:0 0 16px;color:#b42318;font-weight:600">${esc(x.notice)}</p>
-      <p><strong>Alıcı:</strong> ${esc(x.buyer.name)}${x.buyer.taxNo ? ` · VKN ${esc(x.buyer.taxNo)}` : ""}${x.buyer.taxOffice ? ` · ${esc(x.buyer.taxOffice)}` : ""}<br/>${esc(x.buyer.address ?? "")}</p>
-      <p><strong>Hasta:</strong> ${esc(x.patient.fullName)} · dosya no ${esc(x.patient.fileNo)}</p>
-      <table style="border-collapse:collapse;width:100%;margin-top:12px"><thead><tr style="text-align:left;color:#4f625d"><th style="padding:6px 0">Açıklama</th><th>Adet</th><th>Birim</th><th>KDV</th><th style="text-align:right">Tutar</th></tr></thead>
-      <tbody>${x.lines.map((l) => `<tr><td style="padding:6px 0;border-top:1px solid #eef2f0">${esc(l.description)}</td><td style="border-top:1px solid #eef2f0">${l.quantity}</td><td style="border-top:1px solid #eef2f0">${esc(formatTRY(l.unitPrice))}</td><td style="border-top:1px solid #eef2f0">%${l.vatRate}</td><td style="border-top:1px solid #eef2f0;text-align:right">${esc(formatTRY(l.lineTotal))}</td></tr>`).join("")}</tbody></table>
-      <p style="text-align:right;margin-top:12px">KDV hariç <strong>${esc(formatTRY(x.subtotal))}</strong> · KDV <strong>${esc(formatTRY(x.vatTotal))}</strong> · Genel toplam <strong style="font-size:16px">${esc(formatTRY(x.grandTotal))}</strong></p>
-      <p style="margin-top:24px;color:#4f625d;font-size:12px">Fatura no: <strong>yok</strong> (sağlayıcı düzenlemedi) · Hazırlayan: ${esc(x.createdBy)} · ${esc(fmtDateTime(x.createdAt))}</p></main>`);
+    w.document.body.insertAdjacentHTML("beforeend", invoicePrintHtml(x));
     w.print();
   }
   const x = d.data;
+  const view = x ? invoiceView(x) : null;
   return (
     <Drawer title={x ? `${INVOICE_DOC_TYPE_LABELS[x.docType]} · ${INVOICE_STATUS_LABELS[x.status]}` : "Fatura taslağı"} subtitle={x?.buyer.name} onClose={onClose}
-      footer={x && <>
-        <button className="btn" onClick={print}><Printer size={15} aria-hidden />Taslağı yazdır</button>
+      footer={x && view && <>
+        <button className="btn" onClick={print}><Printer size={15} aria-hidden />{view.printLabel}</button>
         {can("invoice.write") && (x.status === "draft" || x.status === "rejected" || (x.status === "issued" && x.providerConnected && !x.cancelReason)) && !cancelling && <button className="btn btn-ghost" onClick={() => setCancelling(true)}>{x.status === "issued" ? "Sağlayıcıdan iptal iste" : "İptal et"}</button>}
         {can("invoice.write") && x.status === "draft" && <button className="btn btn-primary" onClick={() => void submit()} title={x.providerConnected ? "Sağlayıcıya gönder" : "e-Belge sağlayıcısı bağlı değil"}>Sağlayıcıya gönder</button>}
       </>}>
-      {!x ? <p className="muted">Yükleniyor…</p> : (
+      {!x || !view ? <p className="muted">Yükleniyor…</p> : (
         <div className="stack">
-          <Alert kind="warning">{x.notice}{!x.providerConnected && " e-Belge sağlayıcısı bağlı değil; gönderim denemesi reddedilir ve kaydedilir."}</Alert>
+          <Alert kind={view.kind}>{view.notice}</Alert>
           {err && <Alert kind="error">{err.message}</Alert>}
           <dl className="kv">
             <dt>Alıcı</dt><dd>{x.buyer.name}{x.buyer.taxNo && <> · VKN <span className="mono">{x.buyer.taxNo}</span></>}{x.buyer.taxOffice && <> · {x.buyer.taxOffice}</>}</dd>

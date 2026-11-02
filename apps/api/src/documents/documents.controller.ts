@@ -277,11 +277,21 @@ export class DocumentsController {
     });
   }
 
+  /**
+   * QA-101: belge üzerinde işlem yapan her uç önce bu kapıdan geçer. Klinik çıktı (ADR-085) sağlık verisidir;
+   * `patient.health.read` yoksa var olmayan belgeyle aynı 404 döner — durum değişmez, kanıt yazılmaz, varlık sızmaz.
+   */
+  private async assertDocVisible(c: import("pg").PoolClient, ctx: RequestContext, docId: string) {
+    const d = (await c.query("select dt.category from patient_documents d join document_types dt on dt.id = d.document_type_id where d.id = $1", [docId])).rows[0];
+    if (!d || (d.category === "clinical_output" && !has(ctx, "patient.health.read"))) throw Errors.notFound("Belge");
+  }
+
   @Post("documents/:id/print")
   @HttpCode(200)
   @Require("document.read")
   printed(@Ctx() ctx: RequestContext, @Param("id", id) docId: string) {
     return this.db.tx(ctx, async (c) => {
+      await this.assertDocVisible(c, ctx, docId);
       const d = (await c.query("select content_hash, status from patient_documents where id = $1", [docId])).rows[0];
       if (!d) throw Errors.notFound("Belge");
       if (d.status !== "issued") throw new AppError(409, "DOCUMENT_REVOKED", "İptal edilmiş belge yazdırılamaz.");
@@ -297,6 +307,7 @@ export class DocumentsController {
   decide(@Ctx() ctx: RequestContext, @Param("id", id) docId: string, @Body() body: unknown) {
     const i = parse(DocumentDecision, body);
     return this.db.tx(ctx, async (c) => {
+      await this.assertDocVisible(c, ctx, docId);
       const d = (await c.query(
         `select d.id, d.patient_id, d.content, d.content_hash, d.status, cr.id as req_id, cr.status as req_status
            from patient_documents d left join consent_requests cr on cr.patient_document_id = d.id where d.id = $1 for update of d`, [docId])).rows[0];
@@ -328,6 +339,7 @@ export class DocumentsController {
   revoke(@Ctx() ctx: RequestContext, @Param("id", id) docId: string, @Body() body: unknown) {
     const i = parse(DocumentRevoke, body);
     return this.db.tx(ctx, async (c) => {
+      await this.assertDocVisible(c, ctx, docId);
       const d = (await c.query("select patient_id, status, content_hash from patient_documents where id = $1", [docId])).rows[0];
       if (!d) throw Errors.notFound("Belge");
       if (d.status !== "issued") throw new AppError(409, "DOCUMENT_REVOKED", "Belge zaten iptal edilmiş.");

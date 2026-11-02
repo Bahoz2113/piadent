@@ -13,7 +13,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES, audit } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, audit, notClinicalOutputDocSql } from "../audit/audit.js";
 import { decryptField } from "@viadent/db";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
@@ -122,9 +122,10 @@ export class ExportController {
         lab_events: await q("select e.* from lab_events e join lab_orders o on o.id = e.lab_order_id where o.patient_id = $1 order by e.seq"),
         stock_usage: await q("select m.id, m.occurred_at, i.code, i.name, l.lot_no, l.expiry_date, m.quantity from stock_movements m join stock_items i on i.id = m.item_id left join stock_lots l on l.id = m.lot_id where m.patient_id = $1"),
         online_payment_requests: await q("select * from online_payment_requests where patient_id = $1"),
-        // Sağlık yetkisi yoksa klinik olaylar (anamnez/klinik not/bulgu-tanı) erişim günlüğünde de yer almaz (QA-001).
+        // Sağlık yetkisi yoksa klinik olaylar (anamnez/klinik not/bulgu-tanı; klinik çıktı belgesi — QA-102) erişim günlüğünde de yer almaz (QA-001).
         access_log: (await c.query(
-          "select id, created_at, action, entity_type, actor_user_id from audit_events where patient_id = $1 and ($2::boolean or entity_type <> all($3::text[])) order by id",
+          `select id, created_at, action, entity_type, actor_user_id from audit_events
+            where patient_id = $1 and ($2::boolean or (entity_type <> all($3::text[]) and ${notClinicalOutputDocSql("audit_events")})) order by id`,
           [pid, health, CLINICAL_ENTITY_TYPES])).rows,
       };
       const omitted: string[] = [];

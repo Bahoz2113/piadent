@@ -42,7 +42,11 @@ export class FilesController {
       if (i.appointmentId && !(await c.query("select 1 from appointments where id = $1 and patient_id = $2", [i.appointmentId, i.patientId])).rowCount) {
         throw Errors.validation({ appointmentId: "Randevu bu hastaya ait değil." });
       }
-      if (i.patientDocumentId && !(await c.query("select 1 from patient_documents where id = $1 and patient_id = $2", [i.patientDocumentId, i.patientId])).rowCount) {
+      // QA-101: klinik çıktı belgesi sağlık yetkisi olmayan rol için var olmayan belgeyle aynı yanıtı verir (ADR-085).
+      if (i.patientDocumentId && !(await c.query(
+        `select 1 from patient_documents d join document_types dt on dt.id = d.document_type_id
+          where d.id = $1 and d.patient_id = $2 and ($3::boolean or dt.category <> 'clinical_output')`,
+        [i.patientDocumentId, i.patientId, has(ctx, "patient.health.read")])).rowCount) {
         throw Errors.validation({ patientDocumentId: "Belge bu hastaya ait değil." });
       }
       const fid = (await c.query("select gen_random_uuid() as id")).rows[0].id as string;

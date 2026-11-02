@@ -7,7 +7,7 @@ import type pg from "pg";
 import type { Drill, ReportColumn } from "@viadent/contracts";
 import { addDays, localDate } from "@viadent/contracts";
 import type { RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, notClinicalOutputDocSql } from "../audit/audit.js";
 
 export interface Params { [k: string]: string | undefined }
 export interface Range { from: string; to: string; fromUtc: Date; toUtc: Date }
@@ -570,7 +570,8 @@ const log: Runner = async (a) => {
   const et = a.p.entityType && /^[a-z_]{2,60}$/.test(a.p.entityType) ? a.p.entityType : null;
   // Klinik olaylar (anamnez/klinik not/bulgu-tanı) yalnız sağlık yetkisiyle listelenir (QA-001).
   const args = [a.r.fromUtc, a.r.toUtc, action, et, a.ctx.permissions.has("patient.health.read"), CLINICAL_ENTITY_TYPES];
-  const where = "e.created_at >= $1 and e.created_at < $2 and ($3::text is null or e.action like $3 || '%') and ($4::text is null or e.entity_type = $4) and ($5::boolean or e.entity_type <> all($6::text[]))";
+  // QA-102: klinik çıktı belgesi olayları da aynı kapıya tabidir.
+  const where = `e.created_at >= $1 and e.created_at < $2 and ($3::text is null or e.action like $3 || '%') and ($4::text is null or e.entity_type = $4) and ($5::boolean or (e.entity_type <> all($6::text[]) and ${notClinicalOutputDocSql("e")}))`;
   const { list, truncated } = await rows(a,
     `select e.id, e.created_at, e.action, e.entity_type, e.entity_id, e.patient_id, u.full_name as actor,
             (select string_agg(k, ', ' order by k) from jsonb_object_keys(case when jsonb_typeof(e.changes) = 'object' then e.changes else '{}'::jsonb end) k) as fields,
