@@ -13,7 +13,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES, audit, nonClinicalFileSql, notClinicalOutputDocIdSql, notClinicalOutputDocSql } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, audit, nonClinicalFileSql, notClinicalOutputDocIdSql, notClinicalOutputDocSql, notHiddenFileEventSql, visibleFileIdSql } from "../audit/audit.js";
 import { decryptField } from "@viadent/db";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
@@ -51,6 +51,11 @@ function revealNationalId(rows: Record<string, unknown>[]) {
     const { national_id_enc, national_id_hmac, ...rest } = r;
     return { ...rest, national_id: national_id_enc ? decryptField(String(national_id_enc)) : (r.national_id ?? null) };
   });
+}
+/** QA-108: `visible_file_id` (SQL'de hesaplanan görünür değer) `file_id` yerine yazılır; yardımcı sütun düşer, sütun sırası korunur. */
+function maskFileId(rows: Record<string, unknown>[]) {
+  return rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== "visible_file_id")
+    .map(([k, v]) => (k === "file_id" ? [k, r.visible_file_id ?? null] : [k, v]))));
 }
 const sha = (rows: unknown) => createHash("sha256").update(JSON.stringify(rows), "utf8").digest("hex");
 
@@ -124,7 +129,8 @@ export class ExportController {
         // QA-104: klinik çıktı belgeleri (ADR-085) ve onlara bağlı onay/kanıt/dosya satırları sağlık verisidir; yetki yoksa dahil edilmez.
         patient_documents: await qd(`select * from patient_documents d where d.patient_id = $1 and ($2::boolean or ${notClinicalOutputDocIdSql("d.id")}) order by d.issued_at`),
         consent_requests: await qd(`select r.* from consent_requests r join patient_documents d on d.id = r.patient_document_id where d.patient_id = $1 and ($2::boolean or ${notClinicalOutputDocIdSql("d.id")})`),
-        evidence_events: await qd(`select e.* from evidence_events e join patient_documents d on d.id = e.patient_document_id where d.patient_id = $1 and ($2::boolean or ${notClinicalOutputDocIdSql("d.id")})`),
+        // QA-108 (ADR-090): kanıt satırı kalır; görünmeyen dosyanın (ADR-089) kimliği `file_id` sağlık yetkisi yoksa null (sütun sırası korunur).
+        evidence_events: maskFileId(await qd(`select e.*, ${visibleFileIdSql("e.file_id", "$2::boolean")} as visible_file_id from evidence_events e join patient_documents d on d.id = e.patient_document_id where d.patient_id = $1 and ($2::boolean or ${notClinicalOutputDocIdSql("d.id")})`)),
         // QA-106/107: dosya listesiyle aynı görünürlük (ADR-089): idari hassasiyetli ve klinik çıktıya bağlı olmayan dosyalar.
         files: strip(await qd(`select * from file_assets f where f.patient_id = $1 and ($2::boolean or ${nonClinicalFileSql("f")})`), ["object_key"]),
         communication_preferences: await q("select * from communication_preferences where patient_id = $1 order by recorded_at"),
@@ -134,10 +140,11 @@ export class ExportController {
         lab_events: await q("select e.* from lab_events e join lab_orders o on o.id = e.lab_order_id where o.patient_id = $1 order by e.seq"),
         stock_usage: await q("select m.id, m.occurred_at, i.code, i.name, l.lot_no, l.expiry_date, m.quantity from stock_movements m join stock_items i on i.id = m.item_id left join stock_lots l on l.id = m.lot_id where m.patient_id = $1"),
         online_payment_requests: await q("select * from online_payment_requests where patient_id = $1"),
-        // Sağlık yetkisi yoksa klinik olaylar (anamnez/klinik not/bulgu-tanı; klinik çıktı belgesi — QA-102) erişim günlüğünde de yer almaz (QA-001).
+        // Sağlık yetkisi yoksa klinik olaylar (anamnez/klinik not/bulgu-tanı; klinik çıktı belgesi — QA-102; gizli dosya — QA-108)
+        // erişim günlüğünde de yer almaz (QA-001).
         access_log: (await c.query(
           `select id, created_at, action, entity_type, actor_user_id from audit_events
-            where patient_id = $1 and ($2::boolean or (entity_type <> all($3::text[]) and ${notClinicalOutputDocSql("audit_events")})) order by id`,
+            where patient_id = $1 and ($2::boolean or (entity_type <> all($3::text[]) and ${notClinicalOutputDocSql("audit_events")} and ${notHiddenFileEventSql("audit_events")})) order by id`,
           [pid, health, CLINICAL_ENTITY_TYPES])).rows,
       };
       const omitted: string[] = [];
@@ -151,7 +158,8 @@ export class ExportController {
         notes: ["KVKK veri sahibi talebi için hazırlanmıştır; kimlik doğrulama ve kapsam incelemesi klinik sorumluluğundadır.",
           ...(omitted.length ? ["Sağlık bölümleri dışa aktaranın sağlık verisi yetkisi olmadığı için dahil edilmedi; hekimle birlikte tamamlayın."] : []),
           ...(!health ? ["Klinik çıktı belgeleri (epikriz, hasta bilgi föyü, reçete yazısı) ve bunlara bağlı onay, kanıt ve dosya kayıtları sağlık verisidir; dışa aktaranın sağlık verisi yetkisi olmadığı için dahil edilmedi (omitted: *:clinical_output).",
-            "Klinik hassasiyetli dosyalar (radyograf, klinik fotoğraf, klinik belge) sağlık verisidir; ad, kategori ve SHA-256 dahil metaverileri dışa aktaranın sağlık verisi yetkisi olmadığı için dahil edilmedi (omitted: files:clinical)."] : [])],
+            "Klinik hassasiyetli dosyalar (radyograf, klinik fotoğraf, klinik belge) sağlık verisidir; ad, kategori ve SHA-256 dahil metaverileri dışa aktaranın sağlık verisi yetkisi olmadığı için dahil edilmedi (omitted: files:clinical).",
+            "Aynı gerekçeyle bu dosyaların erişim günlüğündeki (access_log) olayları dahil edilmedi ve kanıt olaylarındaki dosya kimliği (evidence_events.file_id) boş bırakıldı; kanıt satırları kalır."] : [])],
         omitted, counts, checksums: Object.fromEntries(Object.entries(sections).map(([k, v]) => [k, sha(v)])), sections };
     });
     res.setHeader("content-type", "application/json; charset=utf-8");

@@ -8,7 +8,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
-import { audit, enqueue, nonClinicalFileSql } from "../audit/audit.js";
+import { audit, enqueue, nonClinicalFileSql, visibleFileIdSql } from "../audit/audit.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const hash = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
@@ -264,9 +264,10 @@ export class DocumentsController {
            left join consent_requests cr on cr.patient_document_id = d.id where d.id = $1`, [docId])).rows[0];
       if (!d) throw Errors.notFound("Belge");
       if (d.category === "clinical_output" && !has(ctx, "patient.health.read")) throw Errors.notFound("Belge"); // sağlık verisi: varlığı bile görünmez
+      // QA-108 (ADR-090): kanıt satırı kalır; görünmeyen dosyanın (ADR-089) kimliği sağlık yetkisi yoksa null.
       const ev = await c.query(
-        `select e.kind, e.method, e.document_hash, e.file_id, e.note, e.at, u.full_name as actor
-           from evidence_events e left join users u on u.id = e.actor_user_id where e.patient_document_id = $1 order by e.at, e.id`, [docId]);
+        `select e.kind, e.method, e.document_hash, ${visibleFileIdSql("e.file_id", "$2::boolean")} as file_id, e.note, e.at, u.full_name as actor
+           from evidence_events e left join users u on u.id = e.actor_user_id where e.patient_document_id = $1 order by e.at, e.id`, [docId, has(ctx, "patient.health.read")]);
       return {
         id: d.id, patientId: d.patient_id, title: d.title, typeName: d.type_name, content: d.content, contentHash: d.content_hash,
         integrityOk: hash(d.content) === d.content_hash, status: d.status, requestStatus: d.request_status, requiresAcceptance: d.requires_acceptance,

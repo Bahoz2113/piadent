@@ -43,6 +43,23 @@ export const notClinicalOutputDocIdSql = (docIdExpr: string) =>
 export const nonClinicalFileSql = (alias: string) =>
   `(${alias}.sensitivity = 'administrative' and ${notClinicalOutputDocIdSql(`${alias}.patient_document_id`)})`;
 
+/**
+ * QA-108 (ADR-090): dosya denetim olayları (`entity_type = 'file'`: file.upload/file.delete) yalnız ADR-089'a göre görünür dosya için
+ * listelenir. Sağlık yetkisi yoksa `CLINICAL_ENTITY_TYPES` ve `notClinicalOutputDocSql` ile birlikte kullanılır (PİA İz, KVKK
+ * access_log, denetim raporu). Dosya satırı yoksa olay gösterilmez (güvenli varsayılan). `alias`: audit_events takma adı.
+ */
+export const notHiddenFileEventSql = (alias = "e") => {
+  const p = alias ? `${alias}.` : "";
+  return `not (${p}entity_type = 'file' and not exists (select 1 from file_assets hf where hf.id = ${p}entity_id and ${nonClinicalFileSql("hf")}))`;
+};
+
+/**
+ * QA-108 (ADR-090): dosyaya kimlikle atıf yapan sütun (ör. `evidence_events.file_id`) için görünür değer; görünmeyen dosyada NULL.
+ * Satırın kendisi kalır. `health`: `patient.health.read` SQL ifadesi (ör. `$2::boolean`).
+ */
+export const visibleFileIdSql = (expr: string, health: string) =>
+  `(case when ${health} or ${expr} is null or exists (select 1 from file_assets vf where vf.id = ${expr} and ${nonClinicalFileSql("vf")}) then ${expr} end)`;
+
 /** Audit, domain değişikliğiyle AYNI transaction içinde yazılır. */
 export async function audit(c: pg.PoolClient, ctx: Pick<RequestContext, "tenantId" | "userId" | "membershipId" | "correlationId">, a: AuditInput) {
   await c.query(

@@ -278,3 +278,7 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 ## QA-106/107 — Dosya görünürlüğü (02.11.2026, ADR-089; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 3)
 - Yeni regresyon: `apps/api/test/qa-106-107-file-sensitivity.test.ts` (7 test). Yamasız kodda **6 başarısız / 1 geçen**; yamalı **7/7 geçti**.
 - API tam paket (izole `viadent_fix_test`): **32 dosya, 340/340 geçti**. `pnpm -r typecheck` temiz (5 paket). Web kodu değişmedi; web/E2E koşulmadı.
+
+## QA-108 — Gizli dosyanın izleri (02.11.2026, ADR-090; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 4)
+- Yeni regresyon: `apps/api/test/qa-108-file-trace.test.ts` (7 test: geçmiş sekreter/yönetici + hekim, onam kanıtı sekreter/yönetici + hekim, dışa aktarım yönetici + sağlık yetkili kanca, LOG raporu). Yamasız kodda **5 başarısız / 2 geçen** (geçenler hekim testleri); yamalı **7/7 geçti**.
+- API tam paket (izole `viadent_fix_test`): **33 dosya, 347/347 geçti**. `pnpm -r typecheck` temiz (5 paket). Web kodu değişmedi; web/E2E koşulmadı.
