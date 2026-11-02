@@ -32,8 +32,8 @@ export function Invoices({ patientId, receivables }: { patientId: string; receiv
   const items = list.data?.items ?? [];
   return (
     <section className="card">
-      <div className="card-head">
-        <div><h2><FileText size={18} aria-hidden style={{ verticalAlign: "-3px" }} /> Fatura taslakları</h2>
+      <div className="card-head" style={{ flexWrap: "wrap", gap: 8 }}>
+        <div style={{ minWidth: 0, flex: "1 1 240px" }}><h2><FileText size={18} aria-hidden style={{ verticalAlign: "-3px" }} /> Fatura taslakları</h2>
           <p className="muted small">PİA-DENT fatura numarası üretmez. Taslak burada hazırlanır; resmî belge yalnız bağlı e-belge sağlayıcısı düzenler.
             {list.data && !list.data.providerConnected && <> <span className="badge badge-warning">e-Belge sağlayıcısı bağlı değil</span></>}
             {list.data?.providerMock && <> <span className="badge badge-warning">MOCK e-belge sağlayıcısı — numaralar resmî değildir</span></>}</p></div>

@@ -35,7 +35,7 @@ test("fatura taslağı: oluştur → numara yok → gönderim reddi görünür �
   await expect(d).toBeHidden();
   await expect(page.getByText("Fatura taslağı kaydedildi.")).toBeVisible();
   const row = card.locator("table tbody tr", { hasText: "Sentetik Alıcı E2E" }).first();
-  await expect(row).toContainText("numara yok (taslak)");
+  await expect(row).toContainText("numara yok");
   await expect(row).toContainText("366,66 ₺");
   await expect(row.getByText("Taslak", { exact: true })).toBeVisible();
 

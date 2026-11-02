@@ -480,11 +480,12 @@ html[data-scheme="dim"] .swatch, html[data-scheme="dark"] .swatch { background: 
 /* ---------------------------------------------------------------- mobil kart görünümü (ADR-087): geniş tablolar ≤640 px'te kart */
 @media (max-width: 640px) {
   .table-wrap table.table-wide thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .table-wrap table.table-wide, .table-wrap table.table-wide tbody { display: block; width: 100%; }
+  .table-wrap table.table-wide, .table-wrap table.table-wide tbody { display: block; width: 100%; min-width: 0; }
   .table-wrap table.table-wide tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; padding: 10px 2px; border-bottom: 1px solid var(--border); }
-  .table-wrap table.table-wide td { display: block; border: 0; padding: 0; min-width: 0; overflow-wrap: anywhere; }
+  .table-wrap table.table-wide td { display: block; border: 0; padding: 0; height: auto; min-width: 0; overflow-wrap: anywhere; }
   .table-wrap table.table-wide td.money { text-align: left; }
   .table-wrap table.table-wide td::before { content: attr(data-label); display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1px; }
   .table-wrap table.table-wide td:not([data-label])::before, .table-wrap table.table-wide td[data-label=""]::before { display: none; }
-  .table-wrap table.table-wide td[data-label=""] { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; } /* işlem düğmeleri (başlığı sr-only) */
+  .table-wrap table.table-wide td[data-label=""], .table-wrap table.table-wide td:last-child:has(button, a.btn) { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; } /* işlem düğmeleri */
+  .table-wrap table.table-wide td:last-child:has(button, a.btn)::before { display: none; }
 }
