@@ -7,12 +7,17 @@ import type pg from "pg";
 
 export interface ReadinessItem { key: string; label: string; status: "ok" | "missing" | "excepted"; detail: string }
 
+/**
+ * QA-110 (ADR-092): klinik çıktı belge türleri (ADR-085) hazırlık önkoşulu olamaz. Kural tanımı bunları reddeder; 0031 öncesinden
+ * etkin kalmış (veya doğrudan yazılmış) böyle bir kural değerlendirmede yok sayılır — kalem hiçbir rolde, görevde, sayaçta görünmez.
+ */
 export async function readinessFor(c: pg.PoolClient, appointmentId: string): Promise<ReadinessItem[] | null> {
   const a = (await c.query("select id, patient_id, starts_at from appointments where id = $1", [appointmentId])).rows[0];
   if (!a) return null;
   const rules = (await c.query(
     `select r.id, r.kind, r.procedure_id, r.document_type_id, r.max_age_days, dt.name as doc_name, dt.requires_acceptance
-       from readiness_rules r left join document_types dt on dt.id = r.document_type_id where r.active order by r.created_at`)).rows;
+       from readiness_rules r left join document_types dt on dt.id = r.document_type_id
+      where r.active and dt.category is distinct from 'clinical_output' order by r.created_at`)).rows;
   if (!rules.length) return [];
   const exc = new Map((await c.query("select item_key, reason from readiness_exceptions where appointment_id = $1", [appointmentId])).rows.map((e) => [e.item_key, e.reason]));
   const items: ReadinessItem[] = [];

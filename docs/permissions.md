@@ -28,7 +28,7 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 | `document.issue` (onaylı şablondan belge üretme) | – | ✔ | ✔ | – | – |
 | `document.decision` (yüz yüze kabul/ret kaydı) | – | ✔ | ✔ | – | – |
 | `document.revoke` (belgeyi gerekçeyle iptal) | ✔ | ✔ | – | – | – |
-| `template.manage` (belge türü, şablon sürümü, PİA Hazır kuralı) | ✔ | – | – | – | – |
+| `template.manage` (belge türü, şablon sürümü, PİA Hazır kuralı; kural klinik çıktı türüne bağlanamaz, ADR-092) | ✔ | – | – | – | – |
 | `file.read` (idari dosyalar; klinik kategoriler ve klinik çıktı belgesine bağlı dosyalar ayrıca `patient.health.read`, ADR-089) | ✔ | ✔ | ✔ | ✔ | – |
 | `file.write` (yükleme) | – | ✔ | ✔ | ✔ | – |
 | `file.delete` (gerekçeyle silindi işareti) | ✔ | ✔ | – | – | – |
