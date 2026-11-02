@@ -101,7 +101,8 @@ describe("genel bakış ve roller", () => {
     const blocked = ov.connections.filter((c: { status: string }) => c.status === "blocked").map((c: { kind: string }) => c.kind).sort();
     expect(blocked).toEqual(["e_invoice", "health_registry", "whatsapp"]);
     expect(JSON.stringify(ov)).not.toMatch(/whsec_|v1\./);
-    expect(ov.readiness.e_invoice.mock).toBe(false);
+    expect(ov.readiness.e_invoice.mock).toBe(true); // ADR-086: e-belge MOCK akışı (numara resmî değil)
+    expect(ov.readiness.health_registry.mock).toBe(false);
     expect((await sec.get("/integrations/overview")).status).toBe(403);
     expect((await fin.patch(`/integrations/connections/${smsConn}`, { mockBehavior: "reject" })).status).toBe(403);
     const wa = ov.connections.find((c: { kind: string }) => c.kind === "whatsapp");

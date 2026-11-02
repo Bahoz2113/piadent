@@ -15,3 +15,6 @@
 ![Operasyon](img/32-operasyon.jpg)
 
 **Güvenlik.** Finans rolünde iki adımlı doğrulama zorunlu olabilir: Hesabım → kurulum; 8 kurtarma kodunu saklayın.
+
+**Makbuz ve fatura taslağı (02.11.2026).** Tahsilat/iade makbuzları otomatik numaralanır (TM/IM). Hasta 360 → Finans → **Fatura taslakları → Taslak oluştur**: şahıs (e-Arşiv) / kurum (e-Fatura, VKN zorunlu), satır başına KDV (%0/1/10/20), açık alacaktan satır ekleme. PİA-DENT fatura numarası üretmez: e-belge sağlayıcısı bağlı değilken "Sağlayıcıya gönder" reddedilir ve taslak saklanır; MOCK bağlantıda numara `MOCK…` ile başlar ve resmî değildir. Düzenlenmiş fatura yalnız sağlayıcı üzerinden iptal edilir.
+**Raporlar.** Her raporda **CSV** ve **Excel** düğmesi (aynı satır ve toplamlar). **Mali müşavir dönem dökümü**: makbuz no, tür, karşı taraf, yöntem, kasa, tutar — resmî muhasebe fişi değildir.

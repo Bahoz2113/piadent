@@ -1,0 +1,10 @@
+{
+ "docType": "Epikriz / tedavi özeti",
+ "docStatus": "issued",
+ "dentistUpload": 201,
+ "secretaryListSeesFile": true,
+ "secretaryListExposesClinicalDocId": true,
+ "secretaryListName": "epikriz-imzali-tarama.pdf",
+ "secretaryFileDetail": 200,
+ "adminExportHasLinkedFile": false
+}

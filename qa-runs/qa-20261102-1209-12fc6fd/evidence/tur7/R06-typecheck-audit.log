@@ -1,0 +1,13 @@
+## typecheck 2026-11-02T14:50:11+03:00
+packages/contracts typecheck$ tsc --noEmit -p .
+packages/contracts typecheck: Done
+apps/web typecheck$ tsc --noEmit -p .
+packages/db typecheck$ tsc --noEmit -p .
+packages/db typecheck: Done
+apps/web typecheck: Done
+apps/api typecheck$ tsc --noEmit -p .
+apps/worker typecheck$ tsc --noEmit -p .
+apps/worker typecheck: Done
+apps/api typecheck: Done
+## pnpm audit --prod
+No known vulnerabilities found

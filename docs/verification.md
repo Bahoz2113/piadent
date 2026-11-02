@@ -15,6 +15,9 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
+## CEZERİ teslim testi (02.11.2026, sürüm 95ac8de) — Faz 0–4 teslim adayı
+Koşu klasörü `qa-runs/qa-20261102-1209-12fc6fd/` (plan.json kilitli 27 zorunlu vaka + 8 profil; results.json = results-tur7.json; bugs.md; handoff.md Devir 1–6; fix1–6.md; release.md; evidence/tur1…tur7 maskeli). Karar: `node qa/cezeri/gate.cjs … → TESLİME ADAY` (çıkış 0). Son tur (7, temiz seed): V01–V05 + P01–P03 HTTP 8/8; N01–N10 9/9 HTTP + N11 sondaları; tarayıcı masaüstü + 360 px 22/22; V06 şifreli yedek → izole geri yükleme `differences=[]`, 25 sütunlu bağımsız mutabakat EŞLEŞTİ; API **364/364**; contracts 15; web 72; typecheck 5/5; audit 0; **E2E temiz seed 89 geçti + 9 atlama, 0 hata, retries=0**; RLS 75/75 FORCE. Bulgular QA-101…110 hepsi VERIFIED. Canlı ortamda koşulmadı.
+
 ## CEZERİ teslim testi (31.10.2026, sürüm 01b4c00) — bağımsız tester koşusu
 Koşu klasörü `qa-runs/qa-20261031-1706-0309309/` (plan.json kilitli 16 zorunlu vaka + 8 profil; results.json; bugs.md; handoff.md; fix1–5.md; release.md; evidence/ maskeli). Karar: `node qa/cezeri/gate.cjs … → TESLİME ADAY` (çıkış 0). Son tur (5): V01–V06 + P01–P03 HTTP 8/8, Chromium masaüstü+mobil 10/10; API **260/260 ×2**; contracts 15; web 25; typecheck temiz; audit 0; **E2E temiz seed 76 geçti + 8 atlama** (QA-004 regresyon spec'i dahil); RLS 69/69; yedek→izole geri yükleme 16 sütun eşleşti; QA-006 kabul: 800 istek + 96 bağlantı kesme → süreç ayakta, yalnız 200/503. Bulgular QA-001…007 hepsi VERIFIED (ayrıntı bugs.md).
 
@@ -220,3 +223,75 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - Yazdırma penceresi E2E'de açılmadı (tarayıcı diyaloğu otomasyonu kilitler); `printed` kanıt olayı API testinde doğrulandı.
 - Windows üzerinde kurulum bu oturumda **denenmedi** (geliştirme Linux konteynerde yapıldı); README adımları Docker Desktop + Node 22 + pnpm varsayar.
 - Ekran okuyucu (NVDA/VoiceOver) testi yapılmadı.
+
+## Faz 2.1 — Makbuz (02.11.2026, ADR-081)
+| Komut | Sonuç |
+|---|---|
+| `pnpm --filter @viadent/db migrate` (0021_receipts) | uygulandı; seed verisi geriye dönük `TM-2026-000001…` |
+| `pnpm typecheck` | 5/5 Done |
+| `vitest run test/receipts.test.ts` | **9/9**: ardışık numara, 6 eşzamanlı tahsilat boşluksuz, idempotent tekrar numara tüketmez, başarısız istek (422) numara tüketmez, IM serisi + tahsilat makbuzuna atıf, dağıtım satırları, `receipt.print` denetim kaydı, asistan 403 / B kliniği 404, update/delete `receipt_immutable`, app rolünde yalnız SELECT |
+| `pnpm --filter @viadent/api test` | **269/269** (gorev7 yedek doğrulaması `receipt_counters` SELECT yetkisi eklenince geçti) |
+| web 25 · contracts 15 | geçti |
+| `npx playwright test` (temiz seed, API+worker+web derlenmiş) | **78 geçti + 8 atlama** — yeni `makbuz.spec.ts` (masaüstü + 360 px): tahsilat → listede `TM-…` → Makbuz düğmesi → açılan pencerede no/tutar/"fatura yerine geçmez" |
+
+## Faz 4.7 — Görünüm (02.11.2026, ADR-082)
+| Komut | Sonuç |
+|---|---|
+| `0022_user_appearance.sql` | uygulandı |
+| `pnpm typecheck` | 5/5 |
+| `vitest run test/appearance.test.ts` (API) | 4/4: varsayılan + oturumda; saklama + yeni oturumda gelir; 422 (bilinmeyen palet/ölçek/fazla alan); 401 |
+| `pnpm --filter @viadent/web test` | **58/58** (yeni `appearance-contrast.test.ts` 33: loş/koyu yüzey-metin-rozet-odak; 7 palet × 3 şema birincil/yüzey, düğme metni, rozet, vurgu kartı; CSS = contracts; px yazı boyutu yok) |
+| `npx playwright test e2e/gorunum.spec.ts e2e/erisilebilirlik.spec.ts` | **12/12** — lacivert+koyu+ölçek 4 anında (`--brand-primary #9db4ee`, kök 17px), çekmece ve Bugün koyu şemada axe temiz, yenilemede korunur, yeni bağlamda sunucudan gelir, Hesabım'dan varsayılana dönüş |
+
+## Faz 2.2–2.3 — Fatura taslağı + mali müşavir dökümü (02.11.2026, ADR-083)
+| Komut | Sonuç |
+|---|---|
+| `0023_invoices.sql` | uygulandı |
+| `vitest run test/invoices.test.ts` | **10/10**: KDV bigint yarım-yukarı (333,33→33,33; 0,05→0,01), taslak toplamları, idempotent tekrar, satır güncelleme + denetim, submit 409 `E_INVOICE_PROVIDER_UNAVAILABLE` (engel denetimde, taslak kalır), iptal gerekçe/kilit/tekrar, numara uygulamadan yazılamaz (tetikleyici), alıcı/belge türü kuralları, alacak bağı hasta kontrolü, sekreter/yönetici 403, B kliniği 404; dönem dökümü makbuz no + CSV = ekran |
+| `npx playwright test e2e/fatura-taslagi.spec.ts` | **2/2** (masaüstü + 360): taslak oluştur (366,66 ₺ KDV dahil), "numara yok (taslak)", gönderim reddi görünür, yazdırma TASLAK/"Fatura no: yok", sekreter düğmeyi görmez |
+
+## Faz 1.1–1.2 — Anamnez şablonu + klinik çıktılar (02.11.2026, ADR-084/085)
+| Komut | Sonuç |
+|---|---|
+| `0024_anamnesis_templates.sql`, `0025_clinical_output_types.sql` | uygulandı |
+| `vitest run test/anamnesis-templates.test.ts` | **5/5**: yerleşik set başlangıcı; taslak/ikinci taslak 409/sekreter 403/tekrar anahtar 422; yayın yönetici 403 hekim 200, yayınlanan düzenlenemez (API 409 + DB tetikleyici); eski kayıt eski sorularla (`outdated`), yeni kayıt yeni setle, eski anahtar 422, kritik etiket yeni şablondan; v2 yayın v1'i emekli eder, B kliniği etkilenmez (404) |
+| `vitest run test/clinical-output.test.ts` | **4/4**: başlangıç gövdeleri yalnız tanımlı alan; üç tür hekim-only; epikriz tanı+anamnez+serbest metin+yaş; sekreter preview 403, listede yok, ayrıntı 404 (yönetici de); reçete "e-reçete değildir" |
+| `pnpm --filter @viadent/api test` | **292/292** (gorev4 katalog sayısı 17→20 güncellendi: yeni türler) |
+| web 58 · contracts 15 | geçti |
+| E2E `anamnez-sablonu.spec.ts` (masaüstü) | 1/1 — yönetici taslak+soru → hekim yayın → Sağlık sekmesinde yeni soru → emekli |
+| E2E `klinik-cikti.spec.ts` (masaüstü + 360) | 2/2 — hekim epikriz (serbest metin, tanı/anamnez alanları) → üretildi; sekreter listede görmez, seçenek "yalnız hekim" |
+
+## Faz 3 — Adaptör iskeleti + sözleşme testi (02.11.2026, ADR-086)
+| Komut | Sonuç |
+|---|---|
+| `0026_integration_ops.sql`, `0027_invoice_issued_cancel.sql` | uygulandı |
+| `vitest run test/adapter-contract.test.ts` | **15/15**: 9 sözleşme vakası (MOCK), OPERATIONS=7 ve MOCK sağlık kaydını desteklemez, canlı kapı (env kapalı → "kapısı kapalı"; bilinmeyen sağlayıcı → "doğrulanmış adaptör yok"; pasif bağlantı), e-belge MOCK akışı: submit→pending_provider (beklerken iptal 409) → worker → issued `MOCK…` (satır kilidi, ikinci gönderim 409) → iptal isteği → cancelled (numara korunur) → ret `rejected`+gerekçe, zaman aşımı bekliyor (numara yok) |
+| `vitest run test/invoices.test.ts` | 10/10 (değişmedi) |
+
+## Faz 4 — Operasyon/UX paketi (02.11.2026, ADR-087)
+| Komut | Sonuç |
+|---|---|
+| `0028_task_escalation.sql`, `0029_procedure_consumables.sql` | uygulandı |
+| `vitest run test/task-escalation.test.ts` | 3/3: ayar sınırı 1–168; +1 saat yükseltilmez, +3 saat (eşik 2) yöneticiye yükseltilir, kopya yok, rol korunur, yönetici ve sekreter için `mine`; yönetici görevi kendine yükseltilmez |
+| `vitest run test/report-xlsx.test.ts` | 2/2: geçerli ZIP/OOXML (python zipfile `testzip`), sayfa adı, satır sayısı ≥ CSV, para hücreleri sayısal; bilinmeyen format CSV'ye düşer; yetkisiz 403 |
+| `vitest run test/consumables.test.ts` | 3/3: reçete tanımı (tekrar 422, hekim 403), işlemde 2 usage (lot seçili), yetersiz stokta işlem kaydedilir + 1 `stock_shortage` görevi |
+| `pnpm --filter @viadent/api test` | **315/315** (gorev5 `e_invoice.mock` beklentisi ADR-086'ya göre güncellendi; gorev13 saat-bağımlı hekim seçimi düzeltildi — seed 11:00 randevusuyla çakışıyordu, ürün hatası değil) |
+| `npx playwright test` (temiz seed, API+worker+web derlenmiş) | **87 geçti + 9 bilinçli atlama, 0 hata** (yeni: makbuz, görünüm, fatura taslağı, anamnez şablonu, klinik çıktı, mobil kart). Bulunan ve düzeltilen: kart modunda `.table td{height:48px}` hücreleri üst üste bindiriyordu (stok satırında Sayım düğmesine tıklanamıyordu) → `height:auto`; fatura kart başlığı 360 px'te taşıyordu → sarma. Aynı DB'de ikinci E2E koşusu gorev3'te önceki koşunun tam iadeli satırını seçer (bilinen VD-030 ön koşulu; temiz seed şart). |
+
+## QA-106/107 — Dosya görünürlüğü (02.11.2026, ADR-089; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 3)
+- Yeni regresyon: `apps/api/test/qa-106-107-file-sensitivity.test.ts` (7 test). Yamasız kodda **6 başarısız / 1 geçen**; yamalı **7/7 geçti**.
+- API tam paket (izole `viadent_fix_test`): **32 dosya, 340/340 geçti**. `pnpm -r typecheck` temiz (5 paket). Web kodu değişmedi; web/E2E koşulmadı.
+
+## QA-108 — Gizli dosyanın izleri (02.11.2026, ADR-090; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 4)
+- Yeni regresyon: `apps/api/test/qa-108-file-trace.test.ts` (7 test: geçmiş sekreter/yönetici + hekim, onam kanıtı sekreter/yönetici + hekim, dışa aktarım yönetici + sağlık yetkili kanca, LOG raporu). Yamasız kodda **5 başarısız / 2 geçen** (geçenler hekim testleri); yamalı **7/7 geçti**.
+- API tam paket (izole `viadent_fix_test`): **33 dosya, 347/347 geçti**. `pnpm -r typecheck` temiz (5 paket). Web kodu değişmedi; web/E2E koşulmadı.
+
+## QA-109 — Gizli dosyanın karantina görevi (02.11.2026, ADR-091; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 5)
+- Yeni regresyon: `apps/api/test/qa-109-quarantine-task.test.ts` (9 test: görev listesi ve durum ucu sekreter/yönetici = var olmayan görev, hasta kartı sayacı, hekim yönlendirmesi + dosya ayrıntısı, SLA yükseltmesi, silme ile kendiliğinden kapanış + doğrudan kapatma, `task.status` izi geçmiş/access_log/LOG raporu, idari görev değişmez, migration 0030). Yamasız kodda **8 başarısız / 1 geçen** (geçen: idari görev); yamalı **9/9 geçti**.
+- API tam paket (izole `viadent_fix_test`): **34 dosya, 356/356 geçti**. `pnpm -r typecheck` temiz (5 paket). Web kodu değişmedi; web/E2E koşulmadı. Worker'ın ayrı test betiği yok (tarama işi API paketinde `processOutbox` ile sınanır).
+
+## QA-110 — Hazırlık kuralı ve klinik çıktı belge türü (02.11.2026, ADR-092; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 6)
+- Yeni regresyon: `apps/api/test/qa-110-readiness-clinical.test.ts` (8 test: 3 klinik çıktı türüyle kural 422 + satır/denetim yok; onam türüyle kural 201; eski etkin kural sekreter/yönetici/hekim hazırlığında kalem yok, onam+anamnez kalemleri aynı; `readiness_missing` görevi ve görev listeleri klinik çıktı izi taşımaz; istisna = var olmayan kalem 409; onam kabulü + istisna ile `ready=true`, hekim epikriz düzenleyince sekreter yanıtı bayt bayt aynı; eski kural yeniden etkinleştirilemez; migration 0031 kural/görev düzeltmesi, tekrar güvenli). Yamasız kodda **7 başarısız / 1 geçen** (geçen: onam türüyle kural); yamalı **8/8**.
+- Web birim: `apps/web/test/qa-110-readiness-rule-types.test.ts` (2 test; form değişikliği geri alınınca 1 başarısız). Web tam: 6 dosya, 72/72.
+- API tam paket (izole `viadent_fix_test`): **35 dosya, 364/364**. `pnpm -r typecheck` temiz (5 paket).
+- E2E `apps/web/e2e/gorev4.spec.ts` izole yığında (API :4100, web :3100, worker; `viadent_fix` sıfırlanıp seed): son koşu **6/6** (iki önceki koşuda masaüstü ilk testi bir kez girişte, bir kez öğe bulunamadı ile düştü; yalnız masaüstü koşusu 3/3, son tam koşu 6/6). Tarayıcıda yönetici PİA Hazır formunda "Belge türü" 17 seçenek, klinik çıktı türü yok.

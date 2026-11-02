@@ -1,0 +1,184 @@
+{
+ "run": "mvwhf4ms",
+ "started": "2026-10-31T14:13:59.476Z",
+ "finished": "2026-10-31T14:14:00.630Z",
+ "base": "http://127.0.0.1:4000",
+ "patient": "862da7b5-8261-4f7a-a4de-fbac2b18eae1",
+ "results": [
+  {
+   "id": "V01",
+   "status": "PASS",
+   "at": "2026-10-31T14:13:59.954Z",
+   "profile": "http",
+   "evidence": "evidence/V01-http.json",
+   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu"
+  },
+  {
+   "id": "V02",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.072Z",
+   "profile": "http",
+   "evidence": "evidence/V02-http.json",
+   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true"
+  },
+  {
+   "id": "V03",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.100Z",
+   "profile": "http",
+   "evidence": "evidence/V03-http.json",
+   "summary": "eşzamanlı yanıtlar 201/409; 13:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT"
+  },
+  {
+   "id": "V04",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.175Z",
+   "profile": "http",
+   "evidence": "evidence/V04-http.json",
+   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201)"
+  },
+  {
+   "id": "V05",
+   "status": "FAIL",
+   "at": "2026-10-31T14:14:00.215Z",
+   "profile": "http",
+   "evidence": "evidence/V05-http.json",
+   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 2, finans: 2"
+  },
+  {
+   "id": "P01",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.397Z",
+   "profile": "http",
+   "evidence": "evidence/P01-http.json",
+   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true"
+  },
+  {
+   "id": "P02",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.514Z",
+   "profile": "http",
+   "evidence": "evidence/P02-http.json",
+   "summary": "28 deneme, 0 beklenmedik"
+  },
+  {
+   "id": "P03",
+   "status": "PASS",
+   "at": "2026-10-31T14:14:00.629Z",
+   "profile": "http",
+   "evidence": "evidence/P03-http.json",
+   "summary": "8 kontrol, 0 beklenmedik"
+  }
+ ],
+ "bugs": [
+  {
+   "id": "QA-V05",
+   "severity": "S1",
+   "state": "OPEN",
+   "title": "Sağlık yetkisi olmayan rol (sekreter/finans) hasta geçmişinde odontogram bulgu/tanı olaylarını görüyor",
+   "denied": {
+    "code": "FORBIDDEN",
+    "message": "Bu işlem için yetkiniz yok.",
+    "correlation_id": "fc13698f-6c19-4d0b-b005-abed7112b0a3"
+   },
+   "corr": {
+    "id": "652746ce-9275-4d95-97c5-d9a975c2fabf",
+    "amount": "1800.00",
+    "priceBasis": "tariff",
+    "receivableId": "fb798cc2-ff96-490d-923e-434ab4b7e9a7"
+   },
+   "relevant": [
+    {
+     "id": "113",
+     "action": "procedure.correct",
+     "entityType": "performed_procedure",
+     "entityId": "652746ce-9275-4d95-97c5-d9a975c2fabf",
+     "actorName": "‹actorName:13›",
+     "at": "2026-10-31T14:14:00.184Z",
+     "changes": {
+      "amount": {
+       "to": "1800.00",
+       "from": null
+      },
+      "procedure": {
+       "to": "DOL-01",
+       "from": null
+      },
+      "corrects_id": {
+       "to": "b63bbade-aa2a-4cda-b5a0-19a4c9163513",
+       "from": null
+      }
+     }
+    },
+    {
+     "id": "104",
+     "action": "procedure.complete",
+     "entityType": "performed_procedure",
+     "entityId": "b63bbade-aa2a-4cda-b5a0-19a4c9163513",
+     "actorName": "‹actorName:13›",
+     "at": "2026-10-31T14:14:00.042Z",
+     "changes": {
+      "amount": {
+       "to": "1800.00",
+       "from": null
+      },
+      "procedure": {
+       "to": "DOL-01",
+       "from": null
+      }
+     }
+    }
+   ],
+   "secClinical": [
+    {
+     "id": "101",
+     "action": "diagnosis.create",
+     "entityType": "clinical_chart",
+     "entityId": "53387252-8a60-4eb9-8970-59cc216653d1",
+     "actorName": "‹actorName:13›",
+     "at": "2026-10-31T14:13:59.984Z",
+     "changes": {}
+    },
+    {
+     "id": "100",
+     "action": "finding.create",
+     "entityType": "clinical_chart",
+     "entityId": "42a26e6a-2592-422d-897a-587b87c8f9a5",
+     "actorName": "‹actorName:13›",
+     "at": "2026-10-31T14:13:59.977Z",
+     "changes": {
+      "tooth": {
+       "to": "16",
+       "from": null
+      }
+     }
+    }
+   ],
+   "finClinical": [
+    {
+     "id": "101",
+     "action": "diagnosis.create",
+     "entityType": "clinical_chart",
+     "entityId": "53387252-8a60-4eb9-8970-59cc216653d1",
+     "actorName": "‹actorName:13›",
+     "at": "2026-10-31T14:13:59.984Z",
+     "changes": {}
+    },
+    {
+     "id": "100",
+     "action": "finding.create",
+     "entityType": "clinical_chart",
+     "entityId": "42a26e6a-2592-422d-897a-587b87c8f9a5",
+     "actorName": "‹actorName:13›",
+     "at": "2026-10-31T14:13:59.977Z",
+     "changes": {
+      "tooth": {
+       "to": "16",
+       "from": null
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 # Devir notu (handoff)
 
-**Son güncelleme:** 27.10.2026 · Oturum 15 (Görev 14 — pilot açılış paketi: tedavi geçmişi aktarımı, finans hacmiyle rapor ölçümü + borç raporu 30× hızlandı, pilot provası E2E, rol kılavuzları; ADR-077 migration/RLS bulgusu; bağımsız sızma testi ve pilot kapıları açık) · Dal: `main` · Son commit: `git log -1`
+**Son güncelleme:** 02.11.2026 · Oturum 20 (Faz 0–4 tamamlandı; CEZERİ koşusu `qa-20261102-1209-12fc6fd` 7 tur → **TESLİME ADAY**, insan onayı ve canlıya alma bekliyor) · Önceki: 27.10.2026 · Oturum 15 (Görev 14 — pilot açılış paketi: tedavi geçmişi aktarımı, finans hacmiyle rapor ölçümü + borç raporu 30× hızlandı, pilot provası E2E, rol kılavuzları; ADR-077 migration/RLS bulgusu; bağımsız sızma testi ve pilot kapıları açık) · Dal: `main` · Son commit: `git log -1`
 
 ## Durum özeti
 Oturum 1: tenant/rol/oturum → hasta → hekim/koltuk/randevu → PİA Akış → PİA İz çekirdeği.
@@ -20,6 +20,7 @@ Oturum 15 (Görev 14): tedavi geçmişi içe aktarımı — alacak üretmez (001
 Oturum 15 devamı (Görev 15 başlangıcı): serverless tek proje modu — pages/api köprüsü, gömülü API paketi, satır içi worker, `POST /ops/bootstrap` (ADR-078); Vercel projesi `viadent-demo` açıldı; Supabase/GitHub/Deployment Protection adımları izin bekliyor.
 Oturum 16 (CEZERİ teslim testi, 31.10.2026): bağımsız tester akışı kuruldu (`qa/cezeri/`, `CLAUDE.md` bitiş kuralı); koşu `qa-runs/qa-20261031-1706-0309309/` — 5 tur, 7 bulgu (QA-001 S1 sağlık yetkisi olmayan rol hasta geçmişinde bulgu/tanı olayı görüyordu; QA-006 S1 eşzamanlı trafik altında DB bağlantısı kesilince API çöküyordu; 5× S3) hepsi kodlama ajanıyla (`cezeri-duzeltici`) düzeltildi ve yeniden sınanarak kapatıldı. Kapı kararı: **TESLİME ADAY (teknik)**, insan onayı bekliyor (`release.md`). Ürün değişiklikleri: history/KVKK export/denetim raporu klinik olay süzgeci (`CLINICAL_ENTITY_TYPES`), `AUDIT_ACTION_LABELS`/`AUDIT_FIELD_LABELS` tek kaynak, PİA İz CSS, `/ajanda` `history.replaceState` + rota bazlı sayfa başlıkları, `guardPool` (havuz istemci hata dinleyicisi) + 503 `SERVICE_UNAVAILABLE` + `/health/ready` havuz sayaçları + süreç düzeyi hata yakalama, `DB_APPLICATION_NAME`.
 Oturum 17 (31.10.2026): marka **PİA-DENT** (ADR-079) ve logo kararı — 10 adaydan **09 "gülümseme + nabız"** seçildi; `components/brand.tsx` (`BrandMark`, `BrandLogo`, `printHeaderHtml`), yan menü + giriş + davet ekranları, favicon (`app/icon.svg`), belge ve iş föyü yazdırma başlığı; kaynak SVG'ler `brand/`. Kılavuz ekran görüntüleri henüz yenilenmedi.
+Oturum 18 (01.11.2026): **canlı demo yayında** — https://viadent-demo.vercel.app (Vercel `viadent-demo` + Supabase `piadent-demo`, depo `Bahoz2113/piadent`). Kurulumda üç engel düzeltildi: Supabase pooler host'u `aws-1`, Vercel'in etkilenmeyen-proje atlaması, serverless fonksiyonunda migration `.sql` dosyalarının bulunmaması (artık bundle'a gömülü, `setMigrationSource`). `viadent_backup` rolü Supabase'de ayrıca açıldı. Bootstrap sonrası `VIADENT_DEMO_BOOTSTRAP=0`. Ayrıntı `deployment.md` §9.
 Tüm veriler gerçek PostgreSQL'de; klinik içerik, fiyatlar, prim oranı ve belge şablonları sentetik DEMO.
 
 ## Gerçekten çalışan akışlar
@@ -137,3 +138,24 @@ ADR-001…078 (`decisions.md`). Görev 15: serverless demo modu (078). Görev 14
 
 ## Sıradaki tek iş paketi
 **Görev 14 (öneri) — Pilot açılış paketi:** tedavi/ödeme geçmişi içe aktarımı için sentetik sözleşme (yalnız kayıt, hayali finans üretmeden: tamamlanmış işlem + ödenmiş tutar özeti), perf verisine finans/tedavi hacmi ekleyip finans raporlarını ölçme, demo verisiyle “pilot günü” provası (UAT senaryolarının otomatik ön koşusu: tüm senaryo adımlarını E2E'de tek akışta), kullanıcı eğitimi için ekran görüntülü kısa kılavuz (rol başına 1 sayfa, Türkçe), imaj derleme + CI'nin ilk gerçek koşusu (GitHub bağlanınca). Paralelde ürün sahibi: bağımsız sızma testi, barındırma, hukuk/KVKK.
+
+## Oturum 19 (02.11.2026) — Faz 0 envanteri + Faz 2.1 makbuz
+- Üç PDF (görsel indeks, inceleme raporu, eksik tamamlama) okundu. Faz 0 çıktıları: `docs/CURRENT_STATE.md`, `docs/GAP_MATRIX.md` (her madde kod kanıtıyla), `docs/IMPLEMENTATION_PLAN.md`. İnceleme raporunun "kanıt yok" dediği 5 P0 kalem (anamnez, tanı, odontogram, diş/yüzey işlem, plan döngüsü) kodda mevcut; gerçek P0 açıkları makbuz (kapandı) ve fatura taslağı (Faz 2.2).
+- Marka yazımı ürün sahibince **PİA-DENT** olarak teyit edildi (PDF'deki "PiaDent" geçersiz).
+- Faz 2.1 makbuz: `0021_receipts.sql`, `receipts.controller.ts`, `receipt-print.ts`, Finans sekmesi düğmeleri; testler verification.md. **Canlıya (Supabase/Vercel) henüz uygulanmadı** — migration 0021 canlı DB'de yok; ürün sahibi onayı bekleniyor (yayın: `main`'e commit-tree + Supabase'de migration).
+- Sonraki: Faz 2.2 fatura taslağı iç modeli (sahte numara yok), Faz 1 anamnez şablonu, D2 rapor ham kodları; ardından CEZERİ koşusu.
+
+## Oturum 20 (02.11.2026) — Faz 2–4 tamamlandı + CEZERİ teslim testi (7 tur)
+- Faz 2–4 kapsamı (migration 0021–0029): makbuz, fatura taslağı + MOCK e-belge, mali müşavir dönem dökümü + XLSX, anamnez şablonu, klinik çıktılar (epikriz/hasta föyü/reçete taslağı — hekim-only), görünüm özelleştirme (renk şeması × vurgu × ölçek, `piadent.gorunum`), PİA Köprü işlem listesi, SLA yükseltme, mobil kart tabloları, sarf reçetesi. GAP_MATRIX: MEVCUT 39, KISMI/EKSİK/BOZUK 0, KAPSAM DIŞI 6.
+- CEZERİ koşusu `qa-runs/qa-20261102-1209-12fc6fd/` — 27 zorunlu vaka (N11 tur 3'te eklendi), 7 tur, 10 bulgu, hepsi `cezeri-duzeltici` ile düzeltilip yeniden sınandı:
+  - QA-101 (S1) klinik çıktı yazma uçlarında sağlık kapısı; QA-102 (S2) geçmişte klinik belge olayı; QA-103 (S3) düzenlenmiş faturada TASLAK.
+  - QA-104 (S1) KVKK dışa aktarımında klinik çıktı içeriği; QA-105 (S2) onam raporunda klinik satır (ADR-088).
+  - QA-106 (S2) dışa aktarımda klinik dosya metaverisi; QA-107 (S3) klinik çıktıya bağlı idari dosya (ADR-089, tek görünürlük kuralı `nonClinicalFileSql`).
+  - QA-108 (S3) gizli dosyanın izleri — geçmiş, access_log, LOG raporu, onam kanıtı fileId (ADR-090).
+  - QA-109 (S3) karantina görevi → `clinical` + hekim (ADR-091, migration 0030).
+  - QA-110 (S3) hazırlık kuralı klinik çıktı türünü reddeder (ADR-092, migration 0031).
+- Son tur (95ac8de): tüm zorunlu vakalar PASS; API 364/364, contracts 15, web 72, E2E 89 + 9 atlama (0 hata, retries=0), RLS 75/75 FORCE, yedek→izole geri yükleme `differences=[]` + bağımsız mutabakat EŞLEŞTİ. Gate: **TESLİME ADAY** (`release.md`).
+- **Canlıya alınmadı.** Canlı demo (Vercel `viadent-demo` + Supabase `piadent-demo`) hâlâ eski sürümde; 0021–0031 canlı DB'de yok. Yayın ürün sahibi onayıyla: Supabase'e 0021–0031 → `origin/main`'e commit-tree ile yayın → canlı doğrulama. Pilot öncesi anahtar döndürme.
+- Açık ürün kararları (bugs.md "Kayıtlı riskler"): `export.clinic` tam veri (ADR-088 §3), sağlık yetkisi olmayan yöneticinin `clinical` görev yükseltmesini görmemesi, karantina görevinin rol bazlı ataması.
+- Temizlik: test DB'leri `viadent_fix`, `viadent_fix_test` (düzeltici yığını) silinebilir.
+

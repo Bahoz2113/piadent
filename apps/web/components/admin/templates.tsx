@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { DOCUMENT_CATEGORY_LABELS, TEMPLATE_FIELDS, type DocumentCategory } from "@viadent/contracts";
+import { DOCUMENT_CATEGORY_LABELS, TEMPLATE_FIELDS, clinicalOutputStarterBody, type DocumentCategory } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
 import { useData } from "@/lib/use-data";
 import { fmtDate } from "@/lib/format";
+import { readinessRuleDocTypes } from "@/lib/readiness-rules";
 import { Alert, Drawer, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
 
 type Notify = (k: "success" | "error", t: string) => void;
@@ -100,6 +101,9 @@ function TemplateEditor({ editor, types, onClose, onSaved }: { editor: { mode: "
           </SelectField>
           <TextField label="Şablon adı" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} error={err?.fieldErrors.name} />
         </>}
+        {(() => { const t = types.find((x) => x.id === f.documentTypeId); const code = t?.category === "clinical_output" ? (t.code as "EPIKRIZ" | "HASTA-FOYU" | "RECETE") : null;
+          return code && ["EPIKRIZ", "HASTA-FOYU", "RECETE"].includes(code) && !f.body
+            ? <button type="button" className="btn btn-sm btn-ghost" onClick={() => setF({ ...f, body: clinicalOutputStarterBody(code) })}>Başlangıç gövdesini ekle ({t!.name})</button> : null; })()}
         <TextAreaField label="Metin" required rows={12} value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} />
         <p className="small muted">Kullanılabilir alanlar: {Object.entries(TEMPLATE_FIELDS).map(([k, v]) => <span key={k}><code>{`{{${k}}}`}</code> {v}; </span>)}</p>
         <TextField label="Değişiklik notu" value={f.changeNote} onChange={(e) => setF({ ...f, changeNote: e.target.value })} />
@@ -123,7 +127,7 @@ function ReadinessRules({ notify, types }: { notify: Notify; types: DocType[] })
         <li key={r.id} className="row" style={{ padding: "10px 20px", justifyContent: "space-between" }}>
           <span>{r.kind === "anamnesis_reviewed" ? `Son ${r.maxAgeDays} gün içinde alınmış ve hekimce onaylı anamnez` : `${r.procedure} için “${r.documentType}” kabul edilmiş olmalı`}
             {!r.active && <span className="badge badge-neutral" style={{ marginLeft: 6 }}>Pasif</span>}</span>
-          <button className="btn btn-sm" onClick={() => void api(`/readiness-rules/${r.id}/active`, { body: { active: !r.active } }).then(() => rules.reload())}>{r.active ? "Pasifleştir" : "Etkinleştir"}</button>
+          <button className="btn btn-sm" onClick={() => void api(`/readiness-rules/${r.id}/active`, { body: { active: !r.active } }).then(() => rules.reload(), (e) => notify("error", (e as ApiFailure).message))}>{r.active ? "Pasifleştir" : "Etkinleştir"}</button>
         </li>
       ))}</ul>
       <div className="card-pad row" style={{ gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
@@ -136,7 +140,7 @@ function ReadinessRules({ notify, types }: { notify: Notify; types: DocType[] })
             <option value="">Seçin</option>{procs.data?.items.map((p) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
           </SelectField>
           <SelectField label="Belge türü" value={f.documentTypeId} onChange={(e) => setF({ ...f, documentTypeId: e.target.value })}>
-            <option value="">Seçin</option>{types.filter((t) => t.active).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            <option value="">Seçin</option>{readinessRuleDocTypes(types).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </SelectField>
         </> : <TextField label="En fazla yaş (gün)" type="number" min={1} max={3650} value={f.maxAgeDays} onChange={(e) => setF({ ...f, maxAgeDays: e.target.value })} />}
         <button className="btn btn-primary" disabled={f.kind === "document_for_procedure" && (!f.procedureId || !f.documentTypeId)} onClick={() => void add()}>Kural ekle</button>

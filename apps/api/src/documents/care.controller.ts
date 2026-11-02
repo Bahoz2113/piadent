@@ -14,6 +14,8 @@ import { activeConnection, createJob } from "../bridge/bridge.controller.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const maskEmail = (e: string) => e.replace(/^(.).*(@.*)$/, "$1***$2");
+/** QA-110 (ADR-092): klinik çıktı belgesi işlem sonrası hekim çıktısıdır ve sağlık verisidir; ziyaret hazırlığı önkoşulu olamaz. */
+const CLINICAL_OUTPUT_RULE = "Klinik çıktı belgeleri (epikriz, hasta bilgi föyü, reçete yazısı) hazırlık kuralına bağlanamaz; bunlar işlem sonrası hekim çıktısıdır ve sağlık verisidir.";
 
 /**
  * İletişim tercihi (amaç × kanal, yalnız eklenen geçmiş), mesaj (gönderim ≠ teslim, AT-12), kontrol (Akış E) ve PİA Hazır.
@@ -193,7 +195,9 @@ export class CareController {
     return this.db.tx(ctx, async (c) => {
       if (i.kind === "document_for_procedure") {
         if (!(await c.query("select 1 from procedures where id = $1", [i.procedureId])).rowCount) throw Errors.validation({ procedureId: "İşlem bulunamadı." });
-        if (!(await c.query("select 1 from document_types where id = $1", [i.documentTypeId])).rowCount) throw Errors.validation({ documentTypeId: "Belge türü bulunamadı." });
+        const dt = (await c.query("select category from document_types where id = $1", [i.documentTypeId])).rows[0];
+        if (!dt) throw Errors.validation({ documentTypeId: "Belge türü bulunamadı." });
+        if (dt.category === "clinical_output") throw Errors.validation({ documentTypeId: CLINICAL_OUTPUT_RULE }); // QA-110, ADR-092
       }
       const r = await c.query(
         "insert into readiness_rules(tenant_id, kind, procedure_id, document_type_id, max_age_days, created_by) values ($1,$2,$3,$4,$5,$6) returning id",
@@ -210,6 +214,11 @@ export class CareController {
   toggleRule(@Ctx() ctx: RequestContext, @Param("id", id) rid: string, @Body() body: { active?: unknown }) {
     if (typeof body?.active !== "boolean") throw Errors.validation({ active: "Etkin/pasif değeri gerekli." });
     return this.db.tx(ctx, async (c) => {
+      if (body.active) {
+        const k = (await c.query(
+          "select dt.category from readiness_rules r left join document_types dt on dt.id = r.document_type_id where r.id = $1", [rid])).rows[0];
+        if (k?.category === "clinical_output") throw Errors.validation({ active: CLINICAL_OUTPUT_RULE }); // QA-110: eski kural yeniden açılamaz
+      }
       const r = await c.query("update readiness_rules set active = $2 where id = $1 returning id", [rid, body.active]);
       if (!r.rowCount) throw Errors.notFound("Kural");
       await audit(c, ctx, { action: "readiness_rule.update", entityType: "readiness_rule", entityId: rid, changes: { active: { from: !body.active, to: body.active } } });

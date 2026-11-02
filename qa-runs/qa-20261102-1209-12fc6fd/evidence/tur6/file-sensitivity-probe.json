@@ -1,0 +1,25 @@
+{
+ "patientCreate": 201,
+ "uploadClinical": 201,
+ "uploadAdmin": 201,
+ "adminFileListStatus": 200,
+ "adminListSeesClinical": false,
+ "adminListSeesAdministrative": true,
+ "adminExportStatus": 200,
+ "adminExportHasClinicalFile": false,
+ "adminExportHasAdministrativeFile": true,
+ "exportOmitted": [
+  "anamnesis_versions",
+  "clinical_notes",
+  "odontogram_findings",
+  "diagnoses",
+  "patient_documents:clinical_output",
+  "consent_requests:clinical_output",
+  "evidence_events:clinical_output",
+  "files:clinical_output",
+  "files:clinical"
+ ],
+ "exportFileSensitivities": [
+  "administrative:identity"
+ ]
+}

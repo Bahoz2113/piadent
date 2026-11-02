@@ -2,7 +2,8 @@
 /** Hesabım: iki adımlı doğrulama (TOTP) kurulumu ve yönetimi. Sır yalnız kurulumda bir kez gösterilir; QR yerelde üretilir. */
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
+import { KeyRound, Palette, ShieldCheck, ShieldOff } from "lucide-react";
+import { AppearancePanel } from "@/components/appearance-drawer";
 import { api, ApiFailure } from "@/lib/api";
 import { useData } from "@/lib/use-data";
 import { useSession } from "@/lib/session";
@@ -181,6 +182,10 @@ export default function AccountPage() {
             ))}</tbody>
           </table></div>
         )}
+      </section>
+      <section className="card">
+        <div className="card-head"><div><h2><Palette size={18} aria-hidden style={{ verticalAlign: "-3px" }} /> Görünüm</h2><p className="muted small">Vurgu rengi, renk şeması ve yazı ölçeği. Yalnız sizin hesabınız için; tüm cihazlarınızda geçerli.</p></div></div>
+        <AppearancePanel />
       </section>
       {toast.node}
     </>

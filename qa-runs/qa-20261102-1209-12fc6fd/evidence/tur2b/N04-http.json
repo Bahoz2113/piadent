@@ -1,0 +1,28 @@
+{
+ "old": 201,
+ "draft": 201,
+ "dup": 409,
+ "patchBad": [
+  422,
+  422,
+  422,
+  422
+ ],
+ "patchOk": 200,
+ "pubAdm": 403,
+ "pubDr": 200,
+ "editPub": 409,
+ "dbEdit": "anamnesis_template_locked",
+ "outdated": true,
+ "unknownKey": 422,
+ "newFlags": [
+  "kalp_pili"
+ ],
+ "labels": [
+  "Kalp pili var mı?"
+ ],
+ "sec403": 403,
+ "bItems": 0,
+ "bDemo": true,
+ "v1Questions": 13
+}

@@ -25,7 +25,7 @@ export class TasksController {
     return this.db.tx(ctx, async (c) => {
       const r = await c.query(
         `select t.id, t.kind, t.sensitivity, t.source_type, t.source_id, t.patient_id, t.title, t.reason, t.next_step,
-                t.assignee_role, t.due_at, t.status, t.closed_reason, t.closed_at, t.created_at,
+                t.assignee_role, t.due_at, t.status, t.closed_reason, t.closed_at, t.created_at, t.escalated_at, t.escalated_to_role,
                 p.first_name || ' ' || p.last_name as patient_name, p.file_no
            from tasks t left join patients p on p.id = t.patient_id
           where t.sensitivity = any($1::text[])
@@ -41,7 +41,9 @@ export class TasksController {
           patientId: t.patient_id, patientName: t.patient_name, patientFileNo: t.file_no,
           title: t.title, reason: t.reason, nextStep: t.next_step, assigneeRole: t.assignee_role,
           dueAt: t.due_at, status: t.status, closedReason: t.closed_reason, closedAt: t.closed_at, createdAt: t.created_at,
-          mine: t.assignee_role === ctx.role,
+          mine: t.assignee_role === ctx.role || t.escalated_to_role === ctx.role,
+          overdue: q.status === "open" && !!t.due_at && new Date(t.due_at).getTime() < Date.now(),
+          escalated: !!t.escalated_at, escalatedAt: t.escalated_at, escalatedToRole: t.escalated_to_role,
         })),
       };
     });

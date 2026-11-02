@@ -7,7 +7,7 @@ import type pg from "pg";
 import type { Drill, ReportColumn } from "@viadent/contracts";
 import { addDays, localDate } from "@viadent/contracts";
 import type { RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, notClinicalOutputDocSql, notHiddenFileEventSql, notHiddenTaskEventSql } from "../audit/audit.js";
 
 export interface Params { [k: string]: string | undefined }
 export interface Range { from: string; to: string; fromUtc: Date; toUtc: Date }
@@ -111,6 +111,40 @@ const nakit: Runner = async (a) => {
     totals: { count: t.n, collections: t.collections, refunds: t.refunds, expenses: t.expenses, supplierPayments: t.supplier_payments, commissionPayouts: t.commission_payouts, netCash: t.net_cash },
     totalLabels: { count: ["Hareket", "int"], collections: ["Tahsilat", "money"], refunds: ["İade", "money"], expenses: ["Gider", "money"],
       supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], netCash: ["Net", "money"] },
+    truncated,
+  };
+};
+
+/** Mali müşavir dönem dökümü (Faz 2.3): nakit hareketleri + belge no (makbuz) + karşı taraf; CSV ile birebir. */
+const muhasebeDonem: Runner = async (a) => {
+  const kind = pick(a.p.kind, ["payment", "refund", "expense", "supplier_payment", "commission_payout"] as const);
+  const args = [a.r.fromUtc, a.r.toUtc, kind];
+  const { list, truncated } = await rows(a,
+    `select m.id, m.occurred_at as at, m.source, ca.name as account, ca.kind as account_kind, m.amount::text,
+            case m.source when 'payment' then (select rc.receipt_no from receipts rc where rc.kind = 'payment' and rc.payment_id = m.source_id)
+                          when 'refund' then (select rc.receipt_no from receipts rc where rc.kind = 'refund' and rc.refund_id = m.source_id) end as doc_no,
+            case m.source when 'payment' then (select p.first_name || ' ' || p.last_name from payments x join patients p on p.id = x.patient_id where x.id = m.source_id)
+                          when 'refund' then (select p.first_name || ' ' || p.last_name from refunds f join payments x on x.id = f.payment_id join patients p on p.id = x.patient_id where f.id = m.source_id)
+                          when 'expense' then (select e.category || coalesce(' · ' || e.description, '') from expenses e where e.id = m.source_id)
+                          when 'supplier_payment' then (select s.name from supplier_entries se join suppliers s on s.id = se.supplier_id where se.id = m.source_id)
+                          when 'commission_payout' then (select pr.display_name from commission_payouts y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id) end as party,
+            case m.source when 'payment' then (select x.method from payments x where x.id = m.source_id)
+                          when 'refund' then (select f.method from refunds f where f.id = m.source_id) end as method,
+            case m.source when 'payment' then (select x.patient_id from payments x where x.id = m.source_id)
+                          when 'refund' then (select x.patient_id from refunds f join payments x on x.id = f.payment_id where f.id = m.source_id) end as patient_id
+       from cash_movements m join cash_accounts ca on ca.id = m.cash_account_id
+      where m.occurred_at >= $1 and m.occurred_at < $2 and ($3::text is null or m.source = $3) order by m.occurred_at, m.created_at`, args);
+  const t = await one(a, `select count(*)::int as n, ${CASH_SUMS} from cash_movements m where m.occurred_at >= $1 and m.occurred_at < $2 and ($3::text is null or m.source = $3)`, args);
+  const SRC: Record<string, string> = { payment: "Tahsilat", refund: "İade", expense: "Gider", supplier_payment: "Tedarikçi ödemesi", commission_payout: "Prim ödemesi" };
+  const METHOD: Record<string, string> = { cash: "Nakit", card_manual: "Kart (POS)", bank_transfer: "Havale/EFT", other: "Diğer", online: "Online" };
+  return {
+    columns: [col("at", "Tarih", "datetime"), col("docNo", "Belge no"), col("kindLabel", "Tür", "badge"), col("party", "Karşı taraf / açıklama"), col("method", "Yöntem"), col("account", "Kasa / banka"), col("amount", "Tutar (±)", "money")],
+    rows: list.map((m) => ({ at: m.at, docNo: m.doc_no ?? "", kind: m.source, kindLabel: SRC[m.source], party: m.party ?? "", method: m.method ? METHOD[m.method] ?? m.method : "", account: m.account, amount: m.amount,
+      ...(m.patient_id ? { _drill: { patientId: m.patient_id, tab: "finans" } } : {}) })),
+    totals: { count: t.n, collections: t.collections, refunds: t.refunds, expenses: t.expenses, supplierPayments: t.supplier_payments, commissionPayouts: t.commission_payouts, netCash: t.net_cash },
+    totalLabels: { count: ["Hareket", "int"], collections: ["Tahsilat", "money"], refunds: ["İade", "money"], expenses: ["Gider", "money"],
+      supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], netCash: ["Net", "money"] },
+    notes: ["Resmî muhasebe fişi / hesap planı değildir; mali müşavir kendi hesap planına aktarır.", "Fatura / e-Arşiv belgeleri bu dökümde değildir; e-belge sağlayıcısından alınır. Belge no sütunu PİA-DENT makbuz numarasıdır (TM tahsilat, IM iade)."],
     truncated,
   };
 };
@@ -449,14 +483,15 @@ const mesaj: Runner = async (a) => {
   };
 };
 
+// QA-105 / ADR-088: klinik çıktı belgeleri (ADR-085) yalnız `patient.health.read` ile listelenir; satırlar ve toplamlar aynı CTE'den.
 const ONAM_CTE = `with d as (
   select pd.id, pd.issued_at, pd.title, pd.patient_id, dt.name as type_name,
          case when pd.status = 'revoked' then 'revoked' when cr.status in ('accepted','declined') then cr.status
               when cr.id is null then 'info' else 'pending' end as outcome
     from patient_documents pd join document_types dt on dt.id = pd.document_type_id left join consent_requests cr on cr.patient_document_id = pd.id
-   where pd.issued_at >= $1 and pd.issued_at < $2)`;
+   where pd.issued_at >= $1 and pd.issued_at < $2 and ($4::boolean or dt.category <> 'clinical_output'))`;
 const onam: Runner = async (a) => {
-  const args = [a.r.fromUtc, a.r.toUtc, pick(a.p.status, ["pending", "accepted", "declined", "revoked"] as const)];
+  const args = [a.r.fromUtc, a.r.toUtc, pick(a.p.status, ["pending", "accepted", "declined", "revoked"] as const), a.ctx.permissions.has("patient.health.read")];
   const { list, truncated } = await rows(a, `${ONAM_CTE} select d.*, p.first_name || ' ' || p.last_name as patient from d join patients p on p.id = d.patient_id
      where ($3::text is null or d.outcome = $3) order by d.issued_at`, args);
   const t = await one(a, `${ONAM_CTE} select count(*)::int as n, count(*) filter (where outcome = 'pending')::int as pending, count(*) filter (where outcome = 'accepted')::int as accepted,
@@ -536,7 +571,8 @@ const log: Runner = async (a) => {
   const et = a.p.entityType && /^[a-z_]{2,60}$/.test(a.p.entityType) ? a.p.entityType : null;
   // Klinik olaylar (anamnez/klinik not/bulgu-tanı) yalnız sağlık yetkisiyle listelenir (QA-001).
   const args = [a.r.fromUtc, a.r.toUtc, action, et, a.ctx.permissions.has("patient.health.read"), CLINICAL_ENTITY_TYPES];
-  const where = "e.created_at >= $1 and e.created_at < $2 and ($3::text is null or e.action like $3 || '%') and ($4::text is null or e.entity_type = $4) and ($5::boolean or e.entity_type <> all($6::text[]))";
+  // QA-102: klinik çıktı belgesi olayları da aynı kapıya tabidir; QA-108: gizli dosyanın (ADR-089) olayları da.
+  const where = `e.created_at >= $1 and e.created_at < $2 and ($3::text is null or e.action like $3 || '%') and ($4::text is null or e.entity_type = $4) and ($5::boolean or (e.entity_type <> all($6::text[]) and ${notClinicalOutputDocSql("e")} and ${notHiddenFileEventSql("e")} and ${notHiddenTaskEventSql("e")}))`;
   const { list, truncated } = await rows(a,
     `select e.id, e.created_at, e.action, e.entity_type, e.entity_id, e.patient_id, u.full_name as actor,
             (select string_agg(k, ', ' order by k) from jsonb_object_keys(case when jsonb_typeof(e.changes) = 'object' then e.changes else '{}'::jsonb end) k) as fields,
@@ -595,6 +631,6 @@ const isletme: Runner = async (a) => {
 };
 
 export const RUNNERS: Record<string, Runner> = {
-  "gelir-gider": gelirGider, "nakit-hareketleri": nakit, "aylik-ciro": aylikCiro, "borc-bakiye": borc, prim, "online-odeme": onlineOdeme,
+  "gelir-gider": gelirGider, "nakit-hareketleri": nakit, "muhasebe-donem": muhasebeDonem, "aylik-ciro": aylikCiro, "borc-bakiye": borc, prim, "online-odeme": onlineOdeme,
   tedavi, "aylik-islem": aylikIslem, plan, "hekim-hasta": hekimHasta, randevu, kontrol, laboratuvar, mesaj, onam, stok, cari, log, isletme,
 };

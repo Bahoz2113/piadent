@@ -1,0 +1,428 @@
+{
+ "runId": "qa-20261102-1209-12fc6fd-tur3",
+ "revision": "bb49098d2e0f3ebd4c00360da5cc9c95115c4fd4",
+ "at": "2026-11-02T10:23:11.624Z",
+ "round": 3,
+ "environment": "environment.md",
+ "inventory": "inventory.md",
+ "inventoryComplete": true,
+ "fullRegression": false,
+ "requiredIds": [
+  "V01",
+  "V02",
+  "V03",
+  "V04",
+  "V05",
+  "V06",
+  "P01",
+  "P02",
+  "P03",
+  "R01",
+  "R02",
+  "R03",
+  "R04",
+  "R05",
+  "R06",
+  "R07",
+  "N01",
+  "N02",
+  "N03",
+  "N04",
+  "N05",
+  "N06",
+  "N07",
+  "N08",
+  "N09",
+  "N10",
+  "N11"
+ ],
+ "profiles": [
+  {
+   "name": "http",
+   "status": "PASS",
+   "evidence": "evidence/tur3/n-summary.json"
+  },
+  {
+   "name": "chromium-desktop",
+   "status": "NOT_RUN",
+   "evidence": "bugs.md"
+  },
+  {
+   "name": "chromium-mobile-emulation",
+   "status": "NOT_RUN",
+   "evidence": "bugs.md"
+  },
+  {
+   "name": "cli",
+   "status": "NOT_RUN",
+   "evidence": "bugs.md"
+  },
+  {
+   "name": "physical-mobile-device",
+   "status": "NA",
+   "reason": "Web ürünü; fiziksel cihaz bu ortamda yok. Pilot klinikte gerçek telefonla doğrulama insan adımı."
+  },
+  {
+   "name": "android-apk",
+   "status": "NA",
+   "reason": "Ürün APK üretmiyor (web/PWA)."
+  },
+  {
+   "name": "ios",
+   "status": "NA",
+   "reason": "iOS test ortamı yok; ürün web."
+  },
+  {
+   "name": "vscode-extension",
+   "status": "NA",
+   "reason": "Ürün VS Code uzantısı değil."
+  }
+ ],
+ "cases": [
+  {
+   "id": "V01",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/V01-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "V02",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/V02-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "V03",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "eşzamanlı yanıtlar 201/409; 15:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/V03-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "V04",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201) (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/V04-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "V05",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 0, finans: 0 (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/V05-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "V06",
+   "status": "NOT_RUN",
+   "profiles": [
+    "cli"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "P01",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/P01-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "P02",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "28 deneme, 0 beklenmedik (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/P02-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "P03",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "8 kontrol, 0 beklenmedik (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/P03-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "R01",
+   "status": "NOT_RUN",
+   "profiles": [
+    "cli"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "R02",
+   "status": "NOT_RUN",
+   "profiles": [
+    "cli"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "R03",
+   "status": "NOT_RUN",
+   "profiles": [
+    "cli"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "R04",
+   "status": "NOT_RUN",
+   "profiles": [
+    "chromium-desktop"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "R05",
+   "status": "NOT_RUN",
+   "profiles": [
+    "chromium-mobile-emulation"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "R06",
+   "status": "NOT_RUN",
+   "profiles": [
+    "cli"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "R07",
+   "status": "NOT_RUN",
+   "profiles": [
+    "cli"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "N01",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "TM ardışık 7,9,8,10,11; eşzamanlı 2 oturum 201/201 farklı no; replay aynı no; 422 numara tüketmedi=true; iade IM-2026-000002; yazdırma denetimi 1; asistan 403, B 404; değişmezlik=true (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N01-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "N02",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "25 değer, beklenmedik 0; yuvarlama 0,60/0,10=true; Unicode ad korunur=true; roller sek 403/yön 403/B 404; sağlayıcısız gönder 409 numara=null; MOCK: issued MOCK202642DF9F645 → iptal cancelled (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N02-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "N03",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "ekran 11 satır = CSV 11; XLSX 20 (başlık+veri+7 toplam+dipnot); tahsilat/iade satırlarının hepsinde makbuz no (11/11); sekreter 403 (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N03-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "N04",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "taslak 201, ikinci taslak 409; geçersiz şablon 422/422/422/422; yayın yönetici 403 hekim 200; yayınlanan düzenleme API 409 DB kilit=true; eski kayıt outdated=true; eski anahtar 422; yeni etiket Kalp pili var mı?; sekreter 403; B bağımsız (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N04-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "N05",
+   "status": "FAIL",
+   "profiles": [
+    "http"
+   ],
+   "summary": "3 tür hekim-only; sekreter önizleme 403; liste sızıntısı yok=true; ayrıntı sek 404 yön 404; geçmiş sızıntısı=false; komşu: print 404/404 karar 404/404 iptal 404/404 dosya 422/422 (gerçek/yok), durum issued, kanıt +0; KVKK yönetici dışa aktarımında klinik belge=false (hekim dışa aktarım 403); onam raporunda klinik satır=false; hekim iptal 200 · QA-104/105 doğrulandı; ancak klinik çıktıya bağlı dosya sekretere görünüyor (QA-107) (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N05-http.json",
+   "extraEvidence": [
+    "evidence/tur3/N05-komsu.json",
+    "evidence/tur3/linked-file-probe.json"
+   ]
+  },
+  {
+   "id": "N06",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "geçersiz 7 değer 422/422/422/422/422/422/422; geçerli 200; yeni oturumda gelir; sekreter etkilenmez; kimliksiz 401; CSRF başlıksız 403 (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N06-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "N07",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "sınır 0/169/2,5 → 422/422/422; hekim 403; eşik 2 sa: 1 sa geçmiş yükseltilmedi, 3 sa geçmiş → yönetici (rol korunur, kopya 1); yönetici görevi kendine yükseltilmedi (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N07-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "N08",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "nakit-hareketleri: 23 satır, formül 0, para hücresi 20; borc-bakiye: 9 satır, formül 0, para hücresi 24; tedavi: 7 satır, formül 0, para hücresi 3; bilinmeyen biçim → CSV; sekreter 403 (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N08-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "N09",
+   "status": "NOT_RUN",
+   "profiles": [
+    "chromium-desktop",
+    "chromium-mobile-emulation"
+   ],
+   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
+   "evidence": "bugs.md"
+  },
+  {
+   "id": "N10",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "hekim 403, tekrar 422, 0 adet 422, sahte kalem 422, B 404; işlem: eldiven 4→3, kartuş 30→28 (lot seçili); düzeltme sarfı tekrarlamadı=true; yetersiz stok: işlem 201, {\"used\":1,\"shortages\":1}, görev 1 (tur 3, temiz seed, yalnız HTTP)",
+   "evidence": "evidence/tur3/N10-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "N11",
+   "status": "FAIL",
+   "profiles": [
+    "http"
+   ],
+   "summary": "Yönetici dosya listesinde radyograf yok ama KVKK dışa aktarımında clinical:radiograph metaverisi var (QA-106); klinik çıktıya bağlı document_scan sekretere listede/ayrıntıda görünür ve belge kimliğini verir (QA-107).",
+   "evidence": "evidence/tur3/file-sensitivity-probe.json",
+   "extraEvidence": [
+    "evidence/tur3/linked-file-probe.json"
+   ]
+  }
+ ],
+ "bugs": [
+  {
+   "id": "QA-101",
+   "severity": "S1",
+   "state": "VERIFIED",
+   "title": "Klinik çıktı belgesi yazma uçlarında sağlık kapısı yok",
+   "evidence": "evidence/tur2b/N05-komsu.json",
+   "cases": [
+    "N05"
+   ]
+  },
+  {
+   "id": "QA-102",
+   "severity": "S2",
+   "state": "VERIFIED",
+   "title": "Hasta geçmişinde klinik çıktı belgesi olayları",
+   "evidence": "evidence/tur2/N05-kesin-eslesme.json",
+   "cases": [
+    "N05"
+   ]
+  },
+  {
+   "id": "QA-103",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "Düzenlenmiş/iptal faturada taslak uyarıları",
+   "evidence": "evidence/tur2b/masaustu-N02-fatura-ayrinti.jpg",
+   "cases": [
+    "N02"
+   ]
+  },
+  {
+   "id": "QA-104",
+   "severity": "S1",
+   "state": "VERIFIED",
+   "title": "KVKK hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik çıktı belgelerinin içeriğini ve bağlı kanıt/onay/dosya satırlarını alıyor",
+   "evidence": "evidence/tur3/N05-komsu.json",
+   "cases": [
+    "N05"
+   ]
+  },
+  {
+   "id": "QA-105",
+   "severity": "S2",
+   "state": "VERIFIED",
+   "title": "Onam/belge raporu klinik çıktı belgelerini sağlık yetkisi olmayan role listeliyor",
+   "evidence": "evidence/tur3/N05-komsu.json",
+   "cases": [
+    "N05"
+   ]
+  },
+  {
+   "id": "QA-106",
+   "severity": "S2",
+   "state": "OPEN",
+   "title": "Hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik hassasiyetli dosya metaverisini alıyor",
+   "evidence": "evidence/tur3/file-sensitivity-probe.json",
+   "cases": [
+    "N11"
+   ]
+  },
+  {
+   "id": "QA-107",
+   "severity": "S3",
+   "state": "OPEN",
+   "title": "Klinik çıktı belgesine bağlı idari dosya sekretere görünüyor ve belge kimliğini veriyor",
+   "evidence": "evidence/tur3/linked-file-probe.json",
+   "cases": [
+    "N05",
+    "N11"
+   ]
+  }
+ ],
+ "notes": [
+  "Tur 3: bb49098 (fix2 ürün yaması 9327d9e) temiz seed üzerinde HTTP ile yeniden sınandı. QA-104/105 doğrulandı.",
+  "Yeni bulgular QA-106 (S2), QA-107 (S3); kapsam N11 ile genişletildi (plan.json notu).",
+  "Tarayıcı vakaları, V06 ve R01–R07 bu revizyonda koşulmadı (NOT_RUN); yeni düzeltme revizyonunda tam koşulacak."
+ ]
+}

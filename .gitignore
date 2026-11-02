@@ -13,4 +13,3 @@ playwright-report/
 .backups/
 apps/web/vendor/
 .claude/
-qa-runs/*/evidence/

@@ -1,0 +1,11 @@
+{
+ "upload": 200,
+ "fileStatus": "available",
+ "consentType": "GENEL-ONAM",
+ "docCreate": 201,
+ "dentistDecisionWithClinicalFile": 200,
+ "secretaryDocDetail": 200,
+ "secretarySeesClinicalFileId": false,
+ "secretaryFileDetail": 404,
+ "adminExportEvidenceHasFileId": false
+}

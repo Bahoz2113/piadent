@@ -85,7 +85,8 @@ export function verifyWebhook(secret: string, rawBody: string, header: string | 
 }
 
 // ------------------------------------------------------------------ sağlayıcı portu
-export type Operation = "sms.send" | "payment.create_link" | "payment.refund";
+export type Operation = "sms.send" | "whatsapp.send" | "payment.create_link" | "payment.refund" | "einvoice.submit" | "einvoice.cancel" | "health_registry.submit";
+export const OPERATIONS: readonly Operation[] = ["sms.send", "whatsapp.send", "payment.create_link", "payment.refund", "einvoice.submit", "einvoice.cancel", "health_registry.submit"];
 export type SubmitResult =
   | { outcome: "accepted"; providerRef: string; data?: Record<string, string> }
   | { outcome: "rejected"; code: string; message: string };
@@ -115,15 +116,20 @@ export class MockProviderAdapter implements ProviderAdapter {
   readonly label = "MOCK sağlayıcı (gerçek gönderim/çekim yok)";
   readonly isMock = true;
   constructor(private readonly cfg: MockConfig = {}) {}
-  supports(op: Operation) { return ["sms.send", "payment.create_link", "payment.refund"].includes(op); }
+  /** Sağlık kaydı (e-Nabız) için MOCK bile yok: resmî sistem taklidi yapılmaz. */
+  supports(op: Operation) { return ["sms.send", "whatsapp.send", "payment.create_link", "payment.refund", "einvoice.submit", "einvoice.cancel"].includes(op); }
   private ref(op: Operation, key: string) {
     return `mock_${op.replace(/\W/g, "_")}_${createHash("sha256").update(key).digest("hex").slice(0, 20)}`;
   }
   private accepted(op: Operation, key: string): SubmitResult {
     const providerRef = this.ref(op, key);
-    return { outcome: "accepted", providerRef, data: op === "payment.create_link" ? { checkoutUrl: `https://odeme.mock.invalid/odeme/${providerRef}` } : undefined };
+    const data: Record<string, string> | undefined = op === "payment.create_link" ? { checkoutUrl: `https://odeme.mock.invalid/odeme/${providerRef}` }
+      : op === "einvoice.submit" ? { invoiceNo: `MOCK${new Date().getUTCFullYear()}${providerRef.slice(-9).toUpperCase()}` } // açıkça MOCK; resmî seri değil
+      : undefined;
+    return { outcome: "accepted", providerRef, data };
   }
   async submit(op: Operation, _payload: Record<string, unknown>, key: string): Promise<SubmitResult> {
+    if (!this.supports(op)) return { outcome: "rejected", code: "UNSUPPORTED_OPERATION", message: `MOCK sağlayıcı bu işlemi desteklemiyor: ${op}` };
     switch (this.cfg.behavior ?? "accept") {
       case "reject": return { outcome: "rejected", code: "MOCK_REJECTED", message: "MOCK sağlayıcı isteği reddetti" };
       case "timeout": throw new ProviderError("timeout", "MOCK: yanıt zaman aşımı");
@@ -281,6 +287,13 @@ async function sideEffectAccepted(c: pg.PoolClient, tenantId: string, j: JobRow,
   } else if (j.operation === "payment.create_link") {
     await c.query("update online_payment_requests set status = 'link_ready', checkout_url = $2, provider_ref = $3 where id = $1 and status = 'created'",
       [j.source_id, data?.checkoutUrl ?? null, providerRef]);
+  } else if (j.operation === "einvoice.submit") {
+    // Numara yalnız sağlayıcı yanıtından (ADR-083). MOCK yanıtı "MOCK…" ile başlar; arayüz bunu resmî olmayan olarak gösterir.
+    if (!data?.invoiceNo) { await c.query("update invoices set status = 'rejected', rejected_reason = 'Sağlayıcı numara döndürmedi' where id = $1 and status = 'pending_provider'", [j.source_id]); return; }
+    await c.query("update invoices set status = 'issued', invoice_no = $2, provider_ref = $3, issued_at = now(), provider_connection_id = $4 where id = $1 and status = 'pending_provider'",
+      [j.source_id, data.invoiceNo, providerRef, j.connection_id]);
+  } else if (j.operation === "einvoice.cancel") {
+    await c.query("update invoices set status = 'cancelled', cancelled_at = now(), cancel_reason = coalesce(cancel_reason, 'Sağlayıcı iptali') where id = $1 and status = 'issued'", [j.source_id]);
   }
 }
 async function sideEffectFailed(c: pg.PoolClient, tenantId: string, j: JobRow, reason: string) {
@@ -289,6 +302,8 @@ async function sideEffectFailed(c: pg.PoolClient, tenantId: string, j: JobRow, r
     await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'failed','provider',$3)", [tenantId, j.source_id, reason]);
   } else if (j.operation === "payment.create_link") {
     await c.query("update online_payment_requests set status = 'failed', failure_reason = $2 where id = $1 and status in ('created','link_ready')", [j.source_id, reason]);
+  } else if (j.operation === "einvoice.submit") {
+    await c.query("update invoices set status = 'rejected', rejected_reason = $2 where id = $1 and status = 'pending_provider'", [j.source_id, reason.slice(0, 300)]);
   }
 }
 async function deadTask(c: pg.PoolClient, tenantId: string, j: JobRow, reason: string) {

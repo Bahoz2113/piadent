@@ -1,0 +1,67 @@
+{
+ "types": {
+  "EPIKRIZ": {
+   "issuerRole": "dentist",
+   "category": "clinical_output"
+  },
+  "HASTA-FOYU": {
+   "issuerRole": "dentist",
+   "category": "clinical_output"
+  },
+  "RECETE": {
+   "issuerRole": "dentist",
+   "category": "clinical_output"
+  }
+ },
+ "previewHasDiag": true,
+ "rawTextKept": true,
+ "secPrev": 403,
+ "long": 422,
+ "doc": 201,
+ "secListHas": false,
+ "admListHas": false,
+ "secGet": 404,
+ "admGet": 404,
+ "secPrint": 404,
+ "integrity": true,
+ "receteIbare": true,
+ "histLeak": false,
+ "histSample": [
+  {
+   "action": "patient.create",
+   "entityType": "patient"
+  }
+ ],
+ "side": {
+  "secPrint": 404,
+  "secPrintFake": 404,
+  "secDecision": 404,
+  "secDecisionFake": 404,
+  "admRevoke": 404,
+  "admRevokeFake": 404,
+  "secFileLink": 422,
+  "secFileLinkFake": 422,
+  "statusAfter": "issued",
+  "evidenceDelta": 0,
+  "drPrint": 200,
+  "adminExportStatus": 200,
+  "adminExportHasClinicalDoc": false,
+  "adminExportOmitted": [
+   "anamnesis_versions",
+   "clinical_notes",
+   "odontogram_findings",
+   "diagnoses",
+   "patient_documents:clinical_output",
+   "consent_requests:clinical_output",
+   "evidence_events:clinical_output",
+   "files:clinical_output",
+   "files:clinical"
+  ],
+  "dentistExportStatus": 403,
+  "dentistExportStatusHasDoc": true,
+  "onamSecretaryHasClinical": false,
+  "onamSecretaryStatus": 200,
+  "secHistoryHasDoc2": false,
+  "drRevoke": 200
+ }
+}

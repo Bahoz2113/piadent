@@ -6,7 +6,7 @@ import { addDays, type AppointmentStatus } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
-import { fmtLongDay, fmtTime, todayIn } from "@/lib/format";
+import { fmtDateTime, fmtLongDay, fmtTime, todayIn } from "@/lib/format";
 import type { Appt, Task } from "@/lib/types";
 import { ContactBadge, EmptyState, ErrorState, Loading, StatusBadge, useToast } from "@/components/ui";
 
@@ -137,8 +137,10 @@ export default function TodayPage() {
               <li key={t.id} className="flow-item">
                 <span className={`flow-icon k-${t.kind}`} aria-hidden><Icon size={18} /></span>
                 <div style={{ minWidth: 0 }}>
-                  <div className="row" style={{ gap: 8 }}>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                     <strong>{t.title}</strong>
+                    {t.escalated && <span className="badge badge-error" title={t.escalatedAt ? `Yükseltildi: ${fmtDateTime(t.escalatedAt)}` : undefined}>Yükseltildi · {t.escalatedToRole ? ROLE_LABEL[t.escalatedToRole] : "yönetici"}</span>}
+                    {!t.escalated && t.overdue && <span className="badge badge-warning">Gecikti</span>}
                     {t.patientId && <Link href={`/hastalar/${t.patientId}`} className="small">{t.patientName}{t.patientFileNo ? ` · #${t.patientFileNo}` : ""}</Link>}
                   </div>
                   <p className="flow-why"><span className="sr-only">Neden: </span>{t.reason}</p>
@@ -166,7 +168,7 @@ export default function TodayPage() {
                   {t.kind === "readiness_missing" && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=belgeler`}>Belgeleri aç</Link>}
                   {(t.kind === "integration_dead" || t.kind === "integration_approval") && can("integration.read") && <Link className="btn btn-sm btn-primary" href="/yonetim?sekme=kopru">{t.kind === "integration_approval" ? "Onay ekranını aç" : "PİA Köprü'de incele"}</Link>}
                   {(t.kind === "lab_overdue" || t.kind === "lab_review" || t.kind === "lab_not_ready") && t.sourceId && can("lab.read") && <Link className="btn btn-sm btn-primary" href={`/operasyon?is=${t.sourceId}`}>İş emrini aç</Link>}
-                  {(t.kind === "stock_low" || t.kind === "lot_expiring") && can("stock.read") && <Link className="btn btn-sm btn-primary" href="/operasyon?sekme=stok">Stoğa git</Link>}
+                  {(t.kind === "stock_low" || t.kind === "lot_expiring" || t.kind === "stock_shortage") && can("stock.read") && <Link className="btn btn-sm btn-primary" href="/operasyon?sekme=stok">Stoğa git</Link>}
                   {t.kind === "file_quarantined" && t.patientId && <Link className="btn btn-sm" href={`/hastalar/${t.patientId}?sekme=belgeler`}>Dosyalara git</Link>}
                 </div>
               </li>

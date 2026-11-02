@@ -1,0 +1,13 @@
+{
+ "rows": 11,
+ "csvRows": 11,
+ "xlsxRows": 20,
+ "totalLines": 7,
+ "payRows": 11,
+ "withReceiptNo": 11,
+ "sec403": 403,
+ "notes": [
+  "Resmî muhasebe fişi / hesap planı değildir; mali müşavir kendi hesap planına aktarır.",
+  "Fatura / e-Arşiv belgeleri bu dökümde değildir; e-belge sağlayıcısından alınır. Belge no sütunu PİA-DENT makbuz numarasıdır (TM tahsilat, IM iade)."
+ ]
+}

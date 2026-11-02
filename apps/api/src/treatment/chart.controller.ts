@@ -229,9 +229,52 @@ export class ChartController {
         description: `${proc.code} · ${proc.name}${loc.tooth ? ` · diş ${loc.tooth}` : ""}`, amount: r.rows[0].amount, practitionerId, dueDate: visit.rows[0].day });
     }
     await accrueTreatmentCommission(c, ctx, r.rows[0].id, practitionerId, r.rows[0].amount);
+    const consumables = correctsId ? { used: 0, shortages: 0 } : await this.consumeStock(c, ctx, patientId, r.rows[0].id, proc.id, i.quantity ?? 1);
     await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "procedure.complete" });
     await enqueue(c, ctx.tenantId, "via_net.changed", { patientId });
-    return { id: r.rows[0].id, amount: r.rows[0].amount, priceBasis: basis, receivableId };
+    return { id: r.rows[0].id, amount: r.rows[0].amount, priceBasis: basis, receivableId, consumables };
+  }
+
+  /**
+   * Sarf reçetesi (ADR-087): işleme bağlı stok kalemleri otomatik 'usage' olarak düşülür (performed_procedure_id ile; ters kayıtla geri alınır).
+   * Lot takipli kalemde en yakın SKT'li yeterli lot seçilir. Yetersiz stok klinik işlemi ENGELLEMEZ: hareket atlanır, asistana görev düşer.
+   */
+  private async consumeStock(c: import("pg").PoolClient, ctx: RequestContext, patientId: string, performedId: string, procedureId: string, qty: number) {
+    const rec = await c.query(`select pc.stock_item_id, pc.quantity::numeric as quantity, si.name, si.unit, si.track_lots from procedure_consumables pc join stock_items si on si.id = pc.stock_item_id where pc.procedure_id = $1 and si.active`, [procedureId]);
+    let used = 0; let shortages = 0;
+    for (const x of rec.rows) {
+      const need = Number(x.quantity) * qty;
+      try {
+        await c.query("savepoint sarf");
+        let lotId: string | null = null;
+        if (x.track_lots) {
+          const lot = (await c.query(
+            `select l.id from stock_lots l where l.item_id = $1 and (l.expiry_date is null or l.expiry_date >= ($3::timestamptz at time zone $4)::date)
+                and coalesce((select sum(m.quantity) from stock_movements m where m.lot_id = l.id), 0) >= $2 order by l.expiry_date nulls last limit 1`,
+            [x.stock_item_id, need, new Date(), ctx.timezone])).rows[0];
+          if (!lot) throw new Error("stock_negative");
+          lotId = lot.id;
+        }
+        const m = await c.query(
+          `insert into stock_movements(tenant_id, item_id, lot_id, kind, quantity, patient_id, performed_procedure_id, reason, occurred_at, created_by)
+           values ($1,$2,$3,'usage',$4,$5,$6,'Sarf reçetesi (otomatik)',now(),$7) returning id`,
+          [ctx.tenantId, x.stock_item_id, lotId, -need, patientId, performedId, ctx.userId]);
+        await audit(c, ctx, { action: "stock.usage", entityType: "stock_movement", entityId: m.rows[0].id, patientId, changes: { item_id: { from: null, to: x.stock_item_id }, quantity: { from: null, to: String(-need) } } });
+        await c.query("release savepoint sarf");
+        used++;
+      } catch (e) {
+        await c.query("rollback to savepoint sarf");
+        if (!/stock_negative/.test((e as Error).message)) throw e;
+        shortages++;
+        await c.query(
+          `insert into tasks(tenant_id, kind, source_type, source_id, patient_id, dedupe_key, title, reason, next_step, assignee_role, due_at, sensitivity)
+           values ($1,'stock_shortage','performed_procedure',$2::uuid,$3::uuid,'stock_shortage:' || $2::text || ':' || $4::text,'Sarf düşülemedi: stok yetersiz',
+                   $5,'Stoğu sayın; giriş yapın ve kullanımı elle kaydedin ya da reçeteyi düzeltin.','assistant', now(), 'general')
+           on conflict (tenant_id, dedupe_key) where status in ('open','in_progress','blocked') do nothing`,
+          [ctx.tenantId, performedId, patientId, x.stock_item_id, `${x.name}: ${need} ${x.unit} gerekiyordu; işlem kaydedildi, stok hareketi yapılmadı.`]);
+      }
+    }
+    return { used, shortages };
   }
 
   @Post("performed/:id/cancel")

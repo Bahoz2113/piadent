@@ -1,0 +1,2 @@
+{"status":"ok","rows":427,"clinicalRows":0,"sampleActions":["patient.export","session.login","appointment.status","appointment.create","receivable.create","allocation.create","payment.create","procedure.correct"]}
+action=finding filtresi → 0 satır, totals {"count":0,"actors":0}

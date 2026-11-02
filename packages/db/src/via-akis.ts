@@ -204,5 +204,12 @@ export async function refreshViaAkis(c: pg.PoolClient, tenantId: string, now: Da
   const g6 = await refreshGorev6(c, tenantId, tz, now);
   created += g6.created;
   closed += g6.closed;
+  // 9) SLA yükseltme (ADR-087): vadesi eşikten uzun süredir geçmiş açık görevler yöneticiye yükseltilir (kopya yok, atanan rol korunur).
+  await c.query(
+    `update tasks set escalated_at = $2, escalated_to_role = 'clinic_admin'
+      where tenant_id = $1 and status in ('open','in_progress','blocked') and escalated_at is null
+        and due_at is not null and due_at < $2::timestamptz - make_interval(hours => $3)
+        and coalesce(assignee_role, '') <> 'clinic_admin'`,
+    [tenantId, now, cfg.escalationHours]);
   return { created, closed };
 }

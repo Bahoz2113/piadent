@@ -1,0 +1,126 @@
+{
+ "case": "P01",
+ "run": "mvwki15v",
+ "rows": [
+  {
+   "label": "boş",
+   "amount": "",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "field": [
+    "amount"
+   ]
+  },
+  {
+   "label": "sıfır",
+   "amount": "0",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "field": [
+    "amount"
+   ]
+  },
+  {
+   "label": "negatif",
+   "amount": "-5.00",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "field": [
+    "amount"
+   ]
+  },
+  {
+   "label": "0,01 virgül",
+   "amount": "0,01",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "field": [
+    "amount"
+   ]
+  },
+  {
+   "label": "0.01",
+   "amount": "0.01",
+   "status": 201
+  },
+  {
+   "label": "999.99",
+   "amount": "999.99",
+   "status": 201
+  },
+  {
+   "label": "1000.00 (=borç)",
+   "amount": "1000.00",
+   "status": 201
+  },
+  {
+   "label": "1000.01 (>borç dağıtım)",
+   "amount": "1000.01",
+   "status": 409,
+   "code": "ALLOCATION_EXCEEDS_RECEIVABLE"
+  },
+  {
+   "label": "3 ondalık",
+   "amount": "10.001",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "field": [
+    "amount"
+   ]
+  },
+  {
+   "label": "metin",
+   "amount": "abc",
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "field": [
+    "amount"
+   ]
+  },
+  {
+   "label": "sayı tipi",
+   "amount": 100,
+   "status": 422,
+   "code": "VALIDATION_FAILED",
+   "field": [
+    "amount"
+   ]
+  },
+  {
+   "label": "çok büyük",
+   "amount": "99999999999.00",
+   "status": 409,
+   "code": "ALLOCATION_EXCEEDS_RECEIVABLE"
+  },
+  {
+   "label": "dağıtım(60) > ödeme(50)",
+   "status": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "Idempotency-Key yok",
+   "status": 428,
+   "code": "IDEMPOTENCY_KEY_REQUIRED"
+  }
+ ],
+ "accepted": [
+  "0.01",
+  "999.99",
+  "1000.00 (=borç)"
+ ],
+ "expectedAccepted": [
+  "0.01",
+  "999.99",
+  "1000.00 (=borç)"
+ ],
+ "cashMovementsDelta": 3,
+ "cashShape": [
+  "from",
+  "to",
+  "accounts",
+  "movements"
+ ],
+ "reconciled": true,
+ "openDebt": "13800.00",
+ "verdict": "PASS"
+}

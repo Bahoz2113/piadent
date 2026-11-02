@@ -77,21 +77,24 @@ function IssueDrawer({ patientId, patientName, onClose, onIssued }: { patientId:
   const plans = useData<{ items: { id: string; title: string; versions: { id: string; version: number; status: string }[] }[] }>(`/patients/${patientId}/plans`);
   const [versionId, setVersionId] = useState("");
   const [planVersionId, setPlanVersionId] = useState("");
+  const [freeText, setFreeText] = useState("");
   const [preview, setPreview] = useState<{ title: string; content: string; contentHash: string; isDemo: boolean; requiresAcceptance: boolean } | null>(null);
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState(false);
   const role = session.activeMembership?.role;
   const usable = (types.data?.items ?? []).filter((t) => t.active);
   const planVersions = (plans.data?.items ?? []).flatMap((p) => p.versions.filter((v) => ["proposed", "accepted"].includes(v.status)).map((v) => ({ ...v, title: p.title })));
-  useEffect(() => { setPreview(null); }, [versionId, planVersionId]);
+  useEffect(() => { setPreview(null); }, [versionId, planVersionId, freeText]);
+  const selectedType = usable.find((t) => t.approvedTemplates[0]?.versionId === versionId);
+  const clinical = selectedType?.category === "clinical_output";
   async function doPreview() {
     setBusy(true); setErr(null);
-    try { setPreview(await api(`/template-versions/${versionId}/preview`, { body: { patientId, planVersionId: planVersionId || undefined } })); }
+    try { setPreview(await api(`/template-versions/${versionId}/preview`, { body: { patientId, planVersionId: planVersionId || undefined, freeText: freeText || undefined } })); }
     catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
   async function issue() {
     setBusy(true); setErr(null);
-    try { const r = await api<{ id: string }>("/documents", { body: { patientId, templateVersionId: versionId, planVersionId: planVersionId || undefined } }); onIssued(r.id); }
+    try { const r = await api<{ id: string }>("/documents", { body: { patientId, templateVersionId: versionId, planVersionId: planVersionId || undefined, freeText: freeText || undefined } }); onIssued(r.id); }
     catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
   return (
@@ -116,6 +119,12 @@ function IssueDrawer({ patientId, patientName, onClose, onIssued }: { patientId:
             <option value="">Bağlama</option>
             {planVersions.map((v) => <option key={v.id} value={v.id}>{v.title} · sürüm {v.version} ({PLAN_STATUS_LABELS[v.status]})</option>)}
           </SelectField>
+        )}
+        {clinical && (
+          <>
+            <Alert kind="info">Klinik çıktı: tanılar, gerçekleşen işlemler ve anamnez kritik işaretleri kayıtlardan otomatik yazılır; sağlık verisi içerdiğinden yalnız sağlık yetkili roller görür. Reçete yazısı <strong>e-reçete değildir</strong>.</Alert>
+            <TextAreaField label="Serbest metin ({{serbest.metin}}: ilaç listesi, öneriler, hekim notu)" value={freeText} onChange={(e) => setFreeText(e.target.value)} rows={5} />
+          </>
         )}
         {preview && (
           <>

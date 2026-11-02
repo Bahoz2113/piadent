@@ -1,0 +1,103 @@
+
+Running 98 tests using 1 worker
+
+[1/98] [masaustu] › e2e/anamnez-sablonu.spec.ts:17:1 › anamnez şablonu: yönetici taslak → hekim yayınlar → hastada yeni soru → emekli
+[2/98] [masaustu] › e2e/critical-flow.spec.ts:20:1 › sekreter: hasta oluştur → randevu ver → çakışma reddi → PİA İz
+[3/98] [masaustu] › e2e/critical-flow.spec.ts:85:1 › ajanda ve Bugün ekranları klavye ile kullanılabilir, taşma yok
+[4/98] [masaustu] › e2e/erisilebilirlik.spec.ts:29:1 › giriş sayfası
+[5/98] [masaustu] › e2e/erisilebilirlik.spec.ts:34:1 › sekreter: bugün, ajanda, hasta 360
+[6/98] [masaustu] › e2e/erisilebilirlik.spec.ts:45:1 › sekreter: hastalar, yeni hasta çekmecesi + takvim
+[7/98] [masaustu] › e2e/erisilebilirlik.spec.ts:57:1 › yönetici: yönetim (ekip, güvenlik, veri aktarımı), raporlar, hesabım
+[8/98] [masaustu] › e2e/erisilebilirlik.spec.ts:65:1 › finans: finans, operasyon
+[9/98] [masaustu] › e2e/fatura-taslagi.spec.ts:16:1 › fatura taslağı: oluştur → numara yok → gönderim reddi görünür → yazdır TASLAK → sekreter oluşturamaz
+[10/98] [masaustu] › e2e/gorev1.spec.ts:19:1 › hekim: anamnezi görür ve onaylar; sekreter sağlık sekmesine erişemez
+[11/98] [masaustu] › e2e/gorev1.spec.ts:42:1 › yönetici daveti → yeni kullanıcı kabul eder ve doğru rolle girer
+[12/98] [masaustu] › e2e/gorev1.spec.ts:74:1 › sekreter: yakın ekler; yasal temsil dayanaksız reddedilir
+[13/98] [masaustu] › e2e/gorev1.spec.ts:92:1 › ana sayfalar dar ekranda taşmaz
+[14/98] [masaustu] › e2e/gorev10.spec.ts:20:1 › kurtarma kodları: etkinleştirmede 8 kod → kaydettim → kurtarma koduyla giriş → Hesabım uyarısı → yönetici sıfırlar
+[15/98] [masaustu] › e2e/gorev10.spec.ts:60:1 › Yönetim → Güvenlik: kendi rolünü MFA'sız zorunlu yapamaz; finans için politika; destek erişimi verilir ve listelenir
+[16/98] [masaustu] › e2e/gorev11.spec.ts:15:1 › DateField: gg.aa.yyyy yazımı, geçersiz gün uyarısı, takvimle seçim ve klavye; yerel type=date yok
+[17/98] [masaustu] › e2e/gorev11.spec.ts:56:1 › ajanda tarih alanı gg.aa.yyyy; takvimden gün seçimi ajandayı taşır
+[18/98] [masaustu] › e2e/gorev11.spec.ts:77:1 › Hasta 360: kimlik no herkese maskeli; 'Göster' gerekçe ister, tam değeri gösterir
+[19/98] [masaustu] › e2e/gorev11.spec.ts:101:1 › destek erişimi dört göz: Mavi'de talep 'Onay bekliyor', açan onaylayamaz, ikinci yönetici onaylar
+[20/98] [masaustu] › e2e/gorev12.spec.ts:15:1 › veri aktarımı: tanınmayan başlıklar elle eşlenir; 'Eşlenmiyor' seçilen sütun yok sayılır; ön kontrol geçer
+[21/98] [masaustu] › e2e/gorev13.spec.ts:21:1 › geçmiş randevu aktarımı: hasta kartları → randevular (çakışma hatalı) → onay → Hasta 360 geçmişinde görünür
+[22/98] [masaustu] › e2e/gorev13.spec.ts:64:1 › Yönetim → Güvenlik → PİA Akış eşikleri: sınır dışı değer reddedilir, geçerli değer kaydedilir ve kalıcıdır
+[23/98] [masaustu] › e2e/gorev2.spec.ts:24:1 › hekim: odontogram → yeni plan → teklif → kabul → gerçekleşen işlem
+[24/98] [masaustu] › e2e/gorev2.spec.ts:65:1 › sekreter: plan ve teklifi görür, klinik harita ve işlem tamamlama kapalı
+[25/98] [masaustu] › e2e/gorev2.spec.ts:75:1 › tedavi takibi ve yönetici katalog/tarife ekranı
+[26/98] [masaustu] › e2e/gorev3.spec.ts:20:1 › vezne → dağıtım → iade → PİA Net özet (sekreter + finans)
+[27/98] [masaustu] › e2e/gorev3.spec.ts:76:1 › hekim hasta hesabını ve klinik finansı göremez
+[28/98] [masaustu] › e2e/gorev4.spec.ts:27:1 › sekreter: DEMO belge önizle → üret → yüz yüze kabul; dosya yükle → tarama → karantina
+[29/98] [masaustu] › e2e/gorev4.spec.ts:64:1 › iletişim: izin tablosu ve MOCK mesaj — teslim uydurulmaz
+[30/98] [masaustu] › e2e/gorev4.spec.ts:83:1 › hekim kontrol planlar; yönetici şablon ve PİA Hazır kurallarını görür
+[31/98] [masaustu] › e2e/gorev5.spec.ts:29:1 › PİA Köprü: erişim bekleyen bağlantılar dürüstçe gösterilir; dış gönderim kapısı kapalı
+[32/98] [masaustu] › e2e/gorev5.spec.ts:42:1 › online ödeme (MOCK): bağlantı ≠ tahsilat; imzalı bildirim → avans; sağlayıcı iadesi dört göz onayıyla
+[33/98] [masaustu] › e2e/gorev6.spec.ts:25:1 › laboratuvar: sekreter iş emri açar → gönderir → teslim alır; hekim kabul eder; aşamalar ve föy
+[34/98] [masaustu] › e2e/gorev6.spec.ts:72:1 › stok: asistan giriş ve sayım yapar; bakiye hareketlerden, sayım farkı düzeltme hareketi
+[35/98] [masaustu] › e2e/gorev6.spec.ts:99:1 › raporlar: finans gelir–gider → satırdan nakit hareketlerine iner, CSV indirir; sekreter finans raporu görmez
+[36/98] [masaustu] › e2e/gorev6.spec.ts:129:1 › prim: finans hekime prim öder (kasadan çıkış), ters kayıt alır
+[37/98] [masaustu] › e2e/gorev7.spec.ts:34:1 › veri aktarımı: CSV ön kontrol → hatalı satır görünür → onay → aynı dosya yeni kayıt açmaz
+[38/98] [masaustu] › e2e/gorev7.spec.ts:69:1 › dışa aktarım: gerekçeyle klinik JSON indirilir; sırlar yok
+[39/98] [masaustu] › e2e/gorev7.spec.ts:85:1 › iki adımlı doğrulama: kurulum → kodla giriş → yönetici sıfırlaması
+[40/98] [masaustu] › e2e/gorev7.spec.ts:130:1 › hasta 360: KVKK veri indirme gerekçe ister ve JSON verir
+[41/98] [masaustu] › e2e/gorev8.spec.ts:7:1 › CSP: unsafe-inline yok, nonce istek başına değişir, gezinmede ihlal yok
+[42/98] [masaustu] › e2e/gorev9.spec.ts:14:1 › yönetici parola sıfırlar → kullanıcı geçici parolayla girer → Hesabım'a zorlanır → yeni parola → normal akış
+[43/98] [masaustu] › e2e/gorunum.spec.ts:20:1 › görünüm: lacivert + koyu + ölçek 4 → anında, yenilemede ve yeni oturumda korunur; axe temiz; varsayılana dönüş
+[44/98] [masaustu] › e2e/klinik-cikti.spec.ts:16:1 › epikriz: hekim üretir, serbest metin ve otomatik alanlar; sekreter göremez
+[45/98] [masaustu] › e2e/makbuz.spec.ts:18:1 › tahsilat → makbuz numarası listede → Makbuz düğmesi yazdırma penceresi açar
+[46/98] [masaustu] › e2e/mobil-kart.spec.ts:16:1 › finans sekmesi geniş tablolar: mobilde kart, masaüstünde tablo; raporlarda ham kod yok
+[47/98] [masaustu] › e2e/pilot-provasi.spec.ts:36:1 › pilot günü provası: veri taşıma → randevu → tedavi görünümü → tahsilat → rapor
+[48/98] [masaustu] › e2e/qa-004-ajanda-baslik.spec.ts:20:1 › ajanda: URL eşitlemesi sunucuya gitmez, sayfa yeniden yüklenmez, başlık hiç boş kalmaz
+[49/98] [masaustu] › e2e/qa-103-fatura-durum.spec.ts:24:1 › QA-103: MOCK düzenlenmiş → iptal faturada TASLAK/“bağlı değil” yok, 'Yazdır' + MOCK ibaresi
+[50/98] [telefon-360] › e2e/anamnez-sablonu.spec.ts:17:1 › anamnez şablonu: yönetici taslak → hekim yayınlar → hastada yeni soru → emekli
+[51/98] [telefon-360] › e2e/critical-flow.spec.ts:20:1 › sekreter: hasta oluştur → randevu ver → çakışma reddi → PİA İz
+[52/98] [telefon-360] › e2e/critical-flow.spec.ts:85:1 › ajanda ve Bugün ekranları klavye ile kullanılabilir, taşma yok
+[53/98] [telefon-360] › e2e/erisilebilirlik.spec.ts:29:1 › giriş sayfası
+[54/98] [telefon-360] › e2e/erisilebilirlik.spec.ts:34:1 › sekreter: bugün, ajanda, hasta 360
+[55/98] [telefon-360] › e2e/erisilebilirlik.spec.ts:45:1 › sekreter: hastalar, yeni hasta çekmecesi + takvim
+[56/98] [telefon-360] › e2e/erisilebilirlik.spec.ts:57:1 › yönetici: yönetim (ekip, güvenlik, veri aktarımı), raporlar, hesabım
+[57/98] [telefon-360] › e2e/erisilebilirlik.spec.ts:65:1 › finans: finans, operasyon
+[58/98] [telefon-360] › e2e/fatura-taslagi.spec.ts:16:1 › fatura taslağı: oluştur → numara yok → gönderim reddi görünür → yazdır TASLAK → sekreter oluşturamaz
+[59/98] [telefon-360] › e2e/gorev1.spec.ts:19:1 › hekim: anamnezi görür ve onaylar; sekreter sağlık sekmesine erişemez
+[60/98] [telefon-360] › e2e/gorev1.spec.ts:42:1 › yönetici daveti → yeni kullanıcı kabul eder ve doğru rolle girer
+[61/98] [telefon-360] › e2e/gorev1.spec.ts:74:1 › sekreter: yakın ekler; yasal temsil dayanaksız reddedilir
+[62/98] [telefon-360] › e2e/gorev1.spec.ts:92:1 › ana sayfalar dar ekranda taşmaz
+[63/98] [telefon-360] › e2e/gorev10.spec.ts:20:1 › kurtarma kodları: etkinleştirmede 8 kod → kaydettim → kurtarma koduyla giriş → Hesabım uyarısı → yönetici sıfırlar
+[64/98] [telefon-360] › e2e/gorev10.spec.ts:60:1 › Yönetim → Güvenlik: kendi rolünü MFA'sız zorunlu yapamaz; finans için politika; destek erişimi verilir ve listelenir
+[65/98] [telefon-360] › e2e/gorev11.spec.ts:15:1 › DateField: gg.aa.yyyy yazımı, geçersiz gün uyarısı, takvimle seçim ve klavye; yerel type=date yok
+[66/98] [telefon-360] › e2e/gorev11.spec.ts:56:1 › ajanda tarih alanı gg.aa.yyyy; takvimden gün seçimi ajandayı taşır
+[67/98] [telefon-360] › e2e/gorev11.spec.ts:77:1 › Hasta 360: kimlik no herkese maskeli; 'Göster' gerekçe ister, tam değeri gösterir
+[68/98] [telefon-360] › e2e/gorev11.spec.ts:101:1 › destek erişimi dört göz: Mavi'de talep 'Onay bekliyor', açan onaylayamaz, ikinci yönetici onaylar
+[69/98] [telefon-360] › e2e/gorev12.spec.ts:15:1 › veri aktarımı: tanınmayan başlıklar elle eşlenir; 'Eşlenmiyor' seçilen sütun yok sayılır; ön kontrol geçer
+[70/98] [telefon-360] › e2e/gorev13.spec.ts:21:1 › geçmiş randevu aktarımı: hasta kartları → randevular (çakışma hatalı) → onay → Hasta 360 geçmişinde görünür
+[71/98] [telefon-360] › e2e/gorev13.spec.ts:64:1 › Yönetim → Güvenlik → PİA Akış eşikleri: sınır dışı değer reddedilir, geçerli değer kaydedilir ve kalıcıdır
+[72/98] [telefon-360] › e2e/gorev2.spec.ts:24:1 › hekim: odontogram → yeni plan → teklif → kabul → gerçekleşen işlem
+[73/98] [telefon-360] › e2e/gorev2.spec.ts:65:1 › sekreter: plan ve teklifi görür, klinik harita ve işlem tamamlama kapalı
+[74/98] [telefon-360] › e2e/gorev2.spec.ts:75:1 › tedavi takibi ve yönetici katalog/tarife ekranı
+[75/98] [telefon-360] › e2e/gorev3.spec.ts:20:1 › vezne → dağıtım → iade → PİA Net özet (sekreter + finans)
+[76/98] [telefon-360] › e2e/gorev3.spec.ts:76:1 › hekim hasta hesabını ve klinik finansı göremez
+[77/98] [telefon-360] › e2e/gorev4.spec.ts:27:1 › sekreter: DEMO belge önizle → üret → yüz yüze kabul; dosya yükle → tarama → karantina
+[78/98] [telefon-360] › e2e/gorev4.spec.ts:64:1 › iletişim: izin tablosu ve MOCK mesaj — teslim uydurulmaz
+[79/98] [telefon-360] › e2e/gorev4.spec.ts:83:1 › hekim kontrol planlar; yönetici şablon ve PİA Hazır kurallarını görür
+[80/98] [telefon-360] › e2e/gorev5.spec.ts:29:1 › PİA Köprü: erişim bekleyen bağlantılar dürüstçe gösterilir; dış gönderim kapısı kapalı
+[81/98] [telefon-360] › e2e/gorev5.spec.ts:42:1 › online ödeme (MOCK): bağlantı ≠ tahsilat; imzalı bildirim → avans; sağlayıcı iadesi dört göz onayıyla
+[82/98] [telefon-360] › e2e/gorev6.spec.ts:25:1 › laboratuvar: sekreter iş emri açar → gönderir → teslim alır; hekim kabul eder; aşamalar ve föy
+[83/98] [telefon-360] › e2e/gorev6.spec.ts:72:1 › stok: asistan giriş ve sayım yapar; bakiye hareketlerden, sayım farkı düzeltme hareketi
+[84/98] [telefon-360] › e2e/gorev6.spec.ts:99:1 › raporlar: finans gelir–gider → satırdan nakit hareketlerine iner, CSV indirir; sekreter finans raporu görmez
+[85/98] [telefon-360] › e2e/gorev6.spec.ts:129:1 › prim: finans hekime prim öder (kasadan çıkış), ters kayıt alır
+[86/98] [telefon-360] › e2e/gorev7.spec.ts:34:1 › veri aktarımı: CSV ön kontrol → hatalı satır görünür → onay → aynı dosya yeni kayıt açmaz
+[87/98] [telefon-360] › e2e/gorev7.spec.ts:69:1 › dışa aktarım: gerekçeyle klinik JSON indirilir; sırlar yok
+[88/98] [telefon-360] › e2e/gorev7.spec.ts:85:1 › iki adımlı doğrulama: kurulum → kodla giriş → yönetici sıfırlaması
+[89/98] [telefon-360] › e2e/gorev7.spec.ts:130:1 › hasta 360: KVKK veri indirme gerekçe ister ve JSON verir
+[90/98] [telefon-360] › e2e/gorev8.spec.ts:7:1 › CSP: unsafe-inline yok, nonce istek başına değişir, gezinmede ihlal yok
+[91/98] [telefon-360] › e2e/gorev9.spec.ts:14:1 › yönetici parola sıfırlar → kullanıcı geçici parolayla girer → Hesabım'a zorlanır → yeni parola → normal akış
+[92/98] [telefon-360] › e2e/gorunum.spec.ts:20:1 › görünüm: lacivert + koyu + ölçek 4 → anında, yenilemede ve yeni oturumda korunur; axe temiz; varsayılana dönüş
+[93/98] [telefon-360] › e2e/klinik-cikti.spec.ts:16:1 › epikriz: hekim üretir, serbest metin ve otomatik alanlar; sekreter göremez
+[94/98] [telefon-360] › e2e/makbuz.spec.ts:18:1 › tahsilat → makbuz numarası listede → Makbuz düğmesi yazdırma penceresi açar
+[95/98] [telefon-360] › e2e/mobil-kart.spec.ts:16:1 › finans sekmesi geniş tablolar: mobilde kart, masaüstünde tablo; raporlarda ham kod yok
+[96/98] [telefon-360] › e2e/pilot-provasi.spec.ts:36:1 › pilot günü provası: veri taşıma → randevu → tedavi görünümü → tahsilat → rapor
+[97/98] [telefon-360] › e2e/qa-004-ajanda-baslik.spec.ts:20:1 › ajanda: URL eşitlemesi sunucuya gitmez, sayfa yeniden yüklenmez, başlık hiç boş kalmaz
+[98/98] [telefon-360] › e2e/qa-103-fatura-durum.spec.ts:24:1 › QA-103: MOCK düzenlenmiş → iptal faturada TASLAK/“bağlı değil” yok, 'Yazdır' + MOCK ibaresi
+  9 skipped
+  89 passed (7.7m)

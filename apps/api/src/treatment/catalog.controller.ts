@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Patch, Post, Put, Query } from "@nestjs/common";
 import { z } from "zod";
-import { ProcedureUpsert, TariffCreate, TariffItemsSet, localDate } from "@viadent/contracts";
+import { ProcedureConsumablesPut, ProcedureUpsert, TariffCreate, TariffItemsSet, localDate } from "@viadent/contracts";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
@@ -45,6 +45,32 @@ export class CatalogController {
         if ((e as { code?: string }).code === "23505") throw new AppError(409, "CODE_EXISTS", "Bu kodla bir işlem zaten var.", { code: "Kod kullanımda." });
         throw e;
       }
+    });
+  }
+
+  /** Sarf reçetesi (ADR-087): işleme bağlı stok kalemleri ve adetleri. */
+  @Get("procedures/:id/consumables")
+  @Require("treatment.read")
+  consumables(@Ctx() ctx: RequestContext, @Param("id", id) pid: string) {
+    return this.db.tx(ctx, async (c) => {
+      if (!(await c.query("select 1 from procedures where id = $1", [pid])).rowCount) throw Errors.notFound("İşlem");
+      const r = await c.query(`select pc.id, pc.stock_item_id, pc.quantity::text, si.name, si.unit from procedure_consumables pc join stock_items si on si.id = pc.stock_item_id where pc.procedure_id = $1 order by si.name`, [pid]);
+      return { items: r.rows.map((x) => ({ id: x.id, stockItemId: x.stock_item_id, quantity: x.quantity, name: x.name, unit: x.unit })) };
+    });
+  }
+
+  @Put("procedures/:id/consumables")
+  @Require("catalog.manage")
+  putConsumables(@Ctx() ctx: RequestContext, @Param("id", id) pid: string, @Body() body: unknown) {
+    const i = parse(ProcedureConsumablesPut, body);
+    return this.db.tx(ctx, async (c) => {
+      if (!(await c.query("select 1 from procedures where id = $1 for update", [pid])).rowCount) throw Errors.notFound("İşlem");
+      for (const it of i.items) if (!(await c.query("select 1 from stock_items where id = $1", [it.stockItemId])).rowCount) throw Errors.validation({ items: "Stok kalemi bulunamadı." });
+      const before = (await c.query("select count(*)::int as n from procedure_consumables where procedure_id = $1", [pid])).rows[0].n;
+      await c.query("delete from procedure_consumables where procedure_id = $1", [pid]);
+      for (const it of i.items) await c.query("insert into procedure_consumables(tenant_id, procedure_id, stock_item_id, quantity, created_by) values ($1,$2,$3,$4,$5)", [ctx.tenantId, pid, it.stockItemId, it.quantity, ctx.userId]);
+      await audit(c, ctx, { action: "procedure.consumables", entityType: "procedure", entityId: pid, changes: { consumable_count: { from: before, to: i.items.length } } });
+      return { items: i.items };
     });
   }
 

@@ -1,0 +1,103 @@
+{
+ "product": "PİA-DENT",
+ "lockedAt": "2026-11-02T12:15:00+03:00",
+ "revisionAtLock": "12fc6fd47406e3e3142248490550298abf27af03",
+ "requiredIds": [
+  "V01",
+  "V02",
+  "V03",
+  "V04",
+  "V05",
+  "V06",
+  "P01",
+  "P02",
+  "P03",
+  "R01",
+  "R02",
+  "R03",
+  "R04",
+  "R05",
+  "R06",
+  "R07",
+  "N01",
+  "N02",
+  "N03",
+  "N04",
+  "N05",
+  "N06",
+  "N07",
+  "N08",
+  "N09",
+  "N10",
+  "N11"
+ ],
+ "profiles": [
+  {
+   "name": "http",
+   "required": true
+  },
+  {
+   "name": "chromium-desktop",
+   "required": true
+  },
+  {
+   "name": "chromium-mobile-emulation",
+   "required": true
+  },
+  {
+   "name": "cli",
+   "required": true
+  },
+  {
+   "name": "physical-mobile-device",
+   "required": false
+  },
+  {
+   "name": "android-apk",
+   "required": false
+  },
+  {
+   "name": "ios",
+   "required": false
+  },
+  {
+   "name": "vscode-extension",
+   "required": false
+  }
+ ],
+ "cases": {
+  "V01": "Kayıt gizliliği: B kliniği kullanıcısı A'nın hastasına API/arama/dosya/dışa aktarımda erişemez; A'nın akışı çalışır.",
+  "V02": "Odontogram: 16 numaralı dişe yüzey+bulgu+tanı+işlem; yeniden açınca aynı; başka hasta/diş değişmedi.",
+  "V03": "Randevu yarışı: aynı hekim aynı saat iki oturumdan eşzamanlı; tek kayıt, diğerine açık 409; takvim ve API aynı.",
+  "V04": "Çift tahsilat: 1.000 ₺ borca 300 ₺; aynı idempotency anahtarıyla eşzamanlı tekrar; tek makbuz, tek kasa hareketi, 700 ₺ bakiye; iade izi.",
+  "V05": "Klinik geçmiş: hekim işlem düzeltir; önce/sonra + zaman + kullanıcı geçmişte; sekreter düzeltemez (403); API+UI.",
+  "V06": "Geri yükleme: yedek → ayrı DB; kayıt sayıları, tutar toplamı, hasta-belge ilişkisi, yetkiler eşleşir.",
+  "P01": "Tahsilat tutarı sınır değerleri (boş, 0, negatif, 0,01, 999,99, 1000, 1000,01; virgül/nokta/fazla basamak; dağıtım>ödeme). Reddedilen işlem kasa hareketi üretmez.",
+  "P02": "Randevu alanları ve filtreler: durum enum tek tek, geçersiz değer, gün/ay sınırı, süre sınırları, saat biçimi, çakışma.",
+  "P03": "Kimlik: yanlış parola, oturumsuz istek, CSRF başlığı yok, çıkış sonrası erişim, rol ihlali (sekreter→finans).",
+  "R01": "API testleri (vitest, gerçek PostgreSQL).",
+  "R02": "contracts paket testleri.",
+  "R03": "web birim testleri.",
+  "R04": "Playwright E2E masaüstü (Chromium).",
+  "R05": "Playwright E2E mobil emülasyon.",
+  "R06": "typecheck + pnpm audit (prod).",
+  "R07": "RLS kapsamı / dağıtım tutarlılığı (tüm tenant tabloları FORCE RLS; app rolünde DELETE/BYPASSRLS yok).",
+  "N01": "Makbuz: tahsilat TM / iade IM boşluksuz numara; eşzamanlı 2 oturum aynı anda tahsilat → farklı ardışık no; idempotent tekrar aynı no; başarısız istek numara tüketmez; yazdırma denetim kaydı; B kliniği 404, asistan 403; UI'da Makbuz düğmesi ve yazdırma penceresi (no, tutar, 'fatura yerine geçmez').",
+  "N02": "Fatura taslağı: alan sınırları (VKN, belge türü/alıcı uyumu, KDV oranı, adet, birim fiyat, boş satır, Unicode ad); KDV yuvarlama; sağlayıcı yokken gönder 409 ve numara yok; MOCK e-belge bağlıyken worker sonrası issued + MOCK no; iptal sağlayıcı işiyle; sekreter/yönetici yazamaz; B kliniği 404; UI taslak/gönderim reddi.",
+  "N03": "Mali müşavir dönem dökümü: tahsilat/iade satırları makbuz no ile; ekran = CSV = XLSX satır sayısı ve toplam; sekreter 403.",
+  "N04": "Anamnez şablonu: taslak/yayın (yalnız hekim), yayınlanan değişmez (API + DB), eski kayıt eski sorularla, yeni kayıt yeni setle, tanımsız anahtar 422, kritik etiketi; sekreter 403; B kliniği bağımsız.",
+  "N05": "Klinik çıktı (epikriz/föy/reçete yazısı): hekim üretir, alanlar kayıttan dolar; sekreter/yönetici listede görmez, ayrıntıda 404 (varlık sızmaz); 'e-reçete değildir'.",
+  "N06": "Görünüm: palet/şema/ölçek kaydı, geçersiz değer 422, kimliksiz 401, başka kullanıcıyı etkilemez; yenilemede korunur; koyu şemada axe ciddi/kritik 0; kontrast testleri.",
+  "N07": "PİA Akış SLA: eşik sınırları (0/169 → 422), eşik öncesi yükseltme yok, sonrası yöneticiye yükseltme (kopya yok, rol korunur); hekim ayarı değiştiremez.",
+  "N08": "Rapor XLSX: geçerli OOXML (bağımsız ayrıştırıcıyla açılır), satır ve toplam CSV ile aynı, para sayısal, formül yok; yetkisiz 403.",
+  "N09": "Mobil kart görünümü (360 px): geniş tablolar kart, yatay taşma yok, işlem düğmeleri tıklanabilir; masaüstünde tablo; rapor ekranlarında ham iç kod (R22, T07…) yok.",
+  "N10": "Sarf reçetesi: reçete tanımı (yetki, tekrar kalem), işlemde otomatik kullanım (lot/SKT), stok yetersizse işlem kaydedilir + tek görev; düzeltme kaydı sarfı tekrarlamaz; stok bakiyesi API = UI.",
+  "N11": "Dosya hassasiyeti tutarlılığı (tur 3 ile eklendi, QA-106/107): sağlık yetkisi olmayan rol için klinik hassasiyetli dosyalar ve klinik çıktı belgesine bağlı dosyalar liste, ayrıntı, içerik, silme ve KVKK hasta dışa aktarımında tutarlı biçimde görünmez (var olmayanla aynı yanıt, omitted işareti); idari dosyalar görünür; hekim hepsini görür."
+ },
+ "notes": [
+  "Önceki koşunun 16 zorunlu vakası aynen korunur; 10 yeni vaka bu sürümün yeni kapsamıdır.",
+  "R01 artık 32 test dosyası; R04/R05 E2E 96 test (87 + 9 bilinçli atlama).",
+  "Yan etki sınırı: yalnız yerel test DB'leri; canlı demo ve üretime dokunulmaz.",
+  "2026-11-02 tur 3: kapsam genişletildi — N11 eklendi (dosya hassasiyeti tutarlılığı; QA-106/107 bu turda bulundu). Önceki vakalar ve beklentiler değişmedi."
+ ]
+}

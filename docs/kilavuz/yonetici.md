@@ -19,3 +19,5 @@
 
 **Hesabım.** İki adımlı doğrulama, kurtarma kodları, açık oturumlar ("diğerlerini kapat"), parola.
 ![Hesabım](img/48-hesabim.jpg)
+
+**02.11.2026 eklemeleri.** *Anamnez şablonu* (Yönetim): taslak hazırlayın, hekim yayınlasın; yayındaki form değişmez, yeni sürüm açılır. *Sarf reçetesi* (Katalog → işlem satırı → Sarf): işlem tamamlanınca düşülecek stok kalemleri; stok yetersizse işlem yine kaydedilir, asistana "sarf düşülemedi" görevi düşer. *PİA Akış yükseltme* (Güvenlik → PİA Akış eşikleri → Yükseltme süresi): vadesi bu kadar saat geçmiş görev size "Yükseltildi" rozetiyle gelir; asıl sorumlunun görevi de kalır. *e-Belge MOCK bağlantısı* (PİA Köprü): fatura akışını göstermek içindir; gerçek belge düzenlenmez.

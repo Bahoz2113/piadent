@@ -84,3 +84,11 @@ export const PLAN_STATUS_LABELS: Record<string, string> = {
   draft: "Taslak", proposed: "Teklif sunuldu", accepted: "Kabul edildi", rejected: "Reddedildi", superseded: "Yeni sürümle değişti", cancelled: "İptal",
 };
 export const DECISION_LABELS: Record<string, string> = { accepted: "Kabul", rejected: "Ret", undecided: "Kararsız" };
+
+/** İşlem başına sarf reçetesi (Faz 4.5, ADR-087): katalog kalemine bağlı stok kalemleri. Tam liste değiştirme (PUT). */
+export const ProcedureConsumablesPut = z.object({
+  items: z.array(z.object({ stockItemId: z.string().uuid(), quantity: z.number().positive().max(9999) })).max(30),
+}).strict().superRefine((v, ctx) => {
+  const ids = v.items.map((i) => i.stockItemId);
+  if (new Set(ids).size !== ids.length) ctx.addIssue({ code: "custom", path: ["items"], message: "Aynı stok kalemi iki kez seçilmiş." });
+});

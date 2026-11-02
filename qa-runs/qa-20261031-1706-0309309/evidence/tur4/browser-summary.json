@@ -1,0 +1,77 @@
+{
+ "at": "2026-10-31T15:40:37.824Z",
+ "base": "http://127.0.0.1:3000",
+ "patient": "ae66d3ca-926c-43e8-96ed-1ecbea69a7a5",
+ "results": [
+  {
+   "profile": "masaustu",
+   "id": "V01",
+   "status": "PASS",
+   "summary": "B hasta sayfası sızıntı=false, arama satırı 0",
+   "evidence": "evidence/masaustu-V01-b-tenant.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "V02",
+   "status": "PASS",
+   "summary": "diş 16 görünür=true, işlem metni=true, düzeltme izi=true",
+   "evidence": "evidence/masaustu-V02-tedavi.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "V03",
+   "status": "PASS",
+   "summary": "21.01.2027 12:00 ajandada randevu bloğu 1 (metin eşleşmesi 2); API: 1",
+   "evidence": "evidence/masaustu-V03-ajanda.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "V04",
+   "status": "PASS",
+   "summary": "300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true",
+   "evidence": "evidence/masaustu-V04-finans.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "V05",
+   "status": "PASS",
+   "summary": "hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay)",
+   "evidence": "evidence/masaustu-V05-gecmis-sekreter.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "V01",
+   "status": "PASS",
+   "summary": "B hasta sayfası sızıntı=false, arama satırı 0",
+   "evidence": "evidence/mobil-V01-b-tenant.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "V02",
+   "status": "PASS",
+   "summary": "diş 16 görünür=true, işlem metni=true, düzeltme izi=true",
+   "evidence": "evidence/mobil-V02-tedavi.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "V03",
+   "status": "PASS",
+   "summary": "21.01.2027 12:00 ajandada randevu bloğu 1 (metin eşleşmesi 1); API: 1",
+   "evidence": "evidence/mobil-V03-ajanda.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "V04",
+   "status": "PASS",
+   "summary": "300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true",
+   "evidence": "evidence/mobil-V04-finans.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "V05",
+   "status": "PASS",
+   "summary": "hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay)",
+   "evidence": "evidence/mobil-V05-gecmis-sekreter.jpg"
+  }
+ ]
+}

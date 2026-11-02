@@ -1,10 +1,12 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { normalizeAppearance } from "@viadent/contracts";
+import { applyAppearance, saveLocalAppearance } from "@/lib/appearance";
 import type { Permission } from "@viadent/contracts";
 import { api, ApiFailure, onApiFailure, setPageContext } from "./api";
 
 export interface SessionInfo {
-  user: { id: string; fullName: string; email: string };
+  user: { id: string; fullName: string; email: string; appearance?: unknown };
   activeMembership: { id: string; tenantId: string; tenantName: string; timezone: string; role: string; roleLabel: string } | null;
   memberships: { id: string; tenantName: string; role: string; roleLabel: string }[];
   permissions: Permission[];
@@ -37,6 +39,8 @@ export function SessionProvider({ children, fallback }: { children: ReactNode; f
     api<SessionInfo>("/session")
       .then((s) => {
         setPageContext(s.activeMembership?.id ?? "");
+        // Görünüm: sunucudaki tercih (başka cihazda değiştirilmiş olabilir) bu cihaza uygulanır.
+        if (s.user?.appearance) { const a = normalizeAppearance(s.user.appearance); applyAppearance(a); saveLocalAppearance(a); }
         // Geçici parola veya zorunlu MFA kurulmamış: yalnız Hesabım açılır.
         if (s.mustChangePassword && window.location.pathname !== "/hesabim") { window.location.href = "/hesabim?parola=1"; return; }
         if (s.mfa?.required && !s.mfa.enabled && window.location.pathname !== "/hesabim") { window.location.href = "/hesabim?zorunlu=1"; return; }

@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseIntPipe, ParseUUIDPipe, Post } from "@nestjs/common";
-import { ANAMNESIS_QUESTIONNAIRE_VERSION, ANAMNESIS_QUESTIONS, AnamnesisSave, criticalFlags, type AnamnesisAnswers } from "@viadent/contracts";
+import { AnamnesisSave, criticalFlags, type AnamnesisAnswers } from "@viadent/contracts";
+import { activeQuestionnaire, questionnaireFor } from "./anamnesis-templates.controller.js";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
@@ -23,7 +24,7 @@ export class AnamnesisController {
     return this.db.tx(ctx, async (c) => {
       if (!(await c.query("select 1 from patients where id = $1", [patientId])).rowCount) throw Errors.notFound("Hasta");
       const versions = await c.query(
-        `select v.id, v.version, v.questionnaire_version, v.critical_flags, v.created_at, u.full_name as recorded_by,
+        `select v.id, v.version, v.questionnaire_version, v.template_id, v.critical_flags, v.created_at, u.full_name as recorded_by,
                 rv.reviewed_at, ru.full_name as reviewed_by
            from anamnesis_versions v
            join memberships m on m.id = v.recorded_by join users u on u.id = m.user_id
@@ -34,10 +35,14 @@ export class AnamnesisController {
       );
       const latest = versions.rows[0];
       const answers = latest ? (await c.query("select answers from anamnesis_versions where id = $1", [latest.id])).rows[0].answers : {};
+      const active = await activeQuestionnaire(c);
+      // Son kayıt eski bir şablonla alındıysa, yanıtlar o şablonun sorularıyla gösterilir; yeni kayıt yürürlükteki setle alınır.
+      const currentQuestions = latest ? await questionnaireFor(c, latest.template_id) : active.questions;
       return {
-        questionnaire: { version: ANAMNESIS_QUESTIONNAIRE_VERSION, demo: true, questions: ANAMNESIS_QUESTIONS },
+        questionnaire: { version: active.version, demo: active.demo, title: active.title, templateId: active.templateId, questions: active.questions },
         current: latest ? { version: latest.version, answers, criticalFlags: latest.critical_flags, createdAt: latest.created_at,
-          recordedBy: latest.recorded_by, reviewedAt: latest.reviewed_at, reviewedBy: latest.reviewed_by, questionnaireVersion: latest.questionnaire_version } : null,
+          recordedBy: latest.recorded_by, reviewedAt: latest.reviewed_at, reviewedBy: latest.reviewed_by, questionnaireVersion: latest.questionnaire_version,
+          questions: currentQuestions, outdated: (latest.template_id ?? null) !== active.templateId } : null,
         history: versions.rows.map((v) => ({ version: v.version, createdAt: v.created_at, recordedBy: v.recorded_by, reviewedAt: v.reviewed_at,
           reviewedBy: v.reviewed_by, criticalFlags: v.critical_flags })),
       };
@@ -48,10 +53,10 @@ export class AnamnesisController {
   @Require("patient.health.read")
   version(@Ctx() ctx: RequestContext, @Param("patientId", pid) patientId: string, @Param("version", ParseIntPipe) version: number) {
     return this.db.tx(ctx, async (c) => {
-      const r = await c.query("select version, answers, critical_flags, created_at from anamnesis_versions where patient_id = $1 and version = $2", [patientId, version]);
+      const r = await c.query("select version, answers, critical_flags, created_at, template_id, questionnaire_version from anamnesis_versions where patient_id = $1 and version = $2", [patientId, version]);
       if (!r.rowCount) throw Errors.notFound("Anamnez sürümü");
       const v = r.rows[0];
-      return { version: v.version, answers: v.answers, criticalFlags: v.critical_flags, createdAt: v.created_at };
+      return { version: v.version, answers: v.answers, criticalFlags: v.critical_flags, createdAt: v.created_at, questionnaireVersion: v.questionnaire_version, questions: await questionnaireFor(c, v.template_id) };
     });
   }
 
@@ -59,12 +64,13 @@ export class AnamnesisController {
   @Require("patient.health.read", "anamnesis.write")
   save(@Ctx() ctx: RequestContext, @Param("patientId", pid) patientId: string, @Body() body: unknown) {
     const input = parse(AnamnesisSave, body);
-    const known = new Set(ANAMNESIS_QUESTIONS.map((q) => q.key));
-    const unknownKeys = Object.keys(input.answers).filter((k) => !known.has(k));
-    if (unknownKeys.length) throw Errors.validation({ answers: `Tanımsız soru: ${unknownKeys.join(", ")}` });
     const answers = input.answers as AnamnesisAnswers;
-    const flags = criticalFlags(answers);
     return this.db.tx(ctx, async (c) => {
+      const active = await activeQuestionnaire(c);
+      const known = new Set(active.questions.map((q) => q.key));
+      const unknownKeys = Object.keys(answers).filter((k) => !known.has(k));
+      if (unknownKeys.length) throw Errors.validation({ answers: `Tanımsız soru: ${unknownKeys.join(", ")}` });
+      const flags = criticalFlags(answers, active.questions);
       if (!(await c.query("select 1 from patients where id = $1 and status = 'active' for update", [patientId])).rowCount) throw Errors.notFound("Hasta");
       const cur = await c.query("select coalesce(max(version), 0)::int as v from anamnesis_versions where patient_id = $1", [patientId]);
       const currentVersion: number = cur.rows[0].v;
@@ -72,9 +78,9 @@ export class AnamnesisController {
         throw new AppError(409, "VERSION_CONFLICT", "Anamnez siz düzenlerken güncellendi. Son sürümü yükleyip tekrar deneyin.", undefined, { currentVersion });
       }
       const r = await c.query(
-        `insert into anamnesis_versions(tenant_id, patient_id, version, questionnaire_version, answers, critical_flags, recorded_by)
-         values ($1,$2,$3,$4,$5,$6,$7) returning id`,
-        [ctx.tenantId, patientId, currentVersion + 1, ANAMNESIS_QUESTIONNAIRE_VERSION, JSON.stringify(answers), flags, ctx.membershipId],
+        `insert into anamnesis_versions(tenant_id, patient_id, version, questionnaire_version, answers, critical_flags, recorded_by, template_id)
+         values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
+        [ctx.tenantId, patientId, currentVersion + 1, active.version, JSON.stringify(answers), flags, ctx.membershipId, active.templateId],
       );
       const autoReviewed = has(ctx, "anamnesis.review");
       if (autoReviewed) {

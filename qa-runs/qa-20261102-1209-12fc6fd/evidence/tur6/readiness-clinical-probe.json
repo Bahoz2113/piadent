@@ -1,0 +1,21 @@
+{
+ "ruleCreateWithClinicalOutputType": 201,
+ "appointmentStatus": 201,
+ "appointment": true,
+ "secretaryBefore": [
+  {
+   "label": "Epikriz / tedavi özeti (KAN-01)",
+   "status": "missing",
+   "detail": "Belge hazırlanmamış"
+  }
+ ],
+ "secretaryAfter": [
+  {
+   "label": "Epikriz / tedavi özeti (KAN-01)",
+   "status": "ok",
+   "detail": "Hazır"
+  }
+ ],
+ "secretaryLearnsEpikrizExists": true,
+ "ruleDeactivate": 200
+}

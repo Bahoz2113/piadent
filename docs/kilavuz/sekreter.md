@@ -15,3 +15,5 @@
 **Tahsilat.** Hasta 360 → Finans → Tahsilat al: tutar, yöntem; "Vadesi eski olandan başlayarak dağıt". Çift tıklama tek kayıt oluşturur. İade yapamazsınız (finans rolü).
 
 **Dikkat:** iptal yerine "Gelmedi" seçmeyin; iptal gerekçe ister ve kapasiteyi boşaltır. Kapatma (tatil) randevuyu silmez, görev düşer, siz karar verirsiniz.
+
+**Makbuz (02.11.2026).** Her tahsilat ve iade otomatik numara alır (`TM-2026-000123` tahsilat, `IM-…` iade; boşluksuz). Finans sekmesinde ödeme satırındaki **Makbuz** düğmesi yazdırma penceresi açar; yazdırma kayda geçer. Makbuz fatura yerine geçmez.

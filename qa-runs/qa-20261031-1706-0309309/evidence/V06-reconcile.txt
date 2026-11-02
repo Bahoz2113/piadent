@@ -1,0 +1,6 @@
+# 2026-10-31T17:22:23+03:00 — sakin DB (E2E bitti). Sütunlar: hasta|randevu|ödeme|ödeme toplamı|açık alacak toplamı|dağıtım toplamı|hastaya bağlı dosya|sahipsiz dosya|üyelik|denetim olayı|işlem|bulgu|hasta belgesi|payments yetkileri|politika|FORCE RLS tablo
+## viadent
+49|26|20|9459.00|43100.00|6600.00|5|0|14|369|7|9|2|viadent_app:INSERT,viadent_app:SELECT,viadent_backup:SELECT,viadent_owner:DELETE,viadent_owner:INSERT,viadent_owner:REFERENCES,viadent_owner:SELECT,viadent_owner:TRIGGER,viadent_owner:TRUNCATE,viadent_owner:UPDATE,viadent_worker:SELECT|84|70
+## viadent_qa_restore
+49|26|20|9459.00|43100.00|6600.00|5|0|14|369|7|9|2|viadent_app:INSERT,viadent_app:SELECT,viadent_backup:SELECT,viadent_owner:DELETE,viadent_owner:INSERT,viadent_owner:REFERENCES,viadent_owner:SELECT,viadent_owner:TRIGGER,viadent_owner:TRUNCATE,viadent_owner:UPDATE,viadent_worker:SELECT|84|70
+EŞLEŞTİ

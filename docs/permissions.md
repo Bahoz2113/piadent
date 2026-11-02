@@ -22,12 +22,14 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 | `receivable.write` (elle alacak, alacak iptali) | – | – | – | – | ✔ |
 | `expense.write` (gider, gider ters kaydı) | – | – | – | – | ✔ |
 | `finance.settings` (kasa/banka hesabı, prim kuralı sürümü) | ✔ | – | – | – | ✔ |
+| `anamnesis.template` (anamnez soru şablonu taslağı; yayın hekim `anamnesis.review` ister) | ✔ | ✔ | – | – | – |
+| `invoice.write` (fatura taslağı; sağlayıcıya gönderim yalnız bağlıysa) | – | – | – | – | ✔ |
 | `document.read` (hasta belgeleri, kanıt olayları) | ✔ | ✔ | ✔ | ✔ | – |
 | `document.issue` (onaylı şablondan belge üretme) | – | ✔ | ✔ | – | – |
 | `document.decision` (yüz yüze kabul/ret kaydı) | – | ✔ | ✔ | – | – |
 | `document.revoke` (belgeyi gerekçeyle iptal) | ✔ | ✔ | – | – | – |
-| `template.manage` (belge türü, şablon sürümü, PİA Hazır kuralı) | ✔ | – | – | – | – |
-| `file.read` (idari dosyalar; klinik kategoriler ayrıca `patient.health.read`) | ✔ | ✔ | ✔ | ✔ | – |
+| `template.manage` (belge türü, şablon sürümü, PİA Hazır kuralı; kural klinik çıktı türüne bağlanamaz, ADR-092) | ✔ | – | – | – | – |
+| `file.read` (idari dosyalar; klinik kategoriler ve klinik çıktı belgesine bağlı dosyalar ayrıca `patient.health.read`, ADR-089) | ✔ | ✔ | ✔ | ✔ | – |
 | `file.write` (yükleme) | – | ✔ | ✔ | ✔ | – |
 | `file.delete` (gerekçeyle silindi işareti) | ✔ | ✔ | – | – | – |
 | `communication.write` (iletişim tercihi) | ✔ | ✔ | ✔ | – | – |
@@ -46,10 +48,10 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 
 Notlar:
 - “Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez” (Plan §05) → yönetici klinik notları **okuyamaz** (testli).
-- PİA İz: hasta geçmişi `patient.read` ile görünür, ancak `clinical_note` ve `anamnesis` olayları yalnız `patient.health.read` ile; not/yanıt içeriği audit'e hiç yazılmaz.
+- PİA İz: hasta geçmişi `patient.read` ile görünür, ancak `clinical_note` ve `anamnesis` olayları yalnız `patient.health.read` ile; not/yanıt içeriği audit'e hiç yazılmaz. Gizli dosyaların (ADR-089) `file.*` olayları da yalnız `patient.health.read` ile; onam kanıtındaki gizli dosya kimliği bu yetki yoksa boş döner (ADR-090; KVKK dışa aktarım `access_log`/`evidence_events` ve LOG raporu aynı kural).
 - Hasta özetindeki kritik anamnez işaretleri (`clinical`) yalnız `patient.health.read` rollerine döner; diğer rollerde alan `null`.
 - Rol değişikliği ve erişim kaldırma kişinin kendisine uygulanamaz; üyelik her istekte okunduğundan bir sonraki istekte geçerlidir.
-- PİA Akış: `general` görevler herkese; `clinical` görevler `patient.health.read`, `finance` görevler `finance.read` ister (sunucuda filtrelenir).
+- PİA Akış: `general` görevler herkese; `clinical` görevler `patient.health.read`, `finance` görevler `finance.read` ister (sunucuda filtrelenir). Hasta kartındaki açık görev sayacı ve `clinical` görevlerin `task.status` olayları (Geçmiş, KVKK `access_log`, LOG raporu) aynı kurala uyar. Gizli dosyanın (ADR-089) karantina görevi `clinical` açılır ve hekime atanır; idari dosyanınki `general`, yöneticiye (ADR-091).
 - Odontogram ve tanı (`/patients/:id/chart`) `patient.health.read` ister: sekreter plan ve teklif bedelini görür, klinik haritayı görmez; yönetici de görmez (testli, ADR-023).
 - Asistan şimdilik işlem kaydetmez; hekim adına kayıt (asistan girer, hekim onaylar) pilot geri bildirimiyle değerlendirilecek.
 - Sekreterya vezne işini yapar (tahsilat, dağıtım) ama iade yapamaz ve klinik gelir raporlarını göremez (Plan §05; AT-02 iade testi). Yönetici raporları ve ayarları görür, tahsilat girmez (rol ayrılığı). Hekim varsayılan olarak hasta hesabını ve primi görmez (“ayrı izin”).
@@ -84,7 +86,7 @@ Dört göz: onay yetkisi olsa bile **isteği açan kişi kendi isteğini onaylay
 | `audit.clinic` — klinik geneli LOG | ✔ | — | — | — | — |
 | `import.manage` — içe aktarma: ön kontrol, onay, geri alma (Görev 7) | ✔ | — | — | — | — |
 | `export.clinic` — klinik verisinin tamamını açık JSON olarak dışa aktarma (gerekçeli, denetlenir) | ✔ | — | — | — | — |
-| `export.patient` — hasta verisi (KVKK veri sahibi talebi; sağlık bölümleri ayrıca `patient.health.read`) | ✔ | — | — | — | — |
+| `export.patient` — hasta verisi (KVKK veri sahibi talebi; sağlık bölümleri, klinik çıktı belgeleri ile bağlı onay/kanıt/dosya satırları ve klinik hassasiyetli dosyalar ayrıca `patient.health.read`, ADR-088/089) | ✔ | — | — | — | — |
 
 **Destek rolü (`support`, Görev 10, ADR-061):** yalnız yönetici süreli (≤72 sa) ve gerekçeli verir; salt okunur — `patient.read` (kimlik maskeli), `appointment.read`, `task.read`, `treatment.read`, `audit.read`, `audit.clinic`, `integration.read`, `lab.read`, `stock.read`, `report.operations`. Sağlık içeriği, kimlik açma, finans ve yazma yok; davetle atanamaz, klinik rolüne çevrilemez. **Görev 11 (ADR-064):** klinikte ≥2 etkin yönetici varsa erişim `pending` açılır ve talebi açan dışında bir yönetici (`team.manage`) onaylayana kadar etkisizdir.
 

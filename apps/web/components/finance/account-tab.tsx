@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDownLeft, CheckCircle2, FilePlus2, HandCoins, Info, ListTree, RotateCcw, Split, Undo2 } from "lucide-react";
+import { ArrowDownLeft, CheckCircle2, FilePlus2, HandCoins, Info, ListTree, Printer, RotateCcw, Split, Undo2 } from "lucide-react";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, formatTRY, type PaymentMethod } from "@viadent/contracts";
 import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -9,18 +9,20 @@ import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField, DateField } from "@/components/ui";
 import { minor, money, parseMoneyInput } from "./money-input";
 import { OnlinePayments, ProviderRefundDrawer } from "./online-payments";
+import { printReceipt } from "./receipt-print";
+import { Invoices } from "./invoices";
 
 interface Receivable { id: string; source: string; description: string; amount: string; status: string; cancelReason: string | null; dueDate: string; createdAt: string;
   practitionerName: string | null; allocated: string; open: string }
 interface Payment { id: string; amount: string; method: PaymentMethod | "online"; paidAt: string; note: string | null; accountName: string; receivedBy: string;
-  allocated: string; refunded: string; available: string }
+  allocated: string; refunded: string; available: string; receiptId: string | null; receiptNo: string | null }
 interface Allocation { id: string; paymentId: string; receivableId: string; amount: string; reversesId: string | null; reason: string | null; at: string; by: string }
 interface LedgerRow { at: string; kind: string; ref: string; description: string; amount: string; openDebtAfter: string; advanceAfter: string }
 export interface Account {
   currency: "TRY"; reconciled: boolean;
   totals: { receivable: string; allocated: string; openDebt: string; paid: string; refunded: string; advance: string; cancelledReceivable: string };
   receivables: Receivable[]; payments: Payment[]; allocations: Allocation[];
-  refunds: { id: string; paymentId: string; amount: string; method: string; reason: string; at: string; by: string }[];
+  refunds: { id: string; paymentId: string; amount: string; method: string; reason: string; at: string; by: string; receiptId: string | null; receiptNo: string | null }[];
   ledger: LedgerRow[];
 }
 interface CashAccount { id: string; name: string; kind: "cash" | "bank" | "pos_manual"; active: boolean }
@@ -113,7 +115,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
               <tbody>
                 {a.payments.map((p) => (
                   <tr key={p.id}>
-                    <td>{fmtDateTime(p.paidAt)}<div className="small muted">{p.receivedBy}</div></td>
+                    <td>{fmtDateTime(p.paidAt)}<div className="small muted">{p.receivedBy}{p.receiptNo && <> · makbuz <span className="mono">{p.receiptNo}</span></>}</div></td>
                     <td>{p.method === "online" ? <>Online <span className="badge badge-warning">MOCK sağlayıcı</span></> : PAYMENT_METHOD_LABELS[p.method]}</td>
                     <td>{p.accountName}</td>
                     <td className="money">{formatTRY(p.amount)}</td>
@@ -121,6 +123,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
                     <td className="money">{minor(p.refunded) > 0n ? `−${formatTRY(p.refunded)}` : "—"}</td>
                     <td className="money"><strong>{formatTRY(p.available)}</strong></td>
                     <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                      {p.receiptId && <button className="btn btn-sm btn-ghost" onClick={() => void printReceipt(p.receiptId!)} aria-label={`Makbuz ${p.receiptNo} yazdır`}><Printer size={14} aria-hidden />Makbuz</button>}
                       {can("payment.write") && minor(p.available) > 0n && openRecs.length > 0 && <button className="btn btn-sm btn-ghost" onClick={() => setDrawer({ kind: "allocate", paymentId: p.id })}>Dağıt</button>}
                       {can("payment.refund") && minor(p.amount) - minor(p.refunded) > 0n && (p.method === "online"
                         ? <button className="btn btn-sm btn-ghost" onClick={() => setDrawer({ kind: "provider_refund", payment: p })}><Undo2 size={14} aria-hidden />Sağlayıcıdan iade</button>
@@ -135,6 +138,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
       </section>
 
       <OnlinePayments patientId={patientId} onChanged={() => void acc.reload()} />
+      <Invoices patientId={patientId} receivables={a.receivables} />
 
       {a.ledger.length > 0 && (
         <section className="card">
@@ -145,6 +149,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
               <tbody>
                 {a.ledger.map((l, i) => {
                   const alloc = l.kind === "allocation" ? a.allocations.find((x) => x.id === l.ref) : undefined;
+                  const refund = l.kind === "refund" ? a.refunds.find((x) => x.id === l.ref) : undefined;
                   const reversed = alloc ? a.allocations.filter((x) => x.reversesId === alloc.id).reduce((s, x) => s + minor(x.amount), 0n) + minor(alloc.amount) <= 0n : false;
                   return (
                     <tr key={`${l.ref}-${l.kind}-${i}`}>
@@ -154,7 +159,10 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
                       <td className="money">{formatTRY(l.amount)}</td>
                       <td className="money">{formatTRY(l.openDebtAfter)}</td>
                       <td className="money">{formatTRY(l.advanceAfter)}</td>
-                      <td>{alloc && !reversed && can("payment.write") && <button className="btn btn-sm btn-ghost" onClick={() => setDrawer({ kind: "reverse", alloc })}><RotateCcw size={14} aria-hidden />Geri al</button>}</td>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        {alloc && !reversed && can("payment.write") && <button className="btn btn-sm btn-ghost" onClick={() => setDrawer({ kind: "reverse", alloc })}><RotateCcw size={14} aria-hidden />Geri al</button>}
+                        {refund?.receiptId && <button className="btn btn-sm btn-ghost" onClick={() => void printReceipt(refund.receiptId!)} aria-label={`İade makbuzu ${refund.receiptNo} yazdır`}><Printer size={14} aria-hidden />İade makbuzu</button>}
+                      </td>
                     </tr>
                   );
                 })}

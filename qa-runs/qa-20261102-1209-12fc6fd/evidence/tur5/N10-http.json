@@ -1,0 +1,52 @@
+{
+ "drPut": 403,
+ "dupPut": 422,
+ "negPut": 422,
+ "fakePut": 422,
+ "bPut": 404,
+ "put": 200,
+ "perf": {
+  "status": 201,
+  "consumables": {
+   "used": 2,
+   "shortages": 0
+  }
+ },
+ "before": {
+  "eld": 4,
+  "ans": 30
+ },
+ "mid": {
+  "eld": 3,
+  "ans": 28
+ },
+ "corr": 200,
+ "afterCorr": {
+  "eld": 3,
+  "ans": 28
+ },
+ "perf2": {
+  "status": 201,
+  "consumables": {
+   "used": 1,
+   "shortages": 1
+  }
+ },
+ "after2": {
+  "eld": 2,
+  "ans": 28
+ },
+ "shortageTasks": 1,
+ "movements": [
+  {
+   "item_id": "3113031e-553d-465e-9e90-6519179a6150",
+   "lot": true,
+   "quantity": "-2.000"
+  },
+  {
+   "item_id": "5ab18d88-5e9c-40b9-baf0-abdc1a37ed50",
+   "lot": false,
+   "quantity": "-1.000"
+  }
+ ]
+}

@@ -75,3 +75,18 @@ Adımlar (bir kez):
 4. **Kaynak**: GitHub deposu (`Bahoz2113/viadent`) → Vercel Git bağlantısı; ya da `vercel deploy` (CLI) ile depo kökünden. Bu ortamdan dosya yükleme (1,6 MB kaynak) araç çağrısıyla yapılamadı.
 5. **Bootstrap**: `curl -X POST https://<alan adı>/api/v1/ops/bootstrap -H "x-ops-token: $OPS_TOKEN" -H "x-viadent-request: 1"` → migration + sentetik seed (boş DB'de bir kez; sonraki çağrılar yalnız yeni migration uygular). Demo hesapları: `yonetici@demo-yesil.test`, `sekreter@…`, `elif.aras@…`, `finans@…`, parola `VIADENT_DEMO_PASSWORD`.
 6. Kapanış: bootstrap sonrası `VIADENT_DEMO_BOOTSTRAP` kaldırılır (uç 404 olur); demo sıfırlama için DB'yi boşaltıp yeniden bootstrap.
+
+## 9. Canlı demo kurulumu (01.11.2026) — gerçekleşen
+Adres: `https://viadent-demo.vercel.app` (Vercel projesi `viadent-demo`, bölge fra1) · Veritabanı: Supabase `piadent-demo` (eu-central-1, PostgreSQL 17) · Depo: `Bahoz2113/piadent` (`main` = yayın anlık görüntüsü, `gelistirme-gecmisi` = tam geçmiş).
+
+Kurulumda çıkan ve düzeltilen üç engel:
+1. **Supabase pooler host'u** `aws-1-eu-central-1.pooler.supabase.com` (varsayılan olarak `aws-0` varsayılmıştı) — bağlantı dizgilerinde düzeltildi. Kullanıcı adı biçimi `rol.<proje-ref>`; uygulama/worker 6543 (transaction), migration 5432 (session), `?sslmode=no-verify`.
+2. **Vercel "etkilenmeyen projeyi atla"** ayarı, kök dizin (`apps/web`) dışındaki değişikliklerde derlemeyi iptal ediyordu (`CANCELED`, errorLink monorepos#skipping-unaffected-projects) → proje ayarı `enableAffectedProjectsDeployments: false`.
+3. **Migration `.sql` dosyaları serverless fonksiyonuna girmiyordu** (`ENOENT /var/task/apps/web/vendor/migrations`; `outputFileTracingIncludes` globu çalışmadı) → `build-serverless.mjs` artık SQL içeriklerini bundle'a gömüyor ve `setMigrationSource()` ile kaydediyor; disk kopyası yalnız yedek. Ayrıca `migrate()` gömülü kaynağı diske tercih eder.
+4. Supabase'de `viadent_backup` rolü yoksa `0020` başarısız olur (grant hedefi). Demoda `create role viadent_backup nologin;` yeterlidir (BYPASSRLS yalnız gerçek yedek alımı için gerekir, Supabase'de superuser ister).
+
+Kurulum sırası: ① Supabase projesi + `create extension btree_gist, pg_trgm, pgcrypto` ② roller (`viadent_owner/app/worker/backup`; owner'a `grant create on database`, `grant all on schema public`) ③ Vercel ortam değişkenleri (gizliler Secret tipinde) ④ Deployment Protection kapalı ⑤ GitHub bağlantısı ⑥ `POST /api/v1/ops/bootstrap` (`x-ops-token`) → migration + seed ⑦ **`VIADENT_DEMO_BOOTSTRAP=0`** ve yeniden dağıtım (kurulum kapısı kapanır).
+
+Doğrulama (01.11.2026): `/api/v1/health` ok · `/api/v1/health/ready` ready, db ok · bootstrap 20/20 migration + seed · yönetici girişi 200, klinik "Yeşilvadi Ağız ve Diş Sağlığı (Demo)", 3 hekim / 3 koltuk, hasta listesi dolu.
+
+Sınırlar: Supabase'de superuser olmadığı için `textlike` LEAKPROOF ayarı (ADR-047) uygulanamaz — büyük hasta hacminde arama dizini devre dışı kalır; pilot barındırmasında kendi PostgreSQL'imizde açıktır. Dosya deposu `/tmp` (kalıcı değil); worker satır içi tik ile çalışır.

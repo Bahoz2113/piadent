@@ -1,0 +1,75 @@
+{
+ "reps": [
+  {
+   "id": "nakit-hareketleri",
+   "status": 200,
+   "ct": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+   "rows": 14,
+   "totals": 7,
+   "info": {
+    "bad": null,
+    "files": [
+     "[Content_Types].xml",
+     "_rels/.rels",
+     "xl/workbook.xml",
+     "xl/_rels/workbook.xml.rels",
+     "xl/styles.xml",
+     "xl/worksheets/sheet1.xml"
+    ],
+    "rows": 23,
+    "formulas": 0,
+    "money": 20,
+    "sheet": "Nakit hareketleri (kaynak satır",
+    "ext": 0
+   }
+  },
+  {
+   "id": "borc-bakiye",
+   "status": 200,
+   "ct": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+   "rows": 3,
+   "totals": 4,
+   "info": {
+    "bad": null,
+    "files": [
+     "[Content_Types].xml",
+     "_rels/.rels",
+     "xl/workbook.xml",
+     "xl/_rels/workbook.xml.rels",
+     "xl/styles.xml",
+     "xl/worksheets/sheet1.xml"
+    ],
+    "rows": 9,
+    "formulas": 0,
+    "money": 24,
+    "sheet": "Borç bakiye sorgulama",
+    "ext": 0
+   }
+  },
+  {
+   "id": "tedavi",
+   "status": 200,
+   "ct": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+   "rows": 1,
+   "totals": 4,
+   "info": {
+    "bad": null,
+    "files": [
+     "[Content_Types].xml",
+     "_rels/.rels",
+     "xl/workbook.xml",
+     "xl/_rels/workbook.xml.rels",
+     "xl/styles.xml",
+     "xl/worksheets/sheet1.xml"
+    ],
+    "rows": 7,
+    "formulas": 0,
+    "money": 3,
+    "sheet": "Tedavi sorgulama",
+    "ext": 0
+   }
+  }
+ ],
+ "unknownFormat": "text/csv; charset=utf-8",
+ "sec8": 403
+}

@@ -4,9 +4,11 @@ import { BrandLogo } from "./brand";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  BarChart3, Building2, CalendarDays, ChevronsLeft, ClipboardList, LogOut, Menu, Search, Settings2, Stethoscope, Sun, Users, Wallet, RefreshCw, UserCog,
+  BarChart3, Building2, CalendarDays, ChevronsLeft, ClipboardList, LogOut, Menu, Palette, Search, Settings2, Stethoscope, Sun, Users, Wallet, RefreshCw, UserCog,
 } from "lucide-react";
 import { useSession } from "@/lib/session";
+import { AppearanceDrawer } from "@/components/appearance-drawer";
+import { TableLabels } from "@/components/table-labels";
 
 const NAV = [
   { href: "/bugun", label: "Bugün", icon: Sun },
@@ -25,6 +27,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [navOpen, setNavOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [q, setQ] = useState("");
   useEffect(() => setNavOpen(false), [path]);
   const active = session.activeMembership;
@@ -81,8 +84,11 @@ export function Shell({ children }: { children: ReactNode }) {
             <span className="muted">{active?.roleLabel}</span>
           </Link>
           <Link href="/hesabim" className="btn btn-ghost icon-btn mobile-only" aria-label="Hesabım ve güvenlik" title="Hesabım"><UserCog size={19} /></Link>
+          <button className="btn btn-ghost icon-btn" onClick={() => setAppearanceOpen(true)} aria-label="Görünüm" title="Görünüm: renk, şema, ölçek"><Palette size={19} /></button>
           <button className="btn btn-ghost icon-btn" onClick={() => void logout()} aria-label="Çıkış yap" title="Çıkış yap"><LogOut size={19} /></button>
         </header>
+        {appearanceOpen && <AppearanceDrawer onClose={() => setAppearanceOpen(false)} />}
+        <TableLabels />
         {contextChanged && (
           <div className="alert alert-warning" role="alert" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
             <RefreshCw size={18} aria-hidden />

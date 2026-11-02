@@ -18,7 +18,7 @@ export const PROVIDER_READINESS: Record<IntegrationKind, { mock: boolean; waitin
   payment: { mock: true, waitingFor: "Ödeme kuruluşu sözleşmesi, sandbox erişimi, callback imza dokümanı; kart verisi PİA-DENT'te tutulmaz" },
   whatsapp: { mock: false, waitingFor: "Resmî WhatsApp Business Platform erişimi (QR oturumu resmî API değildir), şablon onayı" },
   email: { mock: false, waitingFor: "E-posta sağlayıcısı ve alan adı doğrulaması (SPF/DKIM)" },
-  e_invoice: { mock: false, waitingFor: "Yetkili GİB entegratörü sözleşmesi, test belgesi, iptal/itiraz senaryosu ve mali müşavir onayı" },
+  e_invoice: { mock: true, waitingFor: "Yetkili GİB entegratörü sözleşmesi, test belgesi, iptal/itiraz senaryosu ve mali müşavir onayı (MOCK yalnız akış gösterimi; numara resmî değildir)" },
   health_registry: { mock: false, waitingFor: "Sağlık Bakanlığı DHBS/SBYS güncel kapsam teyidi, kayıt/tescil, test ortamı ve veri seti eşlemesi" },
   signature: { mock: false, waitingFor: "Yöntemin klinik/hukuki uygunluk değerlendirmesi ve sağlayıcı seçimi (ADR-033)" },
 };
@@ -39,7 +39,7 @@ export const ONLINE_PAYMENT_STATUS_LABELS: Record<string, string> = {
 export const OnlinePaymentCreate = z.object({ amount: positiveMoney, description: z.string().trim().min(2).max(120).default("Diş tedavisi ödemesi") });
 export const ProviderRefundCreate = z.object({ amount: positiveMoney, reason: z.string().trim().min(3, "İade gerekçesi gerekli").max(300) });
 export const JobReject = z.object({ reason: z.string().trim().min(3, "Gerekçe gerekli").max(300) });
-export const MockConnectionCreate = z.object({ kind: z.enum(["sms", "payment"]) });
+export const MockConnectionCreate = z.object({ kind: z.enum(["sms", "payment", "e_invoice"]) });
 export const ConnectionUpdate = z.object({
   status: z.enum(["active", "disabled"]).optional(),
   mockBehavior: z.enum(["accept", "reject", "timeout", "unavailable"]).optional(),

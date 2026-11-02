@@ -12,3 +12,5 @@
 **Raporlar.** Tedavi raporlarında yalnız kendi işlemleriniz görünür. Prim dökümü finans/yöneticide.
 
 **Dikkat:** işlem iptali bağlı alacağı iptal eder ve tahsilat avansa döner — denetimde görünür. Tanı kodu serbest metindir (kod sistemi pilot kararı).
+
+**Anamnez formu ve klinik çıktılar (02.11.2026).** Kliniğin anamnez formunu yönetici/hekim taslak olarak hazırlar, **yalnız hekim yayınlar** (Yönetim → Anamnez şablonu). Eski kayıtlar alındıkları formla gösterilir. Belgeler → Belge hazırla → **Epikriz / Hasta bilgi föyü / Reçete yazısı**: tanılar, gerçekleşen işlemler ve anamnez kritik işaretleri kayıttan yazılır; serbest metne öneri/ilaç listesi girersiniz. Bu belgeler sağlık verisidir, sekreter göremez. Reçete yazısı **e-reçete değildir**.

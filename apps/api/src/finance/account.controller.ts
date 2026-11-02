@@ -39,8 +39,10 @@ export class AccountController {
       const pay = await c.query(
         `select p.id, p.amount::text, p.method, p.paid_at, p.note, ca.name as account_name, u.full_name as received_by,
                 coalesce((select sum(a.amount) from allocations a where a.payment_id = p.id), 0)::text as allocated,
-                coalesce((select sum(f.amount) from refunds f where f.payment_id = p.id), 0)::text as refunded
+                coalesce((select sum(f.amount) from refunds f where f.payment_id = p.id), 0)::text as refunded,
+                rc.id as receipt_id, rc.receipt_no
            from payments p join cash_accounts ca on ca.id = p.cash_account_id join users u on u.id = p.received_by
+           left join receipts rc on rc.kind = 'payment' and rc.payment_id = p.id
           where p.patient_id = $1 order by p.paid_at, p.id`,
         [patientId],
       );
@@ -51,8 +53,9 @@ export class AccountController {
         [patientId],
       );
       const ref = await c.query(
-        `select f.id, f.payment_id, f.amount::text, f.method, f.reason, f.refunded_at, u.full_name as by
+        `select f.id, f.payment_id, f.amount::text, f.method, f.reason, f.refunded_at, u.full_name as by, rc.id as receipt_id, rc.receipt_no
            from refunds f join payments p on p.id = f.payment_id join users u on u.id = f.created_by
+           left join receipts rc on rc.kind = 'refund' and rc.refund_id = f.id
           where p.patient_id = $1 order by f.refunded_at, f.id`,
         [patientId],
       );
@@ -65,6 +68,7 @@ export class AccountController {
       const payments = pay.rows.map((p) => ({
         id: p.id, amount: p.amount, method: p.method, paidAt: p.paid_at, note: p.note, accountName: p.account_name, receivedBy: p.received_by,
         allocated: p.allocated, refunded: p.refunded, available: fromMinor(toMinor(p.amount) - toMinor(p.refunded) - toMinor(p.allocated)),
+        receiptId: p.receipt_id ?? null, receiptNo: p.receipt_no ?? null,
       }));
       const active = receivables.filter((r) => r.status === "active");
       const totals = {
@@ -102,7 +106,8 @@ export class AccountController {
       return {
         currency: "TRY", totals, reconciled, receivables, payments,
         allocations: alloc.rows.map((a) => ({ id: a.id, paymentId: a.payment_id, receivableId: a.receivable_id, amount: a.amount, reversesId: a.reverses_id, reason: a.reason, at: a.created_at, by: a.by })),
-        refunds: ref.rows.map((f) => ({ id: f.id, paymentId: f.payment_id, amount: f.amount, method: f.method, reason: f.reason, at: f.refunded_at, by: f.by })),
+        refunds: ref.rows.map((f) => ({ id: f.id, paymentId: f.payment_id, amount: f.amount, method: f.method, reason: f.reason, at: f.refunded_at, by: f.by,
+          receiptId: f.receipt_id ?? null, receiptNo: f.receipt_no ?? null })),
         ledger,
       };
     });
@@ -173,7 +178,8 @@ export class AccountController {
           allocationIds.push(await allocate(c, ctx, pid, a.receivableId, a.amount));
         }
         await enqueue(c, ctx.tenantId, "via_net.changed", { patientId: i.patientId });
-        return { id: pid, allocationIds, advance: fromMinor(toMinor(i.amount) - allocSum) };
+        const rc = (await c.query("select id, receipt_no from receipts where kind = 'payment' and payment_id = $1", [pid])).rows[0];
+        return { id: pid, allocationIds, advance: fromMinor(toMinor(i.amount) - allocSum), receiptId: rc?.id ?? null, receiptNo: rc?.receipt_no ?? null };
       });
       replayHeader(res, r);
       return r.body;
@@ -245,7 +251,8 @@ export class AccountController {
         await lockAccount(c, p.patient_id);
         const out = await refundPayment(c, ctx, paymentId, { amount: i.amount, method: i.method, cashAccountId: i.cashAccountId, reason: i.reason });
         await enqueue(c, ctx.tenantId, "via_net.changed", { patientId: p.patient_id });
-        return { id: out.id, reversedAllocations: out.reversedAllocations };
+        const rc = (await c.query("select id, receipt_no from receipts where kind = 'refund' and refund_id = $1", [out.id])).rows[0];
+        return { id: out.id, reversedAllocations: out.reversedAllocations, receiptId: rc?.id ?? null, receiptNo: rc?.receipt_no ?? null };
       });
       replayHeader(res, r);
       return r.body;

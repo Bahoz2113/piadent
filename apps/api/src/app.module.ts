@@ -19,10 +19,13 @@ import { InvitationsController } from "./team/invitations.controller.js";
 import { ResourcesController } from "./scheduling/resources.controller.js";
 import { RelationsController } from "./patients/relations.controller.js";
 import { AnamnesisController } from "./clinical/anamnesis.controller.js";
+import { AnamnesisTemplatesController } from "./clinical/anamnesis-templates.controller.js";
 import { CatalogController } from "./treatment/catalog.controller.js";
 import { PlansController } from "./treatment/plans.controller.js";
 import { ChartController } from "./treatment/chart.controller.js";
 import { AccountController } from "./finance/account.controller.js";
+import { ReceiptsController } from "./finance/receipts.controller.js";
+import { InvoicesController } from "./finance/invoices.controller.js";
 import { FinanceController } from "./finance/finance.controller.js";
 import { DocumentsController } from "./documents/documents.controller.js";
 import { FilesController } from "./documents/files.controller.js";
@@ -35,13 +38,14 @@ import { ReportsController } from "./reports/reports.controller.js";
 import { ImportController } from "./pilot/import.controller.js";
 import { ExportController } from "./pilot/export.controller.js";
 import { MfaController } from "./auth/mfa.controller.js";
+import { AppearanceController } from "./auth/appearance.controller.js";
 
 @Module({})
 export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, SecurityController],
+      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, AnamnesisTemplatesController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, ReceiptsController, InvoicesController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, AppearanceController, SecurityController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

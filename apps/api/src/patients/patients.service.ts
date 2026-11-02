@@ -1,13 +1,13 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type pg from "pg";
-import {
+import { questionLabel,
   isValidTckn, localDate, maskNationalId, maskPhone, normalizePhone, normalizeSearch, toTitleTr,
   type PatientCreate, type PatientUpdate,
 } from "@viadent/contracts";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES, audit, diff, enqueue } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, audit, diff, enqueue, notClinicalOutputDocSql, notHiddenFileEventSql, notHiddenTaskEventSql } from "../audit/audit.js";
 import { decryptField, encryptField, indexHash } from "@viadent/db";
 
 export interface DuplicateCandidate {
@@ -231,7 +231,9 @@ export class PatientsService {
         await audit(c, ctx, { action: "access.denied_or_missing", entityType: "patient", entityId: id });
         return null;
       }
-      const openTasks = await c.query("select count(*)::int as n from tasks where patient_id = $1 and status in ('open','in_progress','blocked')", [id]);
+      // Sayaç, görev listesiyle (GET /tasks) aynı hassasiyet süzgecini kullanır: görünmeyen görev sayılmaz (QA-109, ADR-091).
+      const taskSensitivities = ["general", ...(has(ctx, "patient.health.read") ? ["clinical"] : []), ...(has(ctx, "finance.read") ? ["finance"] : [])];
+      const openTasks = await c.query("select count(*)::int as n from tasks where patient_id = $1 and status in ('open','in_progress','blocked') and sensitivity = any($2::text[])", [id, taskSensitivities]);
       const rel = await c.query(
         `select count(*) filter (where is_legal_representative and (valid_until is null or valid_until >= current_date))::int as reps,
                 count(*)::int as total
@@ -240,14 +242,17 @@ export class PatientsService {
       );
       const base = this.present(ctx, r.rows[0]);
       // Kritik anamnez işaretleri yalnız sağlık yetkili rollere döner (sekreter/yönetici varlığını bile görmez).
-      let clinical: { criticalFlags: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null = null;
+      let clinical: { criticalFlags: string[]; criticalFlagLabels: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null = null;
       if (has(ctx, "patient.health.read")) {
         const a = await c.query(
-          `select v.version, v.critical_flags, exists(select 1 from anamnesis_reviews rv where rv.anamnesis_id = v.id) as reviewed
+          `select v.version, v.critical_flags, exists(select 1 from anamnesis_reviews rv where rv.anamnesis_id = v.id) as reviewed,
+                  (select t.questions from anamnesis_templates t where t.id = v.template_id) as questions
              from anamnesis_versions v where v.patient_id = $1 order by v.version desc limit 1`,
           [id],
         );
-        clinical = { criticalFlags: a.rows[0]?.critical_flags ?? [], anamnesisVersion: a.rows[0]?.version ?? null, anamnesisReviewed: a.rows[0]?.reviewed ?? false };
+        const flags: string[] = a.rows[0]?.critical_flags ?? [];
+        const qs = (a.rows[0]?.questions as { key: string; label: string }[] | null) ?? undefined;
+        clinical = { criticalFlags: flags, criticalFlagLabels: flags.map((f) => questionLabel(f, (qs ?? undefined) as never)), anamnesisVersion: a.rows[0]?.version ?? null, anamnesisReviewed: a.rows[0]?.reviewed ?? false };
       }
       return {
         ...base,
@@ -295,7 +300,7 @@ export class PatientsService {
     });
   }
 
-  /** PİA İz: okunabilir hasta geçmişi. Klinik içerik değişiklikleri yalnız sağlık yetkisiyle görünür. */
+  /** PİA İz: okunabilir hasta geçmişi. Klinik içerik değişiklikleri yalnız sağlık yetkisiyle görünür (gizli dosya olayları dahil; QA-108). */
   async history(ctx: RequestContext, id: string) {
     return this.db.tx(ctx, async (c) => {
       const exists = await c.query("select 1 from patients where id = $1", [id]);
@@ -303,7 +308,7 @@ export class PatientsService {
       const r = await c.query(
         `select e.id, e.action, e.entity_type, e.entity_id, e.changes, e.created_at, u.full_name as actor_name
            from audit_events e left join users u on u.id = e.actor_user_id
-          where e.patient_id = $1 and ($2::boolean or e.entity_type <> all($3::text[]))
+          where e.patient_id = $1 and ($2::boolean or (e.entity_type <> all($3::text[]) and ${notClinicalOutputDocSql("e")} and ${notHiddenFileEventSql("e")} and ${notHiddenTaskEventSql("e")}))
           order by e.created_at desc, e.id desc limit 200`,
         [id, has(ctx, "patient.health.read"), CLINICAL_ENTITY_TYPES],
       );
