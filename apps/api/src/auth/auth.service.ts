@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { randomBytes } from "node:crypto";
 import { verifyPassword, DUMMY_HASH, newSessionToken, hashToken, decryptSecret, verifyTotp, RECOVERY_CODE_RE, normalizeRecoveryCode } from "@viadent/db";
-import { permissionsFor, ROLE_LABELS, type Role } from "@viadent/contracts";
+import { normalizeAppearance, permissionsFor, ROLE_LABELS, type Role } from "@viadent/contracts";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
 import { CONFIG, type AppConfig } from "../config.js";
@@ -19,6 +19,8 @@ export interface SessionRow {
   mfaEnabled: boolean;
   /** Geçici parolayla girildi: yalnız Hesabım (parola değiştirme) açık. */
   mustChangePassword: boolean;
+  /** Görünüm tercihi (ADR-082); normalize edilmemiş ham jsonb. */
+  appearance: unknown;
 }
 
 export interface MembershipRow {
@@ -133,7 +135,7 @@ export class AuthService {
 
   async resolveSession(token: string): Promise<SessionRow | null> {
     const r = await this.db.pool.query(
-      `select s.id, s.user_id, s.active_membership_id, s.last_seen_at, u.full_name, u.email, (u.mfa_enabled_at is not null) as mfa, u.must_change_password
+      `select s.id, s.user_id, s.active_membership_id, s.last_seen_at, u.full_name, u.email, (u.mfa_enabled_at is not null) as mfa, u.must_change_password, u.appearance
          from sessions s join users u on u.id = s.user_id
         where s.token_hash = $1 and s.revoked_at is null and s.expires_at > now() and u.status = 'active'`,
       [hashToken(token)],
@@ -148,7 +150,7 @@ export class AuthService {
     }
     // last_seen_at en çok 1 dk'da bir yazılır (yazma yükü); boşta süresi bu toleransla ölçülür.
     if (idleMs > 60_000) await this.db.pool.query("update sessions set last_seen_at = now() where id = $1", [s.id]);
-    return { sessionId: s.id, userId: s.user_id, userName: s.full_name, email: s.email, activeMembershipId: s.active_membership_id, lastSeenAt: s.last_seen_at, mfaEnabled: s.mfa, mustChangePassword: s.must_change_password };
+    return { sessionId: s.id, userId: s.user_id, userName: s.full_name, email: s.email, activeMembershipId: s.active_membership_id, lastSeenAt: s.last_seen_at, mfaEnabled: s.mfa, mustChangePassword: s.must_change_password, appearance: s.appearance };
   }
 
   /** Üyelik her istekte yeniden doğrulanır: iptal edilen üyelik açık oturumda da hemen etkisizdir (AT-20). */
@@ -218,7 +220,7 @@ export class AuthService {
 
   describe(session: SessionRow, active: MembershipRow | null, memberships: MembershipRow[]) {
     return {
-      user: { id: session.userId, fullName: session.userName, email: session.email },
+      user: { id: session.userId, fullName: session.userName, email: session.email, appearance: normalizeAppearance(session.appearance) },
       activeMembership: active
         ? { id: active.id, tenantId: active.tenantId, tenantName: active.tenantName, timezone: active.timezone, role: active.role, roleLabel: ROLE_LABELS[active.role] }
         : null,

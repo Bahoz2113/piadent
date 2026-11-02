@@ -36,6 +36,7 @@ Kaynaklar: `PiaDent_Claude_Eksik_Tamamlama_Nihai_Dosyasi.pdf`, `PiaDent_Mevcut_S
 | 4.4 Mobil tablo kart görünümü (D5) | ≤480px'te öncelikli kolonlar kart; axe + E2E telefon-360 |
 | 4.5 İşlem başına stok sarf reçetesi (C4) | Katalog kalemine sarf listesi; işlem tamamlanınca otomatik `usage` (geri alınabilir) |
 | 4.6 `docs/kilavuz` ekran görüntüleri yeni marka | Betikle yeniden üretim |
+| 4.7 Görünüm kişiselleştirme (D7) ✔ 02.11 (ADR-082) | Vurgu paleti/şema/ölçek kullanıcı düzeyi; her palet × şema AA kontrast testi; koyu şemada axe |
 Çıkış kapısı: tam CEZERİ koşusu, TESLİME ADAY; ardından insan kapıları.
 
 ## Riskler

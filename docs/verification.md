@@ -230,3 +230,12 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 | `pnpm --filter @viadent/api test` | **269/269** (gorev7 yedek doğrulaması `receipt_counters` SELECT yetkisi eklenince geçti) |
 | web 25 · contracts 15 | geçti |
 | `npx playwright test` (temiz seed, API+worker+web derlenmiş) | **78 geçti + 8 atlama** — yeni `makbuz.spec.ts` (masaüstü + 360 px): tahsilat → listede `TM-…` → Makbuz düğmesi → açılan pencerede no/tutar/"fatura yerine geçmez" |
+
+## Faz 4.7 — Görünüm (02.11.2026, ADR-082)
+| Komut | Sonuç |
+|---|---|
+| `0022_user_appearance.sql` | uygulandı |
+| `pnpm typecheck` | 5/5 |
+| `vitest run test/appearance.test.ts` (API) | 4/4: varsayılan + oturumda; saklama + yeni oturumda gelir; 422 (bilinmeyen palet/ölçek/fazla alan); 401 |
+| `pnpm --filter @viadent/web test` | **58/58** (yeni `appearance-contrast.test.ts` 33: loş/koyu yüzey-metin-rozet-odak; 7 palet × 3 şema birincil/yüzey, düğme metni, rozet, vurgu kartı; CSS = contracts; px yazı boyutu yok) |
+| `npx playwright test e2e/gorunum.spec.ts e2e/erisilebilirlik.spec.ts` | **12/12** — lacivert+koyu+ölçek 4 anında (`--brand-primary #9db4ee`, kök 17px), çekmece ve Bugün koyu şemada axe temiz, yenilemede korunur, yeni bağlamda sunucudan gelir, Hesabım'dan varsayılana dönüş |

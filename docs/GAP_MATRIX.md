@@ -59,7 +59,7 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | D4 | Klinik çıktı şablonları (epikriz, reçete, hasta bilgi föyü) | KISMI | belge motoru var (`documents.controller.ts`), kategori setinde klinik çıktı yok | Faz 1 |
 | D5 | Mobil: geniş tablolar | KISMI | `globals.css:144` `.table-wrap{overflow-x:auto}` + kırılımlar 264-318; E2E `telefon-360` projesi | PDF: kart görünümü/kolon gizleme yok; yatay kaydırma var |
 | D6 | Marka yazımı | KARAR VERİLDİ (02.11) | Ürün sahibi: **PİA-DENT** (ADR-081 notu) | PDF'deki "PiaDent" geçersiz |
-| D7 | Tema/ölçek/renk şeması kişiselleştirme | KAPSAM DIŞI | tek marka paleti (ADR-080) | Erişilebilirlik kontrast testi var (`contrast.test.ts`) |
+| D7 | Tema/ölçek/renk şeması kişiselleştirme | **MEVCUT (02.11, ADR-082)** | `contracts/appearance.ts`, `0022_user_appearance.sql`, `auth/appearance.controller.ts`, `components/appearance-drawer.tsx`, `lib/appearance.ts`; testler `appearance-contrast.test.ts` 33, API 4, E2E `gorunum.spec.ts` | 7 palet × 4 şema × 5 ölçek; logo sabit |
 | D8 | Hasta portalı / online randevu | KAPSAM DIŞI | yok | Faz 4+ (ayrı güvenlik modeli gerekir) |
 
 ## E. Güvenlik, çok kiracılılık, uyum
@@ -86,6 +86,6 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | e-İmza | yok | `signature` tanımlı | — |
 
 ## Özet sayım
-MEVCUT 32 (B4 02.11'de eklendi) · KISMI 5 (C4, C5, D1, D4, D5) · EKSİK 1 (D3 anamnez şablonu) · BOZUK 1 (D2 ham rapor kodları) · KAPSAM DIŞI 7 · KARAR 0 (D6 → PİA-DENT).
+MEVCUT 33 (B4, D7 02.11'de eklendi) · KISMI 5 (C4, C5, D1, D4, D5) · EKSİK 1 (D3 anamnez şablonu) · BOZUK 1 (D2 ham rapor kodları) · KAPSAM DIŞI 6 · KARAR 0 (D6 → PİA-DENT).
 
 Video incelemesinin "P0 eksik" dediği 7 kalemden 5'i (anamnez, tanı, odontogram, diş/yüzey işlem girişi, plan yaşam döngüsü) kodda mevcut ve test altında; gerçek 2 P0 açığı: **makbuz çıktısı (B4)** ve **fatura taslağı iç modeli (B5)**.

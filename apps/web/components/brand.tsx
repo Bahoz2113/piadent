@@ -12,9 +12,9 @@ export const BRAND_MARK_PATHS = {
 export function BrandMark({ size = 30, tile = true, title = "PİA-DENT" }: { size?: number; tile?: boolean; title?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 92 92" role="img" aria-label={title} focusable="false">
-      {tile && <rect width="92" height="92" rx="22" fill="var(--brand-primary, #0f5c4d)" />}
-      <path d={BRAND_MARK_PATHS.smile} fill="none" stroke={tile ? "#ffffff" : "var(--brand-primary, #0f5c4d)"} strokeWidth="9" strokeLinecap="round" />
-      <path d={BRAND_MARK_PATHS.pulse} fill="none" stroke="var(--brand-accent, #c66b3d)" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
+      {tile && <rect width="92" height="92" rx="22" fill="#0f5c4d" />}
+      <path d={BRAND_MARK_PATHS.smile} fill="none" stroke={tile ? "#ffffff" : "#0f5c4d"} strokeWidth="9" strokeLinecap="round" />
+      <path d={BRAND_MARK_PATHS.pulse} fill="none" stroke="#c66b3d" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
