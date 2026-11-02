@@ -52,3 +52,18 @@
   3. `GET /documents/:id` kanıt listesinde ve dışa aktarım `evidence_events` içinde gizli dosyanın `fileId`/`file_id` alanı sağlık yetkisi olmayan rol için görünmez (null/çıkarılmış; kanıt satırının kendisi kalır). Alternatif ya da ek olarak onam taraması bağlamada kategori kısıtı getirilirse ADR'de yazılır ve hekim akışı testle sabitlenir.
   4. Regresyon testi `apps/api/test/qa-108-file-trace.test.ts`; önce yamasız kırmızı, sonra yeşil; tam API paketi + typecheck.
 - Kurallar/ortam/dal tabanı: Devir 3 ile aynı (çalışma dalını yerel `main` ucundan aç: `git checkout -b fix/qa-20261102-tur4 main`). Geri dönüş `fix4.md`.
+
+---
+
+# Devir 5 — qa-20261102-1209-12fc6fd tur 5 → cezeri-duzeltici
+
+- Sınanan sürüm: `fe98345` (ürün = fix4 `81584fa`, cherry-pick). QA-108 → VERIFIED.
+- Açık: **QA-109 (S3)** — `bugs.md`; kanıt `evidence/tur5/quarantine-task-probe.json`.
+- Kabul ölçütleri (gevşetilmez):
+  1. ADR-089 kuralına göre gizli olan (klinik hassasiyetli ya da klinik çıktıya bağlı) dosya karantinaya/redde düştüğünde açılan görev, sağlık yetkisi olmayan role (`GET /tasks`, görev ayrıntısı/durum uçları, varsa bildirim/Bugün ekranı sayaçları) görünmez; var olmayan görevle aynı yanıt.
+  2. Görev, dosyayı ele alabilecek role yönlenir (ör. `sensitivity` klinik + atanan `dentist`) ya da yöneticinin işlem yolu ADR-091'de tanımlanır; seçilen yolun uçtan uca işlediği testle gösterilir (görevi alan rol dosya ayrıntısını açabilir veya görevi kapatabilir).
+  3. İdari dosya karantina görevi bugünkü davranışı korur.
+  4. Var olan görev kayıtları için gerekiyorsa yeni migration `0030_*`; uygulanmışlar değişmez.
+  5. Regresyon testi `apps/api/test/qa-109-quarantine-task.test.ts` (yamasız kırmızı → yamalı yeşil); tam API paketi, worker testleri, typecheck; web değişirse web testleri.
+- Ek: aynı sınıftan kalan yüzeyleri (bildirimler, Bugün/görev sayaçları, metrikler, PİA Akış/eskalasyon görevleri, yedek/hazırlık raporları) kod okumayla tara; kapsamda olanları düzelt, kalanları `fix5.md`'de risk olarak yaz.
+- Kurallar/ortam/dal tabanı: Devir 3–4 ile aynı (`git checkout -b fix/qa-20261102-tur5 main`). Geri dönüş `fix5.md`.

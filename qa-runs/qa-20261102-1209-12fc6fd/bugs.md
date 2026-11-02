@@ -1,4 +1,4 @@
-# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098 · tur 4: 49a151b)
+# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098 · tur 4: 49a151b · tur 5: fe98345)
 
 | ID | Önem | Durum | Vaka | Başlık | Sorumlu |
 |---|---|---|---|---|---|
@@ -9,7 +9,8 @@
 | QA-105 | S2 | VERIFIED (tur 3, bb49098) | N05 (komşu) | Onam/belge raporu klinik çıktı belgelerini (hasta, tür "Epikriz / tedavi özeti", başlık) sağlık yetkisi olmayan role listeliyor | Kodlama |
 | QA-106 | S2 | VERIFIED (tur 4, 49a151b) | N05 (komşu) / fix2 risk 1 | Hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik hassasiyetli dosyaların (radyograf vb.) metaverisini (ad, kategori, SHA-256) alıyor; aynı kullanıcı dosya listesinde bunları görmüyor | Kodlama (cezeri-duzeltici) |
 | QA-107 | S3 | VERIFIED (tur 4, 49a151b) | N05 (komşu) / fix1 risk 3 | Klinik çıktı belgesine bağlanmış idari kategorili dosya (document_scan) sekretere listede, ayrıntıda görünüyor ve klinik belge kimliğini (`patientDocumentId`) açığa veriyor; dışa aktarım ise aynı dosyayı gizliyor (tutarsız) | Kodlama |
-| QA-108 | S3 | OPEN | N11 / fix3 risk 1–2 | Gizli klinik dosyanın izi sağlık yetkisi olmayana görünüyor: hasta geçmişinde `file.upload` olayı (dosya kimliği + SHA-256), dışa aktarım `access_log` satırı, onam kanıtında `fileId` | Kodlama (cezeri-duzeltici) |
+| QA-108 | S3 | VERIFIED (tur 5, fe98345) | N11 / fix3 risk 1–2 | Gizli klinik dosyanın izi sağlık yetkisi olmayana görünüyor: hasta geçmişinde `file.upload` olayı (dosya kimliği + SHA-256), dışa aktarım `access_log` satırı, onam kanıtında `fileId` | Kodlama (cezeri-duzeltici) |
+| QA-109 | S3 | OPEN | N11 / fix4 risk 1 | Gizli klinik dosya karantinaya düşünce açılan `file_quarantined` görevi `sensitivity: general` ile sekretere dosya kimliği ve hastayla görünüyor; atanan yönetici dosyayı açamıyor (404) | Kodlama (cezeri-duzeltici) |
 
 ## QA-101 (S1) — Klinik çıktı belgesi yazma uçlarında sağlık kapısı yok
 - **Ortam/sürüm:** yerel test, `12fc6fd`, sentetik hasta "Epikriz Sınama" (A kliniği).
@@ -90,6 +91,18 @@
 - **Etki:** yalnız opak kimlik ve özet; içerik, ad, kategori yok → S3.
 - **Kanıt:** `evidence/tur4/file-trace-probe.json`, `evidence/tur4/file-history-secretary.json`, `evidence/tur4/evidence-file-probe.json`.
 - **Kök neden ipucu:** `patients.service.ts history()` ve `export.controller.ts access_log` sorgusu `file` varlık türünde görünürlüğü (`nonClinicalFileSql`) uygulamıyor; `documents.controller.ts` ayrıntıdaki `evidence` eşlemesi (satır ~268–275) ve dışa aktarım `evidence_events` `file_id`'yi süzmüyor.
+
+## Tur 5 yeniden sınama (fe98345 = ürün 81584fa, temiz seed)
+- **QA-108 VERIFIED:** sekreter/yönetici geçmişinde gizli radyografın olayı yok (hekimde `file.upload` var); dışa aktarım `access_log` dosya satırı 0; onam kanıtında gizli dosya kimliği sekretere ve dışa aktarımda görünmüyor; hekimin radyografı onam nüshası olarak bağlaması 200 (ADR-090 §4). Kanıt `evidence/tur5/file-trace-probe.json`, `evidence-file-probe.json`.
+- QA-106 kontrolü yeniden PASS (`evidence/tur5/file-sensitivity-probe.json`); HTTP/N vakaları 8/8 + 9/9 PASS.
+
+## QA-109 (S3) — Karantina görevi gizli klinik dosyayı açık ediyor
+- **Ortam/sürüm:** yerel test, `fe98345`, temiz seed; tester sondası `qa-runs/.scripts/quarantine-task-probe.mjs` (zararsız sentetik PDF; yalnız `/JavaScript` anahtar sözcüğü tarayıcı kuralını tetikler).
+- **Adımlar:** (1) Hekim `clinical_document` kategorili PDF yükler → worker `quarantined`. (2) Sekreter `GET /tasks` → `file_quarantined` görevi (`sensitivity: general`, atanan `clinic_admin`, `sourceId` = dosya kimliği, hasta bağlı). (3) Yönetici aynı görevi görür ama `GET /files/:id` → 404.
+- **Beklenen:** ADR-089/090 ile tutarlı: gizli dosyaya ait karantina görevi sağlık yetkisi olmayan role dosya kimliğini ve dosyanın varlığını açmaz (görev hassasiyeti `clinical`/`health` olur ya da kimlik maskelenir); görev, dosyayı gerçekten ele alabilecek role (sağlık yetkili: hekim) yönlenir veya yöneticinin işlem yolu ADR'de tanımlanır. İdari dosya karantina görevi bugünkü gibi kalır.
+- **Etki:** opak kimlik + "bu hastanın karantinada bir dosyası var" bilgisi; ayrıca atanan rol görevi dosya üzerinden çözemiyor (işlem yolu kopuk) → S3.
+- **Kanıt:** `evidence/tur5/quarantine-task-probe.json`.
+- **Kök neden ipucu:** `packages/db/src/files.ts` (~satır 154–157) görevi sabit `'general'` hassasiyet ve `clinic_admin` ile açıyor; `apps/api/src/tasks/*.ts` (~satır 27–61) görünürlüğü yalnız `sensitivity` ile süzüyor.
 
 ## Ortam / betik notları (ürün kusuru değil)
 - Tarayıcı betiğinin ilk iki koşusunda N02/N05 "FAIL" tester betiği hatasıydı (hasta adı "Epikriz Sınama" metin aramasına takıldı; diyalog seçici; "Belge düzenlendi" etiketi kalıpta yoktu). Betik düzeltildi; son koşu `evidence/tur1/browser-n-summary.json`.
