@@ -1,4 +1,4 @@
-# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098 · tur 4: 49a151b · tur 5: fe98345)
+# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098 · tur 4: 49a151b · tur 5: fe98345 · tur 6: eb1c1f3)
 
 | ID | Önem | Durum | Vaka | Başlık | Sorumlu |
 |---|---|---|---|---|---|
@@ -10,7 +10,8 @@
 | QA-106 | S2 | VERIFIED (tur 4, 49a151b) | N05 (komşu) / fix2 risk 1 | Hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik hassasiyetli dosyaların (radyograf vb.) metaverisini (ad, kategori, SHA-256) alıyor; aynı kullanıcı dosya listesinde bunları görmüyor | Kodlama (cezeri-duzeltici) |
 | QA-107 | S3 | VERIFIED (tur 4, 49a151b) | N05 (komşu) / fix1 risk 3 | Klinik çıktı belgesine bağlanmış idari kategorili dosya (document_scan) sekretere listede, ayrıntıda görünüyor ve klinik belge kimliğini (`patientDocumentId`) açığa veriyor; dışa aktarım ise aynı dosyayı gizliyor (tutarsız) | Kodlama |
 | QA-108 | S3 | VERIFIED (tur 5, fe98345) | N11 / fix3 risk 1–2 | Gizli klinik dosyanın izi sağlık yetkisi olmayana görünüyor: hasta geçmişinde `file.upload` olayı (dosya kimliği + SHA-256), dışa aktarım `access_log` satırı, onam kanıtında `fileId` | Kodlama (cezeri-duzeltici) |
-| QA-109 | S3 | OPEN | N11 / fix4 risk 1 | Gizli klinik dosya karantinaya düşünce açılan `file_quarantined` görevi `sensitivity: general` ile sekretere dosya kimliği ve hastayla görünüyor; atanan yönetici dosyayı açamıyor (404) | Kodlama (cezeri-duzeltici) |
+| QA-109 | S3 | VERIFIED (tur 6, eb1c1f3) | N11 / fix4 risk 1 | Gizli klinik dosya karantinaya düşünce açılan `file_quarantined` görevi `sensitivity: general` ile sekretere dosya kimliği ve hastayla görünüyor; atanan yönetici dosyayı açamıyor (404) | Kodlama (cezeri-duzeltici) |
+| QA-110 | S3 | OPEN | N05 (komşu) / fix5 risk 2 | Hazırlık kuralı klinik çıktı belge türüne (EPIKRIZ) bağlanabiliyor; sekreter randevu hazırlığında "Epikriz / tedavi özeti: Belge hazırlanmamış → Hazır" geçişiyle belgenin varlığını öğreniyor | Kodlama (cezeri-duzeltici) |
 
 ## QA-101 (S1) — Klinik çıktı belgesi yazma uçlarında sağlık kapısı yok
 - **Ortam/sürüm:** yerel test, `12fc6fd`, sentetik hasta "Epikriz Sınama" (A kliniği).
@@ -104,8 +105,21 @@
 - **Kanıt:** `evidence/tur5/quarantine-task-probe.json`.
 - **Kök neden ipucu:** `packages/db/src/files.ts` (~satır 154–157) görevi sabit `'general'` hassasiyet ve `clinic_admin` ile açıyor; `apps/api/src/tasks/*.ts` (~satır 27–61) görünürlüğü yalnız `sensitivity` ile süzüyor.
 
+## Tur 6 yeniden sınama (eb1c1f3 = ürün b1b84a4 + 0030, temiz seed)
+- **QA-109 VERIFIED:** gizli klinik PDF karantinaya düştü; sekreter ve yönetici görev listesinde görev/kimlik yok; hekim görür. Kanıt `evidence/tur6/quarantine-task-probe.json`.
+- QA-106/107/108 sondaları yeniden PASS (`evidence/tur6/*-probe.json`); HTTP/N vakaları 8/8 + 9/9 PASS.
+
+## QA-110 (S3) — Hazırlık kuralı klinik çıktı türüne bağlanabiliyor
+- **Ortam/sürüm:** yerel test, `eb1c1f3`, temiz seed; tester sondası `qa-runs/.scripts/readiness-clinical-probe.mjs` (kural sonda sonunda pasifleştirilir).
+- **Adımlar:** (1) Yönetici `POST /readiness-rules` `{kind: document_for_procedure, procedureId: KAN-01, documentTypeId: EPIKRIZ}` → 201. (2) Hastanın kabul edilmiş planında KAN-01, yarına randevu. (3) Sekreter `GET /appointments/:id/readiness` → "Epikriz / tedavi özeti (KAN-01): missing — Belge hazırlanmamış". (4) Hekim epikriz düzenler. (5) Sekreter aynı uç → "ok — Hazır".
+- **Beklenen:** klinik çıktı belgeleri (ADR-085) sağlık yetkisi olmayan role varlığıyla bile görünmez. Hazırlık kuralı klinik çıktı türüne bağlanamamalı (422, gerekçeli) ya da bu kalem sağlık yetkisi olmayan rolde (hazırlık ucu, `readiness_missing` görevi, Bugün/PİA Akış) gösterilmemeli; seçim ADR'de. Var olan böyle kurallar için davranış tanımlanmalı.
+- **Etki:** yalnız belge varlığı/yokluğu; yönetici yapılandırması gerektiriyor → S3.
+- **Kanıt:** `evidence/tur6/readiness-clinical-probe.json`.
+- **Kök neden ipucu:** `apps/api/src/documents/care.controller.ts createRule` (~satır 189–205) belge türü kategorisini kontrol etmiyor; `packages/db/src/readiness.ts readinessFor` kalemleri role göre süzmüyor.
+
 ## Ortam / betik notları (ürün kusuru değil)
 - Tarayıcı betiğinin ilk iki koşusunda N02/N05 "FAIL" tester betiği hatasıydı (hasta adı "Epikriz Sınama" metin aramasına takıldı; diyalog seçici; "Belge düzenlendi" etiketi kalıpta yoktu). Betik düzeltildi; son koşu `evidence/tur1/browser-n-summary.json`.
 - n-cases N02'de "Unicode ad" kontrolü listede ilk şahıs faturasını (yuvarlama faturası, aynı alıcı adı) okudu; ad yine "Şükrü Çağlayan İğdır" olarak birebir döndü.
 - Tur 2 (tester betiği düzeltmesi, ürün kusuru değil): n-cases N05 geçmiş kontrolü `/Epikriz/` metin eşleşmesiyle hasta adına ("Epikriz Sınama", patient.create olayı) takılıp yanlış pozitif verdi; artık yalnız belge kimliğiyle eşleşiyor. "Hekim dışa aktarımında belge var" beklentisi yanlıştı (hekimde `export.patient` yok) → 403 beklentisine çevrildi. Ürün beklentisi gevşetilmedi; ilk koşu `evidence/tur2/` korunuyor, düzeltilmiş koşu `evidence/tur2b/`.
 - Tur 2: n-cases aynı veritabanında ikinci kez koşulamıyor (sentetik hasta çakışması) → temiz seed ile `evidence/tur2b/` koşuldu (VD-030 ile aynı sınıf, test ortamı).
+- Tur 6: `readiness-clinical-probe.mjs` ilk iki koşuda tester betiği hatası verdi (hekim kimliği yanlış uçtan, yinelenen sentetik hasta onayı eksik); düzeltildi. Ürün beklentisi değişmedi.

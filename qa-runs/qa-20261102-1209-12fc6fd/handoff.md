@@ -67,3 +67,16 @@
   5. Regresyon testi `apps/api/test/qa-109-quarantine-task.test.ts` (yamasız kırmızı → yamalı yeşil); tam API paketi, worker testleri, typecheck; web değişirse web testleri.
 - Ek: aynı sınıftan kalan yüzeyleri (bildirimler, Bugün/görev sayaçları, metrikler, PİA Akış/eskalasyon görevleri, yedek/hazırlık raporları) kod okumayla tara; kapsamda olanları düzelt, kalanları `fix5.md`'de risk olarak yaz.
 - Kurallar/ortam/dal tabanı: Devir 3–4 ile aynı (`git checkout -b fix/qa-20261102-tur5 main`). Geri dönüş `fix5.md`.
+
+---
+
+# Devir 6 — qa-20261102-1209-12fc6fd tur 6 → cezeri-duzeltici
+
+- Sınanan sürüm: `eb1c1f3` (ürün = fix5 `b1b84a4`, cherry-pick; migration 0030). QA-109 → VERIFIED.
+- Açık: **QA-110 (S3)** — `bugs.md`; kanıt `evidence/tur6/readiness-clinical-probe.json`.
+- Kabul ölçütleri (gevşetilmez):
+  1. Sağlık yetkisi olmayan rol klinik çıktı belgesinin varlığını hazırlık üzerinden öğrenemez: ya `POST /readiness-rules` klinik çıktı türünü 422 ile reddeder (ve var olan böyle kurallar pasifleştirilir ya da değerlendirmede yok sayılır — yeni migration `0031_*` gerekirse) ya da `GET /appointments/:id/readiness`, `readiness_missing` görevi, Bugün/PİA Akış hazırlık göstergeleri bu kalemi sağlık yetkisi olmayan rolde göstermez ve `ready` hesabı tutarlıdır. Seçim ADR-092'de.
+  2. Onam türleri (GENEL-ONAM, ENDO-ONAM vb.) ve anamnez kuralları bugünkü davranışı korur (gorev4 testi değişmeden geçer).
+  3. Regresyon testi `apps/api/test/qa-110-readiness-clinical.test.ts` (yamasız kırmızı → yamalı yeşil); tam API paketi + typecheck; web değişirse web testleri ve ilgili E2E.
+- Kurallar/ortam/dal tabanı: Devir 3–5 ile aynı (`git checkout -b fix/qa-20261102-tur6 main`). Geri dönüş `fix6.md`.
+- Not: kök `.env`'i incelerken değerleri maskelemeyi doğrula; hiçbir sır değerini araç çıktısına yazdırma (yalnız anahtar adları).
