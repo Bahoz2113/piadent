@@ -9,3 +9,11 @@
 - Kullanıcılar: seed'in sentetik demo hesapları (yonetici/hekim/sekreter/asistan/finans @demo-yesil.test, yonetici/hekim @demo-mavi.test). Parola .demo-credentials (git dışı) dosyasından ortam değişkeniyle okunur; kanıtlara yazılmaz.
 - Önceki koşu: qa-runs/qa-20261031-1706-0309309 (TESLİME ADAY, 01b4c00) — değiştirilmedi.
 - Canlı demo (Vercel/Supabase) bu koşunun dışında: üretime gönderim yok.
+
+## Tur 7 ortamı (son tur)
+- Sürüm: `95ac8de552fc240f6ddc0abdc7624e3b2ba4cfd0` (main; ürün = fix6 `609dccc` + önceki düzeltmeler), push: origin/gelistirme-gecmisi
+- Migration: 31 dosya (0001–0031; 0030 karantina görevi, 0031 hazırlık kuralı); temiz DB'ye hepsi uygulandı
+- Zaman: 02.11.2026 14:51 (Europe/Istanbul); Node v22.22.0, pnpm 10.28.0, PostgreSQL 16.15, Chromium (Playwright 1.64)
+- Ortam: yerel test; API :4000 (production), worker, web :3000 (next build + start); her koşu öncesi db:reset + migrate + seed
+- Dış servisler yalnız MOCK; VIADENT_EXTERNAL_SEND_ENABLED=false; sentetik demo hesapları, parola yalnız ortam değişkeniyle
+- Canlı demo (Vercel/Supabase) bu koşunun dışında: üretime gönderim yok

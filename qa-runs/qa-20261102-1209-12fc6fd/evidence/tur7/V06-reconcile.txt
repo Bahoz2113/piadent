@@ -1,0 +1,6 @@
+# 2026-11-02T14:48:03+03:00 — sürüm 95ac8de, N vakaları + sondalar sonrası, sakin DB. Bağımsız sorgu: qa-runs/.scripts/reconcile.sql
+## viadent
+43|18|13|4250.00|23100.00|3200.00|6|0|10|180|5|7|3|15|TM-2026-000009,TM-2026-000010,TM-2026-000011|3|4|733.92|1|0|11|72.000|viadent_backup:SELECT|90|76
+## viadent_qa_restore7b
+43|18|13|4250.00|23100.00|3200.00|6|0|10|180|5|7|3|15|TM-2026-000009,TM-2026-000010,TM-2026-000011|3|4|733.92|1|0|11|72.000|viadent_backup:SELECT|90|76
+EŞLEŞTİ
