@@ -282,3 +282,7 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 ## QA-108 — Gizli dosyanın izleri (02.11.2026, ADR-090; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 4)
 - Yeni regresyon: `apps/api/test/qa-108-file-trace.test.ts` (7 test: geçmiş sekreter/yönetici + hekim, onam kanıtı sekreter/yönetici + hekim, dışa aktarım yönetici + sağlık yetkili kanca, LOG raporu). Yamasız kodda **5 başarısız / 2 geçen** (geçenler hekim testleri); yamalı **7/7 geçti**.
 - API tam paket (izole `viadent_fix_test`): **33 dosya, 347/347 geçti**. `pnpm -r typecheck` temiz (5 paket). Web kodu değişmedi; web/E2E koşulmadı.
+
+## QA-109 — Gizli dosyanın karantina görevi (02.11.2026, ADR-091; CEZERİ koşusu qa-20261102-1209-12fc6fd tur 5)
+- Yeni regresyon: `apps/api/test/qa-109-quarantine-task.test.ts` (9 test: görev listesi ve durum ucu sekreter/yönetici = var olmayan görev, hasta kartı sayacı, hekim yönlendirmesi + dosya ayrıntısı, SLA yükseltmesi, silme ile kendiliğinden kapanış + doğrudan kapatma, `task.status` izi geçmiş/access_log/LOG raporu, idari görev değişmez, migration 0030). Yamasız kodda **8 başarısız / 1 geçen** (geçen: idari görev); yamalı **9/9 geçti**.
+- API tam paket (izole `viadent_fix_test`): **34 dosya, 356/356 geçti**. `pnpm -r typecheck` temiz (5 paket). Web kodu değişmedi; web/E2E koşulmadı. Worker'ın ayrı test betiği yok (tarama işi API paketinde `processOutbox` ile sınanır).

@@ -13,7 +13,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES, audit, nonClinicalFileSql, notClinicalOutputDocIdSql, notClinicalOutputDocSql, notHiddenFileEventSql, visibleFileIdSql } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, audit, nonClinicalFileSql, notClinicalOutputDocIdSql, notClinicalOutputDocSql, notHiddenFileEventSql, notHiddenTaskEventSql, visibleFileIdSql } from "../audit/audit.js";
 import { decryptField } from "@viadent/db";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
@@ -144,7 +144,7 @@ export class ExportController {
         // erişim günlüğünde de yer almaz (QA-001).
         access_log: (await c.query(
           `select id, created_at, action, entity_type, actor_user_id from audit_events
-            where patient_id = $1 and ($2::boolean or (entity_type <> all($3::text[]) and ${notClinicalOutputDocSql("audit_events")} and ${notHiddenFileEventSql("audit_events")})) order by id`,
+            where patient_id = $1 and ($2::boolean or (entity_type <> all($3::text[]) and ${notClinicalOutputDocSql("audit_events")} and ${notHiddenFileEventSql("audit_events")} and ${notHiddenTaskEventSql("audit_events")})) order by id`,
           [pid, health, CLINICAL_ENTITY_TYPES])).rows,
       };
       const omitted: string[] = [];

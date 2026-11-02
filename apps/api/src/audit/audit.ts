@@ -54,6 +54,15 @@ export const notHiddenFileEventSql = (alias = "e") => {
 };
 
 /**
+ * QA-109 (ADR-091): `clinical` hassasiyetli görevin (ör. gizli dosyanın karantina görevi, anamnez onayı) denetim olayları
+ * (`entity_type = 'task'`: `task.status`) görev listesiyle aynı kapıya tabidir; sağlık yetkisi yoksa `notHiddenFileEventSql` yanında kullanılır.
+ */
+export const notHiddenTaskEventSql = (alias = "e") => {
+  const p = alias ? `${alias}.` : "";
+  return `not (${p}entity_type = 'task' and exists (select 1 from tasks ht where ht.id = ${p}entity_id and ht.sensitivity = 'clinical'))`;
+};
+
+/**
  * QA-108 (ADR-090): dosyaya kimlikle atıf yapan sütun (ör. `evidence_events.file_id`) için görünür değer; görünmeyen dosyada NULL.
  * Satırın kendisi kalır. `health`: `patient.health.read` SQL ifadesi (ör. `$2::boolean`).
  */

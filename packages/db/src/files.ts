@@ -131,6 +131,14 @@ export function scannerFromEnv(): ScannerPort {
   return h ? new ClamdScanner(h, Number(process.env.CLAMD_PORT ?? 3310)) : new BasicScanner();
 }
 
+/**
+ * ADR-089 görünürlük kuralının tersi: `patient.health.read` olmayan role gizli dosya = klinik hassasiyetli **veya** klinik çıktı
+ * belgesine bağlı. `apps/api/src/audit/audit.ts` `nonClinicalFileSql` ile aynı koşul (orada `not` biçimi); migration 0030 de aynısını yazar.
+ */
+export const hiddenFileSql = (alias: string) =>
+  `(not (${alias}.sensitivity = 'administrative' and not exists (select 1 from patient_documents cod join document_types cdt on cdt.id = cod.document_type_id
+           where cod.id = ${alias}.patient_document_id and cdt.category = 'clinical_output')))`;
+
 // ------------------------------------------------------------------ tarama işi (worker; tenant bağlamlı transaction içinde)
 export async function scanFile(c: pg.PoolClient, tenantId: string, fileId: string, storage: StoragePort, scanner: ScannerPort): Promise<string> {
   const f = (await c.query("select id, status, object_key, declared_type, sha256, patient_id from file_assets where id = $1 for update", [fileId])).rows[0];
@@ -152,11 +160,14 @@ export async function scanFile(c: pg.PoolClient, tenantId: string, fileId: strin
   await c.query("insert into file_access_events(tenant_id, file_id, action, detail) values ($1,$2,$3,$4)",
     [tenantId, fileId, v.verdict === "infected" ? "scan_infected" : "scan_rejected", v.reason]);
   if (status === "quarantined") {
+    // ADR-091 (QA-109): sağlık yetkisi olmayana gizli dosya (ADR-089) → görev `clinical` ve hekime; idari dosya → `general`, yönetici.
     await c.query(
       `insert into tasks(tenant_id, kind, sensitivity, source_type, source_id, patient_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
-       values ($1,'file_quarantined','general','file',$2::uuid,$3,'file_quarantined:' || $2::text,'Karantinaya alınan dosya',
-               'Yüklenen bir dosya zararlı içerik taramasından geçemedi ve karantinaya alındı: ' || $4,
-               'Dosyayı açmayın. Kaynağını yükleyen kişiyle doğrulayın; gerekirse dosyayı gerekçeyle silin.', 'clinic_admin', now())
+       select $1,'file_quarantined', case when h.hidden then 'clinical' else 'general' end,'file',$2::uuid,$3,'file_quarantined:' || $2::text,'Karantinaya alınan dosya',
+              'Yüklenen bir dosya zararlı içerik taramasından geçemedi ve karantinaya alındı: ' || $4,
+              'Dosyayı açmayın. Kaynağını yükleyen kişiyle doğrulayın; gerekirse dosyayı gerekçeyle silin.',
+              case when h.hidden then 'dentist' else 'clinic_admin' end, now()
+         from (select ${hiddenFileSql("hf")} as hidden from file_assets hf where hf.id = $2::uuid) h
        on conflict (tenant_id, dedupe_key) where status in ('open','in_progress','blocked') do nothing`,
       [tenantId, fileId, f.patient_id, v.reason]);
   }

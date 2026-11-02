@@ -7,7 +7,7 @@ import { questionLabel,
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES, audit, diff, enqueue, notClinicalOutputDocSql, notHiddenFileEventSql } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, audit, diff, enqueue, notClinicalOutputDocSql, notHiddenFileEventSql, notHiddenTaskEventSql } from "../audit/audit.js";
 import { decryptField, encryptField, indexHash } from "@viadent/db";
 
 export interface DuplicateCandidate {
@@ -231,7 +231,9 @@ export class PatientsService {
         await audit(c, ctx, { action: "access.denied_or_missing", entityType: "patient", entityId: id });
         return null;
       }
-      const openTasks = await c.query("select count(*)::int as n from tasks where patient_id = $1 and status in ('open','in_progress','blocked')", [id]);
+      // Sayaç, görev listesiyle (GET /tasks) aynı hassasiyet süzgecini kullanır: görünmeyen görev sayılmaz (QA-109, ADR-091).
+      const taskSensitivities = ["general", ...(has(ctx, "patient.health.read") ? ["clinical"] : []), ...(has(ctx, "finance.read") ? ["finance"] : [])];
+      const openTasks = await c.query("select count(*)::int as n from tasks where patient_id = $1 and status in ('open','in_progress','blocked') and sensitivity = any($2::text[])", [id, taskSensitivities]);
       const rel = await c.query(
         `select count(*) filter (where is_legal_representative and (valid_until is null or valid_until >= current_date))::int as reps,
                 count(*)::int as total
@@ -306,7 +308,7 @@ export class PatientsService {
       const r = await c.query(
         `select e.id, e.action, e.entity_type, e.entity_id, e.changes, e.created_at, u.full_name as actor_name
            from audit_events e left join users u on u.id = e.actor_user_id
-          where e.patient_id = $1 and ($2::boolean or (e.entity_type <> all($3::text[]) and ${notClinicalOutputDocSql("e")} and ${notHiddenFileEventSql("e")}))
+          where e.patient_id = $1 and ($2::boolean or (e.entity_type <> all($3::text[]) and ${notClinicalOutputDocSql("e")} and ${notHiddenFileEventSql("e")} and ${notHiddenTaskEventSql("e")}))
           order by e.created_at desc, e.id desc limit 200`,
         [id, has(ctx, "patient.health.read"), CLINICAL_ENTITY_TYPES],
       );
