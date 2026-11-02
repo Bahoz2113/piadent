@@ -1,0 +1,76 @@
+{
+ "at": "2026-11-02T10:39:27.064Z",
+ "base": "http://127.0.0.1:4000",
+ "results": [
+  {
+   "id": "N01",
+   "status": "PASS",
+   "summary": "TM ardışık 7,8,9,10,11; eşzamanlı 2 oturum 201/201 farklı no; replay aynı no; 422 numara tüketmedi=true; iade IM-2026-000002; yazdırma denetimi 1; asistan 403, B 404; değişmezlik=true",
+   "at": "2026-11-02T10:39:22.260Z",
+   "evidence": "N01-http.json"
+  },
+  {
+   "id": "N02",
+   "status": "PASS",
+   "summary": "25 değer, beklenmedik 0; yuvarlama 0,60/0,10=true; Unicode ad korunur=true; roller sek 403/yön 403/B 404; sağlayıcısız gönder 409 numara=null; MOCK: issued MOCK202652ACD575D → iptal cancelled",
+   "at": "2026-11-02T10:39:25.576Z",
+   "evidence": "N02-http.json"
+  },
+  {
+   "id": "N03",
+   "status": "PASS",
+   "summary": "ekran 11 satır = CSV 11; XLSX 20 (başlık+veri+7 toplam+dipnot); tahsilat/iade satırlarının hepsinde makbuz no (11/11); sekreter 403",
+   "at": "2026-11-02T10:39:25.678Z",
+   "evidence": "N03-http.json",
+   "extraEvidence": [
+    "N03-muhasebe-donem.xlsx"
+   ]
+  },
+  {
+   "id": "N08",
+   "status": "PASS",
+   "summary": "nakit-hareketleri: 23 satır, formül 0, para hücresi 20; borc-bakiye: 9 satır, formül 0, para hücresi 24; tedavi: 7 satır, formül 0, para hücresi 3; bilinmeyen biçim → CSV; sekreter 403",
+   "at": "2026-11-02T10:39:25.928Z",
+   "evidence": "N08-http.json"
+  },
+  {
+   "id": "N04",
+   "status": "PASS",
+   "summary": "taslak 201, ikinci taslak 409; geçersiz şablon 422/422/422/422; yayın yönetici 403 hekim 200; yayınlanan düzenleme API 409 DB kilit=true; eski kayıt outdated=true; eski anahtar 422; yeni etiket Kalp pili var mı?; sekreter 403; B bağımsız",
+   "at": "2026-11-02T10:39:26.139Z",
+   "evidence": "N04-http.json"
+  },
+  {
+   "id": "N05",
+   "status": "PASS",
+   "summary": "3 tür hekim-only; sekreter önizleme 403; liste sızıntısı yok=true; ayrıntı sek 404 yön 404; geçmiş sızıntısı=false; komşu: print 404/404 karar 404/404 iptal 404/404 dosya 422/422 (gerçek/yok), durum issued, kanıt +0; KVKK yönetici dışa aktarımında klinik belge=false (hekim dışa aktarım 403); onam raporunda klinik satır=false; hekim iptal 200",
+   "at": "2026-11-02T10:39:26.423Z",
+   "evidence": "N05-http.json",
+   "extraEvidence": [
+    "N05-komsu.json"
+   ]
+  },
+  {
+   "id": "N06",
+   "status": "PASS",
+   "summary": "geçersiz 7 değer 422/422/422/422/422/422/422; geçerli 200; yeni oturumda gelir; sekreter etkilenmez; kimliksiz 401; CSRF başlıksız 403",
+   "at": "2026-11-02T10:39:26.533Z",
+   "evidence": "N06-http.json"
+  },
+  {
+   "id": "N07",
+   "status": "PASS",
+   "summary": "sınır 0/169/2,5 → 422/422/422; hekim 403; eşik 2 sa: 1 sa geçmiş yükseltilmedi, 3 sa geçmiş → yönetici (rol korunur, kopya 1); yönetici görevi kendine yükseltilmedi",
+   "at": "2026-11-02T10:39:26.792Z",
+   "evidence": "N07-http.json"
+  },
+  {
+   "id": "N10",
+   "status": "PASS",
+   "summary": "hekim 403, tekrar 422, 0 adet 422, sahte kalem 422, B 404; işlem: eldiven 4→3, kartuş 30→28 (lot seçili); düzeltme sarfı tekrarlamadı=true; yetersiz stok: işlem 201, {\"used\":1,\"shortages\":1}, görev 1",
+   "at": "2026-11-02T10:39:27.064Z",
+   "evidence": "N10-http.json"
+  }
+ ],
+ "findings": []
+}

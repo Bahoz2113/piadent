@@ -1,4 +1,4 @@
-# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098)
+# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098 · tur 4: 49a151b)
 
 | ID | Önem | Durum | Vaka | Başlık | Sorumlu |
 |---|---|---|---|---|---|
@@ -7,8 +7,9 @@
 | QA-103 | S3 | VERIFIED (tur 2, 08438cf) | N02 | Sağlayıcının düzenlediği (MOCK) / iptal ettiği faturada da "TASLAK — resmî belge değildir" uyarısı, "e-Belge sağlayıcısı bağlı değil" metni ve "Taslağı yazdır" (TASLAK filigranı) gösteriliyor | Kodlama |
 | QA-104 | S1 | VERIFIED (tur 3, bb49098) | N05 (komşu) | KVKK hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik çıktı belgelerinin içeriğini, onay/kanıt olaylarını ve bağlı dosya kayıtlarını alıyor | Kodlama (cezeri-duzeltici) |
 | QA-105 | S2 | VERIFIED (tur 3, bb49098) | N05 (komşu) | Onam/belge raporu klinik çıktı belgelerini (hasta, tür "Epikriz / tedavi özeti", başlık) sağlık yetkisi olmayan role listeliyor | Kodlama |
-| QA-106 | S2 | OPEN | N05 (komşu) / fix2 risk 1 | Hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik hassasiyetli dosyaların (radyograf vb.) metaverisini (ad, kategori, SHA-256) alıyor; aynı kullanıcı dosya listesinde bunları görmüyor | Kodlama (cezeri-duzeltici) |
-| QA-107 | S3 | OPEN | N05 (komşu) / fix1 risk 3 | Klinik çıktı belgesine bağlanmış idari kategorili dosya (document_scan) sekretere listede, ayrıntıda görünüyor ve klinik belge kimliğini (`patientDocumentId`) açığa veriyor; dışa aktarım ise aynı dosyayı gizliyor (tutarsız) | Kodlama |
+| QA-106 | S2 | VERIFIED (tur 4, 49a151b) | N05 (komşu) / fix2 risk 1 | Hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik hassasiyetli dosyaların (radyograf vb.) metaverisini (ad, kategori, SHA-256) alıyor; aynı kullanıcı dosya listesinde bunları görmüyor | Kodlama (cezeri-duzeltici) |
+| QA-107 | S3 | VERIFIED (tur 4, 49a151b) | N05 (komşu) / fix1 risk 3 | Klinik çıktı belgesine bağlanmış idari kategorili dosya (document_scan) sekretere listede, ayrıntıda görünüyor ve klinik belge kimliğini (`patientDocumentId`) açığa veriyor; dışa aktarım ise aynı dosyayı gizliyor (tutarsız) | Kodlama |
+| QA-108 | S3 | OPEN | N11 / fix3 risk 1–2 | Gizli klinik dosyanın izi sağlık yetkisi olmayana görünüyor: hasta geçmişinde `file.upload` olayı (dosya kimliği + SHA-256), dışa aktarım `access_log` satırı, onam kanıtında `fileId` | Kodlama (cezeri-duzeltici) |
 
 ## QA-101 (S1) — Klinik çıktı belgesi yazma uçlarında sağlık kapısı yok
 - **Ortam/sürüm:** yerel test, `12fc6fd`, sentetik hasta "Epikriz Sınama" (A kliniği).
@@ -73,6 +74,22 @@
 - **Etki:** arayüz bu bağlantıyı kurmuyor (web'de `patientDocumentId` kullanılmıyor); yalnız sağlık yetkili kullanıcının doğrudan API çağrısıyla oluşuyor. Gizli belgenin kimliği ve hekimin idari diye etiketlediği taramanın içeriği sekretere açılabiliyor → S3.
 - **Kanıt:** `evidence/tur3/linked-file-probe.json`.
 - **Kök neden ipucu:** `apps/api/src/documents/files.controller.ts` `visible()` yalnız `sensitivity`'ye bakıyor; `list` (satır ~104), `files/:id`, `files/:id/content`, `files/:id/delete` ve yükleme tamamlama uçları `patient_document_id` → `document_types.category = 'clinical_output'` birleştirmesini dikkate almalı (`notClinicalOutputDocIdSql` yeniden kullanılabilir).
+
+## Tur 4 yeniden sınama (49a151b = ürün 215e5f3, temiz seed)
+- **QA-106 VERIFIED:** yönetici dışa aktarımında yalnız `administrative:identity`; `omitted` içinde `files:clinical`. Kanıt `evidence/tur4/file-sensitivity-probe.json`.
+- **QA-107 VERIFIED:** epikrize bağlı tarama sekreter listesinde yok; ayrıntı 404/404, içerik 404/404, silme 403/403 (gerçek/var olmayan aynı); hekim 200 ve listede görür. Kanıt `evidence/tur4/linked-file-probe.json`.
+- Diğer HTTP/N vakaları PASS (`evidence/tur4/http-summary.json`, `n-summary.json`).
+
+## QA-108 (S3) — Gizli klinik dosyanın izleri
+- **Ortam/sürüm:** yerel test, `49a151b`, temiz seed; tester sondaları `qa-runs/.scripts/file-trace-probe.mjs`, `evidence-file-probe.mjs` (düzeltici fix3 risk 1–2'de bildirmişti; tester bağımsız üretti).
+- **Adımlar ve gözlem:**
+  1. Hekim yeni hastaya radyograf yükler (gerçek bayt, 200). Sekreter ve yönetici `GET /patients/:id/history` → `file.upload` olayı (`entityType: file`, dosya kimliği, `changes.sha256`); ad/kategori yok. Dosyanın kendisi bu rollere 404.
+  2. Yönetici dışa aktarımı `sections.access_log` → 1 `file.upload` satırı (eylem + varlık türü; kimlik yok) — `files` bölümü gizlediği halde dosyanın varlığını sayıyla açık ediyor.
+  3. Hekim GENEL-ONAM belgesini radyografı taranmış nüsha olarak (`fileId`) bağlayarak kabul eder (200). Sekreter `GET /documents/:id` → kanıt listesinde radyografın `fileId`'si; yönetici dışa aktarımında `evidence_events.file_id`.
+- **Beklenen (ADR-089 ile tutarlı):** sağlık yetkisi olmayan rol için gizli dosyaya ait denetim olayları geçmişte ve dışa aktarım `access_log`'unda yer almaz (QA-102 deseni); onam kanıtında gizli dosyanın kimliği maskelenir/çıkarılır (ya da onam taraması olarak yalnız idari kategorili dosya kabul edilir — ürün kararı ADR'de). Hekim tam görür.
+- **Etki:** yalnız opak kimlik ve özet; içerik, ad, kategori yok → S3.
+- **Kanıt:** `evidence/tur4/file-trace-probe.json`, `evidence/tur4/file-history-secretary.json`, `evidence/tur4/evidence-file-probe.json`.
+- **Kök neden ipucu:** `patients.service.ts history()` ve `export.controller.ts access_log` sorgusu `file` varlık türünde görünürlüğü (`nonClinicalFileSql`) uygulamıyor; `documents.controller.ts` ayrıntıdaki `evidence` eşlemesi (satır ~268–275) ve dışa aktarım `evidence_events` `file_id`'yi süzmüyor.
 
 ## Ortam / betik notları (ürün kusuru değil)
 - Tarayıcı betiğinin ilk iki koşusunda N02/N05 "FAIL" tester betiği hatasıydı (hasta adı "Epikriz Sınama" metin aramasına takıldı; diyalog seçici; "Belge düzenlendi" etiketi kalıpta yoktu). Betik düzeltildi; son koşu `evidence/tur1/browser-n-summary.json`.

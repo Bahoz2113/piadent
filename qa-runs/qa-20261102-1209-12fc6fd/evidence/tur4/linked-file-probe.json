@@ -1,0 +1,19 @@
+{
+ "docType": "Epikriz / tedavi özeti",
+ "dentistUpload": 201,
+ "secretaryListSeesFile": false,
+ "secDetail": [
+  404,
+  404
+ ],
+ "secContent": [
+  404,
+  404
+ ],
+ "secDelete": [
+  403,
+  403
+ ],
+ "drDetail": 200,
+ "drListSees": true
+}

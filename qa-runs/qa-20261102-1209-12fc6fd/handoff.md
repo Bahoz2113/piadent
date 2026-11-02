@@ -39,3 +39,16 @@
 - Kurallar ve ortam uyarısı: Devir 2 ile aynı (izole worktree, `viadent_fix`/`viadent_fix_test`, ayrı port; :3000/:4000 ve `viadent`/`viadent_test`'e dokunma; uygulanmış migration değişmez; `qa-runs/` altında yalnız `fix3.md`; canlıya gönderim yok).
 - **Dal tabanı:** worktree `origin/main` (canlı demo geçmişi) üzerinden açılabilir; ortak ata yok. Çalışma dalını mutlaka `main` ucundan aç (`git checkout -b fix/qa-20261102-tur3 <main ucu>`).
 - Geri dönüş: `fix3.md` (SHA'lar, değişen dosyalar, komutlar, gerçek sonuçlar, riskler, FIX_READY).
+
+---
+
+# Devir 4 — qa-20261102-1209-12fc6fd tur 4 → cezeri-duzeltici
+
+- Sınanan sürüm: `49a151b` (ürün = fix3 `215e5f3`). QA-106, QA-107 → VERIFIED.
+- Açık: **QA-108 (S3)** — `bugs.md`; kanıt `evidence/tur4/file-trace-probe.json`, `file-history-secretary.json`, `evidence-file-probe.json`.
+- Kabul ölçütleri (gevşetilmez):
+  1. Sağlık yetkisi olmayan rol için `GET /patients/:id/history` gizli dosyaya (ADR-089 kuralı: klinik hassasiyet veya klinik çıktıya bağlı) ait `file.*` olaylarını içermez; idari dosya olayları kalır; hekim hepsini görür.
+  2. Aynı kural `POST /patients/:id/export` `access_log` bölümünde uygulanır.
+  3. `GET /documents/:id` kanıt listesinde ve dışa aktarım `evidence_events` içinde gizli dosyanın `fileId`/`file_id` alanı sağlık yetkisi olmayan rol için görünmez (null/çıkarılmış; kanıt satırının kendisi kalır). Alternatif ya da ek olarak onam taraması bağlamada kategori kısıtı getirilirse ADR'de yazılır ve hekim akışı testle sabitlenir.
+  4. Regresyon testi `apps/api/test/qa-108-file-trace.test.ts`; önce yamasız kırmızı, sonra yeşil; tam API paketi + typecheck.
+- Kurallar/ortam/dal tabanı: Devir 3 ile aynı (çalışma dalını yerel `main` ucundan aç: `git checkout -b fix/qa-20261102-tur4 main`). Geri dönüş `fix4.md`.
