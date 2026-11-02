@@ -9,8 +9,8 @@ Kaynaklar: `PiaDent_Claude_Eksik_Tamamlama_Nihai_Dosyasi.pdf`, `PiaDent_Mevcut_S
 ## Faz 1 — Klinik çekirdek tamamlama (P0/P1)
 | İş | Kapsam | Kabul ölçütü |
 |---|---|---|
-| 1.1 Anamnez şablonu yönetimi (D3) | `anamnesis_templates` (sürümlü, yayın/emeklilik, tenant), yönetim ekranı; mevcut anamnez kayıtları şablon sürümüne bağlanır | Yönetici şablon yayınlar → hekim yeni anamnezde o soruları görür; eski kayıtlar değişmez; API testi + E2E |
-| 1.2 Klinik çıktı şablonları (D4) | Belge motoruna `clinical_output` kategorisi: epikriz, hasta bilgi föyü, reçete (ilaç listesi serbest metin; e-reçete YOK) | Hasta 360 → Belgeler'den üret/yazdır; marka başlığı; sağlık verisi rol kontrolü; test |
+| 1.1 Anamnez şablonu yönetimi (D3) ✔ 02.11 (ADR-084; API 5, E2E 1) | `anamnesis_templates` (sürümlü, yayın/emeklilik, tenant), yönetim ekranı; mevcut anamnez kayıtları şablon sürümüne bağlanır | Yönetici şablon yayınlar → hekim yeni anamnezde o soruları görür; eski kayıtlar değişmez; API testi + E2E |
+| 1.2 Klinik çıktı şablonları (D4) ✔ 02.11 (ADR-085; API 4, E2E 1) | Belge motoruna `clinical_output` kategorisi: epikriz, hasta bilgi föyü, reçete (ilaç listesi serbest metin; e-reçete YOK) | Hasta 360 → Belgeler'den üret/yazdır; marka başlığı; sağlık verisi rol kontrolü; test |
 | 1.3 Hasta 360 küçük açıklar | Kayıt geçmişi sekmesinde filtre; süt dişi görünümü için E2E | E2E `telefon-360` + masaüstü geçer |
 Çıkış kapısı: CEZERİ koşusu, yeni V-vakası: "anamnez şablonu sürümü değişince eski kayıt bozulmaz".
 

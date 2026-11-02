@@ -7,6 +7,7 @@ import { ResourcesPanel } from "@/components/admin/resources";
 import { ClosuresPanel, TypesPanel } from "@/components/admin/agenda-settings";
 import { CatalogPanel } from "@/components/admin/catalog";
 import { TemplatesPanel } from "@/components/admin/templates";
+import { AnamnesisTemplatesPanel } from "@/components/admin/anamnesis-templates";
 import { IntegrationsPanel } from "@/components/admin/integrations";
 import { ExportPanel, ImportPanel } from "@/components/admin/data-transfer";
 import { SecurityPanel } from "@/components/admin/security";
@@ -18,6 +19,7 @@ const TABS = [
   { id: "kapatma", label: "Kapatmalar", perm: "schedule.manage" },
   { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
   { id: "belge", label: "Belge şablonları", perm: "template.manage" },
+  { id: "anamnez", label: "Anamnez şablonu", perm: "anamnesis.template" },
   { id: "kopru", label: "Entegrasyonlar (PİA Köprü)", perm: "integration.read" },
   { id: "aktarim", label: "Veri aktarımı", perm: "import.manage" },
   { id: "disa", label: "Dışa aktarım", perm: "export.clinic" },
@@ -50,6 +52,7 @@ export default function AdminPage() {
             {tab === "kapatma" && <ClosuresPanel notify={toast.show} />}
             {tab === "katalog" && <CatalogPanel notify={toast.show} />}
             {tab === "belge" && <TemplatesPanel notify={toast.show} />}
+            {tab === "anamnez" && <AnamnesisTemplatesPanel notify={toast.show} />}
             {tab === "kopru" && <IntegrationsPanel notify={toast.show} />}
             {tab === "aktarim" && <ImportPanel notify={toast.show} />}
             {tab === "disa" && <ExportPanel notify={toast.show} />}

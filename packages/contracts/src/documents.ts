@@ -5,11 +5,11 @@ const uuid = z.uuid("Geçersiz kimlik");
 const optText = (max: number) => z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().max(max).optional());
 
 // ------------------------------------------------------------------ belge türü / şablon
-export const DOCUMENT_CATEGORIES = ["consent", "information", "administrative", "privacy", "insurance", "other"] as const;
+export const DOCUMENT_CATEGORIES = ["consent", "information", "administrative", "privacy", "insurance", "clinical_output", "other"] as const;
 export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number];
 export const DOCUMENT_CATEGORY_LABELS: Record<DocumentCategory, string> = {
   consent: "Bilgilendirme ve onam", information: "Bilgilendirme", administrative: "İdari belge", privacy: "Kişisel veri / görsel izin",
-  insurance: "Kurum / sigorta", other: "Diğer",
+  insurance: "Kurum / sigorta", clinical_output: "Klinik çıktı (epikriz, föy, reçete yazısı)", other: "Diğer",
 };
 
 /**
@@ -24,6 +24,12 @@ export const TEMPLATE_FIELDS = {
   "hekim.ad": "Sorumlu hekim",
   "belge.tarih": "Belge tarihi (gg.aa.yyyy)",
   "plan.kalemler": "Bağlı plan sürümünün kalemleri (liste)",
+  // Klinik çıktı alanları (ADR-085) — sağlık verisi; yalnız patient.health.read olan rol görüntüler
+  "hasta.yas": "Yaş (belge tarihinde)",
+  "tani.liste": "Güncel tanılar (ICD-10 kodu ve adı, liste)",
+  "islem.liste": "Gerçekleşen işlemler (tarih, kod, ad, diş; liste)",
+  "anamnez.kritik": "Anamnez kritik işaretleri (liste)",
+  "serbest.metin": "Hekimin belgeye yazdığı serbest metin (ilaç listesi, öneriler, not)",
 } as const;
 export type TemplateField = keyof typeof TEMPLATE_FIELDS;
 const FIELD_RE = /\{\{\s*([a-z_.]+)\s*\}\}/g;
@@ -56,7 +62,16 @@ export const DocumentIssue = z.object({
   templateVersionId: uuid,
   appointmentId: uuid.optional(),
   planVersionId: uuid.optional(),
+  /** Klinik çıktı belgelerinde {{serbest.metin}} alanına girer (ADR-085). */
+  freeText: z.string().trim().max(4000).optional(),
 });
+/** Klinik çıktı şablonu başlangıç gövdesi — kliniğin kendi metniyle değiştirilir; tıbbi içerik üretilmez. */
+export function clinicalOutputStarterBody(code: "EPIKRIZ" | "HASTA-FOYU" | "RECETE"): string {
+  const head = "{{klinik.ad}}\nHasta: {{hasta.ad_soyad}} · Dosya no: {{hasta.dosya_no}} · Doğum tarihi: {{hasta.dogum_tarihi}} ({{hasta.yas}} yaş)\nHekim: {{hekim.ad}} · Tarih: {{belge.tarih}}\n";
+  if (code === "EPIKRIZ") return `${head}\nEPİKRİZ / TEDAVİ ÖZETİ\n\nAnamnez kritik işaretleri:\n{{anamnez.kritik}}\n\nTanılar:\n{{tani.liste}}\n\nUygulanan işlemler:\n{{islem.liste}}\n\nHekim değerlendirmesi ve öneriler:\n{{serbest.metin}}\n`;
+  if (code === "RECETE") return `${head}\nREÇETE YAZISI (yazılı; e-reçete değildir)\n\nTanı:\n{{tani.liste}}\n\nİlaçlar ve kullanım:\n{{serbest.metin}}\n\nHekim imza/kaşe: ________________\n`;
+  return `${head}\nHASTA BİLGİ FÖYÜ\n\nAnamnez kritik işaretleri:\n{{anamnez.kritik}}\n\nTanılar:\n{{tani.liste}}\n\nPlanlanan işlemler:\n{{plan.kalemler}}\n\nNotlar:\n{{serbest.metin}}\n`;
+}
 export const ACCEPTANCE_METHODS = ["wet_signature_on_paper", "verbal_in_person"] as const;
 export const ACCEPTANCE_METHOD_LABELS: Record<(typeof ACCEPTANCE_METHODS)[number], string> = {
   wet_signature_on_paper: "Kâğıt nüshada ıslak imza (personel kaydetti)",

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Patch, Post } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import {
-  DocumentDecision, DocumentIssue, DocumentRevoke, TemplateCreate, TemplateVersionCreate, localDate, normalizeDocumentText, renderTemplate,
+  DocumentDecision, DocumentIssue, questionLabel, DocumentRevoke, TemplateCreate, TemplateVersionCreate, localDate, normalizeDocumentText, renderTemplate,
   unknownTemplateFields, type TemplateField,
 } from "@viadent/contracts";
 import { Ctx, Require } from "../auth/decorators.js";
@@ -142,9 +142,9 @@ export class DocumentsController {
   }
 
   // ------------------------------------------------------------ üretim
-  private async render(c: import("pg").PoolClient, ctx: RequestContext, versionId: string, patientId: string, planVersionId?: string) {
+  private async render(c: import("pg").PoolClient, ctx: RequestContext, versionId: string, patientId: string, planVersionId?: string, freeText?: string) {
     const v = (await c.query(
-      `select tv.id, tv.status, tv.body, tv.version, tv.is_demo, tp.name as template_name, dt.id as type_id, dt.name as type_name, dt.active, dt.requires_acceptance, dt.issuer_role
+      `select tv.id, tv.status, tv.body, tv.version, tv.is_demo, tp.name as template_name, dt.id as type_id, dt.name as type_name, dt.active, dt.requires_acceptance, dt.issuer_role, dt.category
          from template_versions tv join templates tp on tp.id = tv.template_id join document_types dt on dt.id = tp.document_type_id where tv.id = $1`, [versionId])).rows[0];
     if (!v) throw Errors.validation({ templateVersionId: "Şablon sürümü bulunamadı." });
     if (v.status !== "approved" || !v.active) throw new AppError(409, "TEMPLATE_NOT_APPROVED", "Belge yalnız onaylı ve kullanımda olan şablon sürümünden üretilir.");
@@ -153,6 +153,24 @@ export class DocumentsController {
       `select p.first_name || ' ' || p.last_name as name, p.file_no, p.birth_date, pr.display_name as prac
          from patients p left join practitioners pr on pr.id = p.primary_practitioner_id where p.id = $1`, [patientId])).rows[0];
     if (!p) throw Errors.notFound("Hasta");
+    // Klinik çıktı (ADR-085): sağlık verisi alanları yalnız sağlık yetkili rol için doldurulur; şablon başka kategoride bu alanları kullanıyorsa boş kalır.
+    const clinical = v.category === "clinical_output";
+    if (clinical && !has(ctx, "patient.health.read")) throw new AppError(403, "FORBIDDEN", "Klinik çıktı belgesi sağlık verisi içerir; yalnız sağlık yetkili roller hazırlar.");
+    const todayStr = localDate(new Date(), ctx.timezone);
+    let age = "—";
+    if (p.birth_date) { const b = String(p.birth_date).slice(0, 10); const [by, bm, bd] = b.split("-").map(Number); const [ty, tm, td] = todayStr.split("-").map(Number);
+      age = String(ty! - by! - ((tm! < bm!) || (tm === bm && td! < bd!) ? 1 : 0)); }
+    let diagnoses = "—"; let procedures = "—"; let critical = "—";
+    if (clinical) {
+      const dg = await c.query("select code, description, tooth from diagnoses where patient_id = $1 and status = 'active' order by created_at", [patientId]);
+      diagnoses = dg.rows.map((x) => `- ${x.code ? `${x.code} ` : ""}${x.description}${x.tooth ? ` (diş ${x.tooth})` : ""}`).join("\n") || "—";
+      const pp = await c.query(
+        `select completed_at, procedure_code, procedure_name, tooth, surfaces from performed_procedures where patient_id = $1 and status = 'completed' order by completed_at`, [patientId]);
+      procedures = pp.rows.map((x) => `- ${trDate(localDate(new Date(x.completed_at), ctx.timezone))} ${x.procedure_code} ${x.procedure_name}${x.tooth ? ` (diş ${x.tooth}${x.surfaces?.length ? ` ${x.surfaces.join("")}` : ""})` : ""}`).join("\n") || "—";
+      const an = (await c.query(
+        `select v.critical_flags, (select t.questions from anamnesis_templates t where t.id = v.template_id) as questions from anamnesis_versions v where v.patient_id = $1 order by v.version desc limit 1`, [patientId])).rows[0];
+      if (an) { const qs = an.questions as { key: string; label: string }[] | null; critical = (an.critical_flags as string[]).map((f) => `- ${questionLabel(f, (qs ?? undefined) as never)}`).join("\n") || "Kritik işaret yok"; }
+    }
     let items = "—";
     let prac: string | null = p.prac;
     if (planVersionId) {
@@ -167,7 +185,8 @@ export class DocumentsController {
     }
     const values: Partial<Record<TemplateField, string>> = {
       "hasta.ad_soyad": p.name, "hasta.dosya_no": String(p.file_no), "hasta.dogum_tarihi": trDate(p.birth_date), "klinik.ad": ctx.tenantName,
-      "hekim.ad": prac ?? "—", "belge.tarih": trDate(localDate(new Date(), ctx.timezone)), "plan.kalemler": items,
+      "hekim.ad": prac ?? "—", "belge.tarih": trDate(todayStr), "plan.kalemler": items,
+      "hasta.yas": age, "tani.liste": diagnoses, "islem.liste": procedures, "anamnez.kritik": critical, "serbest.metin": freeText?.trim() || "—",
     };
     const content = renderTemplate(v.body, values);
     return { v, content, contentHash: hash(content), title: `${v.type_name}${v.is_demo ? " (DEMO şablon)" : ""}` };
@@ -179,7 +198,7 @@ export class DocumentsController {
   preview(@Ctx() ctx: RequestContext, @Param("id", id) vid: string, @Body() body: unknown) {
     const i = parse(DocumentIssue.omit({ templateVersionId: true }), body);
     return this.db.tx(ctx, async (c) => {
-      const r = await this.render(c, ctx, vid, i.patientId, i.planVersionId);
+      const r = await this.render(c, ctx, vid, i.patientId, i.planVersionId, i.freeText);
       return { title: r.title, content: r.content, contentHash: r.contentHash, templateVersion: r.v.version, isDemo: r.v.is_demo, requiresAcceptance: r.v.requires_acceptance };
     });
   }
@@ -189,14 +208,14 @@ export class DocumentsController {
   issue(@Ctx() ctx: RequestContext, @Body() body: unknown) {
     const i = parse(DocumentIssue, body);
     return this.db.tx(ctx, async (c) => {
-      const r = await this.render(c, ctx, i.templateVersionId, i.patientId, i.planVersionId);
+      const r = await this.render(c, ctx, i.templateVersionId, i.patientId, i.planVersionId, i.freeText);
       if (i.appointmentId && !(await c.query("select 1 from appointments where id = $1 and patient_id = $2", [i.appointmentId, i.patientId])).rowCount) {
         throw Errors.validation({ appointmentId: "Randevu bu hastaya ait değil." });
       }
       const d = await c.query(
-        `insert into patient_documents(tenant_id, patient_id, document_type_id, template_version_id, appointment_id, plan_version_id, title, content, content_hash, issued_by)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id, issued_at`,
-        [ctx.tenantId, i.patientId, r.v.type_id, i.templateVersionId, i.appointmentId ?? null, i.planVersionId ?? null, r.title, r.content, r.contentHash, ctx.userId]);
+        `insert into patient_documents(tenant_id, patient_id, document_type_id, template_version_id, appointment_id, plan_version_id, title, content, content_hash, issued_by, free_text)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id, issued_at`,
+        [ctx.tenantId, i.patientId, r.v.type_id, i.templateVersionId, i.appointmentId ?? null, i.planVersionId ?? null, r.title, r.content, r.contentHash, ctx.userId, i.freeText?.trim() || null]);
       const docId = d.rows[0].id as string;
       if (r.v.requires_acceptance) {
         await c.query("insert into consent_requests(tenant_id, patient_document_id, expires_at) values ($1,$2, now() + make_interval(days => $3))", [ctx.tenantId, docId, CONSENT_DAYS]);
@@ -227,7 +246,7 @@ export class DocumentsController {
                 dt.requires_acceptance, tv.version as template_version, tv.is_demo, cr.status as request_status, cr.expires_at, cr.decided_at
            from patient_documents d join document_types dt on dt.id = d.document_type_id join template_versions tv on tv.id = d.template_version_id
            join users u on u.id = d.issued_by left join consent_requests cr on cr.patient_document_id = d.id
-          where d.patient_id = $1 order by d.issued_at desc`, [patientId]);
+          where d.patient_id = $1 and ($2 or dt.category <> 'clinical_output') order by d.issued_at desc`, [patientId, has(ctx, "patient.health.read")]);
       return { items: r.rows.map((x) => ({ id: x.id, title: x.title, typeName: x.type_name, category: x.category, status: x.status, requestStatus: x.request_status,
         requiresAcceptance: x.requires_acceptance, contentHash: x.content_hash, issuedAt: x.issued_at, issuedBy: x.issued_by, templateVersion: x.template_version,
         isDemo: x.is_demo, expiresAt: x.expires_at, decidedAt: x.decided_at, revokeReason: x.revoke_reason })) };
@@ -239,11 +258,12 @@ export class DocumentsController {
   detail(@Ctx() ctx: RequestContext, @Param("id", id) docId: string) {
     return this.db.tx(ctx, async (c) => {
       const d = (await c.query(
-        `select d.*, dt.name as type_name, dt.requires_acceptance, tv.version as template_version, tv.body_hash as template_hash, tv.is_demo, tv.status as template_status,
+        `select d.*, dt.name as type_name, dt.category, dt.requires_acceptance, tv.version as template_version, tv.body_hash as template_hash, tv.is_demo, tv.status as template_status,
                 cr.status as request_status, cr.expires_at, cr.decided_at
            from patient_documents d join document_types dt on dt.id = d.document_type_id join template_versions tv on tv.id = d.template_version_id
            left join consent_requests cr on cr.patient_document_id = d.id where d.id = $1`, [docId])).rows[0];
       if (!d) throw Errors.notFound("Belge");
+      if (d.category === "clinical_output" && !has(ctx, "patient.health.read")) throw Errors.notFound("Belge"); // sağlık verisi: varlığı bile görünmez
       const ev = await c.query(
         `select e.kind, e.method, e.document_hash, e.file_id, e.note, e.at, u.full_name as actor
            from evidence_events e left join users u on u.id = e.actor_user_id where e.patient_document_id = $1 order by e.at, e.id`, [docId]);

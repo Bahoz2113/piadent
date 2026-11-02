@@ -11,15 +11,15 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | # | Madde (PDF) | Sınıf | Kanıt | Eksik parça / not |
 |---|---|---|---|---|
 | A1 | Hasta kartı (kimlik, iletişim, mükerrer kontrol, geçmiş) | MEVCUT | `patients.controller.ts:14-57` (list, duplicates, create, identity, patch, history); web `hastalar/[id]/page.tsx:38-44` 7 sekme | — |
-| A2 | Anamnez (sürümlü, hekim onayı) | MEVCUT | `clinical/anamnesis.controller.ts:20-91` (list, :version, create, review); `components/patient/anamnesis.tsx`; test `gorev1.test.ts` | Şablon soru setinin yönetimden düzenlenmesi yok (bkz. D3) |
-| A3 | Tanı (ICD-10 kodlu, durum) | MEVCUT | `chart.controller.ts:103-127` diagnoses + status; `0003_treatment.sql:113` (current/historic/entered_in_error) | — |
+| A2 | Anamnez (sürümlü, hekim onayı) | MEVCUT | `clinical/anamnesis.controller.ts` (list, :version, create, review); `components/patient/anamnesis.tsx`; test `gorev1.test.ts` | Soru şablonu yönetimi 02.11'de eklendi (D3) |
+| A3 | Tanı (kod + açıklama, durum) | MEVCUT (KISMI: kod serbest metin) | `chart.controller.ts:103-127` diagnoses + status; `0003_treatment.sql:76-98` (active/resolved/entered_in_error; `code` serbest — ADR-023: resmî kodlama kaynağı doğrulanana kadar) | ICD-10 doğrulamalı kod listesi: Faz 4 adayı (lisanslı kaynak gerekir) |
 | A4 | Odontogram: FDI, yetişkin/süt/karma, yüzey | MEVCUT | `components/treatment/odontogram.tsx:74-110` (permanent/primary/mixed); `treatment-tab.tsx:40-65` seçici; `contracts/treatment.ts:14,48` FDI regex `[1-8][1-8]` (51–85 süt dişleri dahil); `chart.controller.ts:73-74` yüzey doğrulaması | — |
 | A5 | Bulgu (odontogram_findings) | MEVCUT | `chart.controller.ts:68-86` | — |
 | A6 | Diş/yüzey bazlı tedavi girişi (gerçekleşen işlem) | MEVCUT | `chart.controller.ts:159-264` performed/cancel/correct; `0003_treatment.sql:262` (completed/cancelled/corrected — silme yok, düzeltme kaydı) | — |
 | A7 | Tedavi planı yaşam döngüsü (taslak→teklif→kabul/ret→yeni sürüm→iptal) | MEVCUT | `plans.controller.ts:26-322`; `0003_treatment.sql:143,219-220` DB tetikleyicisiyle geçiş kuralı; test `gorev2.test.ts` | — |
 | A8 | Tedavi kataloğu + tarife (sürüm, yayın, emeklilik) + fiyat sorgusu | MEVCUT | `catalog.controller.ts:19-169`; `0003_treatment.sql:28` | Hekim bazlı tarife farklılaştırması yok (B7) |
 | A9 | Hasta geçmişi / zaman çizelgesi (PİA İz) + sağlık verisi rol filtresi | MEVCUT | `patients.service.ts history()` `CLINICAL_ENTITY_TYPES`; QA-001 testi `qa-001-history-health.test.ts` | — |
-| A10 | Onam/belge şablonları (sürüm, onay, yazdır, karar, iptal) | MEVCUT | `documents.controller.ts:28-324`; kategori seti `0005_documents_files.sql:12` | Epikriz/reçete gibi klinik çıktı şablonu türü yok (D4) |
+| A10 | Onam/belge şablonları (sürüm, onay, yazdır, karar, iptal) | MEVCUT | `documents.controller.ts`; kategori seti `0005` + `0025` (clinical_output) | — |
 | A11 | Hasta dosyaları (yükleme, karantina/antivirüs, silme) | MEVCUT | `files.controller.ts:34-153`; env `CLAMD_HOST`, `FILE_QUARANTINE_PURGE_DAYS` | — |
 | A12 | Hasta yakını / ilişki | MEVCUT | `relations.controller.ts:21-111` | — |
 
@@ -55,8 +55,8 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 |---|---|---|---|---|
 | D1 | Rapor kataloğu (19 rapor, drill-down, CSV) | MEVCUT | `contracts/reports.ts:23-78`; `reports.controller.ts:87-99` | PDF: XLSX/PDF çıktı yok → KISMI (Faz 4) |
 | D2 | **Rapor kartlarında ham kaynak kodları (R22, T07…)** | **BOZUK (UX)** | `raporlar/page.tsx:127,138` `sourceIds.join(" · ")` kullanıcıya gösteriliyor | İç izlenebilirlik kodu; UI'dan kaldır/ipucuna taşı |
-| D3 | Anamnez soru şablonu yönetimi | EKSİK | anamnez sabit şema | Faz 1 |
-| D4 | Klinik çıktı şablonları (epikriz, reçete, hasta bilgi föyü) | KISMI | belge motoru var (`documents.controller.ts`), kategori setinde klinik çıktı yok | Faz 1 |
+| D3 | Anamnez soru şablonu yönetimi | **MEVCUT (02.11, ADR-084)** | `0024_anamnesis_templates.sql`, `clinical/anamnesis-templates.controller.ts`, `components/admin/anamnesis-templates.tsx`; test `anamnesis-templates.test.ts` 5, E2E `anamnez-sablonu.spec.ts` | Yayın yalnız hekim; eski kayıtlar kendi sürümünde |
+| D4 | Klinik çıktı şablonları (epikriz, reçete yazısı, hasta bilgi föyü) | **MEVCUT (02.11, ADR-085)** | `0025_clinical_output_types.sql`, `documents.controller.ts render()` yeni alanlar + sağlık kapısı; test `clinical-output.test.ts` 4, E2E `klinik-cikti.spec.ts` | e-reçete değil; tanı kodu serbest |
 | D5 | Mobil: geniş tablolar | KISMI | `globals.css:144` `.table-wrap{overflow-x:auto}` + kırılımlar 264-318; E2E `telefon-360` projesi | PDF: kart görünümü/kolon gizleme yok; yatay kaydırma var |
 | D6 | Marka yazımı | KARAR VERİLDİ (02.11) | Ürün sahibi: **PİA-DENT** (ADR-081 notu) | PDF'deki "PiaDent" geçersiz |
 | D7 | Tema/ölçek/renk şeması kişiselleştirme | **MEVCUT (02.11, ADR-082)** | `contracts/appearance.ts`, `0022_user_appearance.sql`, `auth/appearance.controller.ts`, `components/appearance-drawer.tsx`, `lib/appearance.ts`; testler `appearance-contrast.test.ts` 33, API 4, E2E `gorunum.spec.ts` | 7 palet × 4 şema × 5 ölçek; logo sabit |
@@ -86,6 +86,6 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | e-İmza | yok | `signature` tanımlı | — |
 
 ## Özet sayım
-MEVCUT 33 (B4, D7 02.11'de eklendi) · KISMI 5 (C4, C5, D1, D4, D5) · EKSİK 1 (D3 anamnez şablonu) · BOZUK 1 (D2 ham rapor kodları) · KAPSAM DIŞI 6 · KARAR 0 (D6 → PİA-DENT).
+MEVCUT 35 (B4, D7, D3, D4 02.11'de eklendi) · KISMI 4 (C4, C5, D1, D5) · EKSİK 0 · BOZUK 1 (D2 ham rapor kodları) · KAPSAM DIŞI 6 · KARAR 0 (D6 → PİA-DENT).
 
 Video incelemesinin "P0 eksik" dediği 7 kalemden 5'i (anamnez, tanı, odontogram, diş/yüzey işlem girişi, plan yaşam döngüsü) kodda mevcut ve test altında; gerçek 2 P0 açığı: **makbuz çıktısı (B4)** ve **fatura taslağı iç modeli (B5)**.

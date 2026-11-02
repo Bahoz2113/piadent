@@ -29,7 +29,7 @@ interface Patient {
   email: string | null; city: string | null; primaryPractitionerId: string | null; primaryPractitionerName: string | null; referralSource: string | null;
   createdAt: string; updatedAt: string; version: number; nextAppointmentAt: string | null; lastVisitAt: string | null; openTaskCount: number;
   isMinor: boolean; legalRepresentativeCount: number; relationCount: number;
-  clinical: { criticalFlags: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null;
+  clinical: { criticalFlags: string[]; criticalFlagLabels?: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null;
 }
 interface HistoryItem { id: string; action: string; entityType: string; actorName: string; at: string; changes: Record<string, { from: unknown; to: unknown }> }
 
@@ -96,7 +96,7 @@ function PatientInner() {
             </div>
             {(p.isMinor || (p.clinical && p.clinical.criticalFlags.length > 0) || (p.clinical && p.clinical.anamnesisVersion === null)) && (
               <div className="row" style={{ marginTop: 8, gap: 6 }} aria-label="Uyarılar">
-                {p.clinical?.criticalFlags.map((f) => <span key={f} className="chip-alert"><AlertTriangle size={13} aria-hidden />{questionLabel(f)}</span>)}
+                {p.clinical?.criticalFlags.map((f, i) => <span key={f} className="chip-alert"><AlertTriangle size={13} aria-hidden />{p.clinical?.criticalFlagLabels?.[i] ?? questionLabel(f)}</span>)}
                 {p.clinical && p.clinical.anamnesisVersion !== null && !p.clinical.anamnesisReviewed && <span className="badge badge-warning">Anamnez onay bekliyor</span>}
                 {p.clinical && p.clinical.anamnesisVersion === null && <span className="badge badge-neutral">Anamnez girilmemiş</span>}
                 {p.isMinor && <span className="badge badge-info">18 yaş altı{p.legalRepresentativeCount === 0 ? " · yasal temsilci yok" : ""}</span>}

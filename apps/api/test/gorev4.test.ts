@@ -78,10 +78,10 @@ afterAll(async () => { await app.close(); rmSync(dir, { recursive: true, force: 
 describe("belge kataloğu ve şablon", () => {
   it("PİA-DENT kataloğu DEMO/incelenmemiş; sentetik onaylı şablonlar var; finans belge göremez", async () => {
     const types = (await dentist.get("/document-types").expect(200)).body.items;
-    expect(types.length).toBe(17);
+    expect(types.length).toBe(20); // 17 + 3 klinik çıktı türü (ADR-085)
     expect(types.every((t: { reviewStatus: string }) => t.reviewStatus === "demo_unreviewed")).toBe(true);
     const withTpl = types.filter((t: { approvedTemplates: unknown[] }) => t.approvedTemplates.length > 0);
-    expect(withTpl.map((t: { code: string }) => t.code).sort()).toEqual(["ENDO-ONAM", "GENEL-ONAM"]);
+    expect(withTpl.map((t: { code: string }) => t.code).sort()).toEqual(["ENDO-ONAM", "EPIKRIZ", "GENEL-ONAM", "HASTA-FOYU", "RECETE"]);
     expect(withTpl.every((t: { approvedTemplates: { isDemo: boolean }[] }) => t.approvedTemplates[0]!.isDemo)).toBe(true);
     expect((await fin.get("/document-types")).status).toBe(403);
   });

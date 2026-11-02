@@ -9,8 +9,8 @@ import { fmtDateTime } from "@/lib/format";
 import { Alert, ErrorState, Loading } from "@/components/ui";
 
 interface Data {
-  questionnaire: { version: string; demo: boolean; questions: AnamnesisQuestion[] };
-  current: { version: number; answers: AnamnesisAnswers; criticalFlags: string[]; createdAt: string; recordedBy: string; reviewedAt: string | null; reviewedBy: string | null } | null;
+  questionnaire: { version: string; demo: boolean; title: string; templateId: string | null; questions: AnamnesisQuestion[] };
+  current: { version: number; answers: AnamnesisAnswers; criticalFlags: string[]; createdAt: string; recordedBy: string; reviewedAt: string | null; reviewedBy: string | null; questions: AnamnesisQuestion[]; outdated: boolean; questionnaireVersion: string } | null;
   history: { version: number; createdAt: string; recordedBy: string; reviewedAt: string | null; reviewedBy: string | null; criticalFlags: string[] }[];
 }
 
@@ -22,7 +22,7 @@ export function AnamnesisPanel({ patientId, onSaved }: { patientId: string; onSa
   const [editing, setEditing] = useState(false);
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState(false);
-  const [viewVersion, setViewVersion] = useState<{ version: number; answers: AnamnesisAnswers } | null>(null);
+  const [viewVersion, setViewVersion] = useState<{ version: number; answers: AnamnesisAnswers; questions?: AnamnesisQuestion[] } | null>(null);
   useEffect(() => { if (d.data) setAnswers(d.data.current?.answers ?? {}); }, [d.data]);
 
   if (d.loading && !d.data) return <div className="card"><Loading /></div>;
@@ -51,11 +51,12 @@ export function AnamnesisPanel({ patientId, onSaved }: { patientId: string; onSa
     catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
   async function openVersion(v: number) {
-    const r = await api<{ version: number; answers: AnamnesisAnswers }>(`/patients/${patientId}/anamnesis/${v}`);
+    const r = await api<{ version: number; answers: AnamnesisAnswers; questions: AnamnesisQuestion[] }>(`/patients/${patientId}/anamnesis/${v}`);
     setViewVersion(r);
   }
 
   const shown = viewVersion?.answers ?? answers;
+  const questions: AnamnesisQuestion[] = editing ? data.questionnaire.questions : (viewVersion?.questions ?? cur?.questions ?? data.questionnaire.questions);
   return (
     <div className="grid grid-2">
       <section className="card">
@@ -71,13 +72,15 @@ export function AnamnesisPanel({ patientId, onSaved }: { patientId: string; onSa
           </div>
         </div>
         <div className="card-pad stack" style={{ gap: 8 }}>
-          {data.questionnaire.demo && <Alert kind="info">Soru seti DEMO'dur ({data.questionnaire.version}); klinik kullanım öncesi diş hekimince onaylanacak. Kritik işaretler tıbbi karar değildir.</Alert>}
+          {data.questionnaire.demo && <Alert kind="info">Soru seti yerleşik DEMO settir ({data.questionnaire.version}); Yönetim → Anamnez şablonu bölümünden kliniğin formu yayınlanabilir. Kritik işaretler tıbbi karar değildir.</Alert>}
+          {!data.questionnaire.demo && <p className="small muted">Form: {data.questionnaire.title} ({data.questionnaire.version})</p>}
+          {cur?.outdated && !editing && !viewVersion && <Alert kind="warning">Bu kayıt eski bir soru setiyle alındı ({cur.questionnaireVersion}); yanıtlar o sorularla gösteriliyor. Güncelleme yürürlükteki formla alınır.</Alert>}
           {err && <Alert kind="error">{err.message}{err.code === "VERSION_CONFLICT" && <div><button className="btn btn-sm" style={{ marginTop: 6 }} onClick={() => { void d.reload(); setEditing(false); }}>Son sürümü yükle</button></div>}</Alert>}
           {cur && (cur.reviewedAt
             ? <p className="small" style={{ color: "var(--success)" }}><CheckCircle2 size={14} aria-hidden style={{ verticalAlign: "-2px" }} /> Hekim onayı: {cur.reviewedBy}, {fmtDateTime(cur.reviewedAt, tz)}</p>
             : <p className="small" style={{ color: "var(--warning)" }}><AlertTriangle size={14} aria-hidden style={{ verticalAlign: "-2px" }} /> Hekim onayı bekliyor</p>)}
           <div>
-            {data.questionnaire.questions.map((q) => {
+            {questions.map((q) => {
               const a = shown[q.key];
               const val: AnamnesisValue | "unanswered" = a?.value ?? "unanswered";
               return (
@@ -120,7 +123,7 @@ export function AnamnesisPanel({ patientId, onSaved }: { patientId: string; onSa
               <li key={h.version} style={{ padding: "10px 20px" }} className="row">
                 <div style={{ flex: 1 }}>
                   <strong>Sürüm {h.version}</strong> <span className="muted small">· {h.recordedBy} · {fmtDateTime(h.createdAt, tz)}</span>
-                  <div className="small">{h.criticalFlags.length ? h.criticalFlags.map(questionLabel).join(", ") : "Kritik işaret yok"} · {h.reviewedAt ? `Onay: ${h.reviewedBy}` : "Onay bekliyor"}</div>
+                  <div className="small">{h.criticalFlags.length ? h.criticalFlags.map((f) => questionLabel(f, cur?.questions ?? data.questionnaire.questions)).join(", ") : "Kritik işaret yok"} · {h.reviewedAt ? `Onay: ${h.reviewedBy}` : "Onay bekliyor"}</div>
                 </div>
                 <button className="btn btn-sm btn-ghost" onClick={() => void openVersion(h.version)}>Görüntüle</button>
               </li>

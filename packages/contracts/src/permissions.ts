@@ -25,6 +25,7 @@ export const PERMISSIONS = [
   "clinical_note.write",
   "anamnesis.write",         // anamnez yanıtı kaydetme (yeni sürüm)
   "anamnesis.review",        // hekim onayı
+  "anamnesis.template",      // anamnez soru şablonu taslağı oluşturma/düzenleme (yayın: anamnesis.review olan hekim)
   "treatment.read",          // plan/teklif ve gerçekleşen işlem listesi (tanı/bulgu hariç)
   "treatment.write",         // plan taslağı, kalem, teklif sunma, yeni sürüm
   "treatment.decision",      // hastanın kabul/ret/kararsız yanıtını kaydetme
@@ -89,12 +90,12 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   // Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez (§05).
   clinic_admin: [...base, "patient.write", "appointment.write", "audit.read", "team.manage", "schedule.manage", "settings.manage", "finance.read", "catalog.manage",
     "account.read", "finance.settings",
-    "document.read", "document.revoke", "template.manage", "file.read", "file.delete", "communication.write", "message.send",
+    "document.read", "document.revoke", "template.manage", "anamnesis.template", "file.read", "file.delete", "communication.write", "message.send",
     "integration.read", "integration.manage", "integration.approve",
     "lab.read", "lab.write", "lab.cost", "supplier.manage", "supplier.ledger", "stock.read", "stock.write", "stock.manage",
     "report.operations", "report.clinical", "report.analytics", "report.export", "audit.clinic",
     "import.manage", "export.clinic", "export.patient"],
-  dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "appointment.write", "audit.read",
+  dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "anamnesis.template", "appointment.write", "audit.read",
     "treatment.write", "treatment.decision", "procedure.complete", "diagnosis.write",
     "document.read", "document.issue", "document.decision", "document.revoke", "file.read", "file.write", "file.delete", "communication.write",
     "followup.write", "readiness.exception", "lab.read", "lab.write", "lab.decide", "stock.read", "stock.write", "report.clinical"],

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { DOCUMENT_CATEGORY_LABELS, TEMPLATE_FIELDS, type DocumentCategory } from "@viadent/contracts";
+import { DOCUMENT_CATEGORY_LABELS, TEMPLATE_FIELDS, clinicalOutputStarterBody, type DocumentCategory } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
 import { useData } from "@/lib/use-data";
 import { fmtDate } from "@/lib/format";
@@ -100,6 +100,9 @@ function TemplateEditor({ editor, types, onClose, onSaved }: { editor: { mode: "
           </SelectField>
           <TextField label="Şablon adı" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} error={err?.fieldErrors.name} />
         </>}
+        {(() => { const t = types.find((x) => x.id === f.documentTypeId); const code = t?.category === "clinical_output" ? (t.code as "EPIKRIZ" | "HASTA-FOYU" | "RECETE") : null;
+          return code && ["EPIKRIZ", "HASTA-FOYU", "RECETE"].includes(code) && !f.body
+            ? <button type="button" className="btn btn-sm btn-ghost" onClick={() => setF({ ...f, body: clinicalOutputStarterBody(code) })}>Başlangıç gövdesini ekle ({t!.name})</button> : null; })()}
         <TextAreaField label="Metin" required rows={12} value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} />
         <p className="small muted">Kullanılabilir alanlar: {Object.entries(TEMPLATE_FIELDS).map(([k, v]) => <span key={k}><code>{`{{${k}}}`}</code> {v}; </span>)}</p>
         <TextField label="Değişiklik notu" value={f.changeNote} onChange={(e) => setF({ ...f, changeNote: e.target.value })} />

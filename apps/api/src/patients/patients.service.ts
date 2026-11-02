@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type pg from "pg";
-import {
+import { questionLabel,
   isValidTckn, localDate, maskNationalId, maskPhone, normalizePhone, normalizeSearch, toTitleTr,
   type PatientCreate, type PatientUpdate,
 } from "@viadent/contracts";
@@ -240,14 +240,17 @@ export class PatientsService {
       );
       const base = this.present(ctx, r.rows[0]);
       // Kritik anamnez işaretleri yalnız sağlık yetkili rollere döner (sekreter/yönetici varlığını bile görmez).
-      let clinical: { criticalFlags: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null = null;
+      let clinical: { criticalFlags: string[]; criticalFlagLabels: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null = null;
       if (has(ctx, "patient.health.read")) {
         const a = await c.query(
-          `select v.version, v.critical_flags, exists(select 1 from anamnesis_reviews rv where rv.anamnesis_id = v.id) as reviewed
+          `select v.version, v.critical_flags, exists(select 1 from anamnesis_reviews rv where rv.anamnesis_id = v.id) as reviewed,
+                  (select t.questions from anamnesis_templates t where t.id = v.template_id) as questions
              from anamnesis_versions v where v.patient_id = $1 order by v.version desc limit 1`,
           [id],
         );
-        clinical = { criticalFlags: a.rows[0]?.critical_flags ?? [], anamnesisVersion: a.rows[0]?.version ?? null, anamnesisReviewed: a.rows[0]?.reviewed ?? false };
+        const flags: string[] = a.rows[0]?.critical_flags ?? [];
+        const qs = (a.rows[0]?.questions as { key: string; label: string }[] | null) ?? undefined;
+        clinical = { criticalFlags: flags, criticalFlagLabels: flags.map((f) => questionLabel(f, (qs ?? undefined) as never)), anamnesisVersion: a.rows[0]?.version ?? null, anamnesisReviewed: a.rows[0]?.reviewed ?? false };
       }
       return {
         ...base,

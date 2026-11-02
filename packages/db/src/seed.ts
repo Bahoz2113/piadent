@@ -7,7 +7,7 @@ import { randomBytes } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
-import { normalizeSearch, zonedToUtc, localDate, addDays, normalizeDocumentText } from "@viadent/contracts";
+import { normalizeSearch, zonedToUtc, localDate, addDays, normalizeDocumentText, clinicalOutputStarterBody } from "@viadent/contracts";
 import { createHash } from "node:crypto";
 import { encryptSecret, newWebhookSecret } from "./bridge.js";
 import { loadEnv, requireEnv } from "./env.js";
@@ -284,6 +284,10 @@ export async function seed(connectionString: string, opts: { password?: string; 
           ["HASTA-BILGI", "Hasta bilgi formu", "administrative", false, null],
           ["ISTIRAHAT", "İstirahat / durum belgesi", "administrative", false, "dentist"],
           ["SIGORTA-BILGI", "Özel sağlık sigortası bilgi formu", "insurance", false, null],
+          // Klinik çıktılar (ADR-085): hekim düzenler, sağlık verisi içerir; migration 0025 mevcut kiracılara da ekler
+          ["EPIKRIZ", "Epikriz / tedavi özeti", "clinical_output", false, "dentist"],
+          ["HASTA-FOYU", "Hasta bilgi föyü (klinik)", "clinical_output", false, "dentist"],
+          ["RECETE", "Reçete yazısı (e-reçete değildir)", "clinical_output", false, "dentist"],
         ];
         const typeIds: Record<string, string> = {};
         for (const [code, name, cat, acc, issuer] of docTypes) {
@@ -299,6 +303,16 @@ export async function seed(connectionString: string, opts: { password?: string; 
           const tp = await c.query("insert into templates(tenant_id, document_type_id, name, created_by) values ($1,$2,$3,$4) returning id",
             [tenantId, typeIds[code], `${title} — DEMO şablon`, creator]);
           const body = demoBody(title);
+          await c.query(
+            `insert into template_versions(tenant_id, template_id, version, status, body, body_hash, is_demo, change_note, created_by, approved_by, approved_at)
+             values ($1,$2,1,'approved',$3,$4,true,'Sentetik ilk sürüm',$5,$5, now())`,
+            [tenantId, tp.rows[0].id, body, createHash("sha256").update(body, "utf8").digest("hex"), creator]);
+        }
+        // Klinik çıktı DEMO şablonları: başlangıç gövdesi (alan yer tutucuları), klinik kendi metniyle yeni sürüm yayınlar.
+        for (const code of ["EPIKRIZ", "HASTA-FOYU", "RECETE"] as const) {
+          const tp = await c.query("insert into templates(tenant_id, document_type_id, name, created_by) values ($1,$2,$3,$4) returning id",
+            [tenantId, typeIds[code], `${code === "EPIKRIZ" ? "Epikriz" : code === "RECETE" ? "Reçete yazısı" : "Hasta bilgi föyü"} — DEMO şablon`, creator]);
+          const body = normalizeDocumentText(`SENTETİK DEMO ŞABLON — klinik metin değildir.\n\n${clinicalOutputStarterBody(code)}`);
           await c.query(
             `insert into template_versions(tenant_id, template_id, version, status, body, body_hash, is_demo, change_note, created_by, approved_by, approved_at)
              values ($1,$2,1,'approved',$3,$4,true,'Sentetik ilk sürüm',$5,$5, now())`,

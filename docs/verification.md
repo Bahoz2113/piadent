@@ -246,3 +246,14 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 | `0023_invoices.sql` | uygulandı |
 | `vitest run test/invoices.test.ts` | **10/10**: KDV bigint yarım-yukarı (333,33→33,33; 0,05→0,01), taslak toplamları, idempotent tekrar, satır güncelleme + denetim, submit 409 `E_INVOICE_PROVIDER_UNAVAILABLE` (engel denetimde, taslak kalır), iptal gerekçe/kilit/tekrar, numara uygulamadan yazılamaz (tetikleyici), alıcı/belge türü kuralları, alacak bağı hasta kontrolü, sekreter/yönetici 403, B kliniği 404; dönem dökümü makbuz no + CSV = ekran |
 | `npx playwright test e2e/fatura-taslagi.spec.ts` | **2/2** (masaüstü + 360): taslak oluştur (366,66 ₺ KDV dahil), "numara yok (taslak)", gönderim reddi görünür, yazdırma TASLAK/"Fatura no: yok", sekreter düğmeyi görmez |
+
+## Faz 1.1–1.2 — Anamnez şablonu + klinik çıktılar (02.11.2026, ADR-084/085)
+| Komut | Sonuç |
+|---|---|
+| `0024_anamnesis_templates.sql`, `0025_clinical_output_types.sql` | uygulandı |
+| `vitest run test/anamnesis-templates.test.ts` | **5/5**: yerleşik set başlangıcı; taslak/ikinci taslak 409/sekreter 403/tekrar anahtar 422; yayın yönetici 403 hekim 200, yayınlanan düzenlenemez (API 409 + DB tetikleyici); eski kayıt eski sorularla (`outdated`), yeni kayıt yeni setle, eski anahtar 422, kritik etiket yeni şablondan; v2 yayın v1'i emekli eder, B kliniği etkilenmez (404) |
+| `vitest run test/clinical-output.test.ts` | **4/4**: başlangıç gövdeleri yalnız tanımlı alan; üç tür hekim-only; epikriz tanı+anamnez+serbest metin+yaş; sekreter preview 403, listede yok, ayrıntı 404 (yönetici de); reçete "e-reçete değildir" |
+| `pnpm --filter @viadent/api test` | **292/292** (gorev4 katalog sayısı 17→20 güncellendi: yeni türler) |
+| web 58 · contracts 15 | geçti |
+| E2E `anamnez-sablonu.spec.ts` (masaüstü) | 1/1 — yönetici taslak+soru → hekim yayın → Sağlık sekmesinde yeni soru → emekli |
+| E2E `klinik-cikti.spec.ts` (masaüstü + 360) | 2/2 — hekim epikriz (serbest metin, tanı/anamnez alanları) → üretildi; sekreter listede görmez, seçenek "yalnız hekim" |

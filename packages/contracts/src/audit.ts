@@ -84,6 +84,10 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "payment.create": "Tahsilat alındı",
   "payment.refund": "İade yapıldı",
   "receipt.print": "Makbuz yazdırıldı",
+  "anamnesis_template.create": "Anamnez şablonu taslağı oluşturuldu",
+  "anamnesis_template.update": "Anamnez şablonu taslağı güncellendi",
+  "anamnesis_template.publish": "Anamnez şablonu yayınlandı",
+  "anamnesis_template.retire": "Anamnez şablonu emekli edildi",
   "invoice.create": "Fatura taslağı oluşturuldu",
   "invoice.update_lines": "Fatura taslağı satırları güncellendi",
   "invoice.cancel": "Fatura taslağı iptal edildi",
@@ -208,7 +212,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   version: "Sürüm", changed: "Değişen kalem", decision: "Karar", unit_price: "Birim fiyat", discount: "İndirim", item_count: "Kalem sayısı", code: "Kod",
   anamnesis: "Anamnez",
   // Finans
-  amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receipt_no: "Makbuz no", doc_type: "Belge türü", buyer_name: "Alıcı", grand_total: "Genel toplam", line_count: "Satır sayısı", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
+  amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receipt_no: "Makbuz no", doc_type: "Belge türü", buyer_name: "Alıcı", grand_total: "Genel toplam", line_count: "Satır sayısı", question_count: "Soru sayısı", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
   basis: "Prim esası", rate: "Oran (%)", valid_from: "Geçerlilik başlangıcı", category: "Kategori", kind: "Tür", name: "Ad",
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
