@@ -1,0 +1,91 @@
+# GAP_MATRIX — PİA-DENT × "Eksik Tamamlama Nihai Dosyası" (Faz 0)
+
+Tarih: 02.11.2026 · Sürüm: `08c71a5` · Yöntem: PDF'deki her madde **koda bakılarak** sınıflandırıldı (kural: "Videoda görünmeyen bir işlevi kodu kontrol etmeden eksik sayma"). Kanıt sütunu dosya:satır verir; `pnpm test` ile çalışan testler ayrıca belirtilir.
+
+Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI** (çekirdek var, PDF'nin istediği bir parça yok) · **EKSİK** (kodda karşılığı yok) · **BOZUK** (var ama yanlış davranıyor) · **KAPSAM DIŞI** (ADR/release-gates ile bilinçli ertelendi — pazarlama iddiası yapılmaz).
+
+Önemli not: Video temelli inceleme raporu ("Mevcut Sürüm İnceleme") birçok maddeyi "kanıt yok" yazdı. Bunların büyük kısmı kodda **mevcut**; video kısa olduğu için gösterilmemişti. Aşağıda her biri kanıtla düzeltildi.
+
+## A. Klinik çekirdek
+
+| # | Madde (PDF) | Sınıf | Kanıt | Eksik parça / not |
+|---|---|---|---|---|
+| A1 | Hasta kartı (kimlik, iletişim, mükerrer kontrol, geçmiş) | MEVCUT | `patients.controller.ts:14-57` (list, duplicates, create, identity, patch, history); web `hastalar/[id]/page.tsx:38-44` 7 sekme | — |
+| A2 | Anamnez (sürümlü, hekim onayı) | MEVCUT | `clinical/anamnesis.controller.ts:20-91` (list, :version, create, review); `components/patient/anamnesis.tsx`; test `gorev1.test.ts` | Şablon soru setinin yönetimden düzenlenmesi yok (bkz. D3) |
+| A3 | Tanı (ICD-10 kodlu, durum) | MEVCUT | `chart.controller.ts:103-127` diagnoses + status; `0003_treatment.sql:113` (current/historic/entered_in_error) | — |
+| A4 | Odontogram: FDI, yetişkin/süt/karma, yüzey | MEVCUT | `components/treatment/odontogram.tsx:74-110` (permanent/primary/mixed); `treatment-tab.tsx:40-65` seçici; `contracts/treatment.ts:14,48` FDI regex `[1-8][1-8]` (51–85 süt dişleri dahil); `chart.controller.ts:73-74` yüzey doğrulaması | — |
+| A5 | Bulgu (odontogram_findings) | MEVCUT | `chart.controller.ts:68-86` | — |
+| A6 | Diş/yüzey bazlı tedavi girişi (gerçekleşen işlem) | MEVCUT | `chart.controller.ts:159-264` performed/cancel/correct; `0003_treatment.sql:262` (completed/cancelled/corrected — silme yok, düzeltme kaydı) | — |
+| A7 | Tedavi planı yaşam döngüsü (taslak→teklif→kabul/ret→yeni sürüm→iptal) | MEVCUT | `plans.controller.ts:26-322`; `0003_treatment.sql:143,219-220` DB tetikleyicisiyle geçiş kuralı; test `gorev2.test.ts` | — |
+| A8 | Tedavi kataloğu + tarife (sürüm, yayın, emeklilik) + fiyat sorgusu | MEVCUT | `catalog.controller.ts:19-169`; `0003_treatment.sql:28` | Hekim bazlı tarife farklılaştırması yok (B7) |
+| A9 | Hasta geçmişi / zaman çizelgesi (PİA İz) + sağlık verisi rol filtresi | MEVCUT | `patients.service.ts history()` `CLINICAL_ENTITY_TYPES`; QA-001 testi `qa-001-history-health.test.ts` | — |
+| A10 | Onam/belge şablonları (sürüm, onay, yazdır, karar, iptal) | MEVCUT | `documents.controller.ts:28-324`; kategori seti `0005_documents_files.sql:12` | Epikriz/reçete gibi klinik çıktı şablonu türü yok (D4) |
+| A11 | Hasta dosyaları (yükleme, karantina/antivirüs, silme) | MEVCUT | `files.controller.ts:34-153`; env `CLAMD_HOST`, `FILE_QUARANTINE_PURGE_DAYS` | — |
+| A12 | Hasta yakını / ilişki | MEVCUT | `relations.controller.ts:21-111` | — |
+
+## B. Finans çekirdek
+
+| # | Madde | Sınıf | Kanıt | Eksik parça / not |
+|---|---|---|---|---|
+| B1 | Alacak (tahakkuk) oluşturma/iptal; işlemden otomatik alacak | MEVCUT | `account.controller.ts:111-129`; `source in ('performed_procedure','manual')` | — |
+| B2 | Tahsilat (idempotency, dağıtım, ters kayıt) | MEVCUT | `account.controller.ts:147-207`; `0020_receivable_allocated.sql`; CEZERİ V04/P01 PASS | — |
+| B3 | İade (ters kayıt, sağlayıcı iadesi mock) | MEVCUT | `account.controller.ts:234`; `bridge.controller.ts:348` | — |
+| B4 | **Tahsilat makbuzu çıktısı** | **EKSİK** | `components/finance/account-tab.tsx` içinde yazdırma yok (grep "Makbuz" = 0) | PDF P0: makbuz şablonu + yazdır/PDF; `printHeaderHtml` (`brand.tsx:28`) hazır |
+| B5 | Fatura / e-Fatura / e-Arşiv / e-SMM | KAPSAM DIŞI (bilinçli) | `contracts/integrations.ts:21` `e_invoice: { mock:false, waitingFor: "GİB entegratörü sözleşmesi…" }`; `docs/release-gates.md §3` | Taslak fatura kaydı (kesilmemiş, sağlayıcıya gitmeyen) bile yok → Faz 2'de "fatura taslağı" iç modeli eklenecek; gerçek gönderim sözleşme kapısına bağlı |
+| B6 | Kasa/banka hesapları, gider, nakit akışı, bakiye | MEVCUT | `finance.controller.ts:32-237` | Çek/senet, döviz, POS komisyonu: KAPSAM DIŞI (TRY tek para birimi — ADR) |
+| B7 | Hekim primi (kural, tahakkuk, ödeme, ters kayıt) | MEVCUT | `finance.controller.ts:267-376`; `0007_operations.sql:180-182` işlem→prim bağı | Hekim bazlı tarife yok |
+| B8 | Tedarikçi/lab carisi (fatura, ödeme, ters kayıt, ekstre) | MEVCUT | `suppliers.controller.ts:20-149` | — |
+| B9 | Online ödeme isteği (mock sağlayıcı, webhook, iade) | MEVCUT (mock etiketli) | `bridge.controller.ts:291-348` | Gerçek PSP: KAPSAM DIŞI, sözleşme kapısı |
+| B10 | Hesap planı / resmî muhasebe | KAPSAM DIŞI | ADR (muhasebe programına dışa aktarım yok) | Mali müşavir ihracı (CSV) Faz 2 adayı |
+
+## C. Operasyon
+
+| # | Madde | Sınıf | Kanıt | Not |
+|---|---|---|---|---|
+| C1 | Ajanda: hekim/koltuk, randevu türü, kapatma, çakışma, durum makinesi | MEVCUT | `scheduling.controller.ts`, `resources.controller.ts:22-233`; CEZERİ V03/P02 PASS | — |
+| C2 | Hazırlık kuralları, takip, iletişim tercihi, mesaj (mock) | MEVCUT | `care.controller.ts:27-207` | Gerçek SMS/WhatsApp: KAPSAM DIŞI (sözleşme) |
+| C3 | Laboratuvar iş emri (durum, iş föyü, maliyet→cari) | MEVCUT | `lab.controller.ts:49-297`; `0007_operations.sql:80,102` plan kalemi bağı | — |
+| C4 | Stok (giriş, kullanım→hasta/işlem, fire, sayım, ters kayıt) | MEVCUT | `stock.controller.ts:24-243`; `0007_operations.sql:271-289` + `patient_id`, `performed_procedure_id` FK | Otomatik sarf (işlem başına reçete) yok → KISMI olarak Faz 4 adayı |
+| C5 | PİA Akış (görev motoru, ayarlar) | KISMI | `tasks.controller.ts:19-73`; `0018_akis_settings.sql` | PDF: SLA/yükseltme (escalation) yok — `due_at` var, gecikince atama/bildirim yok |
+| C6 | İçe/dışa aktarma (CSV, KVKK hasta ihracı, klinik ihracı, geri alma) | MEVCUT | `import.controller.ts:286-481`, `export.controller.ts:57-87` | — |
+
+## D. Raporlar, UI, marka
+
+| # | Madde | Sınıf | Kanıt | Not |
+|---|---|---|---|---|
+| D1 | Rapor kataloğu (19 rapor, drill-down, CSV) | MEVCUT | `contracts/reports.ts:23-78`; `reports.controller.ts:87-99` | PDF: XLSX/PDF çıktı yok → KISMI (Faz 4) |
+| D2 | **Rapor kartlarında ham kaynak kodları (R22, T07…)** | **BOZUK (UX)** | `raporlar/page.tsx:127,138` `sourceIds.join(" · ")` kullanıcıya gösteriliyor | İç izlenebilirlik kodu; UI'dan kaldır/ipucuna taşı |
+| D3 | Anamnez soru şablonu yönetimi | EKSİK | anamnez sabit şema | Faz 1 |
+| D4 | Klinik çıktı şablonları (epikriz, reçete, hasta bilgi föyü) | KISMI | belge motoru var (`documents.controller.ts`), kategori setinde klinik çıktı yok | Faz 1 |
+| D5 | Mobil: geniş tablolar | KISMI | `globals.css:144` `.table-wrap{overflow-x:auto}` + kırılımlar 264-318; E2E `telefon-360` projesi | PDF: kart görünümü/kolon gizleme yok; yatay kaydırma var |
+| D6 | **Marka yazımı** | **KARAR GEREKLİ** | Kod: "PİA-DENT" (ADR-079, kullanıcı talebi 31.10). PDF: "PiaDent" | Kullanıcı onayı olmadan değiştirilmez |
+| D7 | Tema/ölçek/renk şeması kişiselleştirme | KAPSAM DIŞI | tek marka paleti (ADR-080) | Erişilebilirlik kontrast testi var (`contrast.test.ts`) |
+| D8 | Hasta portalı / online randevu | KAPSAM DIŞI | yok | Faz 4+ (ayrı güvenlik modeli gerekir) |
+
+## E. Güvenlik, çok kiracılılık, uyum
+
+| # | Madde | Sınıf | Kanıt |
+|---|---|---|---|
+| E1 | Tenant izolasyonu (RLS ENABLE+FORCE, bileşik FK, Db.tx(ctx)) + test | MEVCUT | `tenant-isolation.test.ts`, `pentest.test.ts`, `security.test.ts`; CEZERİ V01 PASS |
+| E2 | RBAC (6 rol, izin matrisi) + oturum | MEVCUT | `permissions-session.test.ts`; `docs/permissions.md` |
+| E3 | 2FA (TOTP, kurtarma kodları, rol bazlı zorunluluk) | MEVCUT | `mfa.controller.ts:48-150`; `0012_security_hardening.sql:17` `require_mfa_roles`; `security.controller.ts:19-30` |
+| E4 | Destek erişimi (support grant, onay) | MEVCUT | `security.controller.ts:47-120` |
+| E5 | Denetim kaydı (audit) + LOG raporu + etiketler | MEVCUT | `contracts/audit.ts` (`AUDIT_ACTION_LABELS`, `AUDIT_FIELD_LABELS`); QA-002/003 kapandı |
+| E6 | KVKK: hasta veri ihracı, saklama/temizlik, erişim günlüğü | MEVCUT (teknik) | `export.controller.ts:87`; `0010_pilot_infra.sql:4` saklama; env `IMPORT_ROW_RETENTION_DAYS`, `FILE_PURGE_DAYS` | Hukuki metinler/aydınlatma içeriği: insan kapısı (release-gates) |
+| E7 | Yedek/geri yükleme | MEVCUT (betik) | `docs/backup-restore.md`; env `BACKUP_*` | Canlı (Supabase) için sağlayıcı yedeği; tatbikat insan adımı |
+| E8 | Gizli anahtar yönetimi | MEVCUT | `VIADENT_SECRET_KEY(S_OLD)` döndürme | **Pilot öncesi tüm anahtarlar döndürülecek** (handoff) |
+
+## F. Entegrasyonlar (hepsi etiketli mock — sahte başarı yok)
+
+| Kanal | Durum | Kanıt | Gerçeğe geçiş kapısı |
+|---|---|---|---|
+| SMS / WhatsApp / e-posta | mock bağlayıcı, webhook, iş kuyruğu | `bridge.controller.ts:54-266`; `integrations.ts:7-21` | Sağlayıcı sözleşmesi + `VIADENT_EXTERNAL_SEND_ENABLED` |
+| Online ödeme | mock | `bridge.controller.ts:291-348` | PSP sözleşmesi, 3D Secure test ortamı |
+| e-Fatura/e-Arşiv/e-SMM | yok (`mock:false`) | `integrations.ts:21` | GİB entegratörü + mali müşavir |
+| e-Nabız / sağlık kaydı | yok | `health_registry` tanımlı, adaptör yok | Bakanlık test ortamı; "onaylı" iddiası yapılmaz |
+| e-İmza | yok | `signature` tanımlı | — |
+
+## Özet sayım
+MEVCUT 31 · KISMI 5 (C4, C5, D1, D4, D5) · EKSİK 2 (B4 makbuz, D3 anamnez şablonu) · BOZUK 1 (D2 ham rapor kodları) · KAPSAM DIŞI 7 · KARAR 1 (D6 marka).
+
+Video incelemesinin "P0 eksik" dediği 7 kalemden 5'i (anamnez, tanı, odontogram, diş/yüzey işlem girişi, plan yaşam döngüsü) kodda mevcut ve test altında; gerçek 2 P0 açığı: **makbuz çıktısı (B4)** ve **fatura taslağı iç modeli (B5)**.
