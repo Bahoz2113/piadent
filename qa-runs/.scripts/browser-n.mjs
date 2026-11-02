@@ -5,7 +5,7 @@ import { chromium, devices } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const BASE = process.env.BASE ?? "http://127.0.0.1:3000"; const PASSWORD = process.env.PASSWORD; const OUT = process.env.OUT ?? "evidence";
+const BASE = process.env.BASE ?? "http://127.0.0.1:3000"; const PASSWORD = process.env.PASSWORD; const OUT = process.env.OUT ?? "evidence"; const TUR = process.env.TUR ?? "tur1";
 if (!PASSWORD) { console.error("PASSWORD gerekli"); process.exit(2); }
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM_PATH || undefined });
@@ -44,7 +44,7 @@ for (const profile of ["masaustu", "mobil"]) {
     await popup.screenshot({ path: `${OUT}/${profile}-N01-makbuz-pencere.png` }); await popup.close();
     await shot(page, `${profile}-N01-finans`);
     const ok = /^TM-\d{4}-\d{6}$/.test(no) && t.includes(no) && /fatura veya e-Arşiv belgesi yerine geçmez/.test(t) && (await overflow(page)) <= 0;
-    rec(profile, "N01", ok ? "PASS" : "FAIL", `listede ${no}; pencere no+uyarı=${t.includes(no) && /yerine geçmez/.test(t)}; taşma ${await overflow(page)}`, `evidence/tur1/${profile}-N01-makbuz-pencere.jpg`);
+    rec(profile, "N01", ok ? "PASS" : "FAIL", `listede ${no}; pencere no+uyarı=${t.includes(no) && /yerine geçmez/.test(t)}; taşma ${await overflow(page)}`, `evidence/${TUR}/${profile}-N01-makbuz-pencere.jpg`);
     await ctx.close();
   } catch (e) { rec(profile, "N01", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }
 
@@ -59,14 +59,16 @@ for (const profile of ["masaustu", "mobil"]) {
     await mockRow.getByRole("button", { name: "Aç" }).click();
     const dlg = page.getByRole("dialog", { name: /e-Arşiv fatura · |e-Fatura · / });
     const dt = await dlg.innerText();
+    // QA-103 yeniden sınaması: düzenlenmiş/iptal edilmiş faturada "TASLAK" ibaresi olmamalı
+    const noDraftMark = !/TASLAK/.test(dt);
     await page.screenshot({ path: `${OUT}/${profile}-N02-fatura-ayrinti.png` });
     await dlg.getByRole("button", { name: "Kapat" }).click();
     const s2 = await session(profile, "sekreter@demo-yesil.test");
     await openPatient(s2.page, "Fatura Sınama", "Finans");
     const secBtn = await s2.page.locator("section.card", { hasText: "Fatura taslakları" }).getByRole("button", { name: "Taslak oluştur" }).count();
     await s2.ctx.close();
-    const ok = /MOCK/.test(text) && /İptal/.test(text) && /numara yok/.test(text) && /resmî belge değil/.test(dt) && /Sağlayıcı/.test(dt) && secBtn === 0 && (await overflow(page)) <= 0;
-    rec(profile, "N02", ok ? "PASS" : "FAIL", `liste: MOCK rozeti=${/MOCK/.test(text)}, iptal=${/İptal/.test(text)}, taslak 'numara yok'=${/numara yok/.test(text)}; ayrıntıda 'resmî belge değil'=${/resmî belge değil/.test(dt)}; sekreter düğmesi ${secBtn}; taşma ${await overflow(page)}`, `evidence/tur1/${profile}-N02-fatura.jpg`);
+    const ok = /MOCK/.test(text) && /İptal/.test(text) && /numara yok/.test(text) && /resmî belge değil/.test(dt) && /Sağlayıcı/.test(dt) && noDraftMark && secBtn === 0 && (await overflow(page)) <= 0;
+    rec(profile, "N02", ok ? "PASS" : "FAIL", `liste: MOCK rozeti=${/MOCK/.test(text)}, iptal=${/İptal/.test(text)}, taslak 'numara yok'=${/numara yok/.test(text)}; ayrıntıda 'resmî belge değil'=${/resmî belge değil/.test(dt)}, TASLAK ibaresi yok=${noDraftMark}; sekreter düğmesi ${secBtn}; taşma ${await overflow(page)}`, `evidence/${TUR}/${profile}-N02-fatura.jpg`);
     await ctx.close();
   } catch (e) { rec(profile, "N02", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }
 
@@ -77,7 +79,7 @@ for (const profile of ["masaustu", "mobil"]) {
     const t = await page.locator("main").innerText();
     await shot(page, `${profile}-N04-anamnez`);
     const ok = /Kalp pili var mı\?/.test(t) && /yerleşik DEMO/.test(t);
-    rec(profile, "N04", ok ? "PASS" : "FAIL", `son kayıt kendi sorusuyla (Kalp pili)=${/Kalp pili var mı/.test(t)}; yürürlük yerleşik set bildirimi=${/yerleşik DEMO/.test(t)}`, `evidence/tur1/${profile}-N04-anamnez.jpg`);
+    rec(profile, "N04", ok ? "PASS" : "FAIL", `son kayıt kendi sorusuyla (Kalp pili)=${/Kalp pili var mı/.test(t)}; yürürlük yerleşik set bildirimi=${/yerleşik DEMO/.test(t)}`, `evidence/${TUR}/${profile}-N04-anamnez.jpg`);
     await ctx.close();
   } catch (e) { rec(profile, "N04", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }
 
@@ -92,7 +94,7 @@ for (const profile of ["masaustu", "mobil"]) {
     await shot(page, `${profile}-N05-sekreter-gecmis`);
     const histShowsDoc = /Belge (düzenlendi|üretildi|hazırlandı|iptal edildi)|document\.issue/i.test(hist);
     const ok = !/Epikriz \/ tedavi özeti/.test(docs) && !histShowsDoc;
-    rec(profile, "N05", ok ? "PASS" : "FAIL", `Belgeler'de epikriz görünür=${/Epikriz \/ tedavi özeti/.test(docs)}; Geçmiş'te belge olayı görünür=${histShowsDoc}`, `evidence/tur1/${profile}-N05-sekreter-gecmis.jpg`);
+    rec(profile, "N05", ok ? "PASS" : "FAIL", `Belgeler'de epikriz görünür=${/Epikriz \/ tedavi özeti/.test(docs)}; Geçmiş'te belge olayı görünür=${histShowsDoc}`, `evidence/${TUR}/${profile}-N05-sekreter-gecmis.jpg`);
     await ctx.close();
   } catch (e) { rec(profile, "N05", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }
 
@@ -115,7 +117,7 @@ for (const profile of ["masaustu", "mobil"]) {
     await page.goto(`${BASE}/hesabim`); await page.getByRole("button", { name: "Varsayılana dön" }).click(); await page.getByText("Kaydedildi (tüm cihazlarınızda)").waitFor();
     const a3 = await attrs(page);
     const ok = a1.scheme === "dark" && a1.accent === "lacivert" && a1.scale === "4" && a1.root === "17px" && serious.length === 0 && a2.scheme === "dark" && a2.accent === "lacivert" && a3.accent === "yesil" && a3.root === "16px" && ov <= 0;
-    rec(profile, "N06", ok ? "PASS" : "FAIL", `uygulandı ${JSON.stringify(a1)}; axe ciddi/kritik [${serious}]; yenilemede ${a2.scheme}/${a2.accent}; varsayılan ${a3.accent}/${a3.root}; taşma ${ov}`, `evidence/tur1/${profile}-N06-koyu-panel.jpg`);
+    rec(profile, "N06", ok ? "PASS" : "FAIL", `uygulandı ${JSON.stringify(a1)}; axe ciddi/kritik [${serious}]; yenilemede ${a2.scheme}/${a2.accent}; varsayılan ${a3.accent}/${a3.root}; taşma ${ov}`, `evidence/${TUR}/${profile}-N06-koyu-panel.jpg`);
     await ctx.close();
   } catch (e) { rec(profile, "N06", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }
 
@@ -144,7 +146,7 @@ for (const profile of ["masaustu", "mobil"]) {
     const codes = /\b[RTGHOVF]\d{2}\b/.test(cat) || /\b[RTGHOVF]\d{2}\b/.test(rep);
     const wantDisp = profile === "mobil" ? "grid" : "table-row";
     const ok = disp === wantDisp && lbl === "Kalem" && sayim && ov1 <= 0 && ov2 <= 0 && !codes && excel;
-    rec(profile, "N09", ok ? "PASS" : "FAIL", `stok satırı display=${disp} (beklenen ${wantDisp}), etiket ${lbl}, Sayım açıldı=${sayim}; taşma stok ${ov1} rapor ${ov2}; ham kod=${codes}; Excel=${excel}`, `evidence/tur1/${profile}-N09-stok.jpg`);
+    rec(profile, "N09", ok ? "PASS" : "FAIL", `stok satırı display=${disp} (beklenen ${wantDisp}), etiket ${lbl}, Sayım açıldı=${sayim}; taşma stok ${ov1} rapor ${ov2}; ham kod=${codes}; Excel=${excel}`, `evidence/${TUR}/${profile}-N09-stok.jpg`);
   } catch (e) { rec(profile, "N09", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }
 }
 await browser.close();

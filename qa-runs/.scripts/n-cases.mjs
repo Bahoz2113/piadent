@@ -235,15 +235,54 @@ try {
   // Yan kanal: sekreterin hasta geçmişinde (PİA İz) epikriz belgesinin varlığı/başlığı görünüyor mu?
   const hist = (await api(sec, "GET", `/patients/${p}/history`)).body;
   const histStr = JSON.stringify(hist);
-  const histLeak = /Epikriz|EPIKRIZ/.test(histStr) || (hist.items ?? hist.events ?? []).some((e) => e.entityId === doc.body.id || e.entity_id === doc.body.id);
+  // Tur 2 düzeltmesi (tester betiği): hasta adı "Epikriz" metin eşleşmesi yanlış pozitif üretiyordu; yalnız belge kimliğiyle eşleştir.
+  const histLeak = (hist.items ?? hist.events ?? []).some((e) => e.entityId === doc.body.id || e.entity_id === doc.body.id);
   const recete = (await api(dr, "POST", `/template-versions/${t.RECETE.approvedTemplates[0].versionId}/preview`, { patientId: p })).body;
+  // Tur 2 komşu akışlar (QA-101/102 yeniden sınama + düzeltici hipotezleri): ikinci belge üzerinde yazma/yan uçlar, dışa aktarım, onam raporu
+  const doc2 = (await api(dr, "POST", "/documents", { patientId: p, templateVersionId: t["HASTA-FOYU"].approvedTemplates[0].versionId, freeText: "Sınama föy notu" })).body.id;
+  const fake = "00000000-0000-4000-8000-000000000000";
+  const evBefore = (await api(dr, "GET", `/documents/${doc2}`)).body.evidence.length;
+  const side = {
+    secPrint: (await api(sec, "POST", `/documents/${doc2}/print`, {})).status, secPrintFake: (await api(sec, "POST", `/documents/${fake}/print`, {})).status,
+    secDecision: (await api(sec, "POST", `/documents/${doc2}/decision`, { decision: "accepted", method: "verbal_in_person", attestation: true })).status,
+    secDecisionFake: (await api(sec, "POST", `/documents/${fake}/decision`, { decision: "accepted", method: "verbal_in_person", attestation: true })).status,
+    admRevoke: (await api(adm, "POST", `/documents/${doc2}/revoke`, { reason: "QA yetkisiz iptal denemesi" })).status,
+    admRevokeFake: (await api(adm, "POST", `/documents/${fake}/revoke`, { reason: "QA yetkisiz iptal denemesi" })).status,
+    secFileLink: (await api(sec, "POST", "/files", { patientId: p, category: "document_scan", originalName: "tarama.pdf", contentType: "application/pdf", size: 10, patientDocumentId: doc2 })).status,
+    secFileLinkFake: (await api(sec, "POST", "/files", { patientId: p, category: "document_scan", originalName: "tarama.pdf", contentType: "application/pdf", size: 10, patientDocumentId: fake })).status,
+  };
+  const d2 = (await api(dr, "GET", `/documents/${doc2}`)).body;
+  side.statusAfter = d2.status; side.evidenceDelta = d2.evidence.length - evBefore;
+  side.drPrint = (await api(dr, "POST", `/documents/${doc2}/print`, {})).status;
+  // KVKK hasta dışa aktarımı: sağlık yetkisi olmayan yönetici klinik çıktı içeriğini almamalı (sağlık bölümleri dışlanır kuralı)
+  const exp = await api(adm, "POST", `/patients/${p}/export`, { reason: "QA KVKK erişim talebi sınaması" });
+  const expStr = JSON.stringify(exp.body);
+  side.adminExportStatus = exp.status;
+  side.adminExportHasClinicalDoc = expStr.includes(doc2) || expStr.includes("Sınama föy notu") || expStr.includes("Sınama derin çürük");
+  side.adminExportOmitted = exp.body?.omitted;
+  // Tur 2 düzeltmesi: hekim rolünde export.patient yok (permissions.ts) → 403 beklenir; önceki "hekim dışa aktarımında belge var" beklentisi yanlıştı.
+  side.dentistExportStatus = (await api(dr, "POST", `/patients/${p}/export`, { reason: "QA KVKK erişim talebi sınaması" })).status;
+  side.dentistExportStatusHasDoc = side.dentistExportStatus === 403;
+  // Onam / belge raporu (report.operations): sağlık yetkisi olmayan rol klinik çıktı satırlarını görmemeli
+  const onamSec = (await api(sec, "GET", `/reports/onam?from=${today}&to=${today}`)).body;
+  side.onamSecretaryHasClinical = JSON.stringify(onamSec).includes("Epikriz / tedavi") || JSON.stringify(onamSec).includes("Hasta bilgi föyü (klinik)");
+  side.onamSecretaryStatus = onamSec?.rows ? 200 : onamSec;
+  const histSec2 = JSON.stringify((await api(sec, "GET", `/patients/${p}/history`)).body);
+  side.secHistoryHasDoc2 = histSec2.includes(doc2);
+  side.drRevoke = (await api(dr, "POST", `/documents/${doc2}/revoke`, { reason: "QA hekim iptali" })).status;
+  writeFileSync(`${OUT}/N05-komsu.json`, JSON.stringify(side, null, 1));
+  const sideOk = side.secPrint === 404 && side.secPrint === side.secPrintFake && side.secDecision === side.secDecisionFake && side.admRevoke === 404 && side.admRevoke === side.admRevokeFake
+    && side.secFileLink === side.secFileLinkFake && side.statusAfter === "issued" && side.evidenceDelta === 0 && side.drPrint === 200 && !side.adminExportHasClinicalDoc && side.dentistExportStatusHasDoc
+    && !side.onamSecretaryHasClinical && !side.secHistoryHasDoc2 && side.drRevoke === 200;
+  if (side.adminExportHasClinicalDoc) findings.push({ case: "N05", what: "KVKK hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik çıktı belgesini (içerik) alıyor", evidence: "N05-komsu.json" });
+  if (side.onamSecretaryHasClinical) findings.push({ case: "N05", what: "Onam/belge raporunda klinik çıktı belgeleri sağlık yetkisi olmayan role listeleniyor", evidence: "N05-komsu.json" });
   const ok = ["EPIKRIZ", "HASTA-FOYU", "RECETE"].every((c) => t[c]?.issuerRole === "dentist" && t[c]?.category === "clinical_output") && pv.content.includes("K02.1 Sınama derin çürük (diş 36)")
     && pv.content.includes("<script>x</script>") === true && secPrev === 403 && long === 422 && doc.status === 201 && !secList.some((d) => d.id === doc.body.id) && !admList.some((d) => d.id === doc.body.id)
-    && secGet === 404 && admGet === 404 && drGet.integrityOk === true && /e-reçete değildir/.test(recete.content) && !histLeak;
+    && secGet === 404 && admGet === 404 && drGet.integrityOk === true && /e-reçete değildir/.test(recete.content) && !histLeak && sideOk;
   save("N05-http.json", { types: Object.fromEntries(Object.entries(t).map(([k, v]) => [k, { issuerRole: v.issuerRole, category: v.category }])), previewHasDiag: pv.content.includes("K02.1"), rawTextKept: pv.content.includes("<script>"), secPrev, long, doc: doc.status,
-    secListHas: secList.some((d) => d.id === doc.body.id), admListHas: admList.some((d) => d.id === doc.body.id), secGet, admGet, secPrint, integrity: drGet.integrityOk, receteIbare: /e-reçete değildir/.test(recete.content), histLeak, histSample: (hist.items ?? hist.events ?? []).slice(0, 6).map((e) => ({ action: e.action, entityType: e.entityType ?? e.entity_type, title: e.title ?? e.summary })) });
+    secListHas: secList.some((d) => d.id === doc.body.id), admListHas: admList.some((d) => d.id === doc.body.id), secGet, admGet, secPrint, integrity: drGet.integrityOk, receteIbare: /e-reçete değildir/.test(recete.content), histLeak, histSample: (hist.items ?? hist.events ?? []).slice(0, 6).map((e) => ({ action: e.action, entityType: e.entityType ?? e.entity_type })), side });
   if (histLeak) findings.push({ case: "N05", what: "Sekreterin hasta geçmişinde klinik çıktı (epikriz) belgesinin varlığı/başlığı görünüyor", evidence: "N05-http.json" });
-  rec("N05", ok ? "PASS" : "FAIL", `3 tür hekim-only; önizleme tanıyı içerir; sekreter önizleme ${secPrev}; 4001 karakter ${long}; üretim ${doc.status}; liste sızıntısı sek=${secList.some((d) => d.id === doc.body.id)} yön=${admList.some((d) => d.id === doc.body.id)}; ayrıntı sek ${secGet} yön ${admGet}; yazdır sek ${secPrint}; geçmişte varlık sızıntısı=${histLeak}; reçete ibaresi=${/e-reçete değildir/.test(recete.content)}`, { evidence: "N05-http.json" });
+  rec("N05", ok ? "PASS" : "FAIL", `3 tür hekim-only; sekreter önizleme ${secPrev}; liste sızıntısı yok=${!secList.some((d) => d.id === doc.body.id) && !admList.some((d) => d.id === doc.body.id)}; ayrıntı sek ${secGet} yön ${admGet}; geçmiş sızıntısı=${histLeak}; komşu: print ${side.secPrint}/${side.secPrintFake} karar ${side.secDecision}/${side.secDecisionFake} iptal ${side.admRevoke}/${side.admRevokeFake} dosya ${side.secFileLink}/${side.secFileLinkFake} (gerçek/yok), durum ${side.statusAfter}, kanıt +${side.evidenceDelta}; KVKK yönetici dışa aktarımında klinik belge=${side.adminExportHasClinicalDoc} (hekim dışa aktarım ${side.dentistExportStatus}); onam raporunda klinik satır=${side.onamSecretaryHasClinical}; hekim iptal ${side.drRevoke}`, { evidence: "N05-http.json", extraEvidence: ["N05-komsu.json"] });
 } catch (e) { rec("N05", "FAIL", `istisna: ${e.message}`); }
 
 // ---------------------------------------------------------------- N06 görünüm (HTTP kısmı)

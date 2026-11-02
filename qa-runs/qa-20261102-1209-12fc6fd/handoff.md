@@ -9,3 +9,18 @@
 - Kurallar: ürün yamasını izole worktree'de yap; uygulanmış migration'ı değiştirme (gerekirse yeni `0030_*`); test beklentilerini, kilitli planı, geçmiş kanıtları değiştirme; üretime/canlıya gönderim yok.
 - **Ortam uyarısı (QA-007 dersi):** tester'ın servisleri :3000/:4000 ve DB'leri `viadent`, `viadent_test` üzerinde çalışıyor ve aynı anda tam API regresyonu koşuyor. Kendi testlerini **ayrı DB adlarıyla** koş (worktree `.env` içinde `DATABASE_URL`/`MIGRATION_DATABASE_URL`/`ADMIN_DATABASE_URL`/`WORKER_DATABASE_URL`/`BACKUP_DATABASE_URL` veritabanı adını `viadent_fix` yap → test DB `viadent_fix_test`); :3000/:4000 süreçlerini durdurma; küme genelinde bağlantı sonlandırma yapma.
 - Geri dönüş: yeni commit SHA, değişen dosyalar, çalıştırılan komutlar ve gerçek sonuçları `fix1.md` olarak bu klasöre yaz; durum FIX_READY. Kapatma yalnız tester yeniden sınamasıyla.
+
+---
+
+# Devir 2 — qa-20261102-1209-12fc6fd tur 2 → cezeri-duzeltici
+
+- Sınanan sürüm: `08438cf` (main; fix1 ürün yaması `3948cb7`). Gate: **DURDUR** (açık S1).
+- Kapanan: QA-101, QA-102, QA-103 → VERIFIED (kanıt `evidence/tur2b/`, `evidence/tur2/N05-kesin-eslesme.json`).
+- Açık bulgular: **QA-104 (S1)**, **QA-105 (S2)** — ayrıntı, adımlar, kök neden ipucu: `bugs.md`.
+- Kabul ölçütleri (tester yeniden sınar; gevşetilmez):
+  1. QA-104: `patient.health.read` olmayan dışa aktaran için `POST /patients/:id/export` yanıtında klinik çıktı (`document_types.category = 'clinical_output'`) belgeleri **ve** bu belgelere bağlı `consent_requests`, `evidence_events`, `files` (file_assets.patient_document_id) satırları yer almaz; `omitted` alanı ve not bunu açıkça belirtir (ör. `patient_documents:clinical_output`); `counts`/`checksums` kalan içerikle tutarlıdır. Klinik olmayan belgeler (onam vb.) ve olayları kalır. Sağlık yetkili dışa aktaranda (ör. sağlık yetkili yönetici veya test için yetki verilmiş rol) tüm belgeler kalır. Denetim kaydı (`patient.export`) dışlananları içerir. Aynı mantık klinik geneli dışa aktarımda (`export.clinic`) da varsa uygulanır ya da neden uygulanmadığı ADR'de yazılır.
+  2. QA-105: sağlık yetkisi olmayan rolde `GET /reports/onam` satırları **ve toplamları** klinik çıktı belgelerini içermez (CSV/XLSX biçimleri de). Sağlık yetkili rol için davranış ADR ile seçilir (ya klinik çıktılar onam raporunda hiç yer almaz ya da yalnız sağlık yetkiliye görünür) ve testle sabitlenir.
+  3. Regresyon testi ekle: yönetici dışa aktarımında epikriz `content` metni ve id'si yok, onam belgesi var; sekreter onam raporunda epikriz satırı yok, toplam buna göre.
+- Kurallar: ürün yamasını izole worktree'de yap; uygulanmış migration'ı değiştirme (gerekirse yeni `0030_*`); test beklentilerini, kilitli planı, geçmiş kanıtları değiştirme; üretime/canlıya gönderim yok.
+- **Ortam uyarısı:** tester'ın servisleri :3000/:4000 ve DB'leri `viadent`, `viadent_test` üzerinde. Kendi testlerini **ayrı DB adlarıyla** koş (worktree `.env` içinde DB adlarını `viadent_fix` yap → test DB `viadent_fix_test`; önceki turdan kalmış olabilir, gerekirse sıfırla); :3000/:4000 süreçlerini durdurma; küme genelinde bağlantı sonlandırma yapma.
+- Geri dönüş: yeni commit SHA, değişen dosyalar, çalıştırılan komutlar ve gerçek sonuçları `fix2.md` olarak bu klasöre yaz; durum FIX_READY. Kapatma yalnız tester yeniden sınamasıyla.

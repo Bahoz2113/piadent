@@ -1,0 +1,36 @@
+{
+ "clinicalDocIds": 2,
+ "secHistoryDocEvents": [],
+ "dentistHistoryDocEvents": [
+  "document.revoke",
+  "document.issue",
+  "document.issue"
+ ],
+ "adminExport": {
+  "omitted": [
+   "anamnesis_versions",
+   "clinical_notes",
+   "odontogram_findings",
+   "diagnoses"
+  ],
+  "patient_documents": 2,
+  "docTypesInExport": [
+   "content-var",
+   "content-var"
+  ],
+  "contentSample": "‹kelime› DEMO ‹kelime› — ‹kelime› ‹kelime› ‹kelime›.\n\n‹kelime› Ağı",
+  "evidence_events": 4,
+  "dentistExportForbidden": null
+ },
+ "onamSecretary": [
+  {
+   "title": "‹başlık›",
+   "patient": "‹hasta›"
+  },
+  {
+   "title": "‹başlık›",
+   "patient": "‹hasta›"
+  }
+ ]
+}
+hekim dışa aktarım: 403

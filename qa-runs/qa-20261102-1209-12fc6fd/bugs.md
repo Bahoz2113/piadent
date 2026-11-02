@@ -1,10 +1,12 @@
-# Bulgu defteri — qa-20261102-1209-12fc6fd (sürüm 12fc6fd)
+# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf)
 
 | ID | Önem | Durum | Vaka | Başlık | Sorumlu |
 |---|---|---|---|---|---|
-| QA-101 | S1 | OPEN | N05 | Sağlık yetkisi olmayan rol klinik çıktı belgesinde yazma işlemi yapabiliyor (yönetici iptal 200; sekreter "yazdırıldı" kanıtı 200) | Kodlama (cezeri-duzeltici) |
-| QA-102 | S2 | OPEN | N05 | Klinik çıktı belgesinin varlığı/olayları sağlık yetkisi olmayan rollere hasta geçmişinde (PİA İz) görünüyor | Kodlama |
-| QA-103 | S3 | OPEN | N02 | Sağlayıcının düzenlediği (MOCK) / iptal ettiği faturada da "TASLAK — resmî belge değildir" uyarısı, "e-Belge sağlayıcısı bağlı değil" metni ve "Taslağı yazdır" (TASLAK filigranı) gösteriliyor | Kodlama |
+| QA-101 | S1 | VERIFIED (tur 2, 08438cf) | N05 | Sağlık yetkisi olmayan rol klinik çıktı belgesinde yazma işlemi yapabiliyor (yönetici iptal 200; sekreter "yazdırıldı" kanıtı 200) | Kodlama (cezeri-duzeltici) |
+| QA-102 | S2 | VERIFIED (tur 2, 08438cf) | N05 | Klinik çıktı belgesinin varlığı/olayları sağlık yetkisi olmayan rollere hasta geçmişinde (PİA İz) görünüyor | Kodlama |
+| QA-103 | S3 | VERIFIED (tur 2, 08438cf) | N02 | Sağlayıcının düzenlediği (MOCK) / iptal ettiği faturada da "TASLAK — resmî belge değildir" uyarısı, "e-Belge sağlayıcısı bağlı değil" metni ve "Taslağı yazdır" (TASLAK filigranı) gösteriliyor | Kodlama |
+| QA-104 | S1 | OPEN | N05 (komşu) | KVKK hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik çıktı belgelerinin içeriğini, onay/kanıt olaylarını ve bağlı dosya kayıtlarını alıyor | Kodlama (cezeri-duzeltici) |
+| QA-105 | S2 | OPEN | N05 (komşu) | Onam/belge raporu klinik çıktı belgelerini (hasta, tür "Epikriz / tedavi özeti", başlık) sağlık yetkisi olmayan role listeliyor | Kodlama |
 
 ## QA-101 (S1) — Klinik çıktı belgesi yazma uçlarında sağlık kapısı yok
 - **Ortam/sürüm:** yerel test, `12fc6fd`, sentetik hasta "Epikriz Sınama" (A kliniği).
@@ -27,6 +29,31 @@
 - **Beklenen:** uyarı ve yazdırma durumu yansıtmalı: taslak → TASLAK; sağlayıcıda/düzenlenmiş/iptal → sağlayıcı durumu ("MOCK sağlayıcı tarafından düzenlendi — resmî değil" / gerçek sağlayıcıda "Sağlayıcı belgesi: …"), "bağlı değil" metni bağlantı durumuna göre. Gerçek sağlayıcı geldiğinde düzenlenmiş faturada "TASLAK" ifadesi yanıltıcı olur.
 - **Kanıt:** `evidence/tur1/masaustu-N02-fatura-ayrinti.jpg`.
 
+## Tur 2 yeniden sınama (08438cf, temiz seed) — kapanan bulgular
+- **QA-101 VERIFIED:** sekreter/yönetici için klinik çıktıda print 404/404, karar 404/404, iptal 404/404, dosya bağlama 422/422 (gerçek/var olmayan aynı); durum `issued` kaldı, kanıt +0; hekim print 200, hekim iptal 200. Kanıt `evidence/tur2b/N05-http.json`, `N05-komsu.json`.
+- **QA-102 VERIFIED:** sekreter geçmişinde belge kimliğiyle eşleşen olay 0; hekimde `document.issue`×2 + `document.revoke` görünür. Tarayıcıda (masaüstü+mobil) Geçmiş'te belge olayı yok. Kanıt `evidence/tur2/N05-kesin-eslesme.json`, `evidence/tur2b/{masaustu,mobil}-N05-*.jpg`.
+- **QA-103 VERIFIED:** MOCK düzenlenip iptal edilen faturanın ayrıntısında "TASLAK" ibaresi yok, sağlayıcı durumu ve "resmî belge değil" görünüyor (masaüstü + 360 px). Kanıt `evidence/tur2b/{masaustu,mobil}-N02-fatura-ayrinti.jpg`.
+
+## QA-104 (S1) — KVKK hasta dışa aktarımı klinik çıktı belgelerini sağlık yetkisi olmayana veriyor
+- **Ortam/sürüm:** yerel test, `08438cf`, temiz seed, sentetik hasta "Epikriz Sınama".
+- **Adımlar:** (1) Hekim EPIKRIZ ve HASTA-FOYU üretir. (2) Yönetici (`export.patient` var, `patient.health.read` yok) `POST /patients/:id/export` (gerekçeli) → 200.
+- **Gözlenen:** `omitted` = anamnesis_versions, clinical_notes, odontogram_findings, diagnoses (sağlık bölümleri doğru dışlanıyor) **ama** `sections.patient_documents` 2 klinik çıktı satırını `content` (epikriz/föy metni) dahil döndürüyor; `evidence_events` bu belgelerin olaylarını içeriyor. Aynı kural `consent_requests` ve belgeye bağlı `files` kayıtları için de geçerli olmalı.
+- **Beklenen (ADR-085 + mevcut dışa aktarım kuralı "sağlık bölümleri ayrıca sağlık yetkisi ister"):** sağlık yetkisi yoksa klinik çıktı belgeleri ve onlara bağlı onay/kanıt/dosya satırları dışa aktarımda yer almaz ve `omitted`/notta belirtilir; onam vb. klinik olmayan belgeler kalır. Sağlık yetkili dışa aktarım (varsa) tamdır.
+- **Etki:** sağlık verisi (epikriz/tedavi özeti metni) sağlık yetkisi olmayan role ve klinik dışına çıkan dosyaya sızıyor; QA-101 ile aynı yetki ihlali sınıfı → S1.
+- **Kanıt:** `evidence/tur2/N05-kesin-eslesme.json` (adminExport.patient_documents=2, content-var, evidence_events=4), `evidence/tur2b/N05-komsu.json` (adminExportHasClinicalDoc=true).
+- **Kök neden ipucu:** `apps/api/src/pilot/export.controller.ts` ~satır 113–117: `patient_documents`, `consent_requests`, `evidence_events`, `files` sorguları kategori süzmüyor; `HEALTH` kümesi (satır 38) yalnız bölüm adına bakıyor. Sağlık yetkisi yoksa `document_types.category <> 'clinical_output'` koşulu eklenmeli.
+- **Not:** hekim rolünde `export.patient` yok → 403 (permissions.ts); bu beklenen davranış, kusur değil.
+
+## QA-105 (S2) — Onam/belge raporunda klinik çıktı satırları
+- **Adımlar:** QA-104 senaryosu sonrası sekreter `GET /reports/onam?from=<bugün>&to=<bugün>` → 200.
+- **Gözlenen:** iki satır klinik çıktı belgesi (hasta adı, tür "Epikriz / tedavi özeti" / "Hasta bilgi föyü (klinik)", başlık); toplam sayıma da dahil.
+- **Beklenen:** sağlık yetkisi olmayan rolde klinik çıktı belgeleri rapor satırlarında ve toplamlarda yer almaz (QA-102'deki geçmiş filtresiyle tutarlı). Raporun adı "onam" olduğundan klinik çıktıların hiç listelenmemesi de kabul edilebilir; hangi seçenek seçilirse ADR'de yazılmalı.
+- **Etki:** hangi hastaya epikriz/klinik föy düzenlendiği (sağlık işleminin varlığı ve başlığı) sağlık yetkisi olmayan role görünüyor; içerik görünmüyor → S2.
+- **Kanıt:** `evidence/tur2/N05-kesin-eslesme.json` (onamSecretary 2 satır), `evidence/tur2b/N05-komsu.json` (onamSecretaryHasClinical=true).
+- **Kök neden ipucu:** `apps/api/src/reports/definitions.ts` `onam` (satır ~492) ve `ONAM_CTE`: kategori süzgeci yok; `notClinicalOutputDocSql` benzeri koşul veya `category <> 'clinical_output'`.
+
 ## Ortam / betik notları (ürün kusuru değil)
 - Tarayıcı betiğinin ilk iki koşusunda N02/N05 "FAIL" tester betiği hatasıydı (hasta adı "Epikriz Sınama" metin aramasına takıldı; diyalog seçici; "Belge düzenlendi" etiketi kalıpta yoktu). Betik düzeltildi; son koşu `evidence/tur1/browser-n-summary.json`.
 - n-cases N02'de "Unicode ad" kontrolü listede ilk şahıs faturasını (yuvarlama faturası, aynı alıcı adı) okudu; ad yine "Şükrü Çağlayan İğdır" olarak birebir döndü.
+- Tur 2 (tester betiği düzeltmesi, ürün kusuru değil): n-cases N05 geçmiş kontrolü `/Epikriz/` metin eşleşmesiyle hasta adına ("Epikriz Sınama", patient.create olayı) takılıp yanlış pozitif verdi; artık yalnız belge kimliğiyle eşleşiyor. "Hekim dışa aktarımında belge var" beklentisi yanlıştı (hekimde `export.patient` yok) → 403 beklentisine çevrildi. Ürün beklentisi gevşetilmedi; ilk koşu `evidence/tur2/` korunuyor, düzeltilmiş koşu `evidence/tur2b/`.
+- Tur 2: n-cases aynı veritabanında ikinci kez koşulamıyor (sentetik hasta çakışması) → temiz seed ile `evidence/tur2b/` koşuldu (VD-030 ile aynı sınıf, test ortamı).
