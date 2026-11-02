@@ -13,3 +13,4 @@ export * from "./db-tuning.js";
 export * from "./retention.js";
 export * from "./field-crypto.js";
 export { seed } from "./seed.js";
+export * from "./adapter-contract.js";

@@ -8,6 +8,7 @@ import { AppError, Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
 import { audit } from "../audit/audit.js";
 import { idempotent, requireKey } from "./ledger.js";
+import { createJob } from "../bridge/bridge.controller.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const replayHeader = (res: Response, r: { replayed: boolean }) => { if (r.replayed) res.setHeader("Idempotent-Replayed", "true"); };
@@ -43,14 +44,18 @@ export class InvoicesController {
            from invoices i where i.patient_id = $1 order by i.created_at desc`, [patientId]);
       return { items: r.rows.map((i) => ({ id: i.id, docType: i.doc_type, status: i.status, buyerType: i.buyer_type, buyerName: i.buyer_name, subtotal: i.subtotal, vatTotal: i.vat_total,
         grandTotal: i.grand_total, invoiceNo: i.invoice_no, issuedAt: i.issued_at, createdAt: i.created_at, cancelReason: i.cancel_reason, lineCount: i.line_count })),
-        providerConnected: await this.providerConnected(c) };
+        providerConnected: await this.providerConnected(c), providerMock: await this.providerMock(c) };
     });
   }
 
   @Get("invoices/:id")
   @Require("account.read")
   get(@Ctx() ctx: RequestContext, @Param("id", id) invoiceId: string) {
-    return this.db.tx(ctx, async (c) => ({ ...(await this.load(c, invoiceId)), providerConnected: await this.providerConnected(c), clinic: { name: ctx.tenantName } }));
+    return this.db.tx(ctx, async (c) => {
+      const base = await this.load(c, invoiceId);
+      const conn = base.providerConnectionId ? (await c.query("select provider, mode from integration_connections where id = $1", [base.providerConnectionId])).rows[0] : null;
+      return { ...base, providerConnected: await this.providerConnected(c), providerMock: conn ? conn.mode === "mock" : null, providerLabel: conn ? `${conn.provider} (${conn.mode})` : null, clinic: { name: ctx.tenantName } };
+    });
   }
 
   @Post("invoices")
@@ -108,7 +113,15 @@ export class InvoicesController {
       const inv = (await c.query("select patient_id, status from invoices where id = $1 for update", [invoiceId])).rows[0];
       if (!inv) throw Errors.notFound("Fatura taslağı");
       if (inv.status === "cancelled") throw new AppError(409, "INVOICE_ALREADY_CANCELLED", "Bu kayıt zaten iptal edilmiş.");
-      if (inv.status === "issued") throw new AppError(409, "INVOICE_ISSUED_CANCEL_VIA_PROVIDER", "Düzenlenmiş fatura yalnız e-belge sağlayıcısı üzerinden iptal edilir (sağlayıcı bağlı değil).");
+      if (inv.status === "issued") {
+        const conn = (await c.query("select id from integration_connections where kind = 'e_invoice' and status = 'active' limit 1")).rows[0];
+        if (!conn) throw new AppError(409, "INVOICE_ISSUED_CANCEL_VIA_PROVIDER", "Düzenlenmiş fatura yalnız e-belge sağlayıcısı üzerinden iptal edilir (sağlayıcı bağlı değil).");
+        const jobId = await createJob(c, ctx, { connectionId: conn.id, operation: "einvoice.cancel", sourceType: "invoice", sourceId: invoiceId,
+          key: `einvoice.cancel:${invoiceId}`, payload: { invoiceId, reason: i.reason }, requiresApproval: false });
+        await c.query("update invoices set cancel_reason = $2 where id = $1", [invoiceId, i.reason]); // durum sağlayıcı onayıyla değişir
+        await audit(c, ctx, { action: "invoice.cancel_requested", entityType: "invoice", entityId: invoiceId, patientId: inv.patient_id, changes: { reason: { from: null, to: i.reason } } });
+        return { id: invoiceId, status: "issued", cancelRequested: true, jobId };
+      }
       if (inv.status === "pending_provider") throw new AppError(409, "INVOICE_PENDING", "Sağlayıcı yanıtı beklenirken iptal edilemez.");
       await c.query("update invoices set status = 'cancelled', cancel_reason = $2, cancelled_at = now(), cancelled_by = $3 where id = $1", [invoiceId, i.reason, ctx.userId]);
       await audit(c, ctx, { action: "invoice.cancel", entityType: "invoice", entityId: invoiceId, patientId: inv.patient_id,
@@ -117,26 +130,39 @@ export class InvoicesController {
     });
   }
 
-  /** Sağlayıcıya gönderim: etkin e-belge bağlantısı yoksa 409 — sahte "gönderildi" yok. Bağlantı varsa adaptör Faz 3 (ADR-083). */
+  /**
+   * Sağlayıcıya gönderim (ADR-083/086): etkin e-belge bağlantısı yoksa 409 — sahte "gönderildi" yok. Bağlantı varsa iş kuyruğa
+   * alınır (PİA Köprü), fatura "sağlayıcıda bekliyor" olur; numara yalnız sağlayıcı yanıtıyla (worker) yazılır. MOCK bağlantıda numara "MOCK…" ile başlar.
+   */
   @Post("invoices/:id/submit")
   @Require("invoice.write")
   @HttpCode(200)
   async submit(@Ctx() ctx: RequestContext, @Param("id", id) invoiceId: string) {
-    // Engel denetim kaydı kalıcı olsun diye önce transaction tamamlanır, hata sonra fırlatılır.
     const out = await this.db.tx(ctx, async (c) => {
-      const inv = (await c.query("select patient_id, status from invoices where id = $1 for update", [invoiceId])).rows[0];
+      const inv = (await c.query("select patient_id, status, grand_total::text, doc_type from invoices where id = $1 for update", [invoiceId])).rows[0];
       if (!inv) throw Errors.notFound("Fatura taslağı");
       if (inv.status !== "draft") throw new AppError(409, "INVOICE_NOT_DRAFT", "Yalnız taslak gönderilebilir.");
-      if (!(await this.providerConnected(c))) {
+      const conn = (await c.query("select id, provider, mode from integration_connections where kind = 'e_invoice' and status = 'active' limit 1")).rows[0];
+      if (!conn) {
         await audit(c, ctx, { action: "invoice.submit_blocked", entityType: "invoice", entityId: invoiceId, patientId: inv.patient_id, changes: { reason: { from: null, to: "e-belge sağlayıcısı bağlı değil" } } });
-        return "no_provider" as const;
+        return { kind: "no_provider" as const };
       }
-      return "no_adapter" as const;
+      // Yük: kimlik verisi yok; sağlayıcı adaptörü gerektiğinde kaydı kendisi okur (veri en aza indirme).
+      const jobId = await createJob(c, ctx, { connectionId: conn.id, operation: "einvoice.submit", sourceType: "invoice", sourceId: invoiceId,
+        key: `einvoice.submit:${invoiceId}`, payload: { invoiceId, docType: inv.doc_type, grandTotal: inv.grand_total }, requiresApproval: false });
+      await c.query("update invoices set status = 'pending_provider', provider_connection_id = $2 where id = $1", [invoiceId, conn.id]);
+      await audit(c, ctx, { action: "invoice.submit", entityType: "invoice", entityId: invoiceId, patientId: inv.patient_id,
+        changes: { status: { from: "draft", to: "pending_provider" }, provider: { from: null, to: `${conn.provider} (${conn.mode})` } } });
+      return { kind: "queued" as const, jobId, mock: conn.mode === "mock" };
     });
-    if (out === "no_provider") throw new AppError(409, "E_INVOICE_PROVIDER_UNAVAILABLE", "e-Belge sağlayıcısı bağlı değil: fatura düzenlenemez. Taslak saklandı; sağlayıcı sözleşmesi ve test ortamı tamamlanınca gönderilebilir.");
-    throw new AppError(409, "E_INVOICE_ADAPTER_PENDING", "e-Belge sağlayıcı adaptörü henüz devrede değil (Faz 3). Taslak saklandı.");
+    if (out.kind === "no_provider") throw new AppError(409, "E_INVOICE_PROVIDER_UNAVAILABLE", "e-Belge sağlayıcısı bağlı değil: fatura düzenlenemez. Taslak saklandı; sağlayıcı sözleşmesi ve test ortamı tamamlanınca gönderilebilir.");
+    return { id: invoiceId, status: "pending_provider", jobId: out.jobId, mock: out.mock };
   }
 
+  private async providerMock(c: pg.PoolClient) {
+    const r = (await c.query("select mode from integration_connections where kind = 'e_invoice' and status = 'active' limit 1")).rows[0];
+    return r ? r.mode === "mock" : null;
+  }
   private async providerConnected(c: pg.PoolClient) {
     return !!(await c.query("select 1 from integration_connections where kind = 'e_invoice' and status = 'active' limit 1")).rowCount;
   }
@@ -166,7 +192,7 @@ export class InvoicesController {
       id: i.id, patientId: i.patient_id, patient: { fullName: `${i.first_name} ${i.last_name}`, fileNo: i.file_no }, docType: i.doc_type, status: i.status,
       buyer: { type: i.buyer_type, name: i.buyer_name, taxNo: i.buyer_tax_no, taxOffice: i.buyer_tax_office, address: i.buyer_address, email: i.buyer_email },
       note: i.note, subtotal: i.subtotal_t, vatTotal: i.vat_total_t, grandTotal: i.grand_total_t, invoiceNo: i.invoice_no, issuedAt: i.issued_at, providerRef: i.provider_ref,
-      rejectedReason: i.rejected_reason, cancelReason: i.cancel_reason, cancelledAt: i.cancelled_at, createdAt: i.created_at, createdBy: i.created_by_name,
+      rejectedReason: i.rejected_reason, cancelReason: i.cancel_reason, cancelledAt: i.cancelled_at, createdAt: i.created_at, createdBy: i.created_by_name, providerConnectionId: i.provider_connection_id as string | null,
       lines: lines.map((l) => ({ lineNo: l.line_no, description: l.description, quantity: l.quantity, unitPrice: l.unit_price, vatRate: l.vat_rate, lineTotal: l.line_total, vatAmount: l.vat_amount, receivableId: l.receivable_id })),
       notice: "TASLAK — resmî belge değildir. Fatura numarası yalnız yetkili e-belge sağlayıcısı tarafından verilir.",
     };

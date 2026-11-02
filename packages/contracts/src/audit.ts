@@ -92,6 +92,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "invoice.update_lines": "Fatura taslağı satırları güncellendi",
   "invoice.cancel": "Fatura taslağı iptal edildi",
   "invoice.submit_blocked": "Fatura gönderimi engellendi (sağlayıcı yok)",
+  "invoice.submit": "Fatura sağlayıcıya iletildi",
+  "invoice.cancel_requested": "Fatura iptali sağlayıcıdan istendi",
   "allocation.create": "Tahsilat alacağa eşlendi",
   "allocation.reverse": "Tahsilat eşlemesi geri alındı",
   "online_payment.create": "Çevrim içi ödeme talebi oluşturuldu",

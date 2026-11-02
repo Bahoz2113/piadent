@@ -15,6 +15,7 @@ import { parseMoneyInput } from "./money-input";
 
 interface InvoiceRow { id: string; docType: InvoiceDocType; status: InvoiceStatus; buyerType: string; buyerName: string; subtotal: string; vatTotal: string; grandTotal: string; invoiceNo: string | null; issuedAt: string | null; createdAt: string; cancelReason: string | null; lineCount: number }
 interface InvoiceDetail extends Omit<InvoiceRow, "lineCount"> {
+  providerMock: boolean | null; providerLabel: string | null; providerRef: string | null; rejectedReason: string | null;
   patient: { fullName: string; fileNo: number }; buyer: { type: string; name: string; taxNo: string | null; taxOffice: string | null; address: string | null; email: string | null }; note: string | null;
   lines: { lineNo: number; description: string; quantity: number; unitPrice: string; vatRate: number; lineTotal: string; vatAmount: string }[]; notice: string; createdBy: string; providerConnected: boolean; clinic: { name: string };
 }
@@ -25,7 +26,7 @@ const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "
 
 export function Invoices({ patientId, receivables }: { patientId: string; receivables: Receivable[] }) {
   const { can } = useSession();
-  const list = useData<{ items: InvoiceRow[]; providerConnected: boolean }>(`/patients/${patientId}/invoices`);
+  const list = useData<{ items: InvoiceRow[]; providerConnected: boolean; providerMock: boolean | null }>(`/patients/${patientId}/invoices`);
   const [open, setOpen] = useState<null | "new" | { view: string }>(null);
   const [msg, setMsg] = useState<{ kind: "success" | "error" | "warning"; text: string } | null>(null);
   const items = list.data?.items ?? [];
@@ -34,7 +35,8 @@ export function Invoices({ patientId, receivables }: { patientId: string; receiv
       <div className="card-head">
         <div><h2><FileText size={18} aria-hidden style={{ verticalAlign: "-3px" }} /> Fatura taslakları</h2>
           <p className="muted small">PİA-DENT fatura numarası üretmez. Taslak burada hazırlanır; resmî belge yalnız bağlı e-belge sağlayıcısı düzenler.
-            {list.data && !list.data.providerConnected && <> <span className="badge badge-warning">e-Belge sağlayıcısı bağlı değil</span></>}</p></div>
+            {list.data && !list.data.providerConnected && <> <span className="badge badge-warning">e-Belge sağlayıcısı bağlı değil</span></>}
+            {list.data?.providerMock && <> <span className="badge badge-warning">MOCK e-belge sağlayıcısı — numaralar resmî değildir</span></>}</p></div>
         {can("invoice.write") && <button className="btn btn-sm" onClick={() => setOpen("new")}><Plus size={15} aria-hidden />Taslak oluştur</button>}
       </div>
       {msg && <div style={{ padding: "0 20px" }}><Alert kind={msg.kind}>{msg.text}</Alert></div>}
@@ -45,7 +47,7 @@ export function Invoices({ patientId, receivables }: { patientId: string; receiv
             <tbody>{items.map((i) => (
               <tr key={i.id}>
                 <td>{fmtDateTime(i.createdAt)}</td>
-                <td>{INVOICE_DOC_TYPE_LABELS[i.docType]}<div className="small muted">{i.invoiceNo ? <span className="mono">{i.invoiceNo}</span> : "numara yok (taslak)"}</div></td>
+                <td>{INVOICE_DOC_TYPE_LABELS[i.docType]}<div className="small muted">{i.invoiceNo ? <><span className="mono">{i.invoiceNo}</span>{i.invoiceNo.startsWith("MOCK") && <> <span className="badge badge-warning">MOCK</span></>}</> : i.status === "pending_provider" ? "sağlayıcı yanıtı bekleniyor" : "numara yok"}</div></td>
                 <td>{i.buyerName}<div className="small muted">{BUYER_TYPE_LABELS[i.buyerType as "individual"] ?? i.buyerType} · {i.lineCount} satır</div></td>
                 <td className="money">{formatTRY(i.subtotal)}</td><td className="money">{formatTRY(i.vatTotal)}</td><td className="money"><strong>{formatTRY(i.grandTotal)}</strong></td>
                 <td><span className={`badge badge-${TONE[i.status]}`}>{INVOICE_STATUS_LABELS[i.status]}</span></td>
@@ -137,7 +139,7 @@ function InvoiceDrawer({ id, onClose, onChanged }: { id: string; onClose: () => 
   const d = useData<InvoiceDetail>(`/invoices/${id}`);
   const [reason, setReason] = useState(""); const [cancelling, setCancelling] = useState(false); const [err, setErr] = useState<ApiFailure | null>(null);
   async function submit() {
-    try { await api(`/invoices/${id}/submit`, { body: {} }); onChanged({ kind: "success", text: "Sağlayıcıya iletildi." }); await d.reload(); }
+    try { const r = await api<{ mock: boolean }>(`/invoices/${id}/submit`, { body: {} }); onChanged({ kind: r.mock ? "warning" : "success", text: r.mock ? "MOCK sağlayıcıya iletildi (gerçek belge düzenlenmez); sonuç PİA Köprü işlendikçe görünür." : "Sağlayıcıya iletildi; numara yanıt gelince görünür." }); await d.reload(); }
     catch (e) { const f = e as ApiFailure; setErr(f); onChanged({ kind: "warning", text: f.message }); }
   }
   async function cancel() {
@@ -166,7 +168,7 @@ function InvoiceDrawer({ id, onClose, onChanged }: { id: string; onClose: () => 
     <Drawer title={x ? `${INVOICE_DOC_TYPE_LABELS[x.docType]} · ${INVOICE_STATUS_LABELS[x.status]}` : "Fatura taslağı"} subtitle={x?.buyer.name} onClose={onClose}
       footer={x && <>
         <button className="btn" onClick={print}><Printer size={15} aria-hidden />Taslağı yazdır</button>
-        {can("invoice.write") && x.status === "draft" && !cancelling && <button className="btn btn-ghost" onClick={() => setCancelling(true)}>İptal et</button>}
+        {can("invoice.write") && (x.status === "draft" || x.status === "rejected" || (x.status === "issued" && x.providerConnected && !x.cancelReason)) && !cancelling && <button className="btn btn-ghost" onClick={() => setCancelling(true)}>{x.status === "issued" ? "Sağlayıcıdan iptal iste" : "İptal et"}</button>}
         {can("invoice.write") && x.status === "draft" && <button className="btn btn-primary" onClick={() => void submit()} title={x.providerConnected ? "Sağlayıcıya gönder" : "e-Belge sağlayıcısı bağlı değil"}>Sağlayıcıya gönder</button>}
       </>}>
       {!x ? <p className="muted">Yükleniyor…</p> : (
@@ -176,7 +178,9 @@ function InvoiceDrawer({ id, onClose, onChanged }: { id: string; onClose: () => 
           <dl className="kv">
             <dt>Alıcı</dt><dd>{x.buyer.name}{x.buyer.taxNo && <> · VKN <span className="mono">{x.buyer.taxNo}</span></>}{x.buyer.taxOffice && <> · {x.buyer.taxOffice}</>}</dd>
             {x.buyer.address && <><dt>Adres</dt><dd>{x.buyer.address}</dd></>}
-            <dt>Fatura no</dt><dd>{x.invoiceNo ?? <span className="muted">yok — yalnız sağlayıcı verir</span>}</dd>
+            <dt>Fatura no</dt><dd>{x.invoiceNo ? <><span className="mono">{x.invoiceNo}</span>{x.invoiceNo.startsWith("MOCK") && <> <span className="badge badge-warning">MOCK sağlayıcı — resmî belge değil</span></>}</> : <span className="muted">yok — yalnız sağlayıcı verir</span>}</dd>
+            {x.providerLabel && <><dt>Sağlayıcı</dt><dd>{x.providerLabel}{x.providerRef && <> · ref <span className="mono">{x.providerRef}</span></>}</dd></>}
+            {x.rejectedReason && <><dt>Ret gerekçesi</dt><dd>{x.rejectedReason}</dd></>}
             <dt>Hazırlayan</dt><dd>{x.createdBy} · {fmtDateTime(x.createdAt)}</dd>
             {x.cancelReason && <><dt>İptal gerekçesi</dt><dd>{x.cancelReason}</dd></>}
           </dl>

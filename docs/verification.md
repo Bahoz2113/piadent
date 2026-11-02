@@ -257,3 +257,10 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 | web 58 · contracts 15 | geçti |
 | E2E `anamnez-sablonu.spec.ts` (masaüstü) | 1/1 — yönetici taslak+soru → hekim yayın → Sağlık sekmesinde yeni soru → emekli |
 | E2E `klinik-cikti.spec.ts` (masaüstü + 360) | 2/2 — hekim epikriz (serbest metin, tanı/anamnez alanları) → üretildi; sekreter listede görmez, seçenek "yalnız hekim" |
+
+## Faz 3 — Adaptör iskeleti + sözleşme testi (02.11.2026, ADR-086)
+| Komut | Sonuç |
+|---|---|
+| `0026_integration_ops.sql`, `0027_invoice_issued_cancel.sql` | uygulandı |
+| `vitest run test/adapter-contract.test.ts` | **15/15**: 9 sözleşme vakası (MOCK), OPERATIONS=7 ve MOCK sağlık kaydını desteklemez, canlı kapı (env kapalı → "kapısı kapalı"; bilinmeyen sağlayıcı → "doğrulanmış adaptör yok"; pasif bağlantı), e-belge MOCK akışı: submit→pending_provider (beklerken iptal 409) → worker → issued `MOCK…` (satır kilidi, ikinci gönderim 409) → iptal isteği → cancelled (numara korunur) → ret `rejected`+gerekçe, zaman aşımı bekliyor (numara yok) |
+| `vitest run test/invoices.test.ts` | 10/10 (değişmedi) |

@@ -79,10 +79,10 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 
 | Kanal | Durum | Kanıt | Gerçeğe geçiş kapısı |
 |---|---|---|---|
-| SMS / WhatsApp / e-posta | mock bağlayıcı, webhook, iş kuyruğu | `bridge.controller.ts:54-266`; `integrations.ts:7-21` | Sağlayıcı sözleşmesi + `VIADENT_EXTERNAL_SEND_ENABLED` |
+| SMS / WhatsApp / e-posta | mock bağlayıcı, webhook, iş kuyruğu; `whatsapp.send` işlemi iskelette | `bridge.controller.ts`; `integrations.ts`; `OPERATIONS` | Sağlayıcı sözleşmesi + `VIADENT_EXTERNAL_SEND_ENABLED` |
 | Online ödeme | mock | `bridge.controller.ts:291-348` | PSP sözleşmesi, 3D Secure test ortamı |
-| e-Fatura/e-Arşiv/e-SMM | yok (`mock:false`) | `integrations.ts:21` | GİB entegratörü + mali müşavir |
-| e-Nabız / sağlık kaydı | yok | `health_registry` tanımlı, adaptör yok | Bakanlık test ortamı; "onaylı" iddiası yapılmaz |
+| e-Fatura/e-Arşiv/e-SMM | MOCK adaptör (gönder/iptal) + sözleşme testi; taslak→issued(MOCK)→iptal uçtan uca (02.11, ADR-086) | `packages/db/src/bridge.ts`, `adapter-contract.ts`; test `adapter-contract.test.ts` 15 | GİB entegratörü + mali müşavir; gerçek adaptör ayrı ADR |
+| e-Nabız / sağlık kaydı | işlem iskelette (`health_registry.submit`); MOCK bile yok (bilinçli) | `bridge.ts` supports() dışı | Bakanlık test ortamı; "onaylı" iddiası yapılmaz |
 | e-İmza | yok | `signature` tanımlı | — |
 
 ## Özet sayım

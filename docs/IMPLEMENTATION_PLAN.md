@@ -22,7 +22,7 @@ Kaynaklar: `PiaDent_Claude_Eksik_Tamamlama_Nihai_Dosyasi.pdf`, `PiaDent_Mevcut_S
 | 2.3 Mali müşavir dışa aktarımı (B10) ✔ 02.11 (rapor `muhasebe-donem`, test) | CSV: tahsilat/iade/gider/ prim dönem raporu | Rapor kataloğuna eklenir; CSV tutarları `finance/summary` ile birebir |
 Çıkış kapısı: CEZERİ P01 genişletilir (makbuz no), yeni P04 "fatura taslağı sahte başarı üretmez".
 
-## Faz 3 — Entegrasyon adaptör iskeleti (P1, sözleşme kapılı)
+## Faz 3 — Entegrasyon adaptör iskeleti (P1, sözleşme kapılı) ✔ 02.11 (ADR-086; 15 test)
 - Sağlayıcı arayüzleri sabit (`IntegrationAdapter`): SMS, WhatsApp, PSP, e-belge, e-Nabız. Her biri için **yalnız** mock + sözleşme testi ("contract test"); gerçek anahtar/env tanımı belgelenir, kod sağlayıcı yokken `mock:false` → özellik pasif.
 - Kabul: hiçbir yol gerçek mesaj/ödeme göndermez; `VIADENT_EXTERNAL_SEND_ENABLED=0` iken worker dış çağrıyı reddeder (test var, genişletilir).
 - Gerçek sağlayıcıya geçiş bu planın dışında, ayrı insan kapısı (release-gates §3).
