@@ -22,6 +22,7 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 | `receivable.write` (elle alacak, alacak iptali) | – | – | – | – | ✔ |
 | `expense.write` (gider, gider ters kaydı) | – | – | – | – | ✔ |
 | `finance.settings` (kasa/banka hesabı, prim kuralı sürümü) | ✔ | – | – | – | ✔ |
+| `invoice.write` (fatura taslağı; sağlayıcıya gönderim yalnız bağlıysa) | – | – | – | – | ✔ |
 | `document.read` (hasta belgeleri, kanıt olayları) | ✔ | ✔ | ✔ | ✔ | – |
 | `document.issue` (onaylı şablondan belge üretme) | – | ✔ | ✔ | – | – |
 | `document.decision` (yüz yüze kabul/ret kaydı) | – | ✔ | ✔ | – | – |

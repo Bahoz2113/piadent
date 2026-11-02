@@ -31,12 +31,12 @@ Sınıflar: **MEVCUT** (kabul ölçütü karşılanıyor, test var) · **KISMI**
 | B2 | Tahsilat (idempotency, dağıtım, ters kayıt) | MEVCUT | `account.controller.ts:147-207`; `0020_receivable_allocated.sql`; CEZERİ V04/P01 PASS | — |
 | B3 | İade (ters kayıt, sağlayıcı iadesi mock) | MEVCUT | `account.controller.ts:234`; `bridge.controller.ts:348` | — |
 | B4 | Tahsilat/iade makbuzu çıktısı | **MEVCUT (02.11, ADR-081)** | `0021_receipts.sql` (TM/IM seri, tetikleyici, değişmez); `finance/receipts.controller.ts`; `components/finance/receipt-print.ts`; test `receipts.test.ts` 9, E2E `makbuz.spec.ts` | Faz 2.1 tamamlandı; CEZERİ koşusu bekliyor |
-| B5 | Fatura / e-Fatura / e-Arşiv / e-SMM | KAPSAM DIŞI (bilinçli) | `contracts/integrations.ts:21` `e_invoice: { mock:false, waitingFor: "GİB entegratörü sözleşmesi…" }`; `docs/release-gates.md §3` | Taslak fatura kaydı (kesilmemiş, sağlayıcıya gitmeyen) bile yok → Faz 2'de "fatura taslağı" iç modeli eklenecek; gerçek gönderim sözleşme kapısına bağlı |
+| B5 | Fatura / e-Fatura / e-Arşiv / e-SMM | **KISMI → taslak modeli MEVCUT (02.11, ADR-083)**; gerçek düzenleme KAPSAM DIŞI (sözleşme kapısı) | `0023_invoices.sql`, `finance/invoices.controller.ts`, `components/finance/invoices.tsx`; test `invoices.test.ts` 10, E2E `fatura-taslagi.spec.ts` | Numara yalnız sağlayıcıdan; sağlayıcı yokken submit 409 |
 | B6 | Kasa/banka hesapları, gider, nakit akışı, bakiye | MEVCUT | `finance.controller.ts:32-237` | Çek/senet, döviz, POS komisyonu: KAPSAM DIŞI (TRY tek para birimi — ADR) |
 | B7 | Hekim primi (kural, tahakkuk, ödeme, ters kayıt) | MEVCUT | `finance.controller.ts:267-376`; `0007_operations.sql:180-182` işlem→prim bağı | Hekim bazlı tarife yok |
 | B8 | Tedarikçi/lab carisi (fatura, ödeme, ters kayıt, ekstre) | MEVCUT | `suppliers.controller.ts:20-149` | — |
 | B9 | Online ödeme isteği (mock sağlayıcı, webhook, iade) | MEVCUT (mock etiketli) | `bridge.controller.ts:291-348` | Gerçek PSP: KAPSAM DIŞI, sözleşme kapısı |
-| B10 | Hesap planı / resmî muhasebe | KAPSAM DIŞI | ADR (muhasebe programına dışa aktarım yok) | Mali müşavir ihracı (CSV) Faz 2 adayı |
+| B10 | Hesap planı / resmî muhasebe | KAPSAM DIŞI; **mali müşavir dönem dökümü MEVCUT (02.11)** | rapor `muhasebe-donem` (`contracts/reports.ts`, `reports/definitions.ts`) | CSV ekranla birebir; makbuz no'lu |
 
 ## C. Operasyon
 

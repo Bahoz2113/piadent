@@ -36,3 +36,11 @@ export function formatTRY(v: string | null | undefined, currency = "TRY"): strin
   const sym = currency === "TRY" ? " ₺" : ` ${currency}`;
   return `${neg ? "-" : ""}${int},${String(a % 100n).padStart(2, "0")}${sym}`;
 }
+
+/** KDV: tutar × oran / 100, kuruşa yarım-yukarı yuvarlanır (bigint; kayan nokta yok). Oran tam sayı yüzde (0, 1, 10, 20). */
+export function vatOf(amount: string, ratePercent: number): string {
+  if (!Number.isInteger(ratePercent) || ratePercent < 0 || ratePercent > 100) throw new Error("KDV oranı 0–100 tam sayı olmalı");
+  const m = toMinor(amount) * BigInt(ratePercent);
+  const q = m / 100n; const r = m % 100n;
+  return fromMinor(q + (r >= 50n ? 1n : 0n));
+}

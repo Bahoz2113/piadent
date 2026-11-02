@@ -239,3 +239,10 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 | `vitest run test/appearance.test.ts` (API) | 4/4: varsayılan + oturumda; saklama + yeni oturumda gelir; 422 (bilinmeyen palet/ölçek/fazla alan); 401 |
 | `pnpm --filter @viadent/web test` | **58/58** (yeni `appearance-contrast.test.ts` 33: loş/koyu yüzey-metin-rozet-odak; 7 palet × 3 şema birincil/yüzey, düğme metni, rozet, vurgu kartı; CSS = contracts; px yazı boyutu yok) |
 | `npx playwright test e2e/gorunum.spec.ts e2e/erisilebilirlik.spec.ts` | **12/12** — lacivert+koyu+ölçek 4 anında (`--brand-primary #9db4ee`, kök 17px), çekmece ve Bugün koyu şemada axe temiz, yenilemede korunur, yeni bağlamda sunucudan gelir, Hesabım'dan varsayılana dönüş |
+
+## Faz 2.2–2.3 — Fatura taslağı + mali müşavir dökümü (02.11.2026, ADR-083)
+| Komut | Sonuç |
+|---|---|
+| `0023_invoices.sql` | uygulandı |
+| `vitest run test/invoices.test.ts` | **10/10**: KDV bigint yarım-yukarı (333,33→33,33; 0,05→0,01), taslak toplamları, idempotent tekrar, satır güncelleme + denetim, submit 409 `E_INVOICE_PROVIDER_UNAVAILABLE` (engel denetimde, taslak kalır), iptal gerekçe/kilit/tekrar, numara uygulamadan yazılamaz (tetikleyici), alıcı/belge türü kuralları, alacak bağı hasta kontrolü, sekreter/yönetici 403, B kliniği 404; dönem dökümü makbuz no + CSV = ekran |
+| `npx playwright test e2e/fatura-taslagi.spec.ts` | **2/2** (masaüstü + 360): taslak oluştur (366,66 ₺ KDV dahil), "numara yok (taslak)", gönderim reddi görünür, yazdırma TASLAK/"Fatura no: yok", sekreter düğmeyi görmez |

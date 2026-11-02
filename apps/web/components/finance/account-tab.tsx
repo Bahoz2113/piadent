@@ -10,6 +10,7 @@ import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaFi
 import { minor, money, parseMoneyInput } from "./money-input";
 import { OnlinePayments, ProviderRefundDrawer } from "./online-payments";
 import { printReceipt } from "./receipt-print";
+import { Invoices } from "./invoices";
 
 interface Receivable { id: string; source: string; description: string; amount: string; status: string; cancelReason: string | null; dueDate: string; createdAt: string;
   practitionerName: string | null; allocated: string; open: string }
@@ -137,6 +138,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
       </section>
 
       <OnlinePayments patientId={patientId} onChanged={() => void acc.reload()} />
+      <Invoices patientId={patientId} receivables={a.receivables} />
 
       {a.ledger.length > 0 && (
         <section className="card">

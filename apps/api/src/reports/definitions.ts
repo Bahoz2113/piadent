@@ -115,6 +115,40 @@ const nakit: Runner = async (a) => {
   };
 };
 
+/** Mali müşavir dönem dökümü (Faz 2.3): nakit hareketleri + belge no (makbuz) + karşı taraf; CSV ile birebir. */
+const muhasebeDonem: Runner = async (a) => {
+  const kind = pick(a.p.kind, ["payment", "refund", "expense", "supplier_payment", "commission_payout"] as const);
+  const args = [a.r.fromUtc, a.r.toUtc, kind];
+  const { list, truncated } = await rows(a,
+    `select m.id, m.occurred_at as at, m.source, ca.name as account, ca.kind as account_kind, m.amount::text,
+            case m.source when 'payment' then (select rc.receipt_no from receipts rc where rc.kind = 'payment' and rc.payment_id = m.source_id)
+                          when 'refund' then (select rc.receipt_no from receipts rc where rc.kind = 'refund' and rc.refund_id = m.source_id) end as doc_no,
+            case m.source when 'payment' then (select p.first_name || ' ' || p.last_name from payments x join patients p on p.id = x.patient_id where x.id = m.source_id)
+                          when 'refund' then (select p.first_name || ' ' || p.last_name from refunds f join payments x on x.id = f.payment_id join patients p on p.id = x.patient_id where f.id = m.source_id)
+                          when 'expense' then (select e.category || coalesce(' · ' || e.description, '') from expenses e where e.id = m.source_id)
+                          when 'supplier_payment' then (select s.name from supplier_entries se join suppliers s on s.id = se.supplier_id where se.id = m.source_id)
+                          when 'commission_payout' then (select pr.display_name from commission_payouts y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id) end as party,
+            case m.source when 'payment' then (select x.method from payments x where x.id = m.source_id)
+                          when 'refund' then (select f.method from refunds f where f.id = m.source_id) end as method,
+            case m.source when 'payment' then (select x.patient_id from payments x where x.id = m.source_id)
+                          when 'refund' then (select x.patient_id from refunds f join payments x on x.id = f.payment_id where f.id = m.source_id) end as patient_id
+       from cash_movements m join cash_accounts ca on ca.id = m.cash_account_id
+      where m.occurred_at >= $1 and m.occurred_at < $2 and ($3::text is null or m.source = $3) order by m.occurred_at, m.created_at`, args);
+  const t = await one(a, `select count(*)::int as n, ${CASH_SUMS} from cash_movements m where m.occurred_at >= $1 and m.occurred_at < $2 and ($3::text is null or m.source = $3)`, args);
+  const SRC: Record<string, string> = { payment: "Tahsilat", refund: "İade", expense: "Gider", supplier_payment: "Tedarikçi ödemesi", commission_payout: "Prim ödemesi" };
+  const METHOD: Record<string, string> = { cash: "Nakit", card_manual: "Kart (POS)", bank_transfer: "Havale/EFT", other: "Diğer", online: "Online" };
+  return {
+    columns: [col("at", "Tarih", "datetime"), col("docNo", "Belge no"), col("kindLabel", "Tür", "badge"), col("party", "Karşı taraf / açıklama"), col("method", "Yöntem"), col("account", "Kasa / banka"), col("amount", "Tutar (±)", "money")],
+    rows: list.map((m) => ({ at: m.at, docNo: m.doc_no ?? "", kind: m.source, kindLabel: SRC[m.source], party: m.party ?? "", method: m.method ? METHOD[m.method] ?? m.method : "", account: m.account, amount: m.amount,
+      ...(m.patient_id ? { _drill: { patientId: m.patient_id, tab: "finans" } } : {}) })),
+    totals: { count: t.n, collections: t.collections, refunds: t.refunds, expenses: t.expenses, supplierPayments: t.supplier_payments, commissionPayouts: t.commission_payouts, netCash: t.net_cash },
+    totalLabels: { count: ["Hareket", "int"], collections: ["Tahsilat", "money"], refunds: ["İade", "money"], expenses: ["Gider", "money"],
+      supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], netCash: ["Net", "money"] },
+    notes: ["Resmî muhasebe fişi / hesap planı değildir; mali müşavir kendi hesap planına aktarır.", "Fatura / e-Arşiv belgeleri bu dökümde değildir; e-belge sağlayıcısından alınır. Belge no sütunu PİA-DENT makbuz numarasıdır (TM tahsilat, IM iade)."],
+    truncated,
+  };
+};
+
 const aylikCiro: Runner = async (a) => {
   const args = [a.r.fromUtc, a.r.toUtc, a.ctx.timezone];
   const r = await a.c.query(
@@ -595,6 +629,6 @@ const isletme: Runner = async (a) => {
 };
 
 export const RUNNERS: Record<string, Runner> = {
-  "gelir-gider": gelirGider, "nakit-hareketleri": nakit, "aylik-ciro": aylikCiro, "borc-bakiye": borc, prim, "online-odeme": onlineOdeme,
+  "gelir-gider": gelirGider, "nakit-hareketleri": nakit, "muhasebe-donem": muhasebeDonem, "aylik-ciro": aylikCiro, "borc-bakiye": borc, prim, "online-odeme": onlineOdeme,
   tedavi, "aylik-islem": aylikIslem, plan, "hekim-hasta": hekimHasta, randevu, kontrol, laboratuvar, mesaj, onam, stok, cari, log, isletme,
 };

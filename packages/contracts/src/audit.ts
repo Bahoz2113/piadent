@@ -8,6 +8,7 @@ import { INTEGRATION_KIND_LABELS, ONLINE_PAYMENT_STATUS_LABELS, OPERATION_LABELS
 import { LAB_COST_STAGE_LABELS, LAB_STATUS_LABELS, SUPPLIER_KIND_LABELS } from "./operations";
 import { DECISION_LABELS, PLAN_STATUS_LABELS } from "./treatment";
 import { IMPORT_KIND_LABELS } from "./pilot";
+import { INVOICE_DOC_TYPE_LABELS, INVOICE_STATUS_LABELS } from "./invoices";
 import { ROLE_LABELS } from "./permissions";
 import { formatTRY, isMoney } from "./money";
 
@@ -83,6 +84,10 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "payment.create": "Tahsilat alındı",
   "payment.refund": "İade yapıldı",
   "receipt.print": "Makbuz yazdırıldı",
+  "invoice.create": "Fatura taslağı oluşturuldu",
+  "invoice.update_lines": "Fatura taslağı satırları güncellendi",
+  "invoice.cancel": "Fatura taslağı iptal edildi",
+  "invoice.submit_blocked": "Fatura gönderimi engellendi (sağlayıcı yok)",
   "allocation.create": "Tahsilat alacağa eşlendi",
   "allocation.reverse": "Tahsilat eşlemesi geri alındı",
   "online_payment.create": "Çevrim içi ödeme talebi oluşturuldu",
@@ -203,7 +208,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   version: "Sürüm", changed: "Değişen kalem", decision: "Karar", unit_price: "Birim fiyat", discount: "İndirim", item_count: "Kalem sayısı", code: "Kod",
   anamnesis: "Anamnez",
   // Finans
-  amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receipt_no: "Makbuz no", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
+  amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receipt_no: "Makbuz no", doc_type: "Belge türü", buyer_name: "Alıcı", grand_total: "Genel toplam", line_count: "Satır sayısı", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
   basis: "Prim esası", rate: "Oran (%)", valid_from: "Geçerlilik başlangıcı", category: "Kategori", kind: "Tür", name: "Ad",
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
@@ -235,7 +240,7 @@ export function auditFieldLabel(field: string): string {
   return field.replace(/_/g, " ");
 }
 
-const MONEY_FIELDS = new Set(["amount", "unit_price", "discount"]);
+const MONEY_FIELDS = new Set(["amount", "unit_price", "discount", "grand_total"]);
 const DATETIME_FIELDS = new Set(["starts_at", "expires_at"]);
 const DATE_FIELDS = new Set(["birth_date", "due_date", "valid_from", "target_date"]);
 const HASH_FIELDS = new Set(["body_hash", "content_hash", "sha256", "file_sha256"]);
@@ -251,7 +256,7 @@ const GENERIC_STATUS: Record<string, string> = {
 const STATUS_BY_ENTITY: Record<string, Record<string, string>> = {
   appointment: APPOINTMENT_STATUS_LABELS, treatment_plan: PLAN_STATUS_LABELS, plan_version: PLAN_STATUS_LABELS, lab_order: LAB_STATUS_LABELS,
   patient_document: DOCUMENT_STATUS_LABELS, file: FILE_STATUS_LABELS, follow_up: FOLLOW_UP_STATUS_LABELS, online_payment_request: ONLINE_PAYMENT_STATUS_LABELS,
-  message: MESSAGE_STATUS_LABELS, integration_job: TRANSPORT_LABELS,
+  message: MESSAGE_STATUS_LABELS, integration_job: TRANSPORT_LABELS, invoice: INVOICE_STATUS_LABELS,
 };
 const SOURCE_LABELS: Record<string, string> = {
   performed_procedure: "Gerçekleşen işlemden", manual: "Elle", provider_webhook: "Sağlayıcı bildirimi", lab_cost: "Laboratuvar maliyeti",
@@ -294,6 +299,7 @@ export function auditValueLabel(field: string, value: unknown, opts: AuditValueO
   const s = String(value);
   if (MONEY_FIELDS.has(field)) return isMoney(s) ? formatTRY(s) : s;
   if (field === "rate") return `%${s}`;
+  if (field === "doc_type") return (INVOICE_DOC_TYPE_LABELS as Record<string, string>)[s] ?? s;
   if (field === "secret") return "••••";
   if (field.endsWith("_id") || ID_FIELDS.has(field)) return nameOf(opts.names, s) ?? (s.length > 8 ? `#${s.slice(0, 8)}` : s);
   if (HASH_FIELDS.has(field)) return `${s.slice(0, 8)}…`;

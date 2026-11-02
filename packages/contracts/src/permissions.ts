@@ -42,6 +42,7 @@ export const PERMISSIONS = [
   "receivable.write",        // elle alacak, alacak iptali
   "expense.write",           // gider ve gider ters kaydı
   "finance.settings",        // kasa/banka hesapları, prim kuralı sürümleri
+  "invoice.write",           // fatura taslağı oluşturma/düzenleme/iptal; sağlayıcıya gönderim (bağlıysa)
   "document.read",           // hasta belgeleri ve kanıt olayları
   "document.issue",          // onaylı şablondan hasta belgesi üretme
   "document.decision",       // yüz yüze kabul/ret kaydı (kanıt olayı)
@@ -102,7 +103,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     "document.read", "document.issue", "document.decision", "file.read", "file.write", "communication.write", "message.send",
     "lab.read", "lab.write", "report.operations"],
   assistant: [...base, "patient.health.read", "anamnesis.write", "document.read", "file.read", "file.write", "lab.read", "lab.write", "stock.read", "stock.write"],
-  finance: [...base, "finance.read", "account.read", "payment.write", "payment.refund", "receivable.write", "expense.write", "finance.settings", "patient.identity.unmask", "message.send",
+  finance: [...base, "finance.read", "account.read", "payment.write", "payment.refund", "receivable.write", "expense.write", "finance.settings", "invoice.write", "patient.identity.unmask", "message.send",
     "integration.read", "integration.approve", "lab.read", "lab.cost", "supplier.manage", "supplier.ledger", "commission.payout", "stock.read",
     "report.analytics", "report.export"],
   // Destek: teşhis için okuma; sağlık içeriği, kimlik açma, finans/işlem yazma YOK. Her istek denetim izinde (rol görünür).
