@@ -1,4 +1,4 @@
-# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098 · tur 4: 49a151b · tur 5: fe98345 · tur 6: eb1c1f3)
+# Bulgu defteri — qa-20261102-1209-12fc6fd (tur 1: 12fc6fd · tur 2: 08438cf · tur 3: bb49098 · tur 4: 49a151b · tur 5: fe98345 · tur 6: eb1c1f3 · tur 7: 95ac8de)
 
 | ID | Önem | Durum | Vaka | Başlık | Sorumlu |
 |---|---|---|---|---|---|
@@ -11,7 +11,7 @@
 | QA-107 | S3 | VERIFIED (tur 4, 49a151b) | N05 (komşu) / fix1 risk 3 | Klinik çıktı belgesine bağlanmış idari kategorili dosya (document_scan) sekretere listede, ayrıntıda görünüyor ve klinik belge kimliğini (`patientDocumentId`) açığa veriyor; dışa aktarım ise aynı dosyayı gizliyor (tutarsız) | Kodlama |
 | QA-108 | S3 | VERIFIED (tur 5, fe98345) | N11 / fix3 risk 1–2 | Gizli klinik dosyanın izi sağlık yetkisi olmayana görünüyor: hasta geçmişinde `file.upload` olayı (dosya kimliği + SHA-256), dışa aktarım `access_log` satırı, onam kanıtında `fileId` | Kodlama (cezeri-duzeltici) |
 | QA-109 | S3 | VERIFIED (tur 6, eb1c1f3) | N11 / fix4 risk 1 | Gizli klinik dosya karantinaya düşünce açılan `file_quarantined` görevi `sensitivity: general` ile sekretere dosya kimliği ve hastayla görünüyor; atanan yönetici dosyayı açamıyor (404) | Kodlama (cezeri-duzeltici) |
-| QA-110 | S3 | OPEN | N05 (komşu) / fix5 risk 2 | Hazırlık kuralı klinik çıktı belge türüne (EPIKRIZ) bağlanabiliyor; sekreter randevu hazırlığında "Epikriz / tedavi özeti: Belge hazırlanmamış → Hazır" geçişiyle belgenin varlığını öğreniyor | Kodlama (cezeri-duzeltici) |
+| QA-110 | S3 | VERIFIED (tur 7, 95ac8de) | N05 (komşu) / fix5 risk 2 | Hazırlık kuralı klinik çıktı belge türüne (EPIKRIZ) bağlanabiliyor; sekreter randevu hazırlığında "Epikriz / tedavi özeti: Belge hazırlanmamış → Hazır" geçişiyle belgenin varlığını öğreniyor | Kodlama (cezeri-duzeltici) |
 
 ## QA-101 (S1) — Klinik çıktı belgesi yazma uçlarında sağlık kapısı yok
 - **Ortam/sürüm:** yerel test, `12fc6fd`, sentetik hasta "Epikriz Sınama" (A kliniği).
@@ -116,6 +116,20 @@
 - **Etki:** yalnız belge varlığı/yokluğu; yönetici yapılandırması gerektiriyor → S3.
 - **Kanıt:** `evidence/tur6/readiness-clinical-probe.json`.
 - **Kök neden ipucu:** `apps/api/src/documents/care.controller.ts createRule` (~satır 189–205) belge türü kategorisini kontrol etmiyor; `packages/db/src/readiness.ts readinessFor` kalemleri role göre süzmüyor.
+
+## Tur 7 — son tur (95ac8de = ürün fix1…fix6, migration 0001–0031, temiz seed)
+- **QA-110 VERIFIED:** `POST /readiness-rules` klinik çıktı türüyle 422 `VALIDATION_FAILED`. Kanıt `evidence/tur7/readiness-clinical-probe.json`.
+- QA-101…QA-109 yeniden sınandı, hepsi tutuyor (`evidence/tur7/N05-komsu.json`, `*-probe.json`, `*-N02-fatura-ayrinti.jpg`).
+- Tam regresyon: HTTP 8/8 + N 9/9 + N11; tarayıcı 22/22 (masaüstü + 360 px); V06 restore-verify `differences=[]` + bağımsız mutabakat EŞLEŞTİ; R01 364/364; R02 15/15; R03 72/72; R04/R05 89 geçti + 9 bilinçli atlama, 0 hata, retries=0; R06 typecheck 5/5 + audit temiz; R07 75/75 FORCE RLS.
+- Gate: **TESLİME ADAY** (`results.json` = `results-tur7.json`). Açık doğrulanmış bulgu: 0.
+
+## Kayıtlı riskler ve hipotezler (doğrulanmış bulgu değil; ürün kararı bekleyenler)
+- `export.clinic` (klinik geneli dışa aktarım) sağlık yetkisi olmayan yöneticiye tam veri veriyor — ADR-088 §3 ile bilinçli; ürün sahibi kararı.
+- Sağlık yetkisi olmayan yönetici `clinical` hassasiyetli görevlerin SLA yükseltmesini görmüyor (ADR-087/091) — işlevsel boşluk, ürün kararı.
+- Gizli dosya karantina görevi `dentist` rolüne atanıyor; çok hekimli klinikte tüm hekimler görür (ADR-091).
+- 0031 öncesi klinik çıktı hazırlık kalemi için kaydedilmiş istisnaların denetim olayı süzülmüyor (yalnız eski veri; yeni istisna oluşamıyor) — fix6 risk 1, tester tarafından üretilmedi (hipotez).
+- `/metrics` karantina sayaçları hassasiyete bakmıyor (kimlik/hasta yok).
+- Düzelticinin izole yığınında `gorev4.spec.ts` masaüstü ilk testi 2/4 koşuda düştü (fix6 risk 6); tester yığınında tam E2E 0 hata, retries=0 — FLAKY olarak kayda geçmedi çünkü tester koşusunda gözlenmedi; pilot öncesi yeniden izlenmeli.
 
 ## Ortam / betik notları (ürün kusuru değil)
 - Tarayıcı betiğinin ilk iki koşusunda N02/N05 "FAIL" tester betiği hatasıydı (hasta adı "Epikriz Sınama" metin aramasına takıldı; diyalog seçici; "Belge düzenlendi" etiketi kalıpta yoktu). Betik düzeltildi; son koşu `evidence/tur1/browser-n-summary.json`.

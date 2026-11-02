@@ -1,12 +1,12 @@
 {
- "runId": "qa-20261102-1209-12fc6fd-tur3",
- "revision": "bb49098d2e0f3ebd4c00360da5cc9c95115c4fd4",
- "at": "2026-11-02T10:23:11.624Z",
- "round": 3,
+ "runId": "qa-20261102-1209-12fc6fd-tur7",
+ "revision": "95ac8de552fc240f6ddc0abdc7624e3b2ba4cfd0",
+ "at": "2026-11-02T11:59:18.037Z",
+ "round": 7,
  "environment": "environment.md",
  "inventory": "inventory.md",
  "inventoryComplete": true,
- "fullRegression": false,
+ "fullRegression": true,
  "requiredIds": [
   "V01",
   "V02",
@@ -40,22 +40,22 @@
   {
    "name": "http",
    "status": "PASS",
-   "evidence": "evidence/tur3/n-summary.json"
+   "evidence": "evidence/tur7/n-summary.json"
   },
   {
    "name": "chromium-desktop",
-   "status": "NOT_RUN",
-   "evidence": "bugs.md"
+   "status": "PASS",
+   "evidence": "evidence/tur7/browser-n-summary.json"
   },
   {
    "name": "chromium-mobile-emulation",
-   "status": "NOT_RUN",
-   "evidence": "bugs.md"
+   "status": "PASS",
+   "evidence": "evidence/tur7/browser-n-summary.json"
   },
   {
    "name": "cli",
-   "status": "NOT_RUN",
-   "evidence": "bugs.md"
+   "status": "PASS",
+   "evidence": "evidence/tur7/V06-reconcile.txt"
   },
   {
    "name": "physical-mobile-device",
@@ -83,60 +83,88 @@
    "id": "V01",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/V01-http.json",
-   "extraEvidence": []
+   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu · masaustu: B hasta sayfası sızıntı=false, arama satırı 0 · mobil: B hasta sayfası sızıntı=false, arama satırı 0 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/V01-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-V01-b-tenant.jpg",
+    "evidence/tur7/mobil-V01-b-tenant.jpg"
+   ]
   },
   {
    "id": "V02",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/V02-http.json",
-   "extraEvidence": []
+   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true · masaustu: diş 16 görünür=true, işlem metni=true, düzeltme izi=true · mobil: diş 16 görünür=true, işlem metni=true, düzeltme izi=true (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/V02-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-V02-tedavi.jpg",
+    "evidence/tur7/mobil-V02-tedavi.jpg"
+   ]
   },
   {
    "id": "V03",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "eşzamanlı yanıtlar 201/409; 15:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/V03-http.json",
-   "extraEvidence": []
+   "summary": "eşzamanlı yanıtlar 201/409; 10:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT · masaustu: 25.02.2027 10:00 ajandada randevu bloğu 1 (metin eşleşmesi 2); API: 1 · mobil: 25.02.2027 10:00 ajandada randevu bloğu 1 (metin eşleşmesi 1); API: 1 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/V03-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-V03-ajanda.jpg",
+    "evidence/tur7/mobil-V03-ajanda.jpg"
+   ]
   },
   {
    "id": "V04",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201) (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/V04-http.json",
-   "extraEvidence": []
+   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201) · masaustu: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true · mobil: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/V04-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-V04-finans.jpg",
+    "evidence/tur7/mobil-V04-finans.jpg"
+   ]
   },
   {
    "id": "V05",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 0, finans: 0 (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/V05-http.json",
-   "extraEvidence": []
+   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 0, finans: 0 · masaustu: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay) · mobil: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay) (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/V05-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-V05-gecmis-sekreter.jpg",
+    "evidence/tur7/mobil-V05-gecmis-sekreter.jpg"
+   ]
   },
   {
    "id": "V06",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
     "cli"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "şifreli yedek → izole viadent_qa_restore7b; restore-verify ok=true, differences=[]; dosya 3/3; 25 sütunlu bağımsız mutabakat iki DB'de EŞLEŞTİ (90 politika, 76 FORCE RLS)",
+   "evidence": "evidence/tur7/V06-reconcile.txt",
+   "extraEvidence": [
+    "evidence/tur7/V06-restore-verify.json"
+   ]
   },
   {
    "id": "P01",
@@ -144,8 +172,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/P01-http.json",
+   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/P01-http.json",
    "extraEvidence": []
   },
   {
@@ -154,8 +182,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "28 deneme, 0 beklenmedik (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/P02-http.json",
+   "summary": "28 deneme, 0 beklenmedik (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/P02-http.json",
    "extraEvidence": []
   },
   {
@@ -164,92 +192,103 @@
    "profiles": [
     "http"
    ],
-   "summary": "8 kontrol, 0 beklenmedik (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/P03-http.json",
+   "summary": "8 kontrol, 0 beklenmedik (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/P03-http.json",
    "extraEvidence": []
   },
   {
    "id": "R01",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
     "cli"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "vitest API 35 dosya, 364/364 (gerçek PostgreSQL; QA-101…110 regresyon testleri dahil)",
+   "evidence": "evidence/tur7/R01-api.log"
   },
   {
    "id": "R02",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
     "cli"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "contracts 15/15",
+   "evidence": "evidence/tur7/R02-contracts.log"
   },
   {
    "id": "R03",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
     "cli"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "web birim 72/72 (kontrast + QA-103/110 dahil)",
+   "evidence": "evidence/tur7/R03-web.log"
   },
   {
    "id": "R04",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
-    "chromium-desktop"
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "Playwright tam koşu temiz seed: 89 geçti + 9 bilinçli atlama, 0 hata, retries=0 (iki proje)",
+   "evidence": "evidence/tur7/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "R05",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
     "chromium-mobile-emulation"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "aynı koşu, telefon-360 projesi dahil",
+   "evidence": "evidence/tur7/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "R06",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
     "cli"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "typecheck 5/5 Done; pnpm audit --prod: bilinen açık yok",
+   "evidence": "evidence/tur7/R06-typecheck-audit.log"
   },
   {
    "id": "R07",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
     "cli"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "75/75 kiracı tablosu FORCE RLS, politikasız tablo yok; app rolü super/bypassrls/createrole=false; ekle-yalnız tablolarda UPDATE yok",
+   "evidence": "evidence/tur7/R07-rls.txt"
   },
   {
    "id": "N01",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "TM ardışık 7,9,8,10,11; eşzamanlı 2 oturum 201/201 farklı no; replay aynı no; 422 numara tüketmedi=true; iade IM-2026-000002; yazdırma denetimi 1; asistan 403, B 404; değişmezlik=true (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N01-http.json",
-   "extraEvidence": []
+   "summary": "TM ardışık 7,8,9,10,11; eşzamanlı 2 oturum 201/201 farklı no; replay aynı no; 422 numara tüketmedi=true; iade IM-2026-000002; yazdırma denetimi 1; asistan 403, B 404; değişmezlik=true · masaustu: listede TM-2026-000007; pencere no+uyarı=true; taşma 0 · mobil: listede TM-2026-000007; pencere no+uyarı=true; taşma 0 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/N01-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-N01-makbuz-pencere.jpg",
+    "evidence/tur7/mobil-N01-makbuz-pencere.jpg"
+   ]
   },
   {
    "id": "N02",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "25 değer, beklenmedik 0; yuvarlama 0,60/0,10=true; Unicode ad korunur=true; roller sek 403/yön 403/B 404; sağlayıcısız gönder 409 numara=null; MOCK: issued MOCK202642DF9F645 → iptal cancelled (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N02-http.json",
-   "extraEvidence": []
+   "summary": "25 değer, beklenmedik 0; yuvarlama 0,60/0,10=true; Unicode ad korunur=true; roller sek 403/yön 403/B 404; sağlayıcısız gönder 409 numara=null; MOCK: issued MOCK20261AFF707D1 → iptal cancelled · masaustu: liste: MOCK rozeti=true, iptal=true, taslak 'numara yok'=true; ayrıntıda 'resmî belge değil'=true, TASLAK ibaresi yok=true; sekreter düğmesi 0; taşma 0 · mobil: liste: MOCK rozeti=true, iptal=true, taslak 'numara yok'=true; ayrıntıda 'resmî belge değil'=true, TASLAK ibaresi yok=true; sekreter düğmesi 0; taşma 0 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/N02-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-N02-fatura.jpg",
+    "evidence/tur7/mobil-N02-fatura.jpg"
+   ]
   },
   {
    "id": "N03",
@@ -257,42 +296,56 @@
    "profiles": [
     "http"
    ],
-   "summary": "ekran 11 satır = CSV 11; XLSX 20 (başlık+veri+7 toplam+dipnot); tahsilat/iade satırlarının hepsinde makbuz no (11/11); sekreter 403 (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N03-http.json",
+   "summary": "ekran 11 satır = CSV 11; XLSX 20 (başlık+veri+7 toplam+dipnot); tahsilat/iade satırlarının hepsinde makbuz no (11/11); sekreter 403 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/N03-http.json",
    "extraEvidence": []
   },
   {
    "id": "N04",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "taslak 201, ikinci taslak 409; geçersiz şablon 422/422/422/422; yayın yönetici 403 hekim 200; yayınlanan düzenleme API 409 DB kilit=true; eski kayıt outdated=true; eski anahtar 422; yeni etiket Kalp pili var mı?; sekreter 403; B bağımsız (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N04-http.json",
-   "extraEvidence": []
+   "summary": "taslak 201, ikinci taslak 409; geçersiz şablon 422/422/422/422; yayın yönetici 403 hekim 200; yayınlanan düzenleme API 409 DB kilit=true; eski kayıt outdated=true; eski anahtar 422; yeni etiket Kalp pili var mı?; sekreter 403; B bağımsız · masaustu: son kayıt kendi sorusuyla (Kalp pili)=true; yürürlük yerleşik set bildirimi=true · mobil: son kayıt kendi sorusuyla (Kalp pili)=true; yürürlük yerleşik set bildirimi=true (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/N04-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-N04-anamnez.jpg",
+    "evidence/tur7/mobil-N04-anamnez.jpg"
+   ]
   },
   {
    "id": "N05",
-   "status": "FAIL",
+   "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "3 tür hekim-only; sekreter önizleme 403; liste sızıntısı yok=true; ayrıntı sek 404 yön 404; geçmiş sızıntısı=false; komşu: print 404/404 karar 404/404 iptal 404/404 dosya 422/422 (gerçek/yok), durum issued, kanıt +0; KVKK yönetici dışa aktarımında klinik belge=false (hekim dışa aktarım 403); onam raporunda klinik satır=false; hekim iptal 200 · QA-104/105 doğrulandı; ancak klinik çıktıya bağlı dosya sekretere görünüyor (QA-107) (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N05-http.json",
+   "summary": "3 tür hekim-only; sekreter önizleme 403; liste sızıntısı yok=true; ayrıntı sek 404 yön 404; geçmiş sızıntısı=false; komşu: print 404/404 karar 404/404 iptal 404/404 dosya 422/422 (gerçek/yok), durum issued, kanıt +0; KVKK yönetici dışa aktarımında klinik belge=false (hekim dışa aktarım 403); onam raporunda klinik satır=false; hekim iptal 200 · masaustu: Belgeler'de epikriz görünür=false; Geçmiş'te belge olayı görünür=false · mobil: Belgeler'de epikriz görünür=false; Geçmiş'te belge olayı görünür=false (tur 7, temiz seed) · hazırlık kuralı klinik çıktı türüyle 422 (QA-110)",
+   "evidence": "evidence/tur7/N05-http.json",
    "extraEvidence": [
-    "evidence/tur3/N05-komsu.json",
-    "evidence/tur3/linked-file-probe.json"
+    "evidence/tur7/masaustu-N05-sekreter-gecmis.jpg",
+    "evidence/tur7/mobil-N05-sekreter-gecmis.jpg",
+    "evidence/tur7/N05-komsu.json",
+    "evidence/tur7/readiness-clinical-probe.json"
    ]
   },
   {
    "id": "N06",
    "status": "PASS",
    "profiles": [
-    "http"
+    "http",
+    "chromium-desktop",
+    "chromium-mobile-emulation"
    ],
-   "summary": "geçersiz 7 değer 422/422/422/422/422/422/422; geçerli 200; yeni oturumda gelir; sekreter etkilenmez; kimliksiz 401; CSRF başlıksız 403 (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N06-http.json",
-   "extraEvidence": []
+   "summary": "geçersiz 7 değer 422/422/422/422/422/422/422; geçerli 200; yeni oturumda gelir; sekreter etkilenmez; kimliksiz 401; CSRF başlıksız 403 · masaustu: uygulandı {\"scheme\":\"dark\",\"accent\":\"lacivert\",\"scale\":\"4\",\"root\":\"17px\"}; axe ciddi/kritik []; yenilemede dark/lacivert; varsayılan yesil/16px; taşma 0 · mobil: uygulandı {\"scheme\":\"dark\",\"accent\":\"lacivert\",\"scale\":\"4\",\"root\":\"17px\"}; axe ciddi/kritik []; yenilemede dark/lacivert; varsayılan yesil/16px; taşma 0 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/N06-http.json",
+   "extraEvidence": [
+    "evidence/tur7/masaustu-N06-koyu-panel.jpg",
+    "evidence/tur7/mobil-N06-koyu-panel.jpg"
+   ]
   },
   {
    "id": "N07",
@@ -300,8 +353,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "sınır 0/169/2,5 → 422/422/422; hekim 403; eşik 2 sa: 1 sa geçmiş yükseltilmedi, 3 sa geçmiş → yönetici (rol korunur, kopya 1); yönetici görevi kendine yükseltilmedi (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N07-http.json",
+   "summary": "sınır 0/169/2,5 → 422/422/422; hekim 403; eşik 2 sa: 1 sa geçmiş yükseltilmedi, 3 sa geçmiş → yönetici (rol korunur, kopya 1); yönetici görevi kendine yükseltilmedi (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/N07-http.json",
    "extraEvidence": []
   },
   {
@@ -310,19 +363,22 @@
    "profiles": [
     "http"
    ],
-   "summary": "nakit-hareketleri: 23 satır, formül 0, para hücresi 20; borc-bakiye: 9 satır, formül 0, para hücresi 24; tedavi: 7 satır, formül 0, para hücresi 3; bilinmeyen biçim → CSV; sekreter 403 (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N08-http.json",
+   "summary": "nakit-hareketleri: 23 satır, formül 0, para hücresi 20; borc-bakiye: 9 satır, formül 0, para hücresi 24; tedavi: 7 satır, formül 0, para hücresi 3; bilinmeyen biçim → CSV; sekreter 403 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/N08-http.json",
    "extraEvidence": []
   },
   {
    "id": "N09",
-   "status": "NOT_RUN",
+   "status": "PASS",
    "profiles": [
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "Tur 3 (bb49098) içinde koşulmadı: açık QA-106/107 nedeniyle yeni düzeltme revizyonu gelecek; tarayıcı, tam regresyon ve V06 o revizyonda koşulacak.",
-   "evidence": "bugs.md"
+   "summary": "masaustu: stok satırı display=table-row (beklenen table-row), etiket Kalem, Sayım açıldı=true; taşma stok 0 rapor 0; ham kod=false; Excel=true · mobil: stok satırı display=grid (beklenen grid), etiket Kalem, Sayım açıldı=true; taşma stok 0 rapor 0; ham kod=false; Excel=true (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/masaustu-N09-stok.jpg",
+   "extraEvidence": [
+    "evidence/tur7/mobil-N09-stok.jpg"
+   ]
   },
   {
    "id": "N10",
@@ -330,20 +386,23 @@
    "profiles": [
     "http"
    ],
-   "summary": "hekim 403, tekrar 422, 0 adet 422, sahte kalem 422, B 404; işlem: eldiven 4→3, kartuş 30→28 (lot seçili); düzeltme sarfı tekrarlamadı=true; yetersiz stok: işlem 201, {\"used\":1,\"shortages\":1}, görev 1 (tur 3, temiz seed, yalnız HTTP)",
-   "evidence": "evidence/tur3/N10-http.json",
+   "summary": "hekim 403, tekrar 422, 0 adet 422, sahte kalem 422, B 404; işlem: eldiven 4→3, kartuş 30→28 (lot seçili); düzeltme sarfı tekrarlamadı=true; yetersiz stok: işlem 201, {\"used\":1,\"shortages\":1}, görev 1 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/N10-http.json",
    "extraEvidence": []
   },
   {
    "id": "N11",
-   "status": "FAIL",
+   "status": "PASS",
    "profiles": [
     "http"
    ],
-   "summary": "Yönetici dosya listesinde radyograf yok ama KVKK dışa aktarımında clinical:radiograph metaverisi var (QA-106); klinik çıktıya bağlı document_scan sekretere listede/ayrıntıda görünür ve belge kimliğini verir (QA-107).",
-   "evidence": "evidence/tur3/file-sensitivity-probe.json",
+   "summary": "dışa aktarım: klinik dosya yok, idari var, omitted files:clinical; geçmiş: sekreter 0, yönetici 0, hekim 1 olay; access_log dosya satırı 0; onam kanıtında gizli dosya kimliği sekreter=false, dışa aktarım=false, hekim bağlama 200; karantina görevi sekreter=false, yönetici=false, hekim=true; epikrize bağlı tarama sekreter listede=false, ayrıntı 404/404, içerik 404/404, silme 403/403, hekim 200 (tur 7, temiz seed)",
+   "evidence": "evidence/tur7/file-sensitivity-probe.json",
    "extraEvidence": [
-    "evidence/tur3/linked-file-probe.json"
+    "evidence/tur7/file-trace-probe.json",
+    "evidence/tur7/evidence-file-probe.json",
+    "evidence/tur7/quarantine-task-probe.json",
+    "evidence/tur7/linked-file-probe.json"
    ]
   }
  ],
@@ -356,7 +415,8 @@
    "evidence": "evidence/tur2b/N05-komsu.json",
    "cases": [
     "N05"
-   ]
+   ],
+   "retestEvidence": "evidence/tur7/N05-komsu.json"
   },
   {
    "id": "QA-102",
@@ -366,7 +426,8 @@
    "evidence": "evidence/tur2/N05-kesin-eslesme.json",
    "cases": [
     "N05"
-   ]
+   ],
+   "retestEvidence": "evidence/tur7/N05-komsu.json"
   },
   {
    "id": "QA-103",
@@ -376,7 +437,8 @@
    "evidence": "evidence/tur2b/masaustu-N02-fatura-ayrinti.jpg",
    "cases": [
     "N02"
-   ]
+   ],
+   "retestEvidence": "evidence/tur7/masaustu-N02-fatura-ayrinti.jpg"
   },
   {
    "id": "QA-104",
@@ -386,7 +448,8 @@
    "evidence": "evidence/tur3/N05-komsu.json",
    "cases": [
     "N05"
-   ]
+   ],
+   "retestEvidence": "evidence/tur7/N05-komsu.json"
   },
   {
    "id": "QA-105",
@@ -396,33 +459,69 @@
    "evidence": "evidence/tur3/N05-komsu.json",
    "cases": [
     "N05"
-   ]
+   ],
+   "retestEvidence": "evidence/tur7/N05-komsu.json"
   },
   {
    "id": "QA-106",
    "severity": "S2",
-   "state": "OPEN",
+   "state": "VERIFIED",
    "title": "Hasta dışa aktarımında sağlık yetkisi olmayan yönetici klinik hassasiyetli dosya metaverisini alıyor",
    "evidence": "evidence/tur3/file-sensitivity-probe.json",
    "cases": [
     "N11"
-   ]
+   ],
+   "retestEvidence": "evidence/tur7/file-sensitivity-probe.json"
   },
   {
    "id": "QA-107",
    "severity": "S3",
-   "state": "OPEN",
+   "state": "VERIFIED",
    "title": "Klinik çıktı belgesine bağlı idari dosya sekretere görünüyor ve belge kimliğini veriyor",
    "evidence": "evidence/tur3/linked-file-probe.json",
    "cases": [
     "N05",
     "N11"
+   ],
+   "retestEvidence": "evidence/tur7/linked-file-probe.json"
+  },
+  {
+   "id": "QA-108",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "Gizli klinik dosyanın izleri (geçmiş, access_log, onam kanıtı fileId)",
+   "evidence": "evidence/tur4/file-trace-probe.json",
+   "retestEvidence": "evidence/tur7/file-trace-probe.json",
+   "cases": [
+    "N11"
+   ]
+  },
+  {
+   "id": "QA-109",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "Karantina görevi gizli klinik dosyayı açık ediyor",
+   "evidence": "evidence/tur5/quarantine-task-probe.json",
+   "retestEvidence": "evidence/tur7/quarantine-task-probe.json",
+   "cases": [
+    "N11"
+   ]
+  },
+  {
+   "id": "QA-110",
+   "severity": "S3",
+   "state": "VERIFIED",
+   "title": "Hazırlık kuralı klinik çıktı türüne bağlanabiliyor",
+   "evidence": "evidence/tur6/readiness-clinical-probe.json",
+   "retestEvidence": "evidence/tur7/readiness-clinical-probe.json",
+   "cases": [
+    "N05"
    ]
   }
  ],
  "notes": [
-  "Tur 3: bb49098 (fix2 ürün yaması 9327d9e) temiz seed üzerinde HTTP ile yeniden sınandı. QA-104/105 doğrulandı.",
-  "Yeni bulgular QA-106 (S2), QA-107 (S3); kapsam N11 ile genişletildi (plan.json notu).",
-  "Tarayıcı vakaları, V06 ve R01–R07 bu revizyonda koşulmadı (NOT_RUN); yeni düzeltme revizyonunda tam koşulacak."
+  "Tur 7: son revizyon temiz seed üzerinde tam yeniden sınandı (HTTP, tarayıcı masaüstü + 360 px, V06 yedek/geri yükleme, R01–R07).",
+  "QA-101…QA-110 VERIFIED; açık bulgu yok.",
+  "Önceki turlar: results-tur1/2/3.json ve evidence/tur1…tur6; tur 4–6 kısmi koşular bugs.md içinde."
  ]
 }

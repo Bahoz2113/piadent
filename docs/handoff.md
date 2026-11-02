@@ -1,6 +1,6 @@
 # Devir notu (handoff)
 
-**Son güncelleme:** 27.10.2026 · Oturum 15 (Görev 14 — pilot açılış paketi: tedavi geçmişi aktarımı, finans hacmiyle rapor ölçümü + borç raporu 30× hızlandı, pilot provası E2E, rol kılavuzları; ADR-077 migration/RLS bulgusu; bağımsız sızma testi ve pilot kapıları açık) · Dal: `main` · Son commit: `git log -1`
+**Son güncelleme:** 02.11.2026 · Oturum 20 (Faz 0–4 tamamlandı; CEZERİ koşusu `qa-20261102-1209-12fc6fd` 7 tur → **TESLİME ADAY**, insan onayı ve canlıya alma bekliyor) · Önceki: 27.10.2026 · Oturum 15 (Görev 14 — pilot açılış paketi: tedavi geçmişi aktarımı, finans hacmiyle rapor ölçümü + borç raporu 30× hızlandı, pilot provası E2E, rol kılavuzları; ADR-077 migration/RLS bulgusu; bağımsız sızma testi ve pilot kapıları açık) · Dal: `main` · Son commit: `git log -1`
 
 ## Durum özeti
 Oturum 1: tenant/rol/oturum → hasta → hekim/koltuk/randevu → PİA Akış → PİA İz çekirdeği.
@@ -144,3 +144,18 @@ ADR-001…078 (`decisions.md`). Görev 15: serverless demo modu (078). Görev 14
 - Marka yazımı ürün sahibince **PİA-DENT** olarak teyit edildi (PDF'deki "PiaDent" geçersiz).
 - Faz 2.1 makbuz: `0021_receipts.sql`, `receipts.controller.ts`, `receipt-print.ts`, Finans sekmesi düğmeleri; testler verification.md. **Canlıya (Supabase/Vercel) henüz uygulanmadı** — migration 0021 canlı DB'de yok; ürün sahibi onayı bekleniyor (yayın: `main`'e commit-tree + Supabase'de migration).
 - Sonraki: Faz 2.2 fatura taslağı iç modeli (sahte numara yok), Faz 1 anamnez şablonu, D2 rapor ham kodları; ardından CEZERİ koşusu.
+
+## Oturum 20 (02.11.2026) — Faz 2–4 tamamlandı + CEZERİ teslim testi (7 tur)
+- Faz 2–4 kapsamı (migration 0021–0029): makbuz, fatura taslağı + MOCK e-belge, mali müşavir dönem dökümü + XLSX, anamnez şablonu, klinik çıktılar (epikriz/hasta föyü/reçete taslağı — hekim-only), görünüm özelleştirme (renk şeması × vurgu × ölçek, `piadent.gorunum`), PİA Köprü işlem listesi, SLA yükseltme, mobil kart tabloları, sarf reçetesi. GAP_MATRIX: MEVCUT 39, KISMI/EKSİK/BOZUK 0, KAPSAM DIŞI 6.
+- CEZERİ koşusu `qa-runs/qa-20261102-1209-12fc6fd/` — 27 zorunlu vaka (N11 tur 3'te eklendi), 7 tur, 10 bulgu, hepsi `cezeri-duzeltici` ile düzeltilip yeniden sınandı:
+  - QA-101 (S1) klinik çıktı yazma uçlarında sağlık kapısı; QA-102 (S2) geçmişte klinik belge olayı; QA-103 (S3) düzenlenmiş faturada TASLAK.
+  - QA-104 (S1) KVKK dışa aktarımında klinik çıktı içeriği; QA-105 (S2) onam raporunda klinik satır (ADR-088).
+  - QA-106 (S2) dışa aktarımda klinik dosya metaverisi; QA-107 (S3) klinik çıktıya bağlı idari dosya (ADR-089, tek görünürlük kuralı `nonClinicalFileSql`).
+  - QA-108 (S3) gizli dosyanın izleri — geçmiş, access_log, LOG raporu, onam kanıtı fileId (ADR-090).
+  - QA-109 (S3) karantina görevi → `clinical` + hekim (ADR-091, migration 0030).
+  - QA-110 (S3) hazırlık kuralı klinik çıktı türünü reddeder (ADR-092, migration 0031).
+- Son tur (95ac8de): tüm zorunlu vakalar PASS; API 364/364, contracts 15, web 72, E2E 89 + 9 atlama (0 hata, retries=0), RLS 75/75 FORCE, yedek→izole geri yükleme `differences=[]` + bağımsız mutabakat EŞLEŞTİ. Gate: **TESLİME ADAY** (`release.md`).
+- **Canlıya alınmadı.** Canlı demo (Vercel `viadent-demo` + Supabase `piadent-demo`) hâlâ eski sürümde; 0021–0031 canlı DB'de yok. Yayın ürün sahibi onayıyla: Supabase'e 0021–0031 → `origin/main`'e commit-tree ile yayın → canlı doğrulama. Pilot öncesi anahtar döndürme.
+- Açık ürün kararları (bugs.md "Kayıtlı riskler"): `export.clinic` tam veri (ADR-088 §3), sağlık yetkisi olmayan yöneticinin `clinical` görev yükseltmesini görmemesi, karantina görevinin rol bazlı ataması.
+- Temizlik: test DB'leri `viadent_fix`, `viadent_fix_test` (düzeltici yığını) silinebilir.
+
