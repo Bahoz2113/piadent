@@ -13,7 +13,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES, audit, notClinicalOutputDocSql } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, audit, notClinicalOutputDocIdSql, notClinicalOutputDocSql } from "../audit/audit.js";
 import { decryptField } from "@viadent/db";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
@@ -36,6 +36,8 @@ const CLINIC_TABLES: [string, string[]][] = [
 ];
 /** Sağlık içeriği taşıyan tablolar (hasta dışa aktarımında ayrıca sağlık yetkisi ister). */
 const HEALTH = new Set(["anamnesis_versions", "anamnesis_reviews", "clinical_notes", "odontogram_findings", "diagnoses"]);
+/** QA-104: bölüm kalır ama klinik çıktı belgesi (ADR-085) satırları sağlık yetkisi yoksa çıkarılır; `omitted` içinde böyle işaretlenir. */
+const CLINICAL_OUTPUT_OMITTED = ["patient_documents:clinical_output", "consent_requests:clinical_output", "evidence_events:clinical_output", "files:clinical_output"] as const;
 
 function strip(rows: Record<string, unknown>[], drop: string[]) {
   if (!drop.length) return rows;
@@ -54,6 +56,11 @@ const sha = (rows: unknown) => createHash("sha256").update(JSON.stringify(rows),
 export class ExportController {
   constructor(@Inject(Db) private readonly db: Db) {}
 
+  /**
+   * Klinik geneli dışa aktarım bilinçli olarak tamdır (ADR-088): veri sorumlusunun sistem değiştirme/taşınabilirlik aracıdır ve
+   * anamnez, klinik not ve tanı tablolarını içerdiği gibi klinik çıktı belgelerini de içerir. Hasta dışa aktarımındaki sağlık süzgeci
+   * burada uygulanmaz; yetki yalnız `export.clinic` (yönetici), gerekçe zorunlu ve her çağrı denetim kaydında.
+   */
   @Post("exports/clinic")
   @HttpCode(200)
   @Require("export.clinic")
@@ -94,6 +101,7 @@ export class ExportController {
       const p = (await c.query("select * from patients where id = $1", [pid])).rows[0];
       if (!p) throw Errors.notFound("Hasta");
       const q = async (sql: string) => (await c.query(sql, [pid])).rows;
+      const qd = async (sql: string) => (await c.query(sql, [pid, health])).rows;
       const sections: Record<string, unknown[]> = {
         patient: revealNationalId(strip([p], ["search_text", "phone_digits", "tenant_id"])),
         relations: await q("select * from patient_relations where patient_id = $1 or related_patient_id = $1"),
@@ -111,10 +119,11 @@ export class ExportController {
         payments: await q("select * from payments where patient_id = $1 order by paid_at"),
         allocations: await q("select a.* from allocations a join payments x on x.id = a.payment_id where x.patient_id = $1"),
         refunds: await q("select f.* from refunds f join payments x on x.id = f.payment_id where x.patient_id = $1"),
-        patient_documents: await q("select * from patient_documents where patient_id = $1 order by issued_at"),
-        consent_requests: await q("select r.* from consent_requests r join patient_documents d on d.id = r.patient_document_id where d.patient_id = $1"),
-        evidence_events: await q("select e.* from evidence_events e join patient_documents d on d.id = e.patient_document_id where d.patient_id = $1"),
-        files: strip(await q("select * from file_assets where patient_id = $1"), ["object_key"]),
+        // QA-104: klinik çıktı belgeleri (ADR-085) ve onlara bağlı onay/kanıt/dosya satırları sağlık verisidir; yetki yoksa dahil edilmez.
+        patient_documents: await qd(`select * from patient_documents d where d.patient_id = $1 and ($2::boolean or ${notClinicalOutputDocIdSql("d.id")}) order by d.issued_at`),
+        consent_requests: await qd(`select r.* from consent_requests r join patient_documents d on d.id = r.patient_document_id where d.patient_id = $1 and ($2::boolean or ${notClinicalOutputDocIdSql("d.id")})`),
+        evidence_events: await qd(`select e.* from evidence_events e join patient_documents d on d.id = e.patient_document_id where d.patient_id = $1 and ($2::boolean or ${notClinicalOutputDocIdSql("d.id")})`),
+        files: strip(await qd(`select * from file_assets f where f.patient_id = $1 and ($2::boolean or ${notClinicalOutputDocIdSql("f.patient_document_id")})`), ["object_key"]),
         communication_preferences: await q("select * from communication_preferences where patient_id = $1 order by recorded_at"),
         messages: await q("select * from messages where patient_id = $1 order by created_at"),
         follow_ups: await q("select * from follow_ups where patient_id = $1"),
@@ -130,12 +139,15 @@ export class ExportController {
       };
       const omitted: string[] = [];
       if (!health) for (const k of Object.keys(sections)) if (HEALTH.has(k)) { delete sections[k]; omitted.push(k); }
+      // Satır düzeyinde dışlanan klinik çıktılar: dışlanan satır sayısı yazılmaz (varlık ipucu olmasın), işaret her zaman aynıdır.
+      if (!health) omitted.push(...CLINICAL_OUTPUT_OMITTED);
       const counts = Object.fromEntries(Object.entries(sections).map(([k, v]) => [k, v.length]));
       await audit(c, ctx, { action: "patient.export", entityType: "patient", entityId: pid, patientId: pid,
         changes: { reason: { from: null, to: i.reason }, sections: { from: null, to: Object.keys(sections).length }, omitted: { from: null, to: omitted } } });
       return { ...EXPORT_FORMAT, kind: "patient", exportedAt: new Date().toISOString(), exportedBy: ctx.userName, reason: i.reason,
         notes: ["KVKK veri sahibi talebi için hazırlanmıştır; kimlik doğrulama ve kapsam incelemesi klinik sorumluluğundadır.",
-          ...(omitted.length ? ["Sağlık bölümleri dışa aktaranın sağlık verisi yetkisi olmadığı için dahil edilmedi; hekimle birlikte tamamlayın."] : [])],
+          ...(omitted.length ? ["Sağlık bölümleri dışa aktaranın sağlık verisi yetkisi olmadığı için dahil edilmedi; hekimle birlikte tamamlayın."] : []),
+          ...(!health ? ["Klinik çıktı belgeleri (epikriz, hasta bilgi föyü, reçete yazısı) ve bunlara bağlı onay, kanıt ve dosya kayıtları sağlık verisidir; dışa aktaranın sağlık verisi yetkisi olmadığı için dahil edilmedi (omitted: *:clinical_output)."] : [])],
         omitted, counts, checksums: Object.fromEntries(Object.entries(sections).map(([k, v]) => [k, sha(v)])), sections };
     });
     res.setHeader("content-type", "application/json; charset=utf-8");

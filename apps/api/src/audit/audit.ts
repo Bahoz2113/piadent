@@ -27,6 +27,14 @@ export const notClinicalOutputDocSql = (alias = "e") => {
            where cod.id = ${p}entity_id and cdt.category = 'clinical_output'))`;
 };
 
+/**
+ * QA-104/105: belge kimliği taşıyan satırlar (patient_documents.id, consent_requests/evidence_events/file_assets.patient_document_id)
+ * için aynı süzgeç. `docIdExpr` NULL ise (belgeye bağlı olmayan dosya) koşul doğrudur. Sağlık yetkisi yoksa uygulanır.
+ */
+export const notClinicalOutputDocIdSql = (docIdExpr: string) =>
+  `not exists (select 1 from patient_documents cod join document_types cdt on cdt.id = cod.document_type_id
+           where cod.id = ${docIdExpr} and cdt.category = 'clinical_output')`;
+
 /** Audit, domain değişikliğiyle AYNI transaction içinde yazılır. */
 export async function audit(c: pg.PoolClient, ctx: Pick<RequestContext, "tenantId" | "userId" | "membershipId" | "correlationId">, a: AuditInput) {
   await c.query(

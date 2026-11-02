@@ -483,14 +483,15 @@ const mesaj: Runner = async (a) => {
   };
 };
 
+// QA-105 / ADR-088: klinik çıktı belgeleri (ADR-085) yalnız `patient.health.read` ile listelenir; satırlar ve toplamlar aynı CTE'den.
 const ONAM_CTE = `with d as (
   select pd.id, pd.issued_at, pd.title, pd.patient_id, dt.name as type_name,
          case when pd.status = 'revoked' then 'revoked' when cr.status in ('accepted','declined') then cr.status
               when cr.id is null then 'info' else 'pending' end as outcome
     from patient_documents pd join document_types dt on dt.id = pd.document_type_id left join consent_requests cr on cr.patient_document_id = pd.id
-   where pd.issued_at >= $1 and pd.issued_at < $2)`;
+   where pd.issued_at >= $1 and pd.issued_at < $2 and ($4::boolean or dt.category <> 'clinical_output'))`;
 const onam: Runner = async (a) => {
-  const args = [a.r.fromUtc, a.r.toUtc, pick(a.p.status, ["pending", "accepted", "declined", "revoked"] as const)];
+  const args = [a.r.fromUtc, a.r.toUtc, pick(a.p.status, ["pending", "accepted", "declined", "revoked"] as const), a.ctx.permissions.has("patient.health.read")];
   const { list, truncated } = await rows(a, `${ONAM_CTE} select d.*, p.first_name || ' ' || p.last_name as patient from d join patients p on p.id = d.patient_id
      where ($3::text is null or d.outcome = $3) order by d.issued_at`, args);
   const t = await one(a, `${ONAM_CTE} select count(*)::int as n, count(*) filter (where outcome = 'pending')::int as pending, count(*) filter (where outcome = 'accepted')::int as accepted,
