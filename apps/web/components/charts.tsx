@@ -64,8 +64,16 @@ function useNarrow(): boolean {
   return narrow;
 }
 
+/** Kök yazı boyutu / 16: grafik metinleri rem (yazı ölçeği ayarı, ADR-082) olduğundan ipucu kutusu da bu oranda büyür (QA-204). */
+function rootFontScale(): number {
+  if (typeof window === "undefined") return 1;
+  const px = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return px > 0 ? px / 16 : 1;
+}
+
 function Tip({ x, y, p }: { x: number; y: number; p: Point }) {
-  const k = useNarrow() ? 1.7 : 1;
+  // Tip yalnız imleç/dokunma sonrası (istemcide) çizilir; kök ölçek render anında okunur.
+  const k = (useNarrow() ? 1.7 : 1) * rootFontScale();
   const w = Math.min(W - 4, Math.max(84, Math.max(p.label.length, p.display.length) * 7.4 + 20) * k);
   const h = 38 * k;
   const left = Math.min(Math.max(x - w / 2, 2), W - w - 2);

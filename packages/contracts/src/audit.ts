@@ -216,7 +216,8 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   starts_at: "Randevu zamanı", practitioner_id: "Hekim", chair_id: "Koltuk", status: "Durum", contact_outcome: "İletişim sonucu",
   cancel_reason: "İptal nedeni", reason: "Gerekçe", display_name: "Görünen ad", title: "Unvan / başlık", membership_id: "Ekip üyesi",
   default_minutes: "Varsayılan süre (dk)", blocks: "Çizelge bloğu sayısı", affected: "Etkilenen randevu", scope: "Kapsam", active: "Aktif",
-  outside_working_hours: "Mesai dışı randevu",
+  outside_working_hours: "Mesai dışı randevu", backdated: "Geriye dönük kayıt", backdate_reason: "Geriye dönük kayıt gerekçesi",
+  procedure_id: "Planlanan işlem", added: "Eklenen kodlar",
   // Klinik ve tedavi
   corrects_note_id: "Düzeltilen not", corrects_id: "Düzeltilen işlem", tooth: "Diş", procedure: "İşlem kodu", critical_count: "Kritik yanıt sayısı",
   version: "Sürüm", changed: "Değişen kalem", decision: "Karar", unit_price: "Birim fiyat", unit_cost: "Birim maliyet", discount: "İndirim", item_count: "Kalem sayısı", code: "Kod",
