@@ -12,6 +12,7 @@ export * from "./finance";
 export * from "./documents";
 export * from "./integrations";
 export * from "./operations";
+export * from "./practitioners";
 export * from "./reports";
 export * from "./pilot";
 export * from "./import-map";

@@ -6,6 +6,7 @@ import {
 } from "./documents";
 import { INTEGRATION_KIND_LABELS, ONLINE_PAYMENT_STATUS_LABELS, OPERATION_LABELS, TRANSPORT_LABELS } from "./integrations";
 import { LAB_COST_STAGE_LABELS, LAB_STATUS_LABELS, SUPPLIER_KIND_LABELS } from "./operations";
+import { PAY_MODEL_LABELS } from "./practitioners";
 import { DECISION_LABELS, PLAN_STATUS_LABELS } from "./treatment";
 import { IMPORT_KIND_LABELS } from "./pilot";
 import { INVOICE_DOC_TYPE_LABELS, INVOICE_STATUS_LABELS } from "./invoices";
@@ -107,6 +108,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "commission_rule.create": "Prim kuralı oluşturuldu",
   "commission_payout.create": "Prim ödemesi kaydedildi",
   "commission_payout.reverse": "Prim ödemesi ters kayıtla düzeltildi",
+  "compensation.create": "Hekim ücret modeli sürümü oluşturuldu",
+  "salary_payment.create": "Maaş ödemesi kaydedildi",
+  "salary_payment.reverse": "Maaş ödemesi ters kayıtla düzeltildi",
 
   // Belge, onam ve dosya
   "document.issue": "Belge düzenlendi",
@@ -217,7 +221,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   anamnesis: "Anamnez",
   // Finans
   amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receipt_no: "Makbuz no", doc_type: "Belge türü", buyer_name: "Alıcı", grand_total: "Genel toplam", line_count: "Satır sayısı", question_count: "Soru sayısı", consumable_count: "Sarf kalemi sayısı", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
-  basis: "Prim esası", rate: "Oran (%)", valid_from: "Geçerlilik başlangıcı", category: "Kategori", kind: "Tür", name: "Ad",
+  basis: "Prim esası", rate: "Oran (%)", valid_from: "Geçerlilik başlangıcı", pay_model: "Ücret modeli", monthly_salary: "Aylık maaş", period: "Dönem", category: "Kategori", kind: "Tür", name: "Ad",
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
   purpose: "Amaç", channel: "Kanal", due_date: "Vade", sha256: "Dosya özeti (SHA-256)", file_sha256: "Dosya özeti (SHA-256)",
@@ -248,7 +252,7 @@ export function auditFieldLabel(field: string): string {
   return field.replace(/_/g, " ");
 }
 
-const MONEY_FIELDS = new Set(["amount", "unit_price", "discount", "grand_total"]);
+const MONEY_FIELDS = new Set(["amount", "unit_price", "discount", "grand_total", "monthly_salary"]);
 const DATETIME_FIELDS = new Set(["starts_at", "expires_at"]);
 const DATE_FIELDS = new Set(["birth_date", "due_date", "valid_from", "target_date"]);
 const HASH_FIELDS = new Set(["body_hash", "content_hash", "sha256", "file_sha256"]);
@@ -278,7 +282,7 @@ const APPROVAL_LABELS: Record<string, string> = { pending: "Onay bekliyor", appr
 const SCOPE_LABELS: Record<string, string> = { clinic: "Tüm klinik", practitioner: "Hekim", chair: "Koltuk" };
 const ENUM_BY_FIELD: Record<string, Record<string, string>> = {
   method: PAYMENT_METHOD_LABELS, source: SOURCE_LABELS, kind: KIND_LABELS, gender: GENDER_LABELS, contact_outcome: CONTACT_OUTCOME_LABELS,
-  relation: RELATION_LABELS, decision: DECISION_LABELS, basis: COMMISSION_BASIS_LABELS, stage: LAB_COST_STAGE_LABELS, role: ROLE_LABELS,
+  relation: RELATION_LABELS, decision: DECISION_LABELS, basis: COMMISSION_BASIS_LABELS, pay_model: PAY_MODEL_LABELS, stage: LAB_COST_STAGE_LABELS, role: ROLE_LABELS,
   purpose: COMM_PURPOSE_LABELS, channel: COMM_CHANNEL_LABELS, request_status: DOCUMENT_STATUS_LABELS, transport_status: TRANSPORT_LABELS,
   approval: APPROVAL_LABELS, operation: OPERATION_LABELS, scope: SCOPE_LABELS, category: FILE_CATEGORY_LABELS, field: { national_id: "Kimlik no" },
 };

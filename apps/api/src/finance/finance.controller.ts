@@ -252,6 +252,7 @@ export class FinanceController {
                   when 'refund' then (select 'İade · ' || p.first_name || ' ' || p.last_name from refunds f join payments x on x.id = f.payment_id join patients p on p.id = x.patient_id where f.id = m.source_id)
                   when 'supplier_payment' then (select 'Tedarikçi ödemesi · ' || s.name from supplier_entries se join suppliers s on s.id = se.supplier_id where se.id = m.source_id)
                   when 'commission_payout' then (select 'Prim ödemesi · ' || pr.display_name from commission_payouts y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id)
+                  when 'salary_payment' then (select 'Maaş ödemesi · ' || pr.display_name from salary_payments y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id)
                   else (select 'Gider · ' || e.category || ' · ' || e.description from expenses e where e.id = m.source_id) end as label
            from cash_movements m where m.occurred_at >= $1 and m.occurred_at < $2 order by m.occurred_at`, [r0.fromUtc, r0.toUtc]);
       return {

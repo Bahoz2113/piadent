@@ -567,3 +567,8 @@ a.kpi:hover { border-color: var(--border-strong); }
   .chart-tip .tip-label { font-size: 18px; }
   .chart-tip .tip-value { font-size: 20px; }
 }
+/* Hekimler (ADR-096): seçili satır ve satır içi ad bağlantısı */
+.table tr.is-selected td { background: var(--primary-tint); }
+.link-button { background: none; border: 0; padding: 0; font: inherit; color: var(--text); cursor: pointer; text-align: left; }
+.link-button:hover { text-decoration: underline; }
+.link-button:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; border-radius: 4px; }

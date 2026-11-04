@@ -21,14 +21,14 @@ const PR: ReportFilter = { key: "practitionerId", label: "Hekim", kind: "practit
 
 export const REPORTS: ReportDef[] = [
   { id: "gelir-gider", title: "Gelir – gider (nakit akışı)", group: "Finans", sourceIds: ["R01", "G05"], perm: "finance.read", maxDays: 366,
-    description: "Haftalık/aylık/günlük karşılaştırma. Kasa/banka hareketlerinden: tahsilat, iade, gider, tedarikçi ödemesi, prim ödemesi ve net nakit. Kazanılmış tedavi tutarı ayrı sütundur; nakit değildir.",
+    description: "Haftalık/aylık/günlük karşılaştırma. Kasa/banka hareketlerinden: tahsilat, iade, gider, tedarikçi ödemesi, prim ödemesi, maaş ödemesi ve net nakit. Kazanılmış tedavi tutarı ayrı sütundur; nakit değildir.",
     filters: [R, { key: "groupBy", label: "Gruplama", kind: "select", options: [["month", "Ay"], ["week", "Hafta"], ["day", "Gün"]] }] },
   { id: "nakit-hareketleri", title: "Nakit hareketleri (kaynak satırlar)", group: "Finans", sourceIds: ["R01", "T07", "T08"], perm: "finance.read", maxDays: 366,
     description: "Gelir–gider raporunun kaynak satırları; her hareket kaynağına bağlıdır.",
-    filters: [R, { key: "source", label: "Kaynak", kind: "select", options: [["", "Tümü"], ["payment", "Tahsilat"], ["refund", "İade"], ["expense", "Gider"], ["supplier_payment", "Tedarikçi ödemesi"], ["commission_payout", "Prim ödemesi"]] }] },
+    filters: [R, { key: "source", label: "Kaynak", kind: "select", options: [["", "Tümü"], ["payment", "Tahsilat"], ["refund", "İade"], ["expense", "Gider"], ["supplier_payment", "Tedarikçi ödemesi"], ["commission_payout", "Prim ödemesi"], ["salary_payment", "Maaş ödemesi"]] }] },
   { id: "muhasebe-donem", title: "Mali müşavir dönem dökümü", group: "Finans", sourceIds: ["F03"], perm: "finance.read", maxDays: 366,
     description: "Mali müşavire teslim için dönem hareketleri: belge no (makbuz), tür, karşı taraf, yöntem, kasa/banka, tutar (±). Resmî muhasebe fişi değildir; e-belgeler sağlayıcıdan alınır.",
-    filters: [R, { key: "kind", label: "Tür", kind: "select", options: [["", "Tümü"], ["payment", "Tahsilat"], ["refund", "İade"], ["expense", "Gider"], ["supplier_payment", "Tedarikçi ödemesi"], ["commission_payout", "Prim ödemesi"]] }] },
+    filters: [R, { key: "kind", label: "Tür", kind: "select", options: [["", "Tümü"], ["payment", "Tahsilat"], ["refund", "İade"], ["expense", "Gider"], ["supplier_payment", "Tedarikçi ödemesi"], ["commission_payout", "Prim ödemesi"], ["salary_payment", "Maaş ödemesi"]] }] },
   { id: "aylik-ciro", title: "Aylık ciro", group: "Finans", sourceIds: ["R12", "R11"], perm: "finance.read", maxDays: 731,
     description: "Ay bazında tedavi tutarı (gerçekleşen işlem snapshot'ı), tahsilat, iade ve net tahsilat. Tedavi tutarı tahsilat değildir.",
     filters: [R, PR] },
