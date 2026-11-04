@@ -107,7 +107,9 @@ const cash = (await api(A.fin, "GET", "/cash-accounts")).body.items.find((x) => 
   const { date: day, startTime } = await slot(1, A.sec, prac.id);
   const ap = await api(A.sec, "POST", "/appointments", { patientId: P, practitionerId: prac.id, date: day, startTime, durationMinutes: 30, reason: "sınama" });
   const procs = (await api(A.dentist, "GET", "/procedures")).body;
-  const proc = (procs.items ?? procs).find((x) => /DOL|dolgu/i.test(x.code + x.name)) ?? (procs.items ?? procs)[0];
+  // Yüzey alan dolgu işlemi sabitlenir: katalog standart listeyle genişledi (ADR-094) ve /DOL|dolgu/ artık yüzey almayan
+  // "Geçici dolgu"/"Süt dişi dolgusu"nu da eşleştiriyordu (tur 1 tester düzeltmesi; beklenti değişmedi: 16'ya yüzeyli işlem 201).
+  const proc = (procs.items ?? procs).find((x) => x.code === "DOL-01") ?? (procs.items ?? procs).find((x) => /DOL|dolgu/i.test(x.code + x.name) && x.toothScope === "surface");
   let st = ap.status === 201 ? await api(A.sec, "POST", `/appointments/${ap.body.id}/status`, { version: ap.body.version ?? 1, status: "checked_in" }) : ap;
   const perf = ap.status === 201 ? await api(A.dentist, "POST", `/patients/${P}/performed`, { appointmentId: ap.body.id, procedureId: proc.id, location: { kind: "tooth", tooth: "16", surfaces: ["O", "M"] }, quantity: 1 }) : ap;
   const after16 = await api(A.dentist, "GET", `/patients/${P}/chart`);
