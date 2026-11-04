@@ -1,0 +1,10 @@
+# R07 — 2026-11-04T16:09:13+03:00 sürüm 65201a2
+tenant_tables_without_force_rls|0
+tenant_tables_total|78
+tables_without_policy|
+app_role_delete_grants|auth_throttle,invoice_lines,mfa_recovery_codes,plan_items,procedure_consumables,tariff_items,work_schedules
+app_role_update_on_append_only|
+app_role_flags super/bypassrls/createrole|false/false/false
+new_tables_force_rls|anamnesis_templates=true,invoice_lines=true,invoices=true,practitioner_compensation_versions=true,procedure_consumables=true,receipt_counters=true,receipts=true,salary_payments=true,supplier_prices=true
+new_tables_grants|practitioner_compensation_versions:INSERT,SELECT salary_payments:INSERT,SELECT supplier_prices:INSERT,SELECT
+stock_movements_app_grants|INSERT,SELECT

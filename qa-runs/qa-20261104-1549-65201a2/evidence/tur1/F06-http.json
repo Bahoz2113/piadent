@@ -1,0 +1,52 @@
+{
+ "checks": [
+  {
+   "check": "seri uzunlukları 30/12/12",
+   "pass": true
+  },
+  {
+   "check": "money: sekreter null, finans/yönetici dolu",
+   "pass": true
+  },
+  {
+   "check": "bugünkü randevu = günün listesi",
+   "pass": true
+  },
+  {
+   "check": "bekleyen hasta = checked_in",
+   "pass": true
+  },
+  {
+   "check": "günlük net tahsilat API 2310.00 = DB 2310.00",
+   "pass": true
+  },
+  {
+   "check": "açık borç API 18350.00 = DB 18350.00",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı kendi sayacı",
+   "pass": true
+  },
+  {
+   "check": "oturumsuz 401",
+   "pass": true
+  }
+ ],
+ "admin": {
+  "today": {
+   "appointments": 7,
+   "waiting": 1,
+   "inTreatment": 0,
+   "completed": 1,
+   "noShow": 0,
+   "pastPending": 5,
+   "activePractitioners": 3
+  },
+  "money": {
+   "todayCollections": "2310.00",
+   "openReceivables": "18350.00"
+  }
+ },
+ "secretaryMoney": null
+}

@@ -1,0 +1,18 @@
+{
+ "case": "V05",
+ "run": "mw24uuag",
+ "secretaryCorrect": {
+  "status": 403,
+  "code": "FORBIDDEN"
+ },
+ "dentistCorrect": {
+  "status": 404
+ },
+ "historyEvents": [],
+ "historyCountBefore": 11,
+ "historyCountAfter": 11,
+ "secretaryHistoryStatus": 200,
+ "secretaryClinicalEventsVisible": [],
+ "financeClinicalEventsVisible": 0,
+ "verdict": "FAIL"
+}
