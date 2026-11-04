@@ -258,16 +258,20 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
   const [patient, setPatient] = useState<{ id: string; fullName: string; fileNo?: number } | null>(null);
   const [q, setQ] = useState("");
   const [newPatient, setNewPatient] = useState(false);
-  const [f, setF] = useState({
+  // Açılış değerleri (slot/hasta ön doldurması dahil) saklanır; "kirli" = kullanıcı bunlardan birini değiştirdi (QA-202).
+  const [initialF] = useState(() => ({
     date: prefill.date < today ? today : prefill.date,
     startTime: prefill.time ?? (prefill.date <= today ? nextQuarter(tz) : "09:00"), durationMinutes: "30", appointmentTypeId: "", procedureId: "",
     practitionerId: prefill.practitionerId ?? resources.practitioners[0]?.id ?? "", chairId: prefill.chairId ?? "", reason: "", note: "",
-  });
+  }));
+  const [f, setF] = useState(initialF);
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState(false);
   const search = useData<{ items: { id: string; fullName: string; fileNo: number; phone: string | null; birthDate: string | null }[] }>(q.trim().length >= 2 ? `/patients?limit=8&q=${encodeURIComponent(q)}` : null);
   const pre = useData<{ id: string; fullName: string; fileNo: number }>(prefill.patientId ? `/patients/${prefill.patientId}` : null);
   useEffect(() => { if (pre.data && !patient) setPatient(pre.data); }, [pre.data, patient]);
+  const dirty = (patient?.id ?? null) !== (pre.data?.id ?? null) || q.trim() !== ""
+    || (Object.keys(initialF) as (keyof typeof initialF)[]).some((k) => f[k] !== initialF[k]);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); if (err?.code === "OUTSIDE_WORKING_HOURS") setErr(null); };
   const durations = Array.from(new Set([15, 20, 30, 45, 60, 90, 120, Number(f.durationMinutes)])).sort((a, b) => a - b);
   const procedures = resources.procedures ?? [];
@@ -307,7 +311,7 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
   const outside = err?.code === "OUTSIDE_WORKING_HOURS";
   const blocks = (err?.body.details as { blocks?: { start: number; end: number }[] } | undefined)?.blocks ?? [];
   return (
-    <Drawer title="Randevu ver" subtitle="Müsaitlik, çalışma saati ve kapatmalar kayıt anında sunucuda kontrol edilir." onClose={onClose} dirty={!!patient || !!f.reason}
+    <Drawer title="Randevu ver" subtitle="Müsaitlik, çalışma saati ve kapatmalar kayıt anında sunucuda kontrol edilir." onClose={onClose} dirty={dirty}
       footer={<>
         <button className="btn" onClick={onClose}>Vazgeç</button>
         {outside

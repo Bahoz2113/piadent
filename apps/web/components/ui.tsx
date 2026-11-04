@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2, Info, Loader2, Lock, TriangleAlert, X } from
 import { APPOINTMENT_STATUS_LABELS, CONTACT_OUTCOME_LABELS, type AppointmentStatus } from "@viadent/contracts";
 import type { ApiFailure } from "@/lib/api";
 import { confirmDialog } from "@/components/dialogs";
+import { createDrawerCloser, handleDrawerEscape, type DrawerLatest } from "@/components/drawer-close";
 
 // ---------------------------------------------------------------- çekmece
 export function Drawer({ title, subtitle, onClose, children, footer, dirty }: {
@@ -11,23 +12,16 @@ export function Drawer({ title, subtitle, onClose, children, footer, dirty }: {
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  const asking = useRef(false);
-  const tryClose = async () => {
-    if (dirty) {
-      if (asking.current) return;
-      asking.current = true;
-      const ok = await confirmDialog({ title: "Kaydedilmemiş değişiklikler", message: "Bu formda kaydedilmemiş bilgiler var. Kapatırsanız girdiğiniz bilgiler kaybolur.", confirmLabel: "Kapat", cancelLabel: "Forma dön", danger: true });
-      asking.current = false;
-      if (!ok) return;
-    }
-    onClose();
-  };
+  // Güncel dirty/onClose ref'te: bir kez kurulan klavye dinleyicisi bayat değeri görmez (QA-201).
+  const latest = useRef<DrawerLatest>({ dirty, onClose });
+  latest.current = { dirty, onClose };
+  const [tryClose] = useState(() => createDrawerCloser(latest, confirmDialog));
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     const first = ref.current?.querySelector<HTMLElement>("input, select, textarea, button:not([data-close])");
     first?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); void tryClose(); } // iç açılır pencere (takvim) Esc'i tükettiyse çekmece kapanmaz
+      if (handleDrawerEscape(e, tryClose)) return; // iç açılır pencere (takvim) Esc'i tükettiyse çekmece kapanmaz
       if (e.key === "Tab" && ref.current) {
         const items = [...ref.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex='-1'])")];
         if (!items.length) return;

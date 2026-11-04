@@ -1,7 +1,7 @@
 # Bulgu defteri — qa-20261104-1549-65201a2
 Sürüm: 65201a2 (tur 1). Tester ürün kodunu değiştirmez; düzeltme cezeri-duzeltici ile ayrı dalda.
 
-## QA-201 — Kirli çekmece Esc ile uyarısız kapanıyor; girilen bilgi kayboluyor (S2, OPEN)
+## QA-201 — Kirli çekmece Esc ile uyarısız kapanıyor; girilen bilgi kayboluyor (S2, FIX_READY — bkz. fix1.md; kapanış tester yeniden sınamasıyla)
 - **Vaka:** F11 (madde 10). Profil: chromium-desktop + chromium-mobile-emulation. Rol: sekreter, yönetici.
 - **Adımlar:** Randevular → "Randevu ver" → Açıklama alanına metin yaz → Esc.
 - **Beklenen:** "Kaydedilmemiş değişiklikler" uygulama modalı açılır (X ve arka plan tıklamasında olduğu gibi); "Forma dön" veriyi korur.
@@ -11,7 +11,7 @@ Sürüm: 65201a2 (tur 1). Tester ürün kodunu değiştirmez; düzeltme cezeri-d
 - **Kanıt:** evidence/tur1/browser-f-summary.json (F11, iki profil), evidence/tur1/masaustu-F11-kapatma.png, mobil-F11-kapatma.png.
 - **Sorumlu:** cezeri-duzeltici (web).
 
-## QA-202 — Randevu formunda yalnız Not (veya tarih/saat/işlem/süre/koltuk) değişince form "kirli" sayılmıyor (S3, OPEN)
+## QA-202 — Randevu formunda yalnız Not (veya tarih/saat/işlem/süre/koltuk) değişince form "kirli" sayılmıyor (S3, FIX_READY — bkz. fix1.md; kapanış tester yeniden sınamasıyla)
 - **Vaka:** F11. Profil: masaüstü + mobil. Rol: yönetici.
 - **Adımlar:** Randevular → "Randevu ver" → yalnız "Not" alanını doldur → X.
 - **Beklenen:** Girilen bilgi kaybolacağı için kapatma uyarısı modalı.
