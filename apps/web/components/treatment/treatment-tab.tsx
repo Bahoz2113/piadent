@@ -11,7 +11,7 @@ import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
 import { alertDialog, promptDialog } from "@/components/dialogs";
-import { Odontogram, type ToothState } from "./odontogram";
+import { Odontogram, toothStates } from "./odontogram";
 
 interface Loc { kind: string; tooth: string | null; surfaces: string[]; quadrant: number | null; arch: string | null }
 interface Item { id: string; procedureId: string; code: string; name: string; location: Loc; quantity: number; unitPrice: string; priceSource: string; priceNote: string | null;
@@ -44,15 +44,7 @@ export function TreatmentTab({ patientId, onChanged }: { patientId: string; onCh
   const [drawer, setDrawer] = useState<null | { kind: "finding" | "diagnosis" | "plan" } | { kind: "item"; versionId: string; practitionerId: string }>(null);
   const reload = () => { void chart.reload(); void plans.reload(); onChanged(); };
 
-  const states = useMemo(() => {
-    const out: Record<string, ToothState> = {};
-    const get = (t: string) => (out[t] ??= { findings: [], planned: 0, done: 0, diagnoses: 0 });
-    for (const f of chart.data?.findings ?? []) if (f.status === "current") get(f.tooth).findings.push({ type: f.type, surfaces: f.surfaces });
-    for (const d of chart.data?.diagnoses ?? []) if (d.status === "active" && d.location.tooth) get(d.location.tooth).diagnoses++;
-    for (const p of chart.data?.planned ?? []) if (p.location.tooth && p.performedQty < p.quantity) get(p.location.tooth).planned++;
-    for (const p of chart.data?.performed ?? []) if (p.status === "completed" && p.location.tooth) get(p.location.tooth).done++;
-    return out;
-  }, [chart.data]);
+  const states = useMemo(() => toothStates(chart.data), [chart.data]);
 
   const draftVersion = plans.data?.items.flatMap((p) => p.versions).find((v) => v.status === "draft");
 

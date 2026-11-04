@@ -16,6 +16,7 @@ import type { Appt, Task } from "@/lib/types";
 import { RelationsCard } from "@/components/patient/relations";
 import { AnamnesisPanel } from "@/components/patient/anamnesis";
 import { TreatmentTab } from "@/components/treatment/treatment-tab";
+import { ToothSummaryCard } from "@/components/treatment/tooth-summary";
 import { AccountTab } from "@/components/finance/account-tab";
 import { DocumentsTab } from "@/components/documents/documents-tab";
 import { CommunicationTab } from "@/components/communication/communication-tab";
@@ -151,6 +152,8 @@ function PatientInner() {
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} style={{ marginTop: 16 }}>
         {tab === "ozet" && (
+          <div className="stack" style={{ gap: 16 }}>
+          <ToothSummaryCard patientId={p.id} onOpenTreatment={() => setTab("tedavi")} />
           <div className="grid grid-2">
             <section className="card">
               <div className="card-head"><h2>Randevular</h2></div>
@@ -187,6 +190,7 @@ function PatientInner() {
                 </dl>
               </section>
             </div>
+          </div>
           </div>
         )}
         {tab === "saglik" && (can("patient.health.read") ? (

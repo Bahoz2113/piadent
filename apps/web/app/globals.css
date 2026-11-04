@@ -369,12 +369,20 @@ table.table { width: 100%; border-collapse: collapse; }
 .tooth:hover { background: var(--primary-tint); }
 .tooth.is-selected { border-color: var(--brand-primary); background: var(--primary-tint); }
 .tooth.midline { margin-left: 14px; }
+/* İşlem yapılan dişler belirgin (madde 4): yeşil zemin + kenar; planlı bekleyen kesikli kenar. Bilgi yalnız renkle değil, ✓ / P işareti ve erişilebilir adla da verilir. */
+.tooth.has-done { background: var(--success-bg); border-color: var(--success); }
+.tooth.has-planned { border: 1px dashed var(--info); }
+.tooth.has-done.is-selected, .tooth.has-planned.is-selected { border-color: var(--brand-primary); border-style: solid; }
 .tooth-no { font-size: 0.75rem; font-weight: 650; color: var(--text-secondary); }
 .tooth.is-selected .tooth-no { color: var(--brand-primary); }
 .tooth-marks { font-size: 0.6562rem; font-weight: 700; color: var(--text); min-height: 14px; letter-spacing: 0.02em; }
 .odonto-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; padding: 12px 0 0; margin: 0; font-size: 0.7812rem; color: var(--text-secondary); }
 .odonto-legend li { display: inline-flex; align-items: center; gap: 6px; }
 .odonto-legend .sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #8DA39A; display: inline-block; }
+.tooth-detail { margin-top: var(--s4); padding: var(--s4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.tooth-detail h3 { margin: 0 0 var(--s2); font-size: 1rem; }
+.odonto-legend .sw.sw-done { background: var(--success-bg); border-color: var(--success); }
+.odonto-legend .sw.sw-planned { background: none; border: 1px dashed var(--info); }
 .odonto-legend .sw.x { background: linear-gradient(45deg, transparent 43%, #B42318 43%, #B42318 57%, transparent 57%); }
 .money { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 .plan-version { border-top: 1px solid var(--border); }
@@ -514,4 +522,48 @@ html[data-scheme="dim"] .swatch, html[data-scheme="dark"] .swatch { background: 
   .table-wrap table.table-wide td:not([data-label])::before, .table-wrap table.table-wide td[data-label=""]::before { display: none; }
   .table-wrap table.table-wide td[data-label=""], .table-wrap table.table-wide td:last-child:has(button, a.btn) { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; } /* işlem düğmeleri */
   .table-wrap table.table-wide td:last-child:has(button, a.btn)::before { display: none; }
+}
+
+/* ---------------------------------------------------------------- Panel: KPI ve grafikler (ADR-095) */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s4); margin-bottom: var(--s4); }
+.kpi { display: grid; gap: var(--s2); padding: var(--s4) var(--s5); text-decoration: none; color: inherit; }
+.kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.kpi-label { font-size: 0.78rem; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+.kpi-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--primary-tint); color: var(--brand-primary); flex: none; }
+.kpi-value { font-size: 1.65rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.kpi-sub { font-size: 0.8rem; color: var(--text-secondary); }
+a.kpi:hover { border-color: var(--border-strong); }
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: var(--s4); margin-bottom: var(--s4); }
+.chart-card .card-head { padding-bottom: 0; border-bottom: 0; }
+.chart-body { padding-top: var(--s2); }
+.chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-axis line { stroke: var(--border); stroke-width: 1; }
+.chart-axis text, .chart-xlabel { fill: var(--text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart-base { stroke: var(--border-strong); stroke-width: 1; }
+.chart-col { fill: var(--brand-primary); transition: opacity .12s; }
+.chart-svg:hover .chart-col:not(.is-hover) { opacity: 0.55; }
+.chart-line { fill: none; stroke: var(--brand-primary); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-area { fill: var(--brand-primary); opacity: 0.1; }
+.chart-dot { fill: var(--brand-primary); stroke: var(--surface); stroke-width: 2; }
+.chart-cross { stroke: var(--border-strong); stroke-width: 1; }
+.chart-tip rect { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1; filter: drop-shadow(0 2px 6px rgba(18, 43, 39, 0.12)); }
+.chart-tip .tip-label { fill: var(--text-secondary); font-size: 11px; }
+.chart-tip .tip-value { fill: var(--text); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chart-empty { padding: var(--s6) 0; text-align: center; }
+.barlist { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+.barlist li { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; align-items: center; gap: var(--s3); }
+.barlist-label { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barlist-track { height: 12px; border-radius: 6px; background: var(--primary-tint); overflow: hidden; }
+.barlist-bar { display: block; height: 100%; border-radius: 6px; background: var(--brand-primary); }
+.barlist-value { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 0.88rem; text-align: right; white-space: nowrap; }
+.panel-lower { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: var(--s4); }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Panel — dar ekran: sayaçlar iki sütun, grafik yazıları okunur boyda (SVG viewBox ölçeğini telafi eder). */
+@media (max-width: 640px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
+  .kpi-value { font-size: 1.25rem; overflow-wrap: anywhere; }
+  .chart-axis text, .chart-xlabel { font-size: 19px; }
+  .chart-tip .tip-label { font-size: 18px; }
+  .chart-tip .tip-value { font-size: 20px; }
 }
