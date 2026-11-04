@@ -30,7 +30,7 @@ export class ResourcesController {
       );
       const s = await c.query("select practitioner_id, weekday, start_min, end_min from work_schedules order by weekday, start_min");
       const ch = await c.query("select id, name, active from chairs order by active desc, name");
-      const ty = await c.query("select id, name, default_minutes, active from appointment_types order by active desc, name");
+      const ty = await c.query("select t.id, t.name, t.default_minutes, t.active, t.procedure_id, pc.code as procedure_code, pc.name as procedure_name from appointment_types t left join procedures pc on pc.id = t.procedure_id order by t.active desc, t.name");
       const dentists = await c.query(
         `select m.id, u.full_name from memberships m join users u on u.id = m.user_id
           where m.status = 'active' and m.role = 'dentist' order by u.full_name`,
@@ -41,7 +41,7 @@ export class ResourcesController {
           schedule: s.rows.filter((x) => x.practitioner_id === r.id).map((x) => ({ weekday: x.weekday, start: x.start_min, end: x.end_min })),
         })),
         chairs: ch.rows.map((r) => ({ id: r.id, name: r.name, active: r.active })),
-        appointmentTypes: ty.rows.map((r) => ({ id: r.id, name: r.name, defaultMinutes: r.default_minutes, active: r.active })),
+        appointmentTypes: ty.rows.map((r) => ({ id: r.id, name: r.name, defaultMinutes: r.default_minutes, active: r.active, procedureId: r.procedure_id ?? null, procedureLabel: r.procedure_code ? `${r.procedure_code} · ${r.procedure_name}` : null })),
         dentistMemberships: dentists.rows.map((r) => ({ id: r.id, name: r.full_name })),
       };
     });
@@ -157,9 +157,10 @@ export class ResourcesController {
   createType(@Ctx() ctx: RequestContext, @Body() body: unknown) {
     const input = parse(AppointmentTypeUpsert, body);
     return this.db.tx(ctx, async (c) => {
-      const r = await c.query("insert into appointment_types(tenant_id, name, default_minutes) values ($1,$2,$3) returning id", [ctx.tenantId, input.name, input.defaultMinutes]);
+      if (input.procedureId && !(await c.query("select 1 from procedures where id = $1 and active", [input.procedureId])).rowCount) throw Errors.validation({ procedureId: "İşlem bulunamadı veya pasif." });
+      const r = await c.query("insert into appointment_types(tenant_id, name, default_minutes, procedure_id) values ($1,$2,$3,$4) returning id", [ctx.tenantId, input.name, input.defaultMinutes, input.procedureId ?? null]);
       await audit(c, ctx, { action: "appointment_type.create", entityType: "appointment_type", entityId: r.rows[0].id,
-        changes: { name: { from: null, to: input.name }, default_minutes: { from: null, to: input.defaultMinutes } } });
+        changes: { name: { from: null, to: input.name }, default_minutes: { from: null, to: input.defaultMinutes }, ...(input.procedureId ? { procedure_id: { from: null, to: input.procedureId } } : {}) } });
       return { id: r.rows[0].id };
     });
   }
@@ -169,12 +170,14 @@ export class ResourcesController {
   updateType(@Ctx() ctx: RequestContext, @Param("id", id) tid: string, @Body() body: unknown) {
     const input = parse(AppointmentTypeUpsert, body);
     return this.db.tx(ctx, async (c) => {
-      const cur = await c.query("select name, default_minutes, active from appointment_types where id = $1 for update", [tid]);
+      const cur = await c.query("select name, default_minutes, active, procedure_id from appointment_types where id = $1 for update", [tid]);
       if (!cur.rowCount) throw Errors.notFound("İşlem türü");
       const active = input.active ?? cur.rows[0].active;
-      await c.query("update appointment_types set name=$2, default_minutes=$3, active=$4 where id = $1", [tid, input.name, input.defaultMinutes, active]);
+      const procedureId = input.procedureId === undefined ? cur.rows[0].procedure_id : input.procedureId;
+      if (procedureId && procedureId !== cur.rows[0].procedure_id && !(await c.query("select 1 from procedures where id = $1 and active", [procedureId])).rowCount) throw Errors.validation({ procedureId: "İşlem bulunamadı veya pasif." });
+      await c.query("update appointment_types set name=$2, default_minutes=$3, active=$4, procedure_id=$5 where id = $1", [tid, input.name, input.defaultMinutes, active, procedureId ?? null]);
       await audit(c, ctx, { action: "appointment_type.update", entityType: "appointment_type", entityId: tid,
-        changes: { name: { from: cur.rows[0].name, to: input.name }, default_minutes: { from: cur.rows[0].default_minutes, to: input.defaultMinutes }, active: { from: cur.rows[0].active, to: active } } });
+        changes: { name: { from: cur.rows[0].name, to: input.name }, default_minutes: { from: cur.rows[0].default_minutes, to: input.defaultMinutes }, active: { from: cur.rows[0].active, to: active }, ...(procedureId !== cur.rows[0].procedure_id ? { procedure_id: { from: cur.rows[0].procedure_id, to: procedureId ?? null } } : {}) } });
       return { ok: true };
     });
   }

@@ -295,3 +295,11 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - Web birim: `apps/web/test/qa-110-readiness-rule-types.test.ts` (2 test; form değişikliği geri alınınca 1 başarısız). Web tam: 6 dosya, 72/72.
 - API tam paket (izole `viadent_fix_test`): **35 dosya, 364/364**. `pnpm -r typecheck` temiz (5 paket).
 - E2E `apps/web/e2e/gorev4.spec.ts` izole yığında (API :4100, web :3100, worker; `viadent_fix` sıfırlanıp seed): son koşu **6/6** (iki önceki koşuda masaüstü ilk testi bir kez girişte, bir kez öğe bulunamadı ile düştü; yalnız masaüstü koşusu 3/3, son tam koşu 6/6). Tarayıcıda yönetici PİA Hazır formunda "Belge türü" 17 seçenek, klinik çıktı türü yok.
+
+## Geri bildirim 04.11.2026 — CEZERİ qa-20261104-1549-65201a2 (ADR-093…097)
+- Sürüm `bef63fe` (65201a2 + fix1 + fix2), temiz seed, yerel test ortamı, yalnız MOCK.
+- API (vitest, gerçek PostgreSQL): 39 dosya, **385/385** — yeni: `dashboard.test.ts`, `practitioners-compensation.test.ts`, `appointment-materials.test.ts`, `appointment-past-procedure.test.ts`.
+- contracts **17/17**; web birim **86/86** (`qa-201-drawer-esc.test.ts`, `qa-203-204-labels-chart-rem.test.ts` dahil); typecheck 5/5; `pnpm audit --prod` açık yok.
+- Playwright tam koşu (iki proje, retries=0): **100 geçti + 10 bilinçli atlama, 0 hata** (`e2e/geri-bildirim-0411.spec.ts` dahil). İlk deneme bir testte tarayıcı kurulum zaman aşımıyla düştü (ortam); temiz seed'de tekrarlandı.
+- Tester HTTP + tarayıcı vakaları F01–F12 (masaüstü 1366 + 360 px) ve önceki 27 vaka: hepsi PASS. RLS 78/78 FORCE; V06 yedek/geri yükleme `differences=[]`, mutabakat EŞLEŞTİ.
+- Kanıt: `qa-runs/qa-20261104-1549-65201a2/release.md`, `results.json`, `evidence/tur2/`. Çalıştırılmayan: fiziksel cihaz, canlı ortam.

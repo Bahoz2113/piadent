@@ -1,7 +1,7 @@
 "use client";
 import { DateField } from "@/components/ui";
 import { useState } from "react";
-import { GENDERS, GENDER_LABELS, NATIONAL_ID_LABELS, NATIONAL_ID_TYPES } from "@viadent/contracts";
+import { GENDERS, GENDER_LABELS, NATIONAL_ID_LABELS, NATIONAL_ID_TYPES, limitPhoneInput, normalizePhone, PHONE_RULE_MESSAGE } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
@@ -40,6 +40,7 @@ export function NewPatientDrawer({ onClose, onCreated, initialName }: { onClose:
     if (!f.lastName.trim()) local.lastName = "Soyad gerekli";
     if (f.birthDate && f.birthDate > todayIn(tz)) local.birthDate = "Doğum tarihi gelecekte olamaz.";
     if (!!f.nationalId !== !!f.nationalIdType) local.nationalId = "Kimlik türü ve numarası birlikte girilmeli";
+    if (f.phone.trim() && !normalizePhone(f.phone)) local.phone = PHONE_RULE_MESSAGE;
     setErrors(local);
     if (Object.keys(local).length) return;
     setBusy(true);
@@ -92,7 +93,8 @@ export function NewPatientDrawer({ onClose, onCreated, initialName }: { onClose:
             <option value="">Seçilmedi</option>
             {GENDERS.map((g) => <option key={g} value={g}>{GENDER_LABELS[g]}</option>)}
           </SelectField>
-          <TextField label="Telefon" type="tel" inputMode="tel" value={f.phone} onChange={set("phone")} error={errors.phone} hint="Aile bireyleri aynı numarayı kullanabilir." />
+          <TextField label="Telefon" type="tel" inputMode="tel" value={f.phone} onChange={(e) => setF((x) => ({ ...x, phone: limitPhoneInput(e.target.value) }))} error={errors.phone}
+            placeholder="0555 123 45 67" hint="0 ile 11, 0 olmadan 10 hane. Aile bireyleri aynı numarayı kullanabilir." />
           <TextField label="E-posta" type="email" value={f.email} onChange={set("email")} error={errors.email} />
           <SelectField label="Kimlik belgesi türü" value={f.nationalIdType} onChange={set("nationalIdType")}>
             <option value="">Girilmedi</option>

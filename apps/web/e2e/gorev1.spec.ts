@@ -8,7 +8,7 @@ async function login(page: Page, email: string, password = PASSWORD) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(password);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await expect(page.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
 }
 /** Mobil emülasyonda tarayıcı taşan sayfayı uzaklaştırır; bu yüzden düzen genişliği proje görünüm alanıyla karşılaştırılır. */
 const noOverflow = async (page: Page) => {
@@ -61,7 +61,7 @@ test("yönetici daveti → yeni kullanıcı kabul eder ve doğru rolle girer", a
   await guest.getByRole("textbox", { name: "Yeni parola", exact: true }).fill("Guvenli-Deneme-Parolasi-7");
   await guest.getByRole("textbox", { name: "Parola (tekrar)", exact: true }).fill("Guvenli-Deneme-Parolasi-7");
   await guest.getByRole("button", { name: "Kabul et ve giriş yap" }).click();
-  await expect(guest.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
+  await expect(guest.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
   if (guest.viewportSize()!.width < 900) await guest.getByRole("button", { name: "Menüyü aç" }).click();
   await expect(guest.getByText(/^Asistan( · |$)/).filter({ visible: true }).first()).toBeVisible();
   // Aynı bağlantı ikinci kez kullanılamaz.

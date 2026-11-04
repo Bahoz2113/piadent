@@ -44,6 +44,7 @@ const FINANCE_ERRORS: Record<string, [number, string, string]> = {
   receivable_has_allocations: [409, "RECEIVABLE_HAS_ALLOCATIONS", "Dağıtımı olan alacak iptal edilemez; önce dağıtım ters kayda alınmalı."],
   commission_reverse_rate_mismatch: [409, "COMMISSION_RATE_SNAPSHOT", "Prim ters kaydı orijinal oranla yapılmalı."],
   payout_exceeds_accrued: [409, "PAYOUT_EXCEEDS_ACCRUED", "Prim ödemesi, hekimin ödenmemiş net tahakkukunu aşıyor."],
+  salary_exceeds_due: [409, "SALARY_EXCEEDS_DUE", "Maaş ödemesi, hekimin o ayki ödenmemiş maaş hakedişini aşıyor."],
   reversal_mismatch: [409, "REVERSAL_INVALID", "Ters kayıt orijinal kaydın tam tersi olmalı (aynı tutar, hesap ve kalem)."],
   reversal_of_reversal: [409, "REVERSAL_INVALID", "Ters kayıt yeniden ters çevrilemez; yeni kayıt girin."],
   stock_negative: [409, "STOCK_INSUFFICIENT", "Stok yetersiz: bu hareket bakiyeyi eksiye düşürür. Önce giriş veya sayım kaydedin."],

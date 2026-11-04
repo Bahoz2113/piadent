@@ -13,6 +13,7 @@ import type { RequestContext } from "../infra/context.js";
 import { audit, enqueue } from "../audit/audit.js";
 import { checkEventTime, idempotent, requireKey } from "../finance/ledger.js";
 import { activeSupplier, createBill, reverseEntry } from "./cari.js";
+import { estimateUnitCost } from "./stock-cost.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 type C = import("pg").PoolClient;
@@ -120,13 +121,13 @@ export class StockController {
     return it as { id: string; name: string; track_lots: boolean; active: boolean };
   }
 
-  private async insertMovement(c: C, ctx: RequestContext, m: { itemId: string; lotId?: string | null; kind: string; quantity: string; unitCost?: string | null;
-    supplierId?: string | null; patientId?: string | null; performedProcedureId?: string | null; reason?: string | null; at: Date; reversesId?: string | null }) {
+  async insertMovement(c: C, ctx: RequestContext, m: { itemId: string; lotId?: string | null; kind: string; quantity: string; unitCost?: string | null;
+    supplierId?: string | null; patientId?: string | null; performedProcedureId?: string | null; appointmentId?: string | null; reason?: string | null; at: Date; reversesId?: string | null }) {
     const r = await c.query(
-      `insert into stock_movements(tenant_id, item_id, lot_id, kind, quantity, unit_cost, supplier_id, patient_id, performed_procedure_id, reason, occurred_at, reverses_id, created_by)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning id, quantity::text`,
+      `insert into stock_movements(tenant_id, item_id, lot_id, kind, quantity, unit_cost, supplier_id, patient_id, performed_procedure_id, appointment_id, reason, occurred_at, reverses_id, created_by)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning id, quantity::text`,
       [ctx.tenantId, m.itemId, m.lotId ?? null, m.kind, m.quantity, m.unitCost ?? null, m.supplierId ?? null, m.patientId ?? null, m.performedProcedureId ?? null,
-       m.reason ?? null, m.at, m.reversesId ?? null, ctx.userId]);
+       m.appointmentId ?? null, m.reason ?? null, m.at, m.reversesId ?? null, ctx.userId]);
     await audit(c, ctx, { action: `stock.${m.reversesId ? "reverse" : m.kind}`, entityType: "stock_movement", entityId: r.rows[0].id, patientId: m.patientId ?? null,
       changes: { item_id: { from: null, to: m.itemId }, quantity: { from: null, to: r.rows[0].quantity }, ...(m.lotId ? { lot_id: { from: null, to: m.lotId } } : {}) } });
     await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "stock.movement" });
@@ -188,7 +189,9 @@ export class StockController {
         if (i.performedProcedureId && !(await c.query("select 1 from performed_procedures where id = $1 and patient_id = $2", [i.performedProcedureId, i.patientId])).rowCount) {
           throw Errors.validation({ performedProcedureId: "İşlem bu hastaya ait değil." });
         }
-        return { id: await this.insertMovement(c, ctx, { itemId: i.itemId, lotId: i.lotId ?? null, kind: "usage", quantity: `-${i.quantity}`,
+        // Birim maliyet snapshot'ı (ADR-097): sonradan fiyat değişse de bu kullanımın gideri değişmez.
+        const cost = await estimateUnitCost(c, i.itemId, localDate(new Date(), ctx.timezone));
+        return { id: await this.insertMovement(c, ctx, { itemId: i.itemId, lotId: i.lotId ?? null, kind: "usage", quantity: `-${i.quantity}`, unitCost: cost.unitCost,
           patientId: i.patientId ?? null, performedProcedureId: i.performedProcedureId ?? null, reason: i.reason ?? null, at: new Date() }) };
       });
       if (out.replayed) res.setHeader("Idempotent-Replayed", "true");
@@ -253,7 +256,7 @@ export class StockController {
       if (bill && !ctx.permissions.has("supplier.ledger")) throw new AppError(403, "FORBIDDEN", "Bu giriş cari borç doğurmuş; ters kaydı finans yetkisi gerektirir.");
       const neg = (await c.query("select (-$1::numeric)::text as v", [m.q])).rows[0].v;
       const rid = await this.insertMovement(c, ctx, { itemId: m.item_id, lotId: m.lot_id, kind: m.kind, quantity: neg, unitCost: m.unit_cost, supplierId: m.supplier_id,
-        patientId: m.patient_id, performedProcedureId: m.performed_procedure_id, reason: `Ters kayıt: ${i.reason}`.slice(0, 300), at: new Date(), reversesId: mid });
+        patientId: m.patient_id, performedProcedureId: m.performed_procedure_id, appointmentId: m.appointment_id, reason: `Ters kayıt: ${i.reason}`.slice(0, 300), at: new Date(), reversesId: mid });
       if (bill) await reverseEntry(c, ctx, bill.id, i.reason, true);
       return { id: rid };
     });

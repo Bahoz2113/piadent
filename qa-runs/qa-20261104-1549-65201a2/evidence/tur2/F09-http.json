@@ -1,0 +1,114 @@
+{
+ "checks": [
+  {
+   "check": "fiyat dün → 422",
+   "pass": true
+  },
+  {
+   "check": "fiyat 0 → 422",
+   "pass": true
+  },
+  {
+   "check": "fiyat negatif → 422",
+   "pass": true
+  },
+  {
+   "check": "fiyat 3 ondalık → 422",
+   "pass": true
+  },
+  {
+   "check": "fiyat harf → 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter/asistan fiyat 403",
+   "pass": true
+  },
+  {
+   "check": "fiyat 201",
+   "pass": true
+  },
+  {
+   "check": "aynı gün 409",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı A ürününe fiyat 422",
+   "pass": true
+  },
+  {
+   "check": "maliyet: son alış tedarikçisinin fiyatı 100.00",
+   "pass": true
+  },
+  {
+   "check": "geçerli/planlı ayrımı",
+   "pass": true
+  },
+  {
+   "check": "fiyatsız ürün null (uydurulmaz)",
+   "pass": true
+  },
+  {
+   "check": "sekreter katalog 403",
+   "pass": true
+  },
+  {
+   "check": "standart ürün listesi +43, ikinci 0",
+   "pass": true
+  },
+  {
+   "check": "asistan standart liste 403",
+   "pass": true
+  },
+  {
+   "check": "standart ürünler fiyatsız/stoksuz",
+   "pass": true
+  }
+ ],
+ "catalogItem": {
+  "id": "5cefe651-e32b-4322-af84-21487ea9e52c",
+  "code": "QA-E5e1d1",
+  "name": "‹name:16›",
+  "unit": "kutu",
+  "category": null,
+  "trackLots": false,
+  "active": true,
+  "minLevel": "0.000",
+  "balance": "10.000",
+  "lastCost": "90.00",
+  "unitCost": "100.00",
+  "costSource": "supplier_price",
+  "prices": [
+   {
+    "id": "eb97994e-fcac-411a-ad9d-3250063c0be3",
+    "supplierId": "255f1690-51e6-4ca5-aa33-be2525dbd993",
+    "supplier": "QA Medikal A 5e1d1",
+    "unitPrice": "120.00",
+    "validFrom": "2026-12-04",
+    "supplierCode": null,
+    "note": null,
+    "state": "scheduled"
+   },
+   {
+    "id": "ad0aef10-3884-415c-8601-e69878b9d17b",
+    "supplierId": "f15b907a-5797-43ea-aa20-0f3a625356c9",
+    "supplier": "QA Medikal B 5e1d1",
+    "unitPrice": "80.00",
+    "validFrom": "2026-11-04",
+    "supplierCode": null,
+    "note": null,
+    "state": "current"
+   },
+   {
+    "id": "4a6d66f5-20c2-4a7b-968a-b01fd1039229",
+    "supplierId": "255f1690-51e6-4ca5-aa33-be2525dbd993",
+    "supplier": "QA Medikal A 5e1d1",
+    "unitPrice": "100.00",
+    "validFrom": "2026-11-04",
+    "supplierCode": "A-ELD",
+    "note": "QA — ğüş",
+    "state": "current"
+   }
+  ]
+ }
+}

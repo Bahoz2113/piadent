@@ -76,7 +76,7 @@ export class ImportController {
         }
         if (v.phone) {
           const p = normalizePhone(v.phone);
-          if (!p) errors.push({ field: "phone", message: "Telefon geçersiz" }); else { data.phone_e164 = p.e164; data.phone_digits = p.digits; }
+          if (!p) errors.push({ field: "phone", message: "Telefon geçersiz (0 ile 11, 0 olmadan 10 hane; yurt dışı + ile)" }); else { data.phone_e164 = p.e164; data.phone_digits = p.digits; }
         }
         if (v.email) {
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email) || v.email.length > 200) errors.push({ field: "email", message: "E-posta geçersiz" }); else data.email = v.email.toLowerCase();

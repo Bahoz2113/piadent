@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Patch, Post, Put, Query } from "@nestjs/common";
 import { z } from "zod";
-import { ProcedureConsumablesPut, ProcedureUpsert, TariffCreate, TariffItemsSet, localDate } from "@viadent/contracts";
+import { STANDARD_PROCEDURES, ProcedureConsumablesPut, ProcedureUpsert, TariffCreate, TariffItemsSet, localDate } from "@viadent/contracts";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
@@ -45,6 +45,24 @@ export class CatalogController {
         if ((e as { code?: string }).code === "23505") throw new AppError(409, "CODE_EXISTS", "Bu kodla bir işlem zaten var.", { code: "Kod kullanımda." });
         throw e;
       }
+    });
+  }
+
+  /** PİA-DENT standart işlem listesini kataloğa ekler (ADR-094): yalnız eksik kodlar, fiyatsız; mevcut işlemler değişmez. */
+  @Post("procedures/standard-import")
+  @Require("catalog.manage")
+  importStandard(@Ctx() ctx: RequestContext) {
+    return this.db.tx(ctx, async (c) => {
+      const have = new Set((await c.query("select code from procedures")).rows.map((r) => r.code as string));
+      const added: string[] = [];
+      for (const p of STANDARD_PROCEDURES) {
+        if (have.has(p.code)) continue;
+        await c.query("insert into procedures(tenant_id, code, name, category, tooth_scope, default_minutes) values ($1,$2,$3,$4,$5,$6)",
+          [ctx.tenantId, p.code, p.name, p.category, p.toothScope, p.minutes]);
+        added.push(p.code);
+      }
+      if (added.length) await audit(c, ctx, { action: "procedure.standard_import", entityType: "procedure", changes: { added: { from: null, to: added } } });
+      return { added: added.length, skipped: STANDARD_PROCEDURES.length - added.length, codes: added };
     });
   }
 

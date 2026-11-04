@@ -1,0 +1,257 @@
+{
+ "checks": [],
+ "runs": [
+  {
+   "role": "yonetici",
+   "id": "gelir-gider",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "yonetici",
+   "id": "nakit-hareketleri",
+   "status": 200,
+   "rows": 14
+  },
+  {
+   "role": "yonetici",
+   "id": "muhasebe-donem",
+   "status": 200,
+   "rows": 14
+  },
+  {
+   "role": "yonetici",
+   "id": "aylik-ciro",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "yonetici",
+   "id": "borc-bakiye",
+   "status": 200,
+   "rows": 5
+  },
+  {
+   "role": "yonetici",
+   "id": "prim",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "yonetici",
+   "id": "online-odeme",
+   "status": 200,
+   "rows": 0
+  },
+  {
+   "role": "yonetici",
+   "id": "tedavi",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "yonetici",
+   "id": "aylik-islem",
+   "status": 200,
+   "rows": 2
+  },
+  {
+   "role": "yonetici",
+   "id": "plan",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "yonetici",
+   "id": "hekim-hasta",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "yonetici",
+   "id": "randevu",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "yonetici",
+   "id": "kontrol",
+   "status": 200,
+   "rows": 0
+  },
+  {
+   "role": "yonetici",
+   "id": "laboratuvar",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "yonetici",
+   "id": "mesaj",
+   "status": 200,
+   "rows": 0
+  },
+  {
+   "role": "yonetici",
+   "id": "onam",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "yonetici",
+   "id": "stok",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "yonetici",
+   "id": "cari",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "yonetici",
+   "id": "log",
+   "status": 200,
+   "rows": 151
+  },
+  {
+   "role": "yonetici",
+   "id": "isletme",
+   "status": 200,
+   "rows": 9
+  },
+  {
+   "role": "finans",
+   "id": "gelir-gider",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "finans",
+   "id": "nakit-hareketleri",
+   "status": 200,
+   "rows": 14
+  },
+  {
+   "role": "finans",
+   "id": "muhasebe-donem",
+   "status": 200,
+   "rows": 14
+  },
+  {
+   "role": "finans",
+   "id": "aylik-ciro",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "finans",
+   "id": "borc-bakiye",
+   "status": 200,
+   "rows": 5
+  },
+  {
+   "role": "finans",
+   "id": "prim",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "finans",
+   "id": "online-odeme",
+   "status": 200,
+   "rows": 0
+  },
+  {
+   "role": "finans",
+   "id": "laboratuvar",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "finans",
+   "id": "stok",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "finans",
+   "id": "cari",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "finans",
+   "id": "isletme",
+   "status": 200,
+   "rows": 9
+  },
+  {
+   "role": "hekim",
+   "id": "tedavi",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "hekim",
+   "id": "aylik-islem",
+   "status": 200,
+   "rows": 2
+  },
+  {
+   "role": "hekim",
+   "id": "plan",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "hekim",
+   "id": "hekim-hasta",
+   "status": 200,
+   "rows": 1
+  },
+  {
+   "role": "hekim",
+   "id": "laboratuvar",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "hekim",
+   "id": "stok",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "sekreter",
+   "id": "randevu",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "sekreter",
+   "id": "kontrol",
+   "status": 200,
+   "rows": 0
+  },
+  {
+   "role": "sekreter",
+   "id": "laboratuvar",
+   "status": 200,
+   "rows": 3
+  },
+  {
+   "role": "sekreter",
+   "id": "mesaj",
+   "status": 200,
+   "rows": 0
+  },
+  {
+   "role": "sekreter",
+   "id": "onam",
+   "status": 200,
+   "rows": 1
+  }
+ ]
+}

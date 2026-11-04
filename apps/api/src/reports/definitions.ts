@@ -42,6 +42,7 @@ const MOVEMENT_LABEL = `case m.source
   when 'expense' then 'Gider · ' || (select e.category from expenses e where e.id = m.source_id)
   when 'supplier_payment' then 'Tedarikçi ödemesi · ' || (select s.name from supplier_entries se join suppliers s on s.id = se.supplier_id where se.id = m.source_id)
   when 'commission_payout' then 'Prim ödemesi · ' || (select pr.display_name from commission_payouts y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id)
+  when 'salary_payment' then 'Maaş ödemesi · ' || (select pr.display_name from salary_payments y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id)
 end`;
 const CASH_SUMS = `
   coalesce(sum(m.amount) filter (where m.source = 'payment'), 0)::numeric(14,2)::numeric(14,2)::text as collections,
@@ -49,6 +50,7 @@ const CASH_SUMS = `
   (-coalesce(sum(m.amount) filter (where m.source = 'expense'), 0))::numeric(14,2)::text as expenses,
   (-coalesce(sum(m.amount) filter (where m.source = 'supplier_payment'), 0))::numeric(14,2)::text as supplier_payments,
   (-coalesce(sum(m.amount) filter (where m.source = 'commission_payout'), 0))::numeric(14,2)::text as commission_payouts,
+  (-coalesce(sum(m.amount) filter (where m.source = 'salary_payment'), 0))::numeric(14,2)::text as salary_payments,
   coalesce(sum(m.amount), 0)::numeric(14,2)::text as net_cash`;
 
 const gelirGider: Runner = async (a) => {
@@ -65,12 +67,12 @@ const gelirGider: Runner = async (a) => {
        from performed_procedures where status = 'completed' and completed_at >= $1 and completed_at < $2 group by 1`, args);
   const periods = [...new Set([...cash.rows.map((x) => x.period), ...earned.rows.map((x) => x.period)])].sort();
   const em = new Map(earned.rows.map((x) => [x.period, x.v]));
-  const zero = { collections: "0.00", refunds: "0.00", expenses: "0.00", supplier_payments: "0.00", commission_payouts: "0.00", net_cash: "0.00" };
+  const zero = { collections: "0.00", refunds: "0.00", expenses: "0.00", supplier_payments: "0.00", commission_payouts: "0.00", salary_payments: "0.00", net_cash: "0.00" };
   const list = periods.map((p) => {
     const x = cash.rows.find((y) => y.period === p) ?? zero;
     const [pf, pt] = by === "day" ? [p, p] : by === "week" ? [p, addDays(p, 6)] : [`${p}-01`, lastDay(p)];
     return { period: by === "week" ? `${p.slice(8, 10)}.${p.slice(5, 7)}.${p.slice(0, 4)} haftası` : p, treatment: em.get(p) ?? "0.00", collections: x.collections, refunds: x.refunds, expenses: x.expenses, supplierPayments: x.supplier_payments,
-      commissionPayouts: x.commission_payouts, netCash: x.net_cash,
+      commissionPayouts: x.commission_payouts, salaryPayments: x.salary_payments, netCash: x.net_cash,
       _drill: { report: "nakit-hareketleri", params: { from: pf < a.r.from ? a.r.from : pf, to: pt > a.r.to ? a.r.to : pt } } };
   });
   const t = await one(a, `select ${CASH_SUMS}, (select coalesce(sum(amount), 0) from performed_procedures where status = 'completed' and completed_at >= $1 and completed_at < $2)::numeric(14,2)::text as treatment
@@ -78,13 +80,13 @@ const gelirGider: Runner = async (a) => {
   return {
     columns: [col("period", by === "day" ? "Gün" : by === "week" ? "Hafta (Pazartesi)" : "Ay"), col("treatment", "Tedavi tutarı (kazanılmış)", "money"), col("collections", "Tahsilat", "money"),
       col("refunds", "İade", "money"), col("expenses", "Gider", "money"), col("supplierPayments", "Tedarikçi ödemesi", "money"),
-      col("commissionPayouts", "Prim ödemesi", "money"), col("netCash", "Net nakit akışı", "money")],
+      col("commissionPayouts", "Prim ödemesi", "money"), col("salaryPayments", "Maaş ödemesi", "money"), col("netCash", "Net nakit akışı", "money")],
     rows: list,
     totals: { treatment: t.treatment, collections: t.collections, refunds: t.refunds, expenses: t.expenses, supplierPayments: t.supplier_payments,
-      commissionPayouts: t.commission_payouts, netCash: t.net_cash },
+      commissionPayouts: t.commission_payouts, salaryPayments: t.salary_payments, netCash: t.net_cash },
     totalLabels: { treatment: ["Tedavi tutarı", "money"], collections: ["Tahsilat", "money"], refunds: ["İade", "money"], expenses: ["Gider", "money"],
-      supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], netCash: ["Net nakit akışı", "money"] },
-    notes: ["Net nakit akışı = tahsilat − iade − gider − tedarikçi ödemesi − prim ödemesi (ters kayıtlar dahil). Kâr değildir.",
+      supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], salaryPayments: ["Maaş ödemesi", "money"], netCash: ["Net nakit akışı", "money"] },
+    notes: ["Net nakit akışı = tahsilat − iade − gider − tedarikçi ödemesi − prim ödemesi − maaş ödemesi (ters kayıtlar dahil). Kâr değildir.",
       "Tedavi tutarı kazanılmış işlem bedelidir (snapshot); nakit değildir ve net nakde katılmaz. Tutarlar KDV ayrımı yapılmadan kayıtlı tutardır."],
   };
 };
@@ -94,7 +96,7 @@ function lastDay(ym: string) {
 }
 
 const nakit: Runner = async (a) => {
-  const src = pick(a.p.source, ["payment", "refund", "expense", "supplier_payment", "commission_payout"] as const);
+  const src = pick(a.p.source, ["payment", "refund", "expense", "supplier_payment", "commission_payout", "salary_payment"] as const);
   const args = [a.r.fromUtc, a.r.toUtc, src];
   const { list, truncated } = await rows(a,
     `select m.id, m.occurred_at as at, m.source, ca.name as account, m.amount::text, ${MOVEMENT_LABEL} as label,
@@ -103,21 +105,21 @@ const nakit: Runner = async (a) => {
        from cash_movements m join cash_accounts ca on ca.id = m.cash_account_id
       where m.occurred_at >= $1 and m.occurred_at < $2 and ($3::text is null or m.source = $3) order by m.occurred_at, m.created_at`, args);
   const t = await one(a, `select count(*)::int as n, ${CASH_SUMS} from cash_movements m where m.occurred_at >= $1 and m.occurred_at < $2 and ($3::text is null or m.source = $3)`, args);
-  const SRC: Record<string, string> = { payment: "Tahsilat", refund: "İade", expense: "Gider", supplier_payment: "Tedarikçi ödemesi", commission_payout: "Prim ödemesi" };
+  const SRC: Record<string, string> = { payment: "Tahsilat", refund: "İade", expense: "Gider", supplier_payment: "Tedarikçi ödemesi", commission_payout: "Prim ödemesi", salary_payment: "Maaş ödemesi" };
   return {
     columns: [col("at", "Zaman", "datetime"), col("sourceLabel", "Kaynak", "badge"), col("label", "Açıklama"), col("account", "Kasa / banka"), col("amount", "Tutar (±)", "money")],
     rows: list.map((m) => ({ at: m.at, source: m.source, sourceLabel: SRC[m.source], label: m.label, account: m.account, amount: m.amount,
       ...(m.patient_id ? { _drill: { patientId: m.patient_id, tab: "finans" } } : {}) })),
-    totals: { count: t.n, collections: t.collections, refunds: t.refunds, expenses: t.expenses, supplierPayments: t.supplier_payments, commissionPayouts: t.commission_payouts, netCash: t.net_cash },
+    totals: { count: t.n, collections: t.collections, refunds: t.refunds, expenses: t.expenses, supplierPayments: t.supplier_payments, commissionPayouts: t.commission_payouts, salaryPayments: t.salary_payments, netCash: t.net_cash },
     totalLabels: { count: ["Hareket", "int"], collections: ["Tahsilat", "money"], refunds: ["İade", "money"], expenses: ["Gider", "money"],
-      supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], netCash: ["Net", "money"] },
+      supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], salaryPayments: ["Maaş ödemesi", "money"], netCash: ["Net", "money"] },
     truncated,
   };
 };
 
 /** Mali müşavir dönem dökümü (Faz 2.3): nakit hareketleri + belge no (makbuz) + karşı taraf; CSV ile birebir. */
 const muhasebeDonem: Runner = async (a) => {
-  const kind = pick(a.p.kind, ["payment", "refund", "expense", "supplier_payment", "commission_payout"] as const);
+  const kind = pick(a.p.kind, ["payment", "refund", "expense", "supplier_payment", "commission_payout", "salary_payment"] as const);
   const args = [a.r.fromUtc, a.r.toUtc, kind];
   const { list, truncated } = await rows(a,
     `select m.id, m.occurred_at as at, m.source, ca.name as account, ca.kind as account_kind, m.amount::text,
@@ -127,7 +129,8 @@ const muhasebeDonem: Runner = async (a) => {
                           when 'refund' then (select p.first_name || ' ' || p.last_name from refunds f join payments x on x.id = f.payment_id join patients p on p.id = x.patient_id where f.id = m.source_id)
                           when 'expense' then (select e.category || coalesce(' · ' || e.description, '') from expenses e where e.id = m.source_id)
                           when 'supplier_payment' then (select s.name from supplier_entries se join suppliers s on s.id = se.supplier_id where se.id = m.source_id)
-                          when 'commission_payout' then (select pr.display_name from commission_payouts y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id) end as party,
+                          when 'commission_payout' then (select pr.display_name from commission_payouts y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id)
+                          when 'salary_payment' then (select pr.display_name from salary_payments y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id) end as party,
             case m.source when 'payment' then (select x.method from payments x where x.id = m.source_id)
                           when 'refund' then (select f.method from refunds f where f.id = m.source_id) end as method,
             case m.source when 'payment' then (select x.patient_id from payments x where x.id = m.source_id)
@@ -135,15 +138,15 @@ const muhasebeDonem: Runner = async (a) => {
        from cash_movements m join cash_accounts ca on ca.id = m.cash_account_id
       where m.occurred_at >= $1 and m.occurred_at < $2 and ($3::text is null or m.source = $3) order by m.occurred_at, m.created_at`, args);
   const t = await one(a, `select count(*)::int as n, ${CASH_SUMS} from cash_movements m where m.occurred_at >= $1 and m.occurred_at < $2 and ($3::text is null or m.source = $3)`, args);
-  const SRC: Record<string, string> = { payment: "Tahsilat", refund: "İade", expense: "Gider", supplier_payment: "Tedarikçi ödemesi", commission_payout: "Prim ödemesi" };
+  const SRC: Record<string, string> = { payment: "Tahsilat", refund: "İade", expense: "Gider", supplier_payment: "Tedarikçi ödemesi", commission_payout: "Prim ödemesi", salary_payment: "Maaş ödemesi" };
   const METHOD: Record<string, string> = { cash: "Nakit", card_manual: "Kart (POS)", bank_transfer: "Havale/EFT", other: "Diğer", online: "Online" };
   return {
     columns: [col("at", "Tarih", "datetime"), col("docNo", "Belge no"), col("kindLabel", "Tür", "badge"), col("party", "Karşı taraf / açıklama"), col("method", "Yöntem"), col("account", "Kasa / banka"), col("amount", "Tutar (±)", "money")],
     rows: list.map((m) => ({ at: m.at, docNo: m.doc_no ?? "", kind: m.source, kindLabel: SRC[m.source], party: m.party ?? "", method: m.method ? METHOD[m.method] ?? m.method : "", account: m.account, amount: m.amount,
       ...(m.patient_id ? { _drill: { patientId: m.patient_id, tab: "finans" } } : {}) })),
-    totals: { count: t.n, collections: t.collections, refunds: t.refunds, expenses: t.expenses, supplierPayments: t.supplier_payments, commissionPayouts: t.commission_payouts, netCash: t.net_cash },
+    totals: { count: t.n, collections: t.collections, refunds: t.refunds, expenses: t.expenses, supplierPayments: t.supplier_payments, commissionPayouts: t.commission_payouts, salaryPayments: t.salary_payments, netCash: t.net_cash },
     totalLabels: { count: ["Hareket", "int"], collections: ["Tahsilat", "money"], refunds: ["İade", "money"], expenses: ["Gider", "money"],
-      supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], netCash: ["Net", "money"] },
+      supplierPayments: ["Tedarikçi ödemesi", "money"], commissionPayouts: ["Prim ödemesi", "money"], salaryPayments: ["Maaş ödemesi", "money"], netCash: ["Net", "money"] },
     notes: ["Resmî muhasebe fişi / hesap planı değildir; mali müşavir kendi hesap planına aktarır.", "Fatura / e-Arşiv belgeleri bu dökümde değildir; e-belge sağlayıcısından alınır. Belge no sütunu PİA-DENT makbuz numarasıdır (TM tahsilat, IM iade)."],
     truncated,
   };

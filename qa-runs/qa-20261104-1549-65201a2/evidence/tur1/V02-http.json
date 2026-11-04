@@ -1,0 +1,36 @@
+{
+ "case": "V02",
+ "run": "mw24uuag",
+ "finding": 201,
+ "diagnosis": 201,
+ "appointment": 201,
+ "checkin": 200,
+ "performed": 422,
+ "performedBody": {
+  "code": "VALIDATION_FAILED",
+  "message": "Lütfen işaretli alanları düzeltin.",
+  "field_errors": {
+   "location": "Bu işlem yüzey almaz."
+  },
+  "correlation_id": "dd51665d-ba9b-433b-998b-e442e4fd3425"
+ },
+ "tooth16": [
+  {
+   "id": "c6a5095f-7482-412b-955a-25d1155c3cb2",
+   "tooth": "16",
+   "surfaces": [
+    "O",
+    "M"
+   ],
+   "type": "caries",
+   "note": "‹note:6›",
+   "status": "current",
+   "at": "2026-11-04T13:08:55.215Z",
+   "by": "‹by:13›"
+  }
+ ],
+ "performed16": [],
+ "otherTeethUnchanged": true,
+ "otherPatientUnchanged": true,
+ "verdict": "FAIL"
+}

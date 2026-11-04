@@ -1,0 +1,11 @@
+{
+ "upload": 200,
+ "fileStatus": "quarantined",
+ "secretaryTasksStatus": 200,
+ "secretarySeesFileId": false,
+ "secretaryTask": [],
+ "adminSeesFileId": false,
+ "adminTask": [],
+ "adminFileDetail": 404,
+ "dentistSeesFileId": true
+}

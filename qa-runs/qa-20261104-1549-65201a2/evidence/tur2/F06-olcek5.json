@@ -1,0 +1,23 @@
+[
+ {
+  "prof": "masaustu",
+  "putStatus": 200,
+  "root": "18px",
+  "axisFont": "12.375px",
+  "clipped": [],
+  "overflow": 0
+ },
+ {
+  "prof": "mobil",
+  "putStatus": 200,
+  "root": "18px",
+  "axisFont": "21.375px",
+  "clipped": [
+   "1.000",
+   "2.000",
+   "3.000",
+   "4.000"
+  ],
+  "overflow": 0
+ }
+]

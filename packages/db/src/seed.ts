@@ -7,7 +7,7 @@ import { randomBytes } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
-import { normalizeSearch, zonedToUtc, localDate, addDays, normalizeDocumentText, clinicalOutputStarterBody } from "@viadent/contracts";
+import { normalizeSearch, zonedToUtc, localDate, addDays, normalizeDocumentText, clinicalOutputStarterBody, STANDARD_PROCEDURES } from "@viadent/contracts";
 import { createHash } from "node:crypto";
 import { encryptSecret, newWebhookSecret } from "./bridge.js";
 import { loadEnv, requireEnv } from "./env.js";
@@ -172,18 +172,8 @@ export async function seed(connectionString: string, opts: { password?: string; 
           [tenantId, patientIds[0], JSON.stringify({ allergy: { value: "yes", detail: "Penisilin (sentetik demo)" }, anticoagulant: { value: "no" }, diabetes: { value: "no" } }),
            ["allergy"], membershipIds[dentistKey]],
         );
-        // Görev 2: DEMO işlem kataloğu (klinik içi kodlar; resmî kod sistemi değildir) ve yayınlanmış sentetik tarife.
-        const catalog: [string, string, string, string, number, string][] = [
-          ["MUA-01", "Muayene ve tedavi planlama", "Muayene", "mouth", 20, "600.00"],
-          ["RAD-01", "Periapikal röntgen", "Radyoloji", "tooth", 10, "250.00"],
-          ["TEM-01", "Diş taşı temizliği (tüm ağız)", "Periodontoloji", "mouth", 30, "1200.00"],
-          ["DOL-01", "Kompozit dolgu (tek yüz)", "Restoratif", "surface", 30, "1800.00"],
-          ["DOL-02", "Kompozit dolgu (iki yüz)", "Restoratif", "surface", 45, "2300.00"],
-          ["KAN-01", "Kanal tedavisi (tek kanal)", "Endodonti", "tooth", 60, "3500.00"],
-          ["CEK-01", "Diş çekimi (basit)", "Cerrahi", "tooth", 30, "1500.00"],
-          ["KRN-01", "Zirkonyum kron", "Protez", "tooth", 45, "7500.00"],
-          ["FLU-01", "Flor uygulaması (çene)", "Koruyucu", "arch", 15, "500.00"],
-        ];
+        // Görev 2 + ADR-094: DEMO işlem kataloğu = PİA-DENT standart işlem listesi (klinik içi kodlar; resmî kod sistemi değildir) ve yayınlanmış sentetik tarife.
+        const catalog: [string, string, string, string, number, string][] = STANDARD_PROCEDURES.map((p) => [p.code, p.name, p.category, p.toothScope, p.minutes, p.demoPrice]);
         const procIds: Record<string, string> = {};
         for (const [code, name, cat, scope, min] of catalog) {
           const r = await c.query(
@@ -200,6 +190,10 @@ export async function seed(connectionString: string, opts: { password?: string; 
           await c.query("insert into tariff_items(tenant_id, tariff_version_id, procedure_id, price) values ($1,$2,$3,$4)", [tenantId, tv.rows[0].id, procIds[code], price]);
         }
         await c.query("update tariff_versions set status = 'published', published_at = now(), published_by = $2 where id = $1", [tv.rows[0].id, creator]);
+        // ADR-094: işlem türleri varsayılan katalog işlemine bağlı (randevuda fiyat + hasta bakiyesi görünür).
+        for (const [typeName, code] of [["Kontrol muayenesi", "MUA-02"], ["Dolgu", "DOL-01"], ["Diş taşı temizliği", "TEM-01"], ["Kanal tedavisi seansı", "KAN-01"], ["Diş çekimi", "CEK-01"]] as const) {
+          await c.query("update appointment_types set procedure_id = $2 where name = $1", [typeName, procIds[code]]);
+        }
         // İlk hastaya kabul edilmiş sentetik plan: 16 numaralı dişe kanal + kron, 26 MO dolgu.
         const dentistMembership = membershipIds[t.key === "A" ? "a_dentist" : "b_dentist"]!;
         const plan = await c.query("insert into treatment_plans(tenant_id, patient_id, title, created_by) values ($1,$2,'Başlangıç tedavi planı (sentetik)',$3) returning id",
@@ -404,6 +398,12 @@ export async function seed(connectionString: string, opts: { password?: string; 
         await mv(ans, ansLot, "receipt", "30", { supplier: med });
         await mv(eld, null, "receipt", "4", { supplier: med });
         await mv(imp, impLot, "usage", "-1", { patient: patientIds[0], reason: "Sentetik demo kullanımı" });
+        // Madde 9 (ADR-097): sentetik tedarikçi fiyat listesi — randevu malzeme gideri bu fiyatlardan hesaplanır.
+        for (const [itemId, price, code] of [[imp, "1500.00", "SNT-IMP-4010"], [ans, "45.00", "SNT-KRT"], [eld, "120.00", "SNT-ELD-M"]] as const) {
+          await c.query(
+            `insert into supplier_prices(tenant_id, supplier_id, stock_item_id, unit_price, valid_from, supplier_code, note, created_by)
+             values ($1,$2,$3,$4,$5,$6,'Sentetik demo fiyatı',$7)`, [tenantId, med, itemId, price, addDays(today6, -30), code, creator]);
+        }
         const bankId = cash.rows.find((r) => r.kind === "bank")!.id;
         const sp = await c.query(
           `insert into supplier_entries(tenant_id, supplier_id, kind, amount, description, cash_account_id, occurred_at, created_by)

@@ -7,10 +7,10 @@ import { useData } from "@/lib/use-data";
 import { Alert, Drawer, ErrorState, Loading, SelectField, TextField } from "@/components/ui";
 
 interface Block { weekday: number; start: number; end: number }
-interface Prac { id: string; name: string; title: string | null; active: boolean; membershipId: string | null; memberName: string | null; schedule: Block[] }
+export interface Prac { id: string; name: string; title: string | null; active: boolean; membershipId: string | null; memberName: string | null; schedule: Block[] }
 interface Admin {
   practitioners: Prac[]; chairs: { id: string; name: string; active: boolean }[];
-  appointmentTypes: { id: string; name: string; defaultMinutes: number; active: boolean }[]; dentistMemberships: { id: string; name: string }[];
+  appointmentTypes: { id: string; name: string; defaultMinutes: number; active: boolean; procedureId?: string | null; procedureLabel?: string | null }[]; dentistMemberships: { id: string; name: string }[];
 }
 const hhmm = (m: number) => (m === 1440 ? "24:00" : `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
 export function scheduleSummary(s: Block[]) {
@@ -20,7 +20,7 @@ export function scheduleSummary(s: Block[]) {
   return [...byDay.entries()].sort((a, b) => a[0] - b[0]).map(([d, r]) => `${WEEKDAY_SHORT[d]} ${r.join(", ")}`).join(" · ");
 }
 
-export function useAdminResources() { return useData<Admin>("/admin/resources"); }
+export function useAdminResources(enabled = true) { return useData<Admin>(enabled ? "/admin/resources" : null); }
 
 export function ResourcesPanel({ notify }: { notify: (k: "success" | "error", t: string) => void }) {
   const data = useAdminResources();
@@ -39,7 +39,7 @@ export function ResourcesPanel({ notify }: { notify: (k: "success" | "error", t:
     <div className="stack">
       <section className="card">
         <div className="card-head">
-          <div><h2>Hekimler ve çalışma saatleri</h2><p className="muted small">Çalışma saati dışı randevu uyarı verir; kapatmalar engeller.</p></div>
+          <div><h2>Hekimler ve çalışma saatleri</h2><p className="muted small">Çalışma saati dışı randevu uyarı verir; kapatmalar engeller. Ücret modeli, prim ve maaş hakedişi <a href="/hekimler">Hekimler</a> modülündedir.</p></div>
           <button className="btn btn-primary" onClick={() => setEditing("new")}><Plus size={17} aria-hidden />Hekim ekle</button>
         </div>
         <ul className="list">
@@ -79,7 +79,7 @@ export function ResourcesPanel({ notify }: { notify: (k: "success" | "error", t:
   );
 }
 
-function PractitionerDrawer({ p, dentists, onClose, onSaved }: { p: Prac | null; dentists: { id: string; name: string }[]; onClose: () => void; onSaved: (m: string) => void }) {
+export function PractitionerDrawer({ p, dentists, onClose, onSaved }: { p: Prac | null; dentists: { id: string; name: string }[]; onClose: () => void; onSaved: (m: string) => void }) {
   const [f, setF] = useState({ displayName: p?.name ?? "", title: p?.title ?? "", membershipId: p?.membershipId ?? "", active: p?.active ?? true });
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState(false);
@@ -108,7 +108,7 @@ function PractitionerDrawer({ p, dentists, onClose, onSaved }: { p: Prac | null;
   );
 }
 
-function ScheduleDrawer({ p, onClose, onSaved }: { p: Prac; onClose: () => void; onSaved: () => void }) {
+export function ScheduleDrawer({ p, onClose, onSaved }: { p: Prac; onClose: () => void; onSaved: () => void }) {
   const [rows, setRows] = useState(() => {
     const out: { weekday: number; on: boolean; start: string; end: string }[] = [];
     for (let d = 1; d <= 7; d++) {

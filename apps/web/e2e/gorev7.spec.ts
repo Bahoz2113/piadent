@@ -12,7 +12,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await expect(page.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
 }
 const noOverflow = async (page: Page) => {
   const vw = page.viewportSize()!.width;
@@ -54,8 +54,8 @@ test("veri aktarımı: CSV ön kontrol → hatalı satır görünür → onay �
   await detail.getByRole("button", { name: /Hatalı satırları indir/ }).click();
   const errCsv = readFileSync(await (await dl).path(), "utf8");
   expect(errCsv).toContain("satir;durum;hatalar");
-  page.once("dialog", (d) => void d.accept());
   await detail.getByRole("button", { name: "2 satırı aktar" }).click();
+  await page.getByRole("alertdialog", { name: "Aktarımı onaylayın" }).getByRole("button", { name: "Aktar" }).click();
   await expect(page.getByText("2 kayıt aktarıldı.")).toBeVisible();
   await expect(detail.getByText("Aktarıldı").first()).toBeVisible();
   // aynı dosya ikinci kez → aynı aktarım açılır
@@ -111,7 +111,7 @@ test("iki adımlı doğrulama: kurulum → kodla giriş → yönetici sıfırlam
   // etkinleştirmede kullanılan adımdan sonraki kod
   await p2.getByLabel("Doğrulama kodu").fill(totp(secret, Math.floor(Date.now() / 30000) + 1));
   await p2.getByRole("button", { name: "Doğrula ve giriş yap" }).click();
-  await expect(p2.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
+  await expect(p2.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
   await ctx2.close();
 
   const ctx3 = await browser.newContext();
@@ -120,8 +120,10 @@ test("iki adımlı doğrulama: kurulum → kodla giriş → yönetici sıfırlam
   await admin.goto("/yonetim?sekme=ekip");
   const row = admin.getByRole("row").filter({ hasText: email });
   await expect(row.getByText("Açık", { exact: true })).toBeVisible();
-  admin.once("dialog", (d) => void d.accept("E2E: kimlik yüz yüze doğrulandı"));
   await row.getByRole("button", { name: "Doğrulayıcıyı sıfırla" }).click();
+  const mfa = admin.getByRole("alertdialog", { name: "İki adımlı doğrulamayı sıfırla" });
+  await mfa.getByRole("textbox").fill("E2E: kimlik yüz yüze doğrulandı");
+  await mfa.getByRole("button", { name: "Sıfırla" }).click();
   await expect(admin.getByText("İki adımlı doğrulama sıfırlandı.")).toBeVisible();
   await expect(row.getByText("Kapalı", { exact: true })).toBeVisible();
   await ctx3.close();
@@ -131,9 +133,11 @@ test("hasta 360: KVKK veri indirme gerekçe ister ve JSON verir", async ({ page 
   await login(page, "yonetici@demo-yesil.test");
   await page.goto("/hastalar?q=1");
   await page.locator("a.rowlink").first().click();
-  page.once("dialog", (d) => void d.accept("Veri sahibi başvurusu E2E"));
   const dl = page.waitForEvent("download");
   await page.getByRole("button", { name: "Veriyi indir" }).click();
+  const why = page.getByRole("alertdialog", { name: "Hasta verisini indir" });
+  await why.getByRole("textbox").fill("Veri sahibi başvurusu E2E");
+  await why.getByRole("button", { name: "İndir" }).click();
   const doc = JSON.parse(readFileSync(await (await dl).path(), "utf8"));
   expect(doc.kind).toBe("patient");
   expect(doc.sections.patient).toHaveLength(1);

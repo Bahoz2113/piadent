@@ -92,8 +92,10 @@ test("Hasta 360: kimlik no herkese maskeli; 'Göster' gerekçe ister, tam değer
   const dd = page.locator("dd", { hasText: "T.C. Kimlik No" }).first();
   await expect(dd).toContainText("•");
   await expect(dd).not.toContainText(id);
-  page.once("dialog", (dlg) => void dlg.accept("Resmî evrak için kimlik doğrulaması (E2E)"));
   await dd.getByRole("button", { name: "Göster" }).click();
+  const idDlg = page.getByRole("alertdialog", { name: "Kimlik numarasını göster" });
+  await idDlg.getByRole("textbox").fill("Resmî evrak için kimlik doğrulaması (E2E)");
+  await idDlg.getByRole("button", { name: "Göster" }).click();
   await expect(dd).toContainText(id);
   await expect(dd.getByRole("button", { name: "Göster" })).toBeHidden();
 });
@@ -131,8 +133,10 @@ test("destek erişimi dört göz: Mavi'de talep 'Onay bekliyor', açan onaylayam
   await expect(row2.getByText("Etkin")).toBeVisible();
   if (process.env.E2E_SHOTS_DIR) await p2.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/g11-dort-goz.png`, fullPage: true });
   // temizlik: erişimi kaldır
-  p2.once("dialog", (d) => void d.accept("E2E temizlik"));
   await row2.getByRole("button", { name: "Kaldır" }).click();
+  const end2 = p2.getByRole("alertdialog", { name: "Destek erişimini sonlandır" });
+  await end2.getByRole("textbox").fill("E2E temizlik");
+  await end2.getByRole("button", { name: "Sonlandır" }).click();
   await expect(row2.getByText("Kaldırıldı")).toBeVisible();
   await b.close();
 });

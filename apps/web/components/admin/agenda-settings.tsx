@@ -6,11 +6,14 @@ import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
+import { confirmDialog } from "@/components/dialogs";
 import { useAdminResources } from "./resources";
 
 export function TypesPanel({ notify }: { notify: (k: "success" | "error", t: string) => void }) {
   const data = useAdminResources();
-  const [f, setF] = useState({ name: "", defaultMinutes: "30" });
+  const procs = useData<{ items: { id: string; code: string; name: string; active: boolean }[] }>("/procedures");
+  const procOptions = (procs.data?.items ?? []).filter((p) => p.active);
+  const [f, setF] = useState({ name: "", defaultMinutes: "30", procedureId: "" });
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   async function act(key: string, fn: () => Promise<unknown>, ok: string) {
@@ -21,18 +24,30 @@ export function TypesPanel({ notify }: { notify: (k: "success" | "error", t: str
   if (data.error) return <div className="card"><ErrorState error={data.error} /></div>;
   return (
     <section className="card">
-      <div className="card-head"><div><h2>İşlem türleri</h2><p className="muted small">Randevu verirken seçilir; süreyi varsayılana ayarlar. Fiyat/tarife Görev 2'de.</p></div></div>
+      <div className="card-head"><div><h2>İşlem türleri</h2><p className="muted small">Randevu verirken seçilir; süreyi varsayılana ayarlar. Bağlı işlem seçilirse randevuda o işlemin tarife fiyatı ve hastanın bakiyesi görünür (fiyatlar: Katalog ve tarife).</p></div></div>
       <ul className="list">
         {data.data!.appointmentTypes.map((t) => (
           <li key={t.id} className="row" style={{ padding: "10px 20px", justifyContent: "space-between" }}>
             <span><strong>{t.name}</strong> <span className="muted small">· {t.defaultMinutes} dk</span> {!t.active && <span className="badge badge-neutral">Pasif</span>}</span>
-            <button className="btn btn-sm" disabled={busy === t.id} onClick={() => void act(t.id, () => api(`/appointment-types/${t.id}`, { method: "PATCH", body: { name: t.name, defaultMinutes: t.defaultMinutes, active: !t.active } }), "Güncellendi.")}>{t.active ? "Pasifleştir" : "Etkinleştir"}</button>
+            <span className="row" style={{ gap: 8 }}>
+              <label className="sr-only" htmlFor={`tp-${t.id}`}>{t.name} için bağlı işlem</label>
+              <select id={`tp-${t.id}`} className="select" style={{ minHeight: 34, maxWidth: 260 }} value={t.procedureId ?? ""} disabled={busy === t.id}
+                onChange={(e) => void act(t.id, () => api(`/appointment-types/${t.id}`, { method: "PATCH", body: { name: t.name, defaultMinutes: t.defaultMinutes, active: t.active, procedureId: e.target.value || null } }), "Bağlı işlem güncellendi.")}>
+                <option value="">Bağlı işlem yok</option>
+                {procOptions.map((p) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
+              </select>
+              <button className="btn btn-sm" disabled={busy === t.id} onClick={() => void act(t.id, () => api(`/appointment-types/${t.id}`, { method: "PATCH", body: { name: t.name, defaultMinutes: t.defaultMinutes, active: !t.active } }), "Güncellendi.")}>{t.active ? "Pasifleştir" : "Etkinleştir"}</button>
+            </span>
           </li>
         ))}
       </ul>
-      <form className="form-grid card-pad" onSubmit={(e) => { e.preventDefault(); void act("new", () => api("/appointment-types", { body: { name: f.name, defaultMinutes: Number(f.defaultMinutes) } }), "İşlem türü eklendi.").then((ok) => ok && setF({ name: "", defaultMinutes: "30" })); }}>
+      <form className="form-grid card-pad" onSubmit={(e) => { e.preventDefault(); void act("new", () => api("/appointment-types", { body: { name: f.name, defaultMinutes: Number(f.defaultMinutes), procedureId: f.procedureId || undefined } }), "İşlem türü eklendi.").then((ok) => ok && setF({ name: "", defaultMinutes: "30", procedureId: "" })); }}>
         <TextField label="Yeni işlem türü" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} error={err?.fieldErrors.name} />
         <TextField label="Varsayılan süre (dk)" type="number" min={5} max={720} step={5} value={f.defaultMinutes} onChange={(e) => setF({ ...f, defaultMinutes: e.target.value })} error={err?.fieldErrors.defaultMinutes} />
+        <SelectField label="Bağlı işlem (isteğe bağlı)" value={f.procedureId} onChange={(e) => setF({ ...f, procedureId: e.target.value })} error={err?.fieldErrors.procedureId}>
+          <option value="">Yok</option>
+          {procOptions.map((p) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
+        </SelectField>
         <button className="btn" type="submit" disabled={busy === "new" || !f.name.trim()} style={{ justifySelf: "start" }}><Plus size={16} aria-hidden />Ekle</button>
       </form>
     </section>
@@ -48,7 +63,7 @@ export function ClosuresPanel({ notify }: { notify: (k: "success" | "error", t: 
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   async function cancel(c: Closure) {
-    if (!window.confirm(`“${c.reason}” kapatması iptal edilsin mi?`)) return;
+    if (!(await confirmDialog({ title: "Kapatmayı iptal et", message: `“${c.reason}” kapatması iptal edilsin mi?`, confirmLabel: "İptal et", cancelLabel: "Vazgeç", danger: true }))) return;
     setBusy(c.id);
     try { await api(`/closures/${c.id}/cancel`, { body: {} }); notify("success", "Kapatma iptal edildi."); await list.reload(); }
     catch (e) { notify("error", (e as ApiFailure).message); } finally { setBusy(null); }

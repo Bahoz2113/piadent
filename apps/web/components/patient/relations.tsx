@@ -2,12 +2,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Plus, ShieldCheck, Users } from "lucide-react";
-import { formatPhone, RELATION_LABELS, RELATIONS } from "@viadent/contracts";
+import { limitPhoneInput, formatPhone, RELATION_LABELS, RELATIONS } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate } from "@/lib/format";
 import { Alert, Drawer, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
+import { alertDialog, promptDialog } from "@/components/dialogs";
 
 interface Relation {
   id: string; direction: "direct" | "inverse"; relationLabel: string; personPatientId: string | null; personName: string; personFileNo: number | null;
@@ -23,10 +24,10 @@ export function RelationsCard({ patientId, isMinor, onChanged }: { patientId: st
   const hasRep = items.some((r) => r.direction === "direct" && r.isLegalRepresentative);
 
   async function end(r: Relation) {
-    const reason = window.prompt("İlişki sonlandırılacak (kayıt silinmez). Neden?");
+    const reason = await promptDialog({ title: "İlişkiyi sonlandır", message: "İlişki sonlandırılacak (kayıt silinmez).", inputLabel: "Neden?", required: true, confirmLabel: "Sonlandır", danger: true });
     if (!reason) return;
     try { await api(`/patients/${patientId}/relations/${r.id}/end`, { body: { reason } }); await list.reload(); onChanged(); }
-    catch (e) { window.alert((e as ApiFailure).message); }
+    catch (e) { await alertDialog({ title: "İşlem yapılamadı", message: (e as ApiFailure).message }); }
   }
 
   return (
@@ -111,7 +112,7 @@ function RelationDrawer({ patientId, onClose, onSaved }: { patientId: string; on
         )) : (
           <div className="form-grid">
             <TextField label="Ad soyad" required value={f.contactName} onChange={(e) => setF({ ...f, contactName: e.target.value })} error={err?.fieldErrors.contactName} />
-            <TextField label="Telefon" type="tel" value={f.contactPhone} onChange={(e) => setF({ ...f, contactPhone: e.target.value })} error={err?.fieldErrors.contactPhone} />
+            <TextField label="Telefon" type="tel" inputMode="tel" value={f.contactPhone} onChange={(e) => setF({ ...f, contactPhone: limitPhoneInput(e.target.value) })} error={err?.fieldErrors.contactPhone} placeholder="0555 123 45 67" />
           </div>
         )}
         <SelectField label="Yakınlık" value={f.relation} onChange={(e) => setF({ ...f, relation: e.target.value })}>

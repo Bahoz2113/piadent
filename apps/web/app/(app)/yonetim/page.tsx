@@ -6,6 +6,7 @@ import { TeamPanel } from "@/components/admin/team";
 import { ResourcesPanel } from "@/components/admin/resources";
 import { ClosuresPanel, TypesPanel } from "@/components/admin/agenda-settings";
 import { CatalogPanel } from "@/components/admin/catalog";
+import { ProductsPanel } from "@/components/admin/products";
 import { TemplatesPanel } from "@/components/admin/templates";
 import { AnamnesisTemplatesPanel } from "@/components/admin/anamnesis-templates";
 import { IntegrationsPanel } from "@/components/admin/integrations";
@@ -18,6 +19,7 @@ const TABS = [
   { id: "turler", label: "İşlem türleri", perm: "schedule.manage" },
   { id: "kapatma", label: "Kapatmalar", perm: "schedule.manage" },
   { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
+  { id: "urunler", label: "Ürün ve fiyat listesi", perm: "stock.read" },
   { id: "belge", label: "Belge şablonları", perm: "template.manage" },
   { id: "anamnez", label: "Anamnez şablonu", perm: "anamnesis.template" },
   { id: "kopru", label: "Entegrasyonlar (PİA Köprü)", perm: "integration.read" },
@@ -51,6 +53,7 @@ export default function AdminPage() {
             {tab === "turler" && <TypesPanel notify={toast.show} />}
             {tab === "kapatma" && <ClosuresPanel notify={toast.show} />}
             {tab === "katalog" && <CatalogPanel notify={toast.show} />}
+            {tab === "urunler" && <ProductsPanel notify={toast.show} />}
             {tab === "belge" && <TemplatesPanel notify={toast.show} />}
             {tab === "anamnez" && <AnamnesisTemplatesPanel notify={toast.show} />}
             {tab === "kopru" && <IntegrationsPanel notify={toast.show} />}

@@ -7,6 +7,7 @@ import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, Drawer, EmptyState, TextField, DateField } from "@/components/ui";
+import { alertDialog, promptDialog } from "@/components/dialogs";
 
 interface FollowUp { id: string; dueDate: string; reason: string; status: string; cancelReason: string | null; practitioner: string | null; by: string; appointmentAt: string | null }
 
@@ -22,9 +23,9 @@ export function FollowUpsCard({ patientId }: { patientId: string }) {
     catch (e) { setErr(e as ApiFailure); }
   }
   async function cancel(id: string) {
-    const reason = window.prompt("Kontrol iptal gerekçesi:");
+    const reason = await promptDialog({ title: "Kontrolü iptal et", inputLabel: "İptal gerekçesi", required: true, confirmLabel: "İptal et", danger: true });
     if (!reason) return;
-    try { await api(`/follow-ups/${id}/cancel`, { body: { reason } }); void d.reload(); } catch (e) { window.alert((e as ApiFailure).message); }
+    try { await api(`/follow-ups/${id}/cancel`, { body: { reason } }); void d.reload(); } catch (e) { await alertDialog({ title: "İşlem yapılamadı", message: (e as ApiFailure).message }); }
   }
   const items = d.data?.items ?? [];
   return (

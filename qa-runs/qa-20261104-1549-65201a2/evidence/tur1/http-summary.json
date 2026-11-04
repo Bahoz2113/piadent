@@ -1,0 +1,114 @@
+{
+ "run": "mw24uuag",
+ "started": "2026-11-04T13:08:54.616Z",
+ "finished": "2026-11-04T13:08:56.058Z",
+ "base": "http://127.0.0.1:4000",
+ "patient": "7de4e30a-0e3b-4f55-838a-be3c4be1dc1e",
+ "results": [
+  {
+   "id": "V01",
+   "status": "PASS",
+   "at": "2026-11-04T13:08:55.186Z",
+   "profile": "http",
+   "evidence": "evidence/V01-http.json",
+   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu"
+  },
+  {
+   "id": "V02",
+   "status": "FAIL",
+   "at": "2026-11-04T13:08:55.299Z",
+   "profile": "http",
+   "evidence": "evidence/V02-http.json",
+   "summary": "bulgu 201, tanı 201, işlem 422; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true"
+  },
+  {
+   "id": "V03",
+   "status": "PASS",
+   "at": "2026-11-04T13:08:55.344Z",
+   "profile": "http",
+   "evidence": "evidence/V03-http.json",
+   "summary": "eşzamanlı yanıtlar 201/409; 10:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT"
+  },
+  {
+   "id": "V04",
+   "status": "PASS",
+   "at": "2026-11-04T13:08:55.460Z",
+   "profile": "http",
+   "evidence": "evidence/V04-http.json",
+   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 0.00→700.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201)"
+  },
+  {
+   "id": "V05",
+   "status": "FAIL",
+   "at": "2026-11-04T13:08:55.509Z",
+   "profile": "http",
+   "evidence": "evidence/V05-http.json",
+   "summary": "sekreter düzeltme 403, hekim düzeltme 404; eski=undefined yeni=undefined; geçmişte 0 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 0, finans: 0"
+  },
+  {
+   "id": "P01",
+   "status": "PASS",
+   "at": "2026-11-04T13:08:55.736Z",
+   "profile": "http",
+   "evidence": "evidence/P01-http.json",
+   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true"
+  },
+  {
+   "id": "P02",
+   "status": "PASS",
+   "at": "2026-11-04T13:08:55.892Z",
+   "profile": "http",
+   "evidence": "evidence/P02-http.json",
+   "summary": "28 deneme, 0 beklenmedik"
+  },
+  {
+   "id": "P03",
+   "status": "PASS",
+   "at": "2026-11-04T13:08:56.058Z",
+   "profile": "http",
+   "evidence": "evidence/P03-http.json",
+   "summary": "8 kontrol, 0 beklenmedik"
+  }
+ ],
+ "bugs": [
+  {
+   "id": "QA-V02",
+   "severity": "S1",
+   "state": "OPEN",
+   "title": "Odontogram kaydı tutarsız",
+   "finding": {
+    "id": "c6a5095f-7482-412b-955a-25d1155c3cb2"
+   },
+   "performed": {
+    "code": "VALIDATION_FAILED",
+    "message": "Lütfen işaretli alanları düzeltin.",
+    "field_errors": {
+     "location": "Bu işlem yüzey almaz."
+    },
+    "correlation_id": "dd51665d-ba9b-433b-998b-e442e4fd3425"
+   },
+   "diagnosis": {
+    "id": "235a3c53-abfb-4db8-b48d-b631d4931f01"
+   }
+  },
+  {
+   "id": "QA-V05",
+   "severity": "S1",
+   "state": "OPEN",
+   "title": "Sağlık yetkisi olmayan rol (sekreter/finans) hasta geçmişinde odontogram bulgu/tanı olaylarını görüyor",
+   "denied": {
+    "code": "FORBIDDEN",
+    "message": "Bu işlem için yetkiniz yok.",
+    "correlation_id": "0c37791b-c98d-41d8-b581-52c45dff0c15"
+   },
+   "corr": {
+    "code": "NOT_FOUND",
+    "message": "Kayıt bulunamadı.",
+    "correlation_id": "8a15f91f-8065-4dd3-9ac3-29d10f13b0ab"
+   },
+   "relevant": [],
+   "secClinical": [],
+   "finClinical": []
+  }
+ ]
+}

@@ -70,6 +70,22 @@ function ToothSvg({ tooth, state, selected, selectedSurfaces, onSurface }: {
   );
 }
 
+/** Klinik haritadan diş başına durum (bulgu, tanı, planlı ve gerçekleşen işlem sayısı). Özet ve Tedavi sekmesi ortak kullanır. */
+export function toothStates(chart: {
+  findings: { tooth: string; surfaces: string[]; type: FindingType; status: string }[];
+  diagnoses: { location: { tooth?: string | null }; status: string }[];
+  planned: { location: { tooth?: string | null }; quantity: number; performedQty: number }[];
+  performed: { location: { tooth?: string | null }; status: string }[];
+} | null | undefined): Record<string, ToothState> {
+  const out: Record<string, ToothState> = {};
+  const get = (t: string) => (out[t] ??= { findings: [], planned: 0, done: 0, diagnoses: 0 });
+  for (const f of chart?.findings ?? []) if (f.status === "current") get(f.tooth).findings.push({ type: f.type, surfaces: f.surfaces });
+  for (const d of chart?.diagnoses ?? []) if (d.status === "active" && d.location.tooth) get(d.location.tooth).diagnoses++;
+  for (const p of chart?.planned ?? []) if (p.location.tooth && p.performedQty < p.quantity) get(p.location.tooth).planned++;
+  for (const p of chart?.performed ?? []) if (p.status === "completed" && p.location.tooth) get(p.location.tooth).done++;
+  return out;
+}
+
 export function Odontogram({ dentition, states, selected, selectedSurfaces = [], onSelect, onSurface }: {
   dentition: "permanent" | "primary" | "mixed";
   states: Record<string, ToothState>;
@@ -118,7 +134,7 @@ export function Odontogram({ dentition, states, selected, selectedSurfaces = [],
               ];
               const top = ri < rows.length / 2;
               return (
-                <button key={t} type="button" className={`tooth ${selected === t ? "is-selected" : ""} ${i === row.length / 2 ? "midline" : ""}`}
+                <button key={t} type="button" className={`tooth ${selected === t ? "is-selected" : ""} ${i === row.length / 2 ? "midline" : ""} ${s?.done ? "has-done" : s?.planned ? "has-planned" : ""}`}
                   aria-pressed={selected === t} aria-label={label(t)} onClick={() => onSelect(t)}>
                   {top && <span className="tooth-no">{t}</span>}
                   <ToothSvg tooth={t} state={s} selected={selected === t} selectedSurfaces={selected === t ? selectedSurfaces : []}
@@ -138,6 +154,7 @@ export function Odontogram({ dentition, states, selected, selectedSurfaces = [],
         <li><span className="sw" style={{ background: "#B78BC9" }} />KT Kanal tedavili</li>
         <li><span className="sw x" />× Eksik</li>
         <li><strong>Tn</strong> Tanı</li><li><strong>P</strong> Planlı</li><li><strong>✓</strong> Gerçekleşti</li>
+        <li><span className="sw sw-done" />İşlem yapılan diş</li><li><span className="sw sw-planned" />Planlı işlem bekleyen diş</li>
         <li><span className="sw" style={{ background: "#5B4BC4" }} />Seçili yüzey</li>
       </ul>
     </div>

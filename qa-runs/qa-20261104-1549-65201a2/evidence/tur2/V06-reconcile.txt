@@ -1,0 +1,6 @@
+# 2026-11-04T16:27:16+03:00 — sürüm eb0c072, vaka turu sonrası sakin DB. Bağımsız sorgu: qa-runs/.scripts/reconcile.sql
+## viadent
+56|29|13|4250.00|25800.00|3200.00|6|0|10|251|7|7|3|15|TM-2026-000009,TM-2026-000010,TM-2026-000011|3|4|733.92|1|0|17|84.000|viadent_app:SELECT,viadent_backup:SELECT,viadent_owner:DELETE,viadent_owner:INSERT,viadent_owner:REFERENCES,viadent_owner:SELECT,viadent_owner:TRIGGER,viadent_owner:TRUNCATE,viadent_owner:UPDATE,viadent_worker:SELECT|93|79
+## viadent_qa_restore_tur2
+56|29|13|4250.00|25800.00|3200.00|6|0|10|251|7|7|3|15|TM-2026-000009,TM-2026-000010,TM-2026-000011|3|4|733.92|1|0|17|84.000|viadent_app:SELECT,viadent_backup:SELECT,viadent_owner:DELETE,viadent_owner:INSERT,viadent_owner:REFERENCES,viadent_owner:SELECT,viadent_owner:TRIGGER,viadent_owner:TRUNCATE,viadent_owner:UPDATE,viadent_worker:SELECT|93|79
+EŞLEŞTİ

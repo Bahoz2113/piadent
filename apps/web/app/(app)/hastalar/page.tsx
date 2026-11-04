@@ -58,7 +58,12 @@ function PatientsInner() {
               </thead>
               <tbody>
                 {items.map((p) => (
-                  <tr key={p.id}>
+                  <tr key={p.id} className="row-click" onClick={(e) => {
+                    // Satırın tamamı hasta kartını açar; bağlantı/düğme tıklaması ve metin seçimi kendi davranışını korur. Klavye için ad bağlantısı kalır.
+                    if ((e.target as HTMLElement).closest("a, button, input, select, textarea") || window.getSelection()?.toString()) return;
+                    if (e.metaKey || e.ctrlKey) { window.open(`/hastalar/${p.id}`, "_blank", "noopener"); return; }
+                    router.push(`/hastalar/${p.id}`);
+                  }}>
                     <td className="muted">#{p.fileNo}</td>
                     <td><Link className="rowlink" href={`/hastalar/${p.id}`}>{p.fullName}</Link>{p.age !== null && <span className="muted small"> · {p.age} yaş</span>}</td>
                     <td className="desktop-only">{fmtDate(p.birthDate)}</td>

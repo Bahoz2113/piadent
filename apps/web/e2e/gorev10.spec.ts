@@ -51,8 +51,10 @@ test("kurtarma kodları: etkinleştirmede 8 kod → kaydettim → kurtarma koduy
   const c3 = await browser.newContext(); const admin = await c3.newPage();
   await login(admin, "yonetici@demo-yesil.test");
   await admin.goto("/yonetim?sekme=ekip");
-  admin.once("dialog", (d) => void d.accept("E2E temizlik: kimlik doğrulandı"));
   await admin.getByRole("row").filter({ hasText: email }).getByRole("button", { name: "Doğrulayıcıyı sıfırla" }).click();
+  const mfaDlg = admin.getByRole("alertdialog", { name: "İki adımlı doğrulamayı sıfırla" });
+  await mfaDlg.getByRole("textbox").fill("E2E temizlik: kimlik doğrulandı");
+  await mfaDlg.getByRole("button", { name: "Sıfırla" }).click();
   await expect(admin.getByText("İki adımlı doğrulama sıfırlandı.")).toBeVisible();
   await c3.close();
 });
@@ -80,7 +82,9 @@ test("Yönetim → Güvenlik: kendi rolünü MFA'sız zorunlu yapamaz; finans i�
   await expect(row.getByText("Etkin")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth), "yatay taşma").toBeLessThanOrEqual(page.viewportSize()!.width + 1);
   if (process.env.E2E_SHOTS_DIR) await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/g10-guvenlik-${info.project.name}.png`, fullPage: true });
-  page.once("dialog", (d) => void d.accept("İnceleme bitti"));
   await row.getByRole("button", { name: "Kaldır" }).click();
+  const endDlg = page.getByRole("alertdialog", { name: "Destek erişimini sonlandır" });
+  await endDlg.getByRole("textbox").fill("İnceleme bitti");
+  await endDlg.getByRole("button", { name: "Sonlandır" }).click();
   await expect(page.getByText("Destek erişimi kaldırıldı.")).toBeVisible();
 });

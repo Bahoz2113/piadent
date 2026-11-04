@@ -28,8 +28,8 @@ async function importCsv(page: Page, kind: string, name: string, csv: string, ex
   await page.getByRole("button", { name: "Ön kontrol yap" }).click();
   await expect(page.getByText("Ön kontrol tamam. Hiçbir kayıt henüz yazılmadı.")).toBeVisible();
   const detail = page.getByRole("region", { name: "Aktarım ayrıntısı" });
-  page.once("dialog", (d) => void d.accept());
   await detail.getByRole("button", { name: `${expectValid} satırı aktar` }).click();
+  await page.getByRole("alertdialog", { name: "Aktarımı onaylayın" }).getByRole("button", { name: "Aktar" }).click();
   await expect(page.getByText(`${expectValid} kayıt aktarıldı.`)).toBeVisible();
 }
 

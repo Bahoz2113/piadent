@@ -3,17 +3,20 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { CalendarPlus, History, Lock, NotebookPen, Pencil, FileText, Wallet, Stethoscope, MessageSquare, LayoutList, FlaskConical, FileDown } from "lucide-react";
-import { GENDER_LABELS, GENDERS, NATIONAL_ID_LABELS } from "@viadent/contracts";
+import { formatTRY, GENDER_LABELS, GENDERS, NATIONAL_ID_LABELS, limitPhoneInput } from "@viadent/contracts";
 import { api, ApiFailure, download } from "@/lib/api";
 import { auditActionLabel, auditFieldLabel, auditValueLabel, formatPhone } from "@viadent/contracts";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, initials } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast, DateField } from "@/components/ui";
+import { promptDialog } from "@/components/dialogs";
+import { isPastPending, PastPendingBadge } from "@/components/appointment-status";
 import type { Appt, Task } from "@/lib/types";
 import { RelationsCard } from "@/components/patient/relations";
 import { AnamnesisPanel } from "@/components/patient/anamnesis";
 import { TreatmentTab } from "@/components/treatment/treatment-tab";
+import { ToothSummaryCard } from "@/components/treatment/tooth-summary";
 import { AccountTab } from "@/components/finance/account-tab";
 import { DocumentsTab } from "@/components/documents/documents-tab";
 import { CommunicationTab } from "@/components/communication/communication-tab";
@@ -55,7 +58,7 @@ function PatientInner() {
   const [revealed, setRevealed] = useState<string | null>(null);
   // Kimlik no varsayılan maskeli; tam değer gerekçeyle açılır ve denetim kaydına yazılır (ADR-063).
   async function reveal() {
-    const reason = window.prompt("Kimlik numarasını görme gerekçeniz (denetim kaydına yazılır):");
+    const reason = await promptDialog({ title: "Kimlik numarasını göster", message: "Gerekçeniz denetim kaydına yazılır.", inputLabel: "Gerekçe", required: true, confirmLabel: "Göster" });
     if (!reason) return;
     try { setRevealed((await api<{ nationalId: string }>(`/patients/${id}/identity`, { body: { reason } })).nationalId); }
     catch (e) { toast.show("error", (e as ApiFailure).message); }
@@ -77,8 +80,34 @@ function PatientInner() {
     );
   }
   const p = patient.data!;
-  const upcoming = (appts.data?.items ?? []).filter((a) => new Date(a.startsAt) >= new Date() && !["cancelled", "no_show"].includes(a.status)).reverse();
-  const past = (appts.data?.items ?? []).filter((a) => !upcoming.includes(a));
+  // Yaklaşan: bitişi gelmemiş ve sonuçlanmamış randevular (yakından uzağa). Geçmiş: saati geçmiş veya sonuçlanmış olanlar
+  // (yeniden eskiye); saati geçip sonuçlandırılmamışlar "Sonuç bekliyor" rozetiyle Geçmiş altında (madde 5).
+  const nowMs = Date.now();
+  const allAppts = appts.data?.items ?? [];
+  const upcoming = allAppts.filter((a) => new Date(a.endsAt).getTime() >= nowMs && !["cancelled", "no_show", "completed"].includes(a.status)).reverse();
+  const past = allAppts.filter((a) => !upcoming.includes(a));
+  async function settle(a: Appt, status: "checked_in" | "no_show") {
+    try { await api(`/appointments/${a.id}/status`, { body: { version: a.version, status } }); toast.show("success", status === "no_show" ? "Randevu: Gelmedi" : "Randevu: Geldi"); void appts.reload(); }
+    catch (e) { toast.show("error", (e as ApiFailure).message); void appts.reload(); }
+  }
+  const apptRow = (a: Appt) => {
+    const pending = isPastPending(a, nowMs);
+    return (
+      <li key={a.id} style={{ padding: "12px 20px" }} className="row">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <strong>{fmtDateTime(a.startsAt, tz)}</strong>
+          <div className="muted small">{a.practitionerName}{a.chairName ? ` · ${a.chairName}` : ""}{a.reason ? ` · ${a.reason}` : ""}{a.plannedPrice ? ` · ${formatTRY(a.plannedPrice)}` : ""}</div>
+        </div>
+        {pending ? <PastPendingBadge /> : <StatusBadge status={a.status} />}
+        {pending && can("appointment.write") && (
+          <span className="row" style={{ gap: 6 }}>
+            <button className="btn btn-sm" onClick={() => void settle(a, "checked_in")}>Geldi</button>
+            <button className="btn btn-sm btn-ghost" onClick={() => void settle(a, "no_show")}>Gelmedi</button>
+          </span>
+        )}
+      </li>
+    );
+  };
 
   return (
     <>
@@ -105,8 +134,8 @@ function PatientInner() {
           </div>
           <div className="row actions">
             {can("patient.write") && <button className="btn" onClick={() => setEditing(true)}><Pencil size={16} aria-hidden />Bilgileri düzenle</button>}
-            {can("export.patient") && <button className="btn" onClick={() => {
-              const reason = window.prompt("Hasta verisi (KVKK veri sahibi talebi) JSON olarak indirilecek ve denetim kaydına yazılacak.\n\nGerekçe (ör. başvuru tarihi/numarası):");
+            {can("export.patient") && <button className="btn" onClick={async () => {
+              const reason = await promptDialog({ title: "Hasta verisini indir", message: "Hasta verisi (KVKK veri sahibi talebi) JSON olarak indirilecek ve denetim kaydına yazılacak.", inputLabel: "Gerekçe (ör. başvuru tarihi/numarası)", required: true, confirmLabel: "İndir" });
               if (!reason || reason.trim().length < 5) { if (reason !== null) toast.show("error", "Gerekçe en az 5 karakter olmalı."); return; }
               void download(`/patients/${p.id}/export`, { body: { reason }, fallbackName: `viadent-hasta-${p.fileNo}.json` })
                 .then(() => toast.show("success", "Hasta verisi indirildi."), (e: ApiFailure) => toast.show("error", e.message));
@@ -123,23 +152,20 @@ function PatientInner() {
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} style={{ marginTop: 16 }}>
         {tab === "ozet" && (
+          <div className="stack" style={{ gap: 16 }}>
+          <ToothSummaryCard patientId={p.id} onOpenTreatment={() => setTab("tedavi")} />
           <div className="grid grid-2">
             <section className="card">
               <div className="card-head"><h2>Randevular</h2></div>
               {appts.loading && !appts.data ? <Loading /> : appts.error ? <ErrorState error={appts.error} /> : (appts.data?.items.length ?? 0) === 0 ? (
                 <EmptyState title="Randevu yok" action={can("appointment.write") ? <Link className="btn btn-primary" href={`/ajanda?yeni=1&hasta=${p.id}`}>İlk randevuyu ver</Link> : undefined} />
               ) : (
-                <ul className="list">
-                  {[...upcoming, ...past].map((a) => (
-                    <li key={a.id} style={{ padding: "12px 20px" }} className="row">
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <strong>{fmtDateTime(a.startsAt, tz)}</strong>
-                        <div className="muted small">{a.practitionerName}{a.chairName ? ` · ${a.chairName}` : ""}{a.reason ? ` · ${a.reason}` : ""}</div>
-                      </div>
-                      <StatusBadge status={a.status} />
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <h3 className="list-heading">Yaklaşan randevular <span className="muted small">({upcoming.length})</span></h3>
+                  {upcoming.length ? <ul className="list">{upcoming.map(apptRow)}</ul> : <p className="card-pad muted small" style={{ paddingTop: 0 }}>Yaklaşan randevu yok.</p>}
+                  <h3 className="list-heading">Geçmiş randevular <span className="muted small">({past.length})</span></h3>
+                  {past.length ? <ul className="list">{past.map(apptRow)}</ul> : <p className="card-pad muted small" style={{ paddingTop: 0 }}>Geçmiş randevu yok.</p>}
+                </>
               )}
             </section>
             <div className="stack">
@@ -164,6 +190,7 @@ function PatientInner() {
                 </dl>
               </section>
             </div>
+          </div>
           </div>
         )}
         {tab === "saglik" && (can("patient.health.read") ? (
@@ -319,7 +346,7 @@ function EditPatient({ p, practitioners, onClose, onSaved }: { p: Patient; pract
           <SelectField label="Cinsiyet" value={f.gender} onChange={set("gender")}>
             <option value="">Seçilmedi</option>{GENDERS.map((g) => <option key={g} value={g}>{GENDER_LABELS[g]}</option>)}
           </SelectField>
-          <TextField label="Telefon" type="tel" value={f.phone} onChange={set("phone")} error={err?.fieldErrors.phone} placeholder={p.phoneMasked ? p.phone ?? "" : ""} />
+          <TextField label="Telefon" type="tel" inputMode="tel" value={f.phone} onChange={(e) => setF((x) => ({ ...x, phone: limitPhoneInput(e.target.value) }))} error={err?.fieldErrors.phone} placeholder={p.phoneMasked ? p.phone ?? "" : "0555 123 45 67"} hint="0 ile 11, 0 olmadan 10 hane; yurt dışı + ile." />
           <TextField label="E-posta" type="email" value={f.email} onChange={set("email")} error={err?.fieldErrors.email} />
           <SelectField label="Sorumlu hekim" value={f.primaryPractitionerId} onChange={set("primaryPractitionerId")}>
             <option value="">Seçilmedi</option>{practitioners.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}

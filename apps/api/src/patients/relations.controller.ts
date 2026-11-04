@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from "@nestjs/common";
-import { maskPhone, normalizePhone, RelationCreate, RelationEnd, RELATION_LABELS } from "@viadent/contracts";
+import { maskPhone, normalizePhone, PHONE_RULE_MESSAGE, RelationCreate, RelationEnd, RELATION_LABELS } from "@viadent/contracts";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
@@ -21,7 +21,7 @@ export class RelationsController {
   @Get()
   @Require("patient.read")
   list(@Ctx() ctx: RequestContext, @Param("patientId", pid) patientId: string) {
-    const unmask = has(ctx, "patient.identity.unmask");
+    const unmask = has(ctx, "patient.phone.read"); // telefon klinik içinde tam görünür (destek maskeli)
     return this.db.tx(ctx, async (c) => {
       if (!(await c.query("select 1 from patients where id = $1", [patientId])).rowCount) throw Errors.notFound("Hasta");
       const r = await c.query(
@@ -72,7 +72,7 @@ export class RelationsController {
     let phone: string | null = null;
     if (input.contactPhone) {
       const n = normalizePhone(input.contactPhone);
-      if (!n) throw Errors.validation({ contactPhone: "Telefon numarası geçersiz." });
+      if (!n) throw Errors.validation({ contactPhone: PHONE_RULE_MESSAGE });
       phone = n.e164;
     }
     if (input.relatedPatientId === patientId) throw Errors.validation({ relatedPatientId: "Hasta kendisiyle ilişkilendirilemez." });

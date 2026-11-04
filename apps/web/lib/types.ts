@@ -9,11 +9,13 @@ export interface Appt {
   id: string; patientId: string; patientName?: string; patientFileNo?: number; practitionerId: string; practitionerName?: string;
   chairId: string | null; chairName: string | null; startsAt: string; endsAt: string; status: AppointmentStatus;
   appointmentTypeId?: string | null; contactOutcome: "not_contacted" | "informed" | "unreachable"; reason: string | null; note: string | null; cancelReason?: string | null; version: number;
+  procedureId?: string | null; procedureLabel?: string | null; plannedPrice?: string | null;
 }
 export interface Resources {
   practitioners: { id: string; name: string }[];
   chairs: { id: string; name: string }[];
-  appointmentTypes: { id: string; name: string; defaultMinutes: number }[];
+  appointmentTypes: { id: string; name: string; defaultMinutes: number; procedureId?: string | null }[];
+  procedures?: { id: string; code: string; name: string; category: string | null; defaultMinutes: number | null }[];
 }
 export interface AgendaContext {
   schedules: { practitionerId: string; weekday: number; start: number; end: number }[];

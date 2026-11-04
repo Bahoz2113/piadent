@@ -11,6 +11,7 @@ import { api, ApiFailure, download } from "@/lib/api";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
+import { confirmDialog } from "@/components/dialogs";
 
 type Notify = (k: "success" | "error", t: string) => void;
 interface Summary {
@@ -178,7 +179,7 @@ function BatchDetail({ id, notify, onChange, onClose }: { id: string; notify: No
   const money = b.kind === "opening_balances" || b.kind === "treatment_history";
   async function commit() {
     if (busy) return;
-    if (!window.confirm(`${s.valid} geçerli satır aktarılacak. Hatalı ve mükerrer satırlar atlanır. Devam edilsin mi?`)) return;
+    if (!(await confirmDialog({ title: "Aktarımı onaylayın", message: `${s.valid} geçerli satır aktarılacak. Hatalı ve mükerrer satırlar atlanır.`, confirmLabel: "Aktar" }))) return;
     setBusy(true); setErr(null);
     try { const r = await api<Batch>(`/imports/${id}/commit`, { body: {} }); notify("success", `${r.summary.imported ?? 0} kayıt aktarıldı.`); await d.reload(); onChange(); }
     catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }

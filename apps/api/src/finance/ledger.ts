@@ -97,6 +97,11 @@ export async function cancelReceivable(c: C, ctx: RequestContext, receivableId: 
  * Kuralın temeli (tahsilat/tedavi) hangi olayın prim doğuracağını belirler → aynı iş için çift prim oluşmaz (ADR-042).
  */
 export async function effectiveCommissionRule(c: C, practitionerId: string, onDate: string) {
+  // Hekimin o gün geçerli ücret modeli "yalnız maaş" ise prim doğmaz (ADR-096). Model tanımsızsa prim kuralları eskisi gibi uygulanır.
+  const model = (await c.query(
+    `select pay_model from practitioner_compensation_versions where practitioner_id = $1 and valid_from <= $2
+      order by valid_from desc, created_at desc limit 1`, [practitionerId, onDate])).rows[0]?.pay_model as string | undefined;
+  if (model === "salary") return undefined;
   const r = await c.query(
     `select id, rate::text as rate, basis from commission_rule_versions
       where valid_from <= $2 and (practitioner_id = $1 or practitioner_id is null)
@@ -188,7 +193,7 @@ export async function liveAllocations(c: C, paymentId: string) {
   return r.rows.filter((x) => Number(x.remaining) > 0) as { id: string; receivable_id: string; remaining: string }[];
 }
 
-export async function cashMovement(c: C, ctx: RequestContext, m: { accountId: string; amount: string; source: "payment" | "refund" | "expense" | "supplier_payment" | "commission_payout"; sourceId: string; at: string | Date }) {
+export async function cashMovement(c: C, ctx: RequestContext, m: { accountId: string; amount: string; source: "payment" | "refund" | "expense" | "supplier_payment" | "commission_payout" | "salary_payment"; sourceId: string; at: string | Date }) {
   await c.query(
     "insert into cash_movements(tenant_id, cash_account_id, amount, source, source_id, occurred_at) values ($1,$2,$3,$4,$5,$6)",
     [ctx.tenantId, m.accountId, m.amount, m.source, m.sourceId, m.at],
