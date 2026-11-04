@@ -1,0 +1,44 @@
+{
+ "checks": [
+  {
+   "check": "sekreter standart işlem 403",
+   "pass": true
+  },
+  {
+   "check": "standart işlem +0, ikinci 0",
+   "pass": true
+  },
+  {
+   "check": "randevu işlem etiketi + fiyat 1200.00",
+   "pass": true
+  },
+  {
+   "check": "tarife fiyatı ({\"price\":\"1200.00\",\"tariffVersionId\":\"8f56dfaa-138e-4774-a098-5cda1e091c26\"}) = plannedPrice",
+   "pass": true
+  },
+  {
+   "check": "randevu alacak oluşturmadı",
+   "pass": true
+  },
+  {
+   "check": "tür varsayılanı (Dolgu türü var, 201 DOL-01 · Kompozit dolgu (tek yüz))",
+   "pass": true
+  },
+  {
+   "check": "B işlemi → 422",
+   "pass": true
+  },
+  {
+   "check": "hasta hesabı (formdaki açık borç kaynağı) 200",
+   "pass": true
+  }
+ ],
+ "appointment": {
+  "procedureLabel": "TEM-01 · Diş taşı temizliği (tüm ağız)",
+  "plannedPrice": "1200.00"
+ },
+ "price": {
+  "price": "1200.00",
+  "tariffVersionId": "8f56dfaa-138e-4774-a098-5cda1e091c26"
+ }
+}

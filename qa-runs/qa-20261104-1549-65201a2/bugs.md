@@ -1,7 +1,7 @@
 # Bulgu defteri — qa-20261104-1549-65201a2
 Sürüm: 65201a2 (tur 1). Tester ürün kodunu değiştirmez; düzeltme cezeri-duzeltici ile ayrı dalda.
 
-## QA-201 — Kirli çekmece Esc ile uyarısız kapanıyor; girilen bilgi kayboluyor (S2, FIX_READY — bkz. fix1.md; kapanış tester yeniden sınamasıyla)
+## QA-201 — Kirli çekmece Esc ile uyarısız kapanıyor; girilen bilgi kayboluyor (S2, VERIFIED — fix1; tur 2 F11 iki profilde PASS)
 - **Vaka:** F11 (madde 10). Profil: chromium-desktop + chromium-mobile-emulation. Rol: sekreter, yönetici.
 - **Adımlar:** Randevular → "Randevu ver" → Açıklama alanına metin yaz → Esc.
 - **Beklenen:** "Kaydedilmemiş değişiklikler" uygulama modalı açılır (X ve arka plan tıklamasında olduğu gibi); "Forma dön" veriyi korur.
@@ -11,7 +11,7 @@ Sürüm: 65201a2 (tur 1). Tester ürün kodunu değiştirmez; düzeltme cezeri-d
 - **Kanıt:** evidence/tur1/browser-f-summary.json (F11, iki profil), evidence/tur1/masaustu-F11-kapatma.png, mobil-F11-kapatma.png.
 - **Sorumlu:** cezeri-duzeltici (web).
 
-## QA-202 — Randevu formunda yalnız Not (veya tarih/saat/işlem/süre/koltuk) değişince form "kirli" sayılmıyor (S3, FIX_READY — bkz. fix1.md; kapanış tester yeniden sınamasıyla)
+## QA-202 — Randevu formunda yalnız Not (veya tarih/saat/işlem/süre/koltuk) değişince form "kirli" sayılmıyor (S3, VERIFIED — fix1; tur 2 F11 iki profilde PASS)
 - **Vaka:** F11. Profil: masaüstü + mobil. Rol: yönetici.
 - **Adımlar:** Randevular → "Randevu ver" → yalnız "Not" alanını doldur → X.
 - **Beklenen:** Girilen bilgi kaybolacağı için kapatma uyarısı modalı.
@@ -20,13 +20,13 @@ Sürüm: 65201a2 (tur 1). Tester ürün kodunu değiştirmez; düzeltme cezeri-d
 - **Kanıt:** evidence/tur1/browser-f-summary.json (F11 "yalnız Not dolu: modal" adımı).
 - **Sorumlu:** cezeri-duzeltici (web).
 
-## QA-203 — Yeni denetim alanları Türkçe etiketsiz: geçmişte ham anahtar görünür (S3, FIX_READY)
+## QA-203 — Yeni denetim alanları Türkçe etiketsiz: geçmişte ham anahtar görünür (S3, VERIFIED — fix2; tur 2 R03 86/86)
 - **Vaka:** R03 (web birim, `test/audit-field-labels.test.ts` "API kaynağındaki her changes anahtarı Türkçe etiketli"). Sürüm 65201a2'de de kalıyor (düzeltici taban koşusu, tester tekrar: 2/81 FAIL).
 - **Gözlenen:** `added`, `backdate_reason`, `backdated`, `procedure_id` anahtarlarının `AUDIT_FIELD_LABELS` etiketi yok → PİA İz / denetim ekranında ham İngilizce anahtar.
 - **Beklenen:** her `changes` anahtarı Türkçe etiketli (QA-003 kuralı); `backdated` evet/hayır değeri okunur.
 - **Kanıt:** evidence/tur1/R03-web-tur1.log. **Sorumlu:** cezeri-duzeltici (contracts audit.ts).
 
-## QA-204 — globals.css'e px yazı boyutu girdi: yazı ölçeği ayarı Panel/grafik metinlerini büyütmüyor (S3, FIX_READY)
+## QA-204 — globals.css'e px yazı boyutu girdi: yazı ölçeği ayarı Panel/grafik metinlerini büyütmüyor (S3, VERIFIED — fix2; tur 2 R03 86/86)
 - **Vaka:** R03 (`test/appearance-contrast.test.ts` "globals.css'te px yazı boyutu kalmadı (rem)"), ADR-082 yazı ölçeği.
 - **Gözlenen:** Panel grafikleri ve mobil kural bloklarında `font-size: 11px/12px/18px/19px/20px`.
 - **Beklenen:** rem (ya da SVG için ölçekten bağımsız birim gerekçesiyle test kuralına uygun çözüm); yazı ölçeği ayarı tüm metinlere uygulanır.
