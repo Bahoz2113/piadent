@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from "@nestjs/common";
-import {
+import { localDate,
   ClinicalStatusChange, DiagnosisCreate, FindingCreate, PerformCancelInput, PerformInput,
   validSurfaces, validateLocation, ALL_TEETH, type ToothScope,
 } from "@viadent/contracts";
@@ -9,6 +9,7 @@ import { AppError, Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
 import { audit, enqueue } from "../audit/audit.js";
 import { locCols, lookupPrice, presentLoc } from "./pricing.js";
+import { estimateUnitCost } from "../operations/stock-cost.js";
 import { accrueTreatmentCommission, cancelReceivable, createReceivable, lockAccount, reverseTreatmentCommission } from "../finance/ledger.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
@@ -255,10 +256,11 @@ export class ChartController {
           if (!lot) throw new Error("stock_negative");
           lotId = lot.id;
         }
+        const cost = await estimateUnitCost(c, x.stock_item_id, localDate(new Date(), ctx.timezone));
         const m = await c.query(
-          `insert into stock_movements(tenant_id, item_id, lot_id, kind, quantity, patient_id, performed_procedure_id, reason, occurred_at, created_by)
-           values ($1,$2,$3,'usage',$4,$5,$6,'Sarf reçetesi (otomatik)',now(),$7) returning id`,
-          [ctx.tenantId, x.stock_item_id, lotId, -need, patientId, performedId, ctx.userId]);
+          `insert into stock_movements(tenant_id, item_id, lot_id, kind, quantity, unit_cost, patient_id, performed_procedure_id, reason, occurred_at, created_by)
+           values ($1,$2,$3,'usage',$4,$5,$6,$7,'Sarf reçetesi (otomatik)',now(),$8) returning id`,
+          [ctx.tenantId, x.stock_item_id, lotId, -need, cost.unitCost, patientId, performedId, ctx.userId]);
         await audit(c, ctx, { action: "stock.usage", entityType: "stock_movement", entityId: m.rows[0].id, patientId, changes: { item_id: { from: null, to: x.stock_item_id }, quantity: { from: null, to: String(-need) } } });
         await c.query("release savepoint sarf");
         used++;

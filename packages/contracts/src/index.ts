@@ -13,6 +13,7 @@ export * from "./documents";
 export * from "./integrations";
 export * from "./operations";
 export * from "./practitioners";
+export * from "./products-standard";
 export * from "./reports";
 export * from "./pilot";
 export * from "./import-map";

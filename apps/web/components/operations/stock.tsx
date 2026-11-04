@@ -10,7 +10,7 @@ import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaFi
 import { parseMoneyInput } from "@/components/finance/money-input";
 
 interface Lot { id: string; lotNo: string; expiry: string | null; balance: string; expired: boolean; expiringSoon: boolean }
-interface Item { id: string; code: string; name: string; unit: keyof typeof STOCK_UNIT_LABELS; category: string | null; trackLots: boolean; minLevel: string; active: boolean; balance: string; low: boolean; lots: Lot[] }
+export interface Item { id: string; code: string; name: string; unit: keyof typeof STOCK_UNIT_LABELS; category: string | null; trackLots: boolean; minLevel: string; active: boolean; balance: string; low: boolean; lots: Lot[] }
 type Op = "receipt" | "usage" | "waste" | "count";
 const qty = (v: string) => { const n = Number(v); return Number.isInteger(n) ? String(n) : String(n).replace(".", ","); };
 const normQty = (v: string) => v.trim().replace(",", ".");
@@ -65,7 +65,7 @@ export function StockPanel({ notify }: { notify: (k: "success" | "error", t: str
   );
 }
 
-function ItemDrawer({ item, onClose, onSaved }: { item: Item | null; onClose: () => void; onSaved: (m: string) => void }) {
+export function ItemDrawer({ item, onClose, onSaved }: { item: Item | null; onClose: () => void; onSaved: (m: string) => void }) {
   const [f, setF] = useState({ code: item?.code ?? "", name: item?.name ?? "", unit: item?.unit ?? "adet", category: item?.category ?? "", trackLots: item?.trackLots ?? false,
     minLevel: item ? qty(item.minLevel) : "0", active: item?.active ?? true });
   const [err, setErr] = useState<ApiFailure | null>(null);

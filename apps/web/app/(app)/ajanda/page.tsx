@@ -13,6 +13,7 @@ import type { AgendaContext, Appt, Resources } from "@/lib/types";
 import { Alert, ContactBadge, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast, DateField } from "@/components/ui";
 import { NewPatientDrawer } from "@/components/patient-form";
 import { isPastPending, PastPendingBadge } from "@/components/appointment-status";
+import { AppointmentMaterialsCard } from "@/components/appointment-materials";
 
 const DAY_START = 8 * 60;
 const DAY_END = 20 * 60;
@@ -428,6 +429,7 @@ function AppointmentDetail({ appt, onClose, onChanged, onConflict }: { appt: App
         {can("account.read") && <PatientBalance patientId={appt.patientId} plannedPrice={appt.status === "completed" ? null : appt.plannedPrice ?? null} />}
         <Link href={`/hastalar/${appt.patientId}`} className="btn btn-sm" style={{ alignSelf: "flex-start" }}>Hasta kartını aç</Link>
         {["planned", "confirmed"].includes(appt.status) && <ReadinessPanel appointmentId={appt.id} />}
+        {can("stock.read") && ["checked_in", "in_progress", "completed"].includes(appt.status) && <AppointmentMaterialsCard appointmentId={appt.id} />}
         {can("appointment.write") && (
           <>
             <hr className="divider" />

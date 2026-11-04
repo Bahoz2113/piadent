@@ -41,13 +41,14 @@ import { MfaController } from "./auth/mfa.controller.js";
 import { AppearanceController } from "./auth/appearance.controller.js";
 import { DashboardController } from "./reports/dashboard.controller.js";
 import { PractitionersController } from "./practitioners/practitioners.controller.js";
+import { MaterialsController } from "./operations/materials.controller.js";
 
 @Module({})
 export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, AnamnesisTemplatesController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, ReceiptsController, InvoicesController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, AppearanceController, SecurityController, DashboardController, PractitionersController],
+      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, AnamnesisTemplatesController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, ReceiptsController, InvoicesController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, AppearanceController, SecurityController, DashboardController, PractitionersController, MaterialsController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,

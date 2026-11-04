@@ -111,6 +111,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "compensation.create": "Hekim ücret modeli sürümü oluşturuldu",
   "salary_payment.create": "Maaş ödemesi kaydedildi",
   "salary_payment.reverse": "Maaş ödemesi ters kayıtla düzeltildi",
+  "supplier_price.create": "Tedarikçi fiyatı eklendi",
+  "stock_item.standard_import": "Standart ürün listesi eklendi",
 
   // Belge, onam ve dosya
   "document.issue": "Belge düzenlendi",
@@ -217,7 +219,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   outside_working_hours: "Mesai dışı randevu",
   // Klinik ve tedavi
   corrects_note_id: "Düzeltilen not", corrects_id: "Düzeltilen işlem", tooth: "Diş", procedure: "İşlem kodu", critical_count: "Kritik yanıt sayısı",
-  version: "Sürüm", changed: "Değişen kalem", decision: "Karar", unit_price: "Birim fiyat", discount: "İndirim", item_count: "Kalem sayısı", code: "Kod",
+  version: "Sürüm", changed: "Değişen kalem", decision: "Karar", unit_price: "Birim fiyat", unit_cost: "Birim maliyet", discount: "İndirim", item_count: "Kalem sayısı", code: "Kod",
   anamnesis: "Anamnez",
   // Finans
   amount: "Tutar", method: "Yöntem", source: "Kaynak", payment_id: "Tahsilat", receipt_no: "Makbuz no", doc_type: "Belge türü", buyer_name: "Alıcı", grand_total: "Genel toplam", line_count: "Satır sayısı", question_count: "Soru sayısı", consumable_count: "Sarf kalemi sayısı", receivable_id: "Alacak", reverses_id: "Ters kaydı yapılan hareket",
@@ -252,7 +254,7 @@ export function auditFieldLabel(field: string): string {
   return field.replace(/_/g, " ");
 }
 
-const MONEY_FIELDS = new Set(["amount", "unit_price", "discount", "grand_total", "monthly_salary"]);
+const MONEY_FIELDS = new Set(["amount", "unit_price", "unit_cost", "discount", "grand_total", "monthly_salary"]);
 const DATETIME_FIELDS = new Set(["starts_at", "expires_at"]);
 const DATE_FIELDS = new Set(["birth_date", "due_date", "valid_from", "target_date"]);
 const HASH_FIELDS = new Set(["body_hash", "content_hash", "sha256", "file_sha256"]);

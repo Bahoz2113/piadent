@@ -254,7 +254,7 @@ table.table { width: 100%; border-collapse: collapse; }
 
 /* ---------------------------------------------------------------- randevu: bakiye şeridi, geçmiş dilim */
 .money-strip { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); padding: var(--s3) var(--s4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
-.money-strip > span { display: grid; gap: 2px; min-width: 120px; }
+.money-strip > span, .money-strip > div { display: grid; gap: 2px; min-width: 120px; }
 .money-strip strong { font-variant-numeric: tabular-nums; }
 .agenda-slot.is-past { background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(18, 43, 39, 0.035) 6px 12px); cursor: not-allowed; }
 .appt.is-past-pending { border-style: dashed; opacity: 0.92; }
@@ -572,3 +572,12 @@ a.kpi:hover { border-color: var(--border-strong); }
 .link-button { background: none; border: 0; padding: 0; font: inherit; color: var(--text); cursor: pointer; text-align: left; }
 .link-button:hover { text-decoration: underline; }
 .link-button:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; border-radius: 4px; }
+/* Ürün ve fiyat listesi (ADR-097) */
+.search-field { display: flex; align-items: center; gap: var(--s2); position: relative; }
+.search-field svg { position: absolute; left: 12px; color: var(--text-secondary); pointer-events: none; }
+.search-field .input { padding-left: 36px; width: 100%; }
+.table tr.group-row th { background: var(--surface-muted, var(--bg)); text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); }
+.table tr.detail-row td { background: var(--surface-muted, var(--bg)); }
+.material-lines { display: grid; gap: var(--s2); }
+.material-line { display: grid; grid-template-columns: minmax(0, 1fr) 110px auto; gap: var(--s2); align-items: end; }
+@media (max-width: 640px) { .material-line { grid-template-columns: minmax(0, 1fr) 90px auto; } }

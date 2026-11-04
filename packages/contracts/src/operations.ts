@@ -132,6 +132,16 @@ export const StockUsage = z.object({
   itemId: uuid, lotId: uuid.optional(), quantity: positiveQty,
   patientId: uuid.optional(), performedProcedureId: uuid.optional(), reason: optText(300),
 });
+/** Tedarikçi fiyat listesi satırı (ADR-097): sürümlüdür; geçerlilik bugünden önce olamaz. */
+export const SupplierPriceCreate = z.object({
+  supplierId: uuid, stockItemId: uuid, unitPrice: positiveMoney, validFrom: isoDate,
+  supplierCode: optText(60), note: optText(300),
+});
+/** Randevuda kullanılan ek malzeme (ADR-097): birden çok kalem tek seferde; lot takipli kalemde lot seçilmezse en yakın SKT'li yeterli lot düşülür. */
+export const AppointmentMaterials = z.object({
+  items: z.array(z.object({ itemId: uuid, lotId: uuid.optional(), quantity: positiveQty })).min(1, "En az bir malzeme girin").max(30),
+  note: optText(300),
+});
 export const StockWaste = z.object({ itemId: uuid, lotId: uuid.optional(), quantity: positiveQty, kind: z.enum(["waste", "return"]).default("waste"), reason });
 /** Sayım: sayılan miktar girilir; fark sistem tarafından düzeltme hareketi olarak yazılır (miktar ezilmez). */
 export const StockCount = z.object({ itemId: uuid, lotId: uuid.optional(), countedQuantity: nonNegQty, reason });

@@ -398,6 +398,12 @@ export async function seed(connectionString: string, opts: { password?: string; 
         await mv(ans, ansLot, "receipt", "30", { supplier: med });
         await mv(eld, null, "receipt", "4", { supplier: med });
         await mv(imp, impLot, "usage", "-1", { patient: patientIds[0], reason: "Sentetik demo kullanımı" });
+        // Madde 9 (ADR-097): sentetik tedarikçi fiyat listesi — randevu malzeme gideri bu fiyatlardan hesaplanır.
+        for (const [itemId, price, code] of [[imp, "1500.00", "SNT-IMP-4010"], [ans, "45.00", "SNT-KRT"], [eld, "120.00", "SNT-ELD-M"]] as const) {
+          await c.query(
+            `insert into supplier_prices(tenant_id, supplier_id, stock_item_id, unit_price, valid_from, supplier_code, note, created_by)
+             values ($1,$2,$3,$4,$5,$6,'Sentetik demo fiyatı',$7)`, [tenantId, med, itemId, price, addDays(today6, -30), code, creator]);
+        }
         const bankId = cash.rows.find((r) => r.kind === "bank")!.id;
         const sp = await c.query(
           `insert into supplier_entries(tenant_id, supplier_id, kind, amount, description, cash_account_id, occurred_at, created_by)
