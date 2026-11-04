@@ -8,7 +8,7 @@ Sürüm: 65201a2 (tur 1). Tester ürün kodunu değiştirmez; düzeltme cezeri-d
 - **Gözlenen:** Modal açılmaz (alertdialog 0), çekmece kapanır; yeniden açınca Açıklama boş (`{"afterEsc":{"modal":0,"formOpen":false,"native":0}}`, reopened reason ""). Yeni hasta çekmecesinde de aynı (modal 0, form kapandı). X ve arka plan tıklamasında modal doğru açılıyor.
 - **Tanı (hipotez):** `components/ui.tsx` Drawer klavye dinleyicisi boş bağımlılıklı `useEffect` içinde ilk render'daki `tryClose`'u yakalıyor; o anda `dirty=false` olduğundan Esc kirli formu doğrudan kapatıyor (bayat kapanış).
 - **Etki:** Kaydedilmemiş form verisi tek tuşla uyarısız kaybolur; madde 10 kabulünü Esc yolunda karşılamaz. Kayıtlı veri kaybı yok → S2.
-- **Kanıt:** evidence/tur1/browser-f-summary.json (F11, iki profil), evidence/tur1/masaustu-F11-kapatma.png, mobil-F11-kapatma.png.
+- **Kanıt:** evidence/tur1/browser-f-summary.json (F11, iki profil), evidence/tur1/masaustu-F11-kapatma.jpg, mobil-F11-kapatma.jpg.
 - **Sorumlu:** cezeri-duzeltici (web).
 
 ## QA-202 — Randevu formunda yalnız Not (veya tarih/saat/işlem/süre/koltuk) değişince form "kirli" sayılmıyor (S3, VERIFIED — fix1; tur 2 F11 iki profilde PASS)
