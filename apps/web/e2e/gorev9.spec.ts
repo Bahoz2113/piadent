@@ -16,16 +16,16 @@ test("yönetici parola sıfırlar → kullanıcı geçici parolayla girer → He
   const email = "asistan@demo-yesil.test";
   const a = await browser.newContext(); const admin = await a.newPage();
   await login(admin, "yonetici@demo-yesil.test");
-  await expect(admin.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
+  await expect(admin.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
   await admin.goto("/yonetim?sekme=ekip");
   const row = admin.getByRole("row").filter({ hasText: email });
-  let temp = "";
-  admin.on("dialog", (d) => {
-    if (d.type() === "prompt" && /Kimliğini/.test(d.message())) void d.accept("E2E: kimlik yüz yüze doğrulandı");
-    else if (d.type() === "prompt" && /Geçici parola/.test(d.message())) { temp = d.defaultValue(); void d.accept(); }
-    else void d.accept();
-  });
   await row.getByRole("button", { name: "Parola sıfırla" }).click();
+  const why = admin.getByRole("alertdialog", { name: "Geçici parola üret" });
+  await why.getByRole("textbox").fill("E2E: kimlik yüz yüze doğrulandı");
+  await why.getByRole("button", { name: "Parola üret" }).click();
+  const shown = admin.getByRole("alertdialog", { name: "Geçici parola" });
+  const temp = await shown.getByRole("textbox", { name: "Değer" }).inputValue();
+  await shown.getByRole("button", { name: "Tamam" }).click();
   await expect(admin.getByText("Parola sıfırlandı.")).toBeVisible();
   expect(temp).toMatch(/^gecici-/);
   await a.close();
@@ -45,6 +45,6 @@ test("yönetici parola sıfırlar → kullanıcı geçici parolayla girer → He
   await page.getByLabel("Yeni parola", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Yeni parola (tekrar)").fill(PASSWORD);
   await page.getByRole("button", { name: "Parolayı değiştir" }).click();
-  await expect(page.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
   await u.close();
 });

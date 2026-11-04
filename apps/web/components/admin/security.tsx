@@ -7,6 +7,7 @@ import { AKIS_SETTING_LABELS, type AkisSettingsT } from "@viadent/contracts";
 import { useData } from "@/lib/use-data";
 import { fmtDateTime } from "@/lib/format";
 import { Alert, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
+import { promptDialog } from "@/components/dialogs";
 
 type Notify = (k: "success" | "error", t: string) => void;
 interface Policy { requireMfaRoles: string[]; platformRequireMfaRoles: string[]; roles: { id: string; label: string }[] }
@@ -40,7 +41,7 @@ export function SecurityPanel({ notify }: { notify: Notify }) {
     finally { setBusy(false); }
   }
   async function revoke(id: string) {
-    const reason = window.prompt("Destek erişimi erken sonlandırılacak. Gerekçe (isteğe bağlı):");
+    const reason = await promptDialog({ title: "Destek erişimini sonlandır", message: "Destek erişimi erken sonlandırılacak.", inputLabel: "Gerekçe (isteğe bağlı)", confirmLabel: "Sonlandır", danger: true });
     if (reason === null) return;
     setBusy(true);
     try { await api(`/team/${id}/revoke`, { body: { reason } }); notify("success", "Destek erişimi kaldırıldı."); await grants.reload(); }

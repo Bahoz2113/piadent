@@ -62,7 +62,7 @@ export default function TodayPage() {
     <>
       <div className="page-head">
         <div>
-          <h1>Bugün</h1>
+          <h1>Panel</h1>
           <p>{fmtLongDay(today)} · {session.activeMembership?.tenantName}</p>
         </div>
         <button className="btn" onClick={() => void act("refresh", async () => undefined, "PİA Akış güncellendi")} disabled={busy === "refresh"}>

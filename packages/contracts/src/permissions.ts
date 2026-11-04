@@ -20,7 +20,8 @@ export const ROLE_LABELS: Record<Role, string> = {
 export const PERMISSIONS = [
   "patient.read",            // kimlik/iletişim özeti (maskeli)
   "patient.write",
-  "patient.identity.unmask", // tam kimlik no / telefon
+  "patient.identity.unmask", // tam kimlik no (gerekçeli, denetimli uçtan)
+  "patient.phone.read",      // tam telefon numarası (klinik içi tüm roller; destek rolü maskeli görür)
   "patient.health.read",     // anamnez, klinik not
   "clinical_note.write",
   "anamnesis.write",         // anamnez yanıtı kaydetme (yeni sürüm)
@@ -84,7 +85,7 @@ export const PERMISSIONS = [
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
-const base: Permission[] = ["patient.read", "appointment.read", "task.read", "task.write", "treatment.read"];
+const base: Permission[] = ["patient.read", "patient.phone.read", "appointment.read", "task.read", "task.write", "treatment.read"];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   // Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez (§05).

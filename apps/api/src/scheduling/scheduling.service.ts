@@ -1,15 +1,23 @@
 import { Inject, Injectable } from "@nestjs/common";
 import {
-  addDays, APPOINTMENT_TRANSITIONS, dayRangeUtc, localDate, zonedToUtc,
+  addDays, APPOINTMENT_PAST_GRACE_MINUTES, APPOINTMENT_TRANSITIONS, dayRangeUtc, localDate, zonedToUtc,
   type AppointmentCreate, type AppointmentStatus,
 } from "@viadent/contracts";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
-import type { RequestContext } from "../infra/context.js";
+import { has, type RequestContext } from "../infra/context.js";
 import { audit, enqueue } from "../audit/audit.js";
 
 const APPT_COLS = `a.id, a.appointment_type_id, a.patient_id, a.practitioner_id, a.chair_id, a.starts_at, a.ends_at, a.status, a.contact_outcome,
-  a.reason, a.note, a.cancel_reason, a.checked_in_at, a.completed_at, a.version`;
+  a.reason, a.note, a.cancel_reason, a.checked_in_at, a.completed_at, a.version, a.procedure_id,
+  pc.code as procedure_code, pc.name as procedure_name, pp.price as planned_price`;
+/** Planlanan işlem ve randevu günündeki tarife fiyatı (lookupPrice ile aynı öncelik: hekime özel > klinik; en yeni geçerli sürüm). $TZ yer tutucusu sorguya göre değiştirilir. */
+const procJoin = (tzParam: string) => `left join procedures pc on pc.id = a.procedure_id
+  left join lateral (
+    select ti.price::text as price from tariff_items ti join tariff_versions tv on tv.id = ti.tariff_version_id
+     where ti.procedure_id = a.procedure_id and tv.status = 'published' and tv.valid_from <= (a.starts_at at time zone ${tzParam})::date
+       and (tv.practitioner_id = a.practitioner_id or tv.practitioner_id is null)
+     order by (tv.practitioner_id is not null) desc, tv.valid_from desc, tv.published_at desc limit 1) pp on a.procedure_id is not null`;
 
 function presentAppointment(r: Record<string, any>) {
   return {
@@ -32,6 +40,10 @@ function presentAppointment(r: Record<string, any>) {
     checkedInAt: r.checked_in_at,
     completedAt: r.completed_at,
     version: r.version,
+    procedureId: r.procedure_id ?? null,
+    procedureLabel: r.procedure_code ? `${r.procedure_code} · ${r.procedure_name}` : null,
+    /** Tarifeden bilgi amaçlı fiyat (TL, metin); tarife yoksa null. */
+    plannedPrice: r.planned_price ?? null,
   };
 }
 
@@ -43,11 +55,13 @@ export class SchedulingService {
     return this.db.tx(ctx, async (c) => {
       const p = await c.query("select id, display_name, title, active from practitioners where active order by display_name");
       const ch = await c.query("select id, name, active from chairs where active order by name");
-      const ty = await c.query("select id, name, default_minutes from appointment_types where active order by name");
+      const ty = await c.query("select id, name, default_minutes, procedure_id from appointment_types where active order by name");
+      const pr = await c.query("select id, code, name, category, default_minutes from procedures where active order by category nulls last, name");
       return {
         practitioners: p.rows.map((r) => ({ id: r.id, name: r.display_name, title: r.title })),
         chairs: ch.rows.map((r) => ({ id: r.id, name: r.name })),
-        appointmentTypes: ty.rows.map((r) => ({ id: r.id, name: r.name, defaultMinutes: r.default_minutes })),
+        appointmentTypes: ty.rows.map((r) => ({ id: r.id, name: r.name, defaultMinutes: r.default_minutes, procedureId: r.procedure_id ?? null })),
+        procedures: pr.rows.map((r) => ({ id: r.id, code: r.code, name: r.name, category: r.category, defaultMinutes: r.default_minutes })),
       };
     });
   }
@@ -64,9 +78,10 @@ export class SchedulingService {
            join patients p on p.id = a.patient_id
            join practitioners pr on pr.id = a.practitioner_id
            left join chairs ch on ch.id = a.chair_id
+           ${procJoin("$3")}
           where a.starts_at >= $1 and a.starts_at < $2
           order by a.starts_at, pr.display_name`,
-        [from, to],
+        [from, to, ctx.timezone],
       );
       return { date: d, days, timezone: ctx.timezone, items: r.rows.map(presentAppointment) };
     });
@@ -79,8 +94,9 @@ export class SchedulingService {
       const r = await c.query(
         `select ${APPT_COLS}, pr.display_name as practitioner_name, ch.name as chair_name
            from appointments a join practitioners pr on pr.id = a.practitioner_id left join chairs ch on ch.id = a.chair_id
+           ${procJoin("$2")}
           where a.patient_id = $1 order by a.starts_at desc limit 100`,
-        [patientId],
+        [patientId, ctx.timezone],
       );
       return r.rows.map(presentAppointment);
     });
@@ -89,6 +105,12 @@ export class SchedulingService {
   async create(ctx: RequestContext, input: AppointmentCreate) {
     const startsAt = zonedToUtc(input.date, input.startTime, ctx.timezone);
     const endsAt = new Date(startsAt.getTime() + input.durationMinutes * 60_000);
+    // Geçmişe randevu verilemez (madde 1, ADR-094). Geriye dönük düzeltme yalnız takvim yöneticisine, gerekçeyle ve denetimli.
+    const past = startsAt.getTime() < Date.now() - APPOINTMENT_PAST_GRACE_MINUTES * 60_000;
+    if (past && !input.backdateReason) {
+      throw new AppError(422, "APPOINTMENT_IN_PAST", "Geçmiş bir tarih veya saate randevu oluşturulamaz. Lütfen ileri bir saat seçin.", { date: "Geçmiş tarih/saat seçilemez." });
+    }
+    if (past && !has(ctx, "schedule.manage")) throw Errors.forbidden();
     return this.db.tx(ctx, async (c) => {
       // Takvim yazımları tenant başına sıralanır: kapatma ile randevu aynı anda oluşturulsa da tutarlı kalır.
       await c.query("select pg_advisory_xact_lock(hashtextextended('viadent:schedule:' || $1::text, 0))", [ctx.tenantId]);
@@ -101,10 +123,17 @@ export class SchedulingService {
         if (!chair.rowCount) throw Errors.validation({ chairId: "Koltuk bulunamadı veya pasif." });
       }
       let reason = input.reason ?? null;
+      let procedureId = input.procedureId ?? null;
       if (input.appointmentTypeId) {
-        const ty = await c.query("select name from appointment_types where id = $1 and active", [input.appointmentTypeId]);
+        const ty = await c.query("select name, procedure_id from appointment_types where id = $1 and active", [input.appointmentTypeId]);
         if (!ty.rowCount) throw Errors.validation({ appointmentTypeId: "İşlem türü bulunamadı." });
         reason = reason ?? ty.rows[0].name;
+        procedureId = procedureId ?? ty.rows[0].procedure_id ?? null;
+      }
+      if (procedureId) {
+        const pr = await c.query("select name from procedures where id = $1 and active", [procedureId]);
+        if (!pr.rowCount) throw Errors.validation({ procedureId: "İşlem bulunamadı veya pasif." });
+        reason = reason ?? pr.rows[0].name;
       }
       // Kapatma: aşılamaz (T06).
       const closed = await c.query(
@@ -124,24 +153,30 @@ export class SchedulingService {
         throw new AppError(422, "OUTSIDE_WORKING_HOURS", "Seçilen saat hekimin çalışma saatleri dışında.", undefined, { blocks: outside.blocks });
       }
       const r = await c.query(
-        `insert into appointments(tenant_id, branch_id, patient_id, practitioner_id, chair_id, appointment_type_id, starts_at, ends_at, reason, note, created_by)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         returning id, appointment_type_id, patient_id, practitioner_id, chair_id, starts_at, ends_at, status, contact_outcome, reason, note,
-                   cancel_reason, checked_in_at, completed_at, version`,
+        `insert into appointments(tenant_id, branch_id, patient_id, practitioner_id, chair_id, appointment_type_id, starts_at, ends_at, reason, note, created_by, procedure_id)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         returning id`,
         [ctx.tenantId, prac.rows[0].branch_id, input.patientId, input.practitionerId, input.chairId ?? null, input.appointmentTypeId ?? null,
-         startsAt, endsAt, reason, input.note ?? null, ctx.userId],
+         startsAt, endsAt, reason, input.note ?? null, ctx.userId, procedureId],
       );
-      const a = r.rows[0];
+      const a = await this.loadOne(c, ctx, r.rows[0].id);
       await audit(c, ctx, {
         action: "appointment.create", entityType: "appointment", entityId: a.id, patientId: a.patient_id,
         changes: {
           starts_at: { from: null, to: a.starts_at }, practitioner_id: { from: null, to: a.practitioner_id }, chair_id: { from: null, to: a.chair_id },
           ...(outside ? { outside_working_hours: { from: null, to: true } } : {}),
+          ...(procedureId ? { procedure_id: { from: null, to: procedureId } } : {}),
+          ...(past ? { backdated: { from: null, to: true }, backdate_reason: { from: null, to: input.backdateReason } } : {}),
         },
       });
       await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "appointment.create" });
       return presentAppointment(a);
     });
+  }
+
+  private async loadOne(c: import("pg").PoolClient, ctx: RequestContext, id: string) {
+    const r = await c.query(`select ${APPT_COLS} from appointments a ${procJoin("$2")} where a.id = $1`, [id, ctx.timezone]);
+    return r.rows[0];
   }
 
   /** Hekimin çalışma saati tanımı varsa ve aralık hiçbir bloğa tam sığmıyorsa o günün bloklarını döner. */
@@ -164,7 +199,7 @@ export class SchedulingService {
 
   async changeStatus(ctx: RequestContext, id: string, version: number, status: AppointmentStatus, cancelReason?: string) {
     return this.db.tx(ctx, async (c) => {
-      const cur = await c.query(`select ${APPT_COLS} from appointments a where a.id = $1 for update`, [id]);
+      const cur = await c.query("select id, patient_id, status, starts_at, version from appointments a where a.id = $1 for update", [id]);
       const a = cur.rows[0];
       if (!a) throw Errors.notFound("Randevu");
       if (a.version !== version) throw Errors.versionConflict();
@@ -181,9 +216,7 @@ export class SchedulingService {
             checked_in_at = case when $2::text = 'checked_in' then now() else checked_in_at end,
             completed_at = case when $2::text = 'completed' then now() else completed_at end,
             updated_at = now(), updated_by = $4, version = version + 1
-          where id = $1
-          returning id, appointment_type_id, patient_id, practitioner_id, chair_id, starts_at, ends_at, status, contact_outcome, reason, note,
-                    cancel_reason, checked_in_at, completed_at, version`,
+          where id = $1`,
         [id, status, cancelReason ?? null, ctx.userId],
       );
       await audit(c, ctx, {
@@ -191,7 +224,7 @@ export class SchedulingService {
         changes: { status: { from: a.status, to: status }, ...(cancelReason ? { cancel_reason: { from: null, to: cancelReason } } : {}) },
       });
       await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "appointment.status" });
-      return presentAppointment(r.rows[0]);
+      return presentAppointment(await this.loadOne(c, ctx, id));
     });
   }
 
@@ -202,9 +235,7 @@ export class SchedulingService {
       if (!a) throw Errors.notFound("Randevu");
       if (a.version !== version) throw Errors.versionConflict();
       const r = await c.query(
-        `update appointments set contact_outcome = $2, updated_at = now(), updated_by = $3, version = version + 1 where id = $1
-         returning id, patient_id, practitioner_id, chair_id, starts_at, ends_at, status, contact_outcome, reason, note,
-                   cancel_reason, checked_in_at, completed_at, version`,
+        `update appointments set contact_outcome = $2, updated_at = now(), updated_by = $3, version = version + 1 where id = $1`,
         [id, outcome, ctx.userId],
       );
       await audit(c, ctx, {
@@ -212,7 +243,7 @@ export class SchedulingService {
         changes: { contact_outcome: { from: a.contact_outcome, to: outcome } },
       });
       await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "appointment.contact" });
-      return presentAppointment(r.rows[0]);
+      return presentAppointment(await this.loadOne(c, ctx, id));
     });
   }
 }

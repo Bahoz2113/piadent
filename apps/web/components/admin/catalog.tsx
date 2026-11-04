@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Copy, Package, Plus, Trash2 } from "lucide-react";
-import { TOOTH_SCOPES, TOOTH_SCOPE_LABELS, formatTRY, isMoney, type ToothScope } from "@viadent/contracts";
+import { Copy, ListPlus, Package, Plus, Trash2 } from "lucide-react";
+import { STANDARD_PROCEDURES, TOOTH_SCOPES, TOOTH_SCOPE_LABELS, formatTRY, isMoney, type ToothScope } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, todayIn } from "@/lib/format";
 import { Alert, Drawer, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
+import { confirmDialog } from "@/components/dialogs";
 
 type Notify = (k: "success" | "error", t: string) => void;
 interface Procedure { id: string; code: string; name: string; category: string | null; toothScope: ToothScope; defaultMinutes: number | null; active: boolean }
@@ -17,14 +18,24 @@ export function CatalogPanel({ notify }: { notify: Notify }) {
   const procs = useData<{ items: Procedure[] }>("/procedures?all=1");
   const [consum, setConsum] = useState<{ id: string; code: string; name: string } | null>(null);
   const [editing, setEditing] = useState<Procedure | "new" | null>(null);
+  const [importing, setImporting] = useState(false);
   if (procs.loading && !procs.data) return <div className="card"><Loading /></div>;
   if (procs.error) return <div className="card"><ErrorState error={procs.error} /></div>;
   return (
     <div className="stack" style={{ gap: 16 }}>
       <section className="card">
         <div className="card-head">
-          <div><h2>İşlem kataloğu</h2><p className="muted small">Kod ve konum kapsamı oluşturulduktan sonra değişmez (geçmiş planlar bu tanıma dayanır). Katalog DEMO içeriktir; resmî kod listesi iddiası yoktur.</p></div>
-          <button className="btn btn-primary btn-sm" onClick={() => setEditing("new")}><Plus size={16} aria-hidden />Yeni işlem</button>
+          <div><h2>İşlem kataloğu</h2><p className="muted small">Kod ve konum kapsamı oluşturulduktan sonra değişmez (geçmiş planlar bu tanıma dayanır). Kodlar klinik içidir; resmî kod listesi iddiası yoktur.</p></div>
+          <span className="row" style={{ gap: 8 }}>
+            <button className="btn btn-sm" disabled={importing} title="Diş kliniğinde sık yapılan işlemlerin PİA-DENT standart listesi; yalnız eksik kodlar, fiyatsız eklenir."
+              onClick={async () => {
+                if (!(await confirmDialog({ title: "Standart işlem listesini ekle", message: `PİA-DENT standart listesindeki ${STANDARD_PROCEDURES.length} işlemden katalogda olmayanlar fiyatsız eklenecek. Mevcut işlemler değişmez; fiyatları tarifede siz girersiniz.`, confirmLabel: "Ekle" }))) return;
+                setImporting(true);
+                try { const r = await api<{ added: number; skipped: number }>("/procedures/standard-import", { body: {} }); notify("success", r.added ? `${r.added} işlem eklendi (${r.skipped} zaten vardı). Fiyatları Tarifeler bölümünden girin.` : "Standart listedeki tüm işlemler zaten katalogda."); await procs.reload(); }
+                catch (e) { notify("error", (e as ApiFailure).message); } finally { setImporting(false); }
+              }}><ListPlus size={16} aria-hidden />Standart listeyi ekle</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setEditing("new")}><Plus size={16} aria-hidden />Yeni işlem</button>
+          </span>
         </div>
         <div className="table-wrap" tabIndex={0}>
           <table className="table">

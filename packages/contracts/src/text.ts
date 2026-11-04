@@ -25,7 +25,25 @@ export function toTitleTr(input: string): string {
     .join(" ");
 }
 
-/** Telefonu yalnız rakamlara indirger; TR yerel biçimi (05xx / 5xx) +90 ile E.164'e çevrilir. */
+/** Yurt içi telefon hane kuralı: 0 ile yazılırsa 11, 0 olmadan 10 hane (ör. 0555 123 45 67 / 555 123 45 67). Yurt dışı: + veya 00 ile, 8–15 hane. */
+export const PHONE_RULE_MESSAGE = "Telefon 0 ile başlıyorsa 11, 0 olmadan 10 hane olmalı (ör. 0555 123 45 67). Yurt dışı numarayı + ile yazın.";
+function isInternational(raw: string): boolean {
+  const t = raw.trim();
+  return t.startsWith("+") || t.replace(/\D+/g, "").startsWith("00");
+}
+/** Yazarken sınır: yurt içi numarada 0'lı 11, 0'sız 10 haneden fazlası eklenmez; yalnız rakam, boşluk, +, -, ( ) kabul edilir. */
+export function limitPhoneInput(raw: string): string {
+  const cleaned = raw.replace(/[^\d+\-() ]/g, "").replace(/(?!^)\+/g, "");
+  const max = isInternational(cleaned) ? 17 : cleaned.replace(/\D+/g, "").startsWith("0") ? 11 : 10;
+  let n = 0, out = "";
+  for (const ch of cleaned) {
+    if (/\d/.test(ch)) { if (n >= max) continue; n++; }
+    out += ch;
+  }
+  return out;
+}
+
+/** Telefonu yalnız rakamlara indirger; TR yerel biçimi (0'lı 11 / 0'sız 10 hane) +90 ile E.164'e çevrilir. Kurala uymayan yurt içi numara null döner. */
 export function normalizePhone(raw: string, defaultCountry = "90"): { e164: string; digits: string } | null {
   let d = raw.replace(/\D+/g, "");
   if (!d) return null;
@@ -33,10 +51,9 @@ export function normalizePhone(raw: string, defaultCountry = "90"): { e164: stri
     // uluslararası biçim
   } else if (d.startsWith("00")) {
     d = d.slice(2);
-  } else if (defaultCountry === "90" && d.length === 11 && d.startsWith("0")) {
-    d = "90" + d.slice(1);
-  } else if (defaultCountry === "90" && d.length === 10 && d.startsWith("5")) {
-    d = "90" + d;
+  } else if (defaultCountry === "90") {
+    if (d.startsWith("0")) { if (d.length !== 11) return null; d = "90" + d.slice(1); }
+    else { if (d.length !== 10) return null; d = "90" + d; }
   }
   if (d.length < 8 || d.length > 15) return null;
   return { e164: "+" + d, digits: d };

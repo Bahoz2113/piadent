@@ -221,7 +221,7 @@ describe("AT-09 eşzamanlı dağıtım", () => {
 describe("gerçekleşen işlem → alacak (VD-008)", () => {
   it("işlem tamamlanınca alacak oluşur; işlem iptalinde alacak iptal, tahsilat avansa döner; alacak doğrudan iptal edilemez", async () => {
     const pid = await newPatient("Jale");
-    const appt = (await sec.post("/appointments", { patientId: pid, practitionerId: pracId, date: day(0), startTime: "06:00", durationMinutes: 30, allowOutsideHours: true }).expect(201)).body;
+    const appt = (await admin.post("/appointments", { patientId: pid, practitionerId: pracId, date: day(0), startTime: "06:00", durationMinutes: 30, allowOutsideHours: true, backdateReason: "Test: geriye dönük ziyaret kaydı" }).expect(201)).body;
     await sec.post(`/appointments/${appt.id}/status`, { version: appt.version, status: "checked_in" }).expect(200);
     const procs = (await dentist.get("/procedures").expect(200)).body.items;
     const tem = procs.find((p: { code: string }) => p.code === "TEM-01");

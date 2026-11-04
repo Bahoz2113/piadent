@@ -35,7 +35,8 @@ let slot = 0;
 async function visit(pid: string, practitionerId: string) {
   const m = 300 + (slot++ % 40) * 15; // 05:00'ten itibaren, çakışmasız
   const time = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-  const a = (await sec.post("/appointments", { patientId: pid, practitionerId, date: day(0), startTime: time, durationMinutes: 15, allowOutsideHours: true }).expect(201)).body;
+  // Bugünün erken saati çoğu zaman geçmiştir: geriye dönük kayıt yalnız takvim yöneticisine ve gerekçeyle açık (ADR-094).
+  const a = (await admin.post("/appointments", { patientId: pid, practitionerId, date: day(0), startTime: time, durationMinutes: 15, allowOutsideHours: true, backdateReason: "Test: geriye dönük ziyaret kaydı" }).expect(201)).body;
   await sec.post(`/appointments/${a.id}/status`, { version: a.version, status: "checked_in" }).expect(200);
   return a.id as string;
 }

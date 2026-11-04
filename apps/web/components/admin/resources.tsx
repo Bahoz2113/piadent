@@ -10,7 +10,7 @@ interface Block { weekday: number; start: number; end: number }
 interface Prac { id: string; name: string; title: string | null; active: boolean; membershipId: string | null; memberName: string | null; schedule: Block[] }
 interface Admin {
   practitioners: Prac[]; chairs: { id: string; name: string; active: boolean }[];
-  appointmentTypes: { id: string; name: string; defaultMinutes: number; active: boolean }[]; dentistMemberships: { id: string; name: string }[];
+  appointmentTypes: { id: string; name: string; defaultMinutes: number; active: boolean; procedureId?: string | null; procedureLabel?: string | null }[]; dentistMemberships: { id: string; name: string }[];
 }
 const hhmm = (m: number) => (m === 1440 ? "24:00" : `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
 export function scheduleSummary(s: Block[]) {

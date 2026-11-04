@@ -10,6 +10,7 @@ import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextAreaField, TextField } from "@/components/ui";
+import { alertDialog, promptDialog } from "@/components/dialogs";
 import { Odontogram, type ToothState } from "./odontogram";
 
 interface Loc { kind: string; tooth: string | null; surfaces: string[]; quadrant: number | null; arch: string | null }
@@ -223,9 +224,9 @@ function VersionView({ v, plan, patientId, onChanged, onAddItem, readOnly }: { v
 function PerformedCard({ chart, canWrite, onChanged }: { chart: Chart; canWrite: boolean; onChanged: () => void }) {
   const { tz } = useSession();
   async function cancel(id: string) {
-    const reason = window.prompt("Kayıt silinmez; 'iptal' olarak işaretlenir. Gerekçe:");
+    const reason = await promptDialog({ title: "İşlemi iptal et", message: "Kayıt silinmez; 'iptal' olarak işaretlenir.", inputLabel: "Gerekçe", required: true, confirmLabel: "İptal olarak işaretle", danger: true });
     if (!reason) return;
-    try { await api(`/performed/${id}/cancel`, { body: { reason } }); onChanged(); } catch (e) { window.alert((e as ApiFailure).message); }
+    try { await api(`/performed/${id}/cancel`, { body: { reason } }); onChanged(); } catch (e) { await alertDialog({ title: "İşlem yapılamadı", message: (e as ApiFailure).message }); }
   }
   return (
     <section className="card">

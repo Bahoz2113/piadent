@@ -69,6 +69,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "procedure.correct": "İşlem düzeltmesi kaydedildi",
   "procedure.cancel": "Gerçekleşen işlem iptal edildi",
   "procedure.create": "Katalog işlemi eklendi",
+  "procedure.standard_import": "Standart işlem listesi kataloğa eklendi",
   "procedure.update": "Katalog işlemi güncellendi",
   "tariff.create": "Tarife taslağı oluşturuldu",
   "tariff.items": "Tarife kalemleri güncellendi",

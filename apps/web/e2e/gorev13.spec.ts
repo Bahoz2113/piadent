@@ -30,8 +30,8 @@ test("geçmiş randevu aktarımı: hasta kartları → randevular (çakışma ha
     buffer: Buffer.from(`﻿Kaynak_No;Adı;Soyadı;Doğum Tarihi\r\n${run}-P1;${first};${last};${dob}\r\n`) });
   await page.getByRole("button", { name: "Ön kontrol yap" }).click();
   await expect(page.getByText("Ön kontrol tamam. Hiçbir kayıt henüz yazılmadı.")).toBeVisible();
-  page.once("dialog", (d) => void d.accept());
   await page.getByRole("region", { name: "Aktarım ayrıntısı" }).getByRole("button", { name: /1 satırı aktar/ }).click();
+  await page.getByRole("alertdialog", { name: "Aktarımı onaylayın" }).getByRole("button", { name: "Aktar" }).click();
   await expect(page.getByText("1 kayıt aktarıldı.")).toBeVisible();
 
   await page.getByLabel("Aktarım türü").selectOption("appointment_history");
@@ -50,8 +50,8 @@ test("geçmiş randevu aktarımı: hasta kartları → randevular (çakışma ha
   await expect(detail.getByRole("cell", { name: "Dt. Elif Aras" }).first()).toBeVisible();
   await expect(detail.getByRole("cell", { name: "İptal" })).toBeVisible();
   if (process.env.E2E_SHOTS_DIR) await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/g13-randevu-aktarimi.png`, fullPage: true });
-  page.once("dialog", (d) => void d.accept());
   await detail.getByRole("button", { name: /2 satırı aktar/ }).click();
+  await page.getByRole("alertdialog", { name: "Aktarımı onaylayın" }).getByRole("button", { name: "Aktar" }).click();
   await expect(page.getByText("2 kayıt aktarıldı.")).toBeVisible();
 
   await page.goto(`/hastalar?q=${encodeURIComponent(last)}`);

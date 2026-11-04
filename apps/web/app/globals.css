@@ -159,8 +159,12 @@ table.table { width: 100%; border-collapse: collapse; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr:hover { background: var(--surface-muted); }
 .table a.rowlink { color: var(--text); font-weight: 600; text-decoration: none; }
+.table tr.row-click { cursor: pointer; }
+.table tr.row-click:hover a.rowlink { text-decoration: underline; }
 .table a.rowlink:hover { text-decoration: underline; }
 .list { list-style: none; margin: 0; padding: 0; }
+.list-heading { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin: 0; padding: var(--s3) var(--s5) var(--s2); border-top: 1px solid var(--border); }
+.card-head + .list-heading { border-top: 0; }
 .list > li { border-bottom: 1px solid var(--border); }
 .list > li:last-child { border-bottom: 0; }
 
@@ -187,6 +191,21 @@ table.table { width: 100%; border-collapse: collapse; }
 .skeleton { background: linear-gradient(90deg, var(--surface-muted) 25%, var(--bg) 37%, var(--surface-muted) 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; border-radius: 8px; }
 @keyframes sk { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } * { scroll-behavior: auto !important; } }
+
+/* ---------------------------------------------------------------- uygulama içi onay penceresi (tarayıcı confirm/prompt yerine) */
+.modal-layer { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: var(--s4); }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(18, 43, 39, 0.45); }
+.modal {
+  position: relative; width: min(440px, 100%); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); padding: var(--s5); display: grid; gap: var(--s3); max-height: calc(100dvh - 32px); overflow-y: auto;
+}
+.modal-head { display: flex; align-items: center; gap: var(--s3); }
+.modal-head h2 { margin: 0; font-size: 1.05rem; }
+.modal-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--primary-tint); color: var(--brand-primary); }
+.modal-danger .modal-icon { background: var(--error-bg); color: var(--error); }
+.modal-body { color: var(--text-secondary); line-height: 1.5; white-space: pre-line; }
+.modal-foot { display: flex; justify-content: flex-end; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s2); }
+@media (max-width: 480px) { .modal-foot .btn { flex: 1 1 auto; } }
 
 /* ---------------------------------------------------------------- çekmece */
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(18, 43, 39, 0.38); z-index: 50; }
@@ -232,6 +251,13 @@ table.table { width: 100%; border-collapse: collapse; }
 .kv { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: var(--s2) var(--s4); font-size: 0.875rem; }
 .kv dt { color: var(--text-secondary); }
 .kv dd { margin: 0; font-weight: 500; }
+
+/* ---------------------------------------------------------------- randevu: bakiye şeridi, geçmiş dilim */
+.money-strip { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); padding: var(--s3) var(--s4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.money-strip > span { display: grid; gap: 2px; min-width: 120px; }
+.money-strip strong { font-variant-numeric: tabular-nums; }
+.agenda-slot.is-past { background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(18, 43, 39, 0.035) 6px 12px); cursor: not-allowed; }
+.appt.is-past-pending { border-style: dashed; opacity: 0.92; }
 
 /* ---------------------------------------------------------------- Ajanda */
 .agenda-bar { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; margin-bottom: var(--s4); }

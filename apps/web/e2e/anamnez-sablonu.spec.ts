@@ -62,8 +62,8 @@ test("anamnez şablonu: yönetici taslak → hekim yayınlar → hastada yeni so
   await dr.getByRole("tab", { name: "Anamnez şablonu" }).click();
   const row = dr.locator("table tbody tr", { hasText: `E2E anamnez formu ${stamp}` });
   await expect(row.getByText("Yayında")).toBeVisible();
-  dr.once("dialog", (dlg) => void dlg.accept());
   await row.getByRole("button", { name: "Emekli et" }).click();
+  await dr.getByRole("alertdialog", { name: "Formu emekli et" }).getByRole("button", { name: "Emekli et" }).click();
   await expect(dr.getByText("Şablon emekli edildi")).toBeVisible();
   await expect(row.getByText("Emekli", { exact: true })).toBeVisible();
   await dr.context().close();

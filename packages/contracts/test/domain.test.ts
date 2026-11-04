@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   APPOINTMENT_TRANSITIONS, addDays, can, dayRangeUtc, isValidTckn, localDate, maskNationalId, maskPhone,
-  normalizePhone, normalizeSearch, PatientCreate, toTitleTr, zonedToUtc,
+  normalizePhone, limitPhoneInput, normalizeSearch, PatientCreate, toTitleTr, zonedToUtc,
 } from "../src/index.js";
 
 describe("Türkçe metin", () => {
@@ -21,6 +21,22 @@ describe("telefon", () => {
     expect(normalizePhone("555 000 11 22")?.e164).toBe("+905550001122");
     expect(normalizePhone("+49 30 1234567")?.e164).toBe("+49301234567");
     expect(normalizePhone("12")).toBeNull();
+  });
+  it("yurt içi hane kuralı: 0'lı 11, 0'sız 10 hane; fazlası/eksiği reddedilir", () => {
+    expect(normalizePhone("0212 555 11 22")?.e164).toBe("+902125551122");
+    expect(normalizePhone("2125551122")?.e164).toBe("+902125551122");
+    expect(normalizePhone("05550001122 3")).toBeNull();      // 12 hane (0'lı)
+    expect(normalizePhone("055500011")).toBeNull();          // 9 hane (0'lı)
+    expect(normalizePhone("55500011223")).toBeNull();        // 11 hane (0'sız)
+    expect(normalizePhone("905550001122")).toBeNull();       // + olmadan ülke kodu: yurt dışı için + gerekir
+    expect(normalizePhone("+90 555 000 11 22")?.e164).toBe("+905550001122");
+    expect(normalizePhone("0049 30 1234567")?.e164).toBe("+49301234567");
+  });
+  it("yazarken sınır: 0'lı 11, 0'sız 10 haneden fazlası eklenmez", () => {
+    expect(limitPhoneInput("0555 000 11 22 99")).toBe("0555 000 11 22 ");
+    expect(limitPhoneInput("555 000 11 2299")).toBe("555 000 11 22");
+    expect(limitPhoneInput("+49 30 1234567")).toBe("+49 30 1234567");
+    expect(limitPhoneInput("05a55")).toBe("0555");
   });
   it("maskeleme son haneler dışını gizler", () => {
     expect(maskPhone("+905550001122")).toBe("+905 *** ** 22");

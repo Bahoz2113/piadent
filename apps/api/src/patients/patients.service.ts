@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type pg from "pg";
 import { questionLabel,
-  isValidTckn, localDate, maskNationalId, maskPhone, normalizePhone, normalizeSearch, toTitleTr,
+  isValidTckn, localDate, maskNationalId, maskPhone, normalizePhone, PHONE_RULE_MESSAGE, normalizeSearch, toTitleTr,
   type PatientCreate, type PatientUpdate,
 } from "@viadent/contracts";
 import { Db } from "../infra/db.service.js";
@@ -43,7 +43,7 @@ export class PatientsService {
   constructor(@Inject(Db) private readonly db: Db) {}
 
   present(ctx: RequestContext, r: Record<string, any>) {
-    const unmask = has(ctx, "patient.identity.unmask");
+    const unmask = has(ctx, "patient.phone.read"); // telefon klinik içinde tam görünür (destek maskeli)
     const today = localDate(new Date(), ctx.timezone);
     return {
       id: r.id,
@@ -86,7 +86,7 @@ export class PatientsService {
     let phone: { e164: string; digits: string } | null = null;
     if (input.phone) {
       phone = normalizePhone(input.phone);
-      if (!phone) errors.phone = "Telefon numarası geçersiz.";
+      if (!phone) errors.phone = PHONE_RULE_MESSAGE;
     }
     if (Object.keys(errors).length) throw Errors.validation(errors);
     return { phone };
@@ -111,7 +111,7 @@ export class PatientsService {
         limit 10`,
       [input.nationalId ? indexHash(ctx.tenantId, input.nationalId) : null, name, input.birthDate ?? null, input.phoneDigits ?? null, excludeId ?? null],
     );
-    const unmask = has(ctx, "patient.identity.unmask");
+    const unmask = has(ctx, "patient.phone.read"); // telefon klinik içinde tam görünür (destek maskeli)
     return r.rows.map((x) => {
       let kind: DuplicateCandidate["kind"];
       let reason: string;

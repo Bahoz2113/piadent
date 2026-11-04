@@ -63,14 +63,15 @@ describe("AT-02 sekreter doğrudan API ile yetkisiz işlem çağırır", () => {
     expect(JSON.stringify(denH)).not.toContain("Sentetik muayene notu");
   });
 
-  it("yöneticide kimlik/telefon maskelenir, sekreterde görünür", async () => {
+  it("telefon klinik rollerinde tam görünür (ADR-093); kimlik no her rolde maskeli", async () => {
     const admin = await login(app, EMAILS.aAdmin);
     const sec = await login(app, EMAILS.aSecretary);
     const ap = (await admin.get("/patients?q=").expect(200)).body.items.find((p: { phone: string | null }) => p.phone);
-    expect(ap.phoneMasked).toBe(true);
-    expect(ap.phone).toContain("***");
+    expect(ap.phoneMasked).toBe(false);
+    expect(ap.phone).toMatch(/^\+90\d{10}$/);
     const sp = (await sec.get(`/patients/${ap.id}`).expect(200)).body;
     expect(sp.phone).toMatch(/^\+90\d{10}$/);
+    for (const p of [ap, sp]) if (p.nationalId) expect(p.nationalId).toContain("*");
   });
 
   it("CSRF başlığı olmayan değiştiren istek reddedilir", async () => {

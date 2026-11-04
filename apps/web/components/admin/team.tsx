@@ -6,6 +6,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, Drawer, ErrorState, Loading, SelectField, TextField } from "@/components/ui";
+import { alertDialog, promptDialog } from "@/components/dialogs";
 
 interface Member { id: string; role: Role; roleLabel: string; status: string; fullName: string; email: string; createdAt: string; revokedAt: string | null; isSelf: boolean; mfaEnabled?: boolean; expiresAt?: string | null }
 interface Invitation { id: string; email: string; fullName: string; roleLabel: string; expiresAt: string; createdBy: string }
@@ -21,24 +22,24 @@ export function TeamPanel({ notify }: { notify: (k: "success" | "error", t: stri
     try { await fn(); notify("success", ok); await Promise.all([team.reload(), invites.reload()]); }
     catch (e) { notify("error", (e as ApiFailure).message); } finally { setBusy(null); }
   }
-  function revoke(m: Member) {
-    const reason = window.prompt(`${m.fullName} kullanıcısının bu klinikteki erişimi kaldırılacak. Açık oturumları bir sonraki işlemde reddedilir.\n\nGerekçe (isteğe bağlı):`);
+  async function revoke(m: Member) {
+    const reason = await promptDialog({ title: "Erişimi kaldır", message: `${m.fullName} kullanıcısının bu klinikteki erişimi kaldırılacak. Açık oturumları bir sonraki işlemde reddedilir.`, inputLabel: "Gerekçe (isteğe bağlı)", confirmLabel: "Erişimi kaldır", danger: true });
     if (reason === null) return;
     void act(m.id, () => api(`/team/${m.id}/revoke`, { body: { reason } }), "Erişim kaldırıldı.");
   }
 
-  function resetMfa(m: Member) {
-    const reason = window.prompt(`${m.fullName} kullanıcısının iki adımlı doğrulaması sıfırlanacak; tüm oturumları kapanır ve yeniden kurması gerekir.\n\nKimliğini nasıl doğruladınız? (zorunlu)`);
+  async function resetMfa(m: Member) {
+    const reason = await promptDialog({ title: "İki adımlı doğrulamayı sıfırla", message: `${m.fullName} kullanıcısının iki adımlı doğrulaması sıfırlanacak; tüm oturumları kapanır ve yeniden kurması gerekir.`, inputLabel: "Kimliğini nasıl doğruladınız?", required: true, confirmLabel: "Sıfırla", danger: true });
     if (!reason || !reason.trim()) return;
     void act(m.id, () => api(`/team/${m.id}/mfa-reset`, { body: { reason } }), "İki adımlı doğrulama sıfırlandı.");
   }
 
-  function resetPassword(m: Member) {
-    const reason = window.prompt(`${m.fullName} için geçici parola üretilecek; tüm oturumları kapanır ve ilk girişte parola değiştirmesi istenir.\n\nKimliğini nasıl doğruladınız? (zorunlu)`);
+  async function resetPassword(m: Member) {
+    const reason = await promptDialog({ title: "Geçici parola üret", message: `${m.fullName} için geçici parola üretilecek; tüm oturumları kapanır ve ilk girişte parola değiştirmesi istenir.`, inputLabel: "Kimliğini nasıl doğruladınız?", required: true, confirmLabel: "Parola üret", danger: true });
     if (!reason || !reason.trim()) return;
     void act(m.id, async () => {
       const r = await api<{ temporaryPassword: string }>(`/team/${m.id}/password-reset`, { body: { reason } });
-      window.prompt("Geçici parola (yalnız şimdi gösterilir; güvenli kanaldan iletin):", r.temporaryPassword);
+      await alertDialog({ title: "Geçici parola", message: "Yalnız şimdi gösterilir; güvenli kanaldan iletin.", copyValue: r.temporaryPassword });
     }, "Parola sıfırlandı.");
   }
 

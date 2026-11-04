@@ -4,7 +4,7 @@ import { ReadinessPanel } from "@/components/care/readiness-panel";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, UserPlus, Ban } from "lucide-react";
-import { addDays, APPOINTMENT_STATUS_LABELS, APPOINTMENT_TRANSITIONS, CONTACT_OUTCOME_LABELS, formatPhone, type AppointmentStatus } from "@viadent/contracts";
+import { addDays, addMoney, APPOINTMENT_PAST_GRACE_MINUTES, APPOINTMENT_STATUS_LABELS, APPOINTMENT_TRANSITIONS, CONTACT_OUTCOME_LABELS, formatPhone, formatTRY, zonedToUtc, type AppointmentStatus } from "@viadent/contracts";
 import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
@@ -12,6 +12,7 @@ import { fmtDateTime, fmtLongDay, fmtTime, minutesOfDay, todayIn } from "@/lib/f
 import type { AgendaContext, Appt, Resources } from "@/lib/types";
 import { Alert, ContactBadge, Drawer, EmptyState, ErrorState, Loading, SelectField, StatusBadge, TextAreaField, TextField, useToast, DateField } from "@/components/ui";
 import { NewPatientDrawer } from "@/components/patient-form";
+import { isPastPending, PastPendingBadge } from "@/components/appointment-status";
 
 const DAY_START = 8 * 60;
 const DAY_END = 20 * 60;
@@ -102,7 +103,7 @@ function AgendaInner() {
     <>
       <div className="page-head">
         <div>
-          <h1>Ajanda</h1>
+          <h1>Randevular</h1>
           <p>{title}</p>
         </div>
         {can("appointment.write") && <button className="btn btn-primary" onClick={() => setCreating({ date, practitionerId: view === "week" ? weekPrac : undefined })}><Plus size={18} aria-hidden />Randevu ver</button>}
@@ -157,10 +158,12 @@ function AgendaInner() {
                         const m = DAY_START + i * SLOT;
                         const off = blocks ? !blocks.some((b) => b.start <= m && b.end >= m + SLOT) : false;
                         const label = `${c.label}, ${hhmm(m)}${off ? " (çalışma saati dışı)" : ""} için randevu ver`;
-                        return can("appointment.write") ? (
+                        // Geçmiş saat dilimine randevu verilemez (madde 1): dilim tıklanamaz, gri görünür.
+                        const slotPast = c.date < today || (c.date === today && m + SLOT <= nowMin - APPOINTMENT_PAST_GRACE_MINUTES);
+                        return can("appointment.write") && !slotPast ? (
                           <button key={m} className={`agenda-slot ${off ? "is-off" : ""}`} style={{ display: "block", width: "100%", border: 0 }} aria-label={label}
                             onClick={() => setCreating({ date: c.date, time: hhmm(m), practitionerId: c.practitionerId, chairId: c.chairId })} />
-                        ) : <div key={m} className={`agenda-slot ${off ? "is-off" : ""}`} />;
+                        ) : <div key={m} className={`agenda-slot ${off ? "is-off" : ""} ${slotPast ? "is-past" : ""}`} />;
                       })}
                       {closed.map((cl) => {
                         const s = localDay(cl.startsAt, tz) < c.date ? DAY_START : Math.max(minutesOfDay(cl.startsAt, tz), DAY_START);
@@ -176,11 +179,12 @@ function AgendaInner() {
                       {items.filter(c.match).map((a) => {
                         const s = Math.max(minutesOfDay(a.startsAt, tz), DAY_START);
                         const e = Math.min(minutesOfDay(a.endsAt, tz) || DAY_END, DAY_END);
+                        const pending = isPastPending(a, now);
                         return (
-                          <button key={a.id} className={`appt s-${a.status}`} style={{ top: (s - DAY_START) * PX_PER_MIN + 1, height: Math.max((e - s) * PX_PER_MIN - 2, 22) }}
+                          <button key={a.id} className={`appt s-${a.status} ${pending ? "is-past-pending" : ""}`} style={{ top: (s - DAY_START) * PX_PER_MIN + 1, height: Math.max((e - s) * PX_PER_MIN - 2, 22) }}
                             onClick={() => setSelected(a)} aria-label={`${fmtTime(a.startsAt, tz)} ${a.patientName}, ${APPOINTMENT_STATUS_LABELS[a.status]}`}>
                             <div className="t">{fmtTime(a.startsAt, tz)} · {a.patientName}</div>
-                            <div className="small muted">{APPOINTMENT_STATUS_LABELS[a.status]}{a.reason ? ` · ${a.reason}` : ""}</div>
+                            <div className="small muted">{pending ? "Sonuç bekliyor" : APPOINTMENT_STATUS_LABELS[a.status]}{a.reason ? ` · ${a.reason}` : ""}</div>
                           </button>
                         );
                       })}
@@ -210,7 +214,7 @@ function AgendaInner() {
                               <span style={{ minWidth: 0 }}>
                                 <strong style={{ display: "block" }}>{a.patientName}</strong>
                                 <span className="muted small" style={{ display: "block" }}>{a.practitionerName}{a.chairName ? ` · ${a.chairName}` : ""}</span>
-                                <span className="row" style={{ marginTop: 4 }}><StatusBadge status={a.status} /><ContactBadge outcome={a.contactOutcome} /></span>
+                                <span className="row" style={{ marginTop: 4 }}>{isPastPending(a, now) ? <PastPendingBadge /> : <StatusBadge status={a.status} />}<ContactBadge outcome={a.contactOutcome} /></span>
                               </span>
                             </button>
                           </li>
@@ -240,12 +244,22 @@ function AgendaInner() {
   );
 }
 
+/** Bugün için ilk uygun başlangıç: şimdiden sonraki 15 dakikalık dilim. */
+function nextQuarter(tz: string): string {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
+  const m = Math.ceil((now.getHours() * 60 + now.getMinutes() + 1) / 15) * 15;
+  return m >= 24 * 60 ? "23:45" : hhmm(m);
+}
+
 function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: Prefill; resources: Resources; onClose: () => void; onCreated: (a: { date: string }) => void }) {
+  const { tz, can } = useSession();
+  const today = todayIn(tz);
   const [patient, setPatient] = useState<{ id: string; fullName: string; fileNo?: number } | null>(null);
   const [q, setQ] = useState("");
   const [newPatient, setNewPatient] = useState(false);
   const [f, setF] = useState({
-    date: prefill.date, startTime: prefill.time ?? "09:00", durationMinutes: "30", appointmentTypeId: "",
+    date: prefill.date < today ? today : prefill.date,
+    startTime: prefill.time ?? (prefill.date <= today ? nextQuarter(tz) : "09:00"), durationMinutes: "30", appointmentTypeId: "", procedureId: "",
     practitionerId: prefill.practitionerId ?? resources.practitioners[0]?.id ?? "", chairId: prefill.chairId ?? "", reason: "", note: "",
   });
   const [err, setErr] = useState<ApiFailure | null>(null);
@@ -255,19 +269,31 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
   useEffect(() => { if (pre.data && !patient) setPatient(pre.data); }, [pre.data, patient]);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); if (err?.code === "OUTSIDE_WORKING_HOURS") setErr(null); };
   const durations = Array.from(new Set([15, 20, 30, 45, 60, 90, 120, Number(f.durationMinutes)])).sort((a, b) => a - b);
+  const procedures = resources.procedures ?? [];
+  // Planlanan işlemin tarife fiyatı (bilgi amaçlı; borç yalnız işlem gerçekleşince oluşur) ve hastanın güncel bakiyesi.
+  const price = useData<{ price: string | null }>(f.procedureId && f.practitionerId ? `/price?procedureId=${f.procedureId}&practitionerId=${f.practitionerId}&date=${f.date}` : null);
+  const account = useData<{ totals: { openDebt: string; advance: string } }>(patient && can("account.read") ? `/patients/${patient.id}/account` : null);
+  const startsAt = f.date && /^\d{2}:\d{2}$/.test(f.startTime) ? zonedToUtc(f.date, f.startTime, tz) : null;
+  const inPast = !!startsAt && startsAt.getTime() < Date.now() - APPOINTMENT_PAST_GRACE_MINUTES * 60_000;
 
   function pickType(id: string) {
     const t = resources.appointmentTypes.find((x) => x.id === id);
-    setF({ ...f, appointmentTypeId: id, durationMinutes: t ? String(t.defaultMinutes) : f.durationMinutes });
+    const proc = t?.procedureId ? procedures.find((p) => p.id === t.procedureId) : undefined;
+    setF({ ...f, appointmentTypeId: id, durationMinutes: t ? String(t.defaultMinutes) : f.durationMinutes, procedureId: proc ? proc.id : f.procedureId });
+  }
+  function pickProcedure(id: string) {
+    const p = procedures.find((x) => x.id === id);
+    setF({ ...f, procedureId: id, durationMinutes: p?.defaultMinutes && !f.appointmentTypeId ? String(p.defaultMinutes) : f.durationMinutes });
   }
 
   async function save(allowOutsideHours = false) {
     if (busy) return;
     if (!patient) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Önce hasta seçin.", field_errors: { patientId: "Hasta seçin" } })); return; }
+    if (inPast) { setErr(new ApiFailure(422, { code: "APPOINTMENT_IN_PAST", message: "Geçmiş bir tarih veya saate randevu oluşturulamaz. Lütfen ileri bir saat seçin.", field_errors: { startTime: "Geçmiş saat seçilemez" } })); return; }
     setBusy(true); setErr(null);
     try {
       await api("/appointments", { body: {
-        patientId: patient.id, practitionerId: f.practitionerId, chairId: f.chairId || undefined, appointmentTypeId: f.appointmentTypeId || undefined,
+        patientId: patient.id, practitionerId: f.practitionerId, chairId: f.chairId || undefined, appointmentTypeId: f.appointmentTypeId || undefined, procedureId: f.procedureId || undefined,
         date: f.date, startTime: f.startTime, durationMinutes: Number(f.durationMinutes), reason: f.reason || undefined, note: f.note || undefined,
         allowOutsideHours: allowOutsideHours || undefined,
       } });
@@ -293,8 +319,8 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
             {err.message} {blocks.length ? `O günkü çalışma saatleri: ${blocks.map((b) => `${hhmm(b.start)}–${hhmm(b.end)}`).join(", ")}.` : "Hekim o gün çalışmıyor."} Kayıt yine de yapılırsa geçmişe not düşülür.
           </Alert>
         ) : (
-          <Alert kind={err.code === "APPOINTMENT_CONFLICT" || err.code === "RESOURCE_CLOSED" ? "warning" : "error"}
-            title={err.code === "APPOINTMENT_CONFLICT" ? "Çakışma" : err.code === "RESOURCE_CLOSED" ? "Kapalı aralık" : undefined}>{err.message}</Alert>
+          <Alert kind={err.code === "APPOINTMENT_CONFLICT" || err.code === "RESOURCE_CLOSED" || err.code === "APPOINTMENT_IN_PAST" ? "warning" : "error"}
+            title={err.code === "APPOINTMENT_CONFLICT" ? "Çakışma" : err.code === "RESOURCE_CLOSED" ? "Kapalı aralık" : err.code === "APPOINTMENT_IN_PAST" ? "Geçmiş saat" : undefined}>{err.message}</Alert>
         ))}
         {patient ? (
           <div className="alert alert-success" role="status">
@@ -328,8 +354,18 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
           <SelectField label="Hekim" required value={f.practitionerId} onChange={set("practitionerId")} error={err?.fieldErrors.practitionerId}>
             {resources.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </SelectField>
-          <DateField label="Tarih" required value={f.date} onChange={set("date")} error={err?.fieldErrors.date} />
-          <TextField label="Saat" type="time" required step={300} value={f.startTime} onChange={set("startTime")} error={err?.fieldErrors.startTime} />
+          <SelectField label="Planlanan işlem" value={f.procedureId} onChange={(e) => pickProcedure(e.target.value)} error={err?.fieldErrors.procedureId}
+            hint={!f.procedureId ? "Fiyat ve hasta bakiyesi için işlem seçin." : price.loading ? "Fiyat okunuyor…" : price.data?.price ? `Tarife fiyatı: ${formatTRY(price.data.price)}` : "Bu işlem için yayında tarife fiyatı yok."}>
+            <option value="">Seçilmedi</option>
+            {[...new Set(procedures.map((p) => p.category ?? "Diğer"))].map((cat) => (
+              <optgroup key={cat} label={cat}>
+                {procedures.filter((p) => (p.category ?? "Diğer") === cat).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
+              </optgroup>
+            ))}
+          </SelectField>
+          <DateField label="Tarih" required min={today} value={f.date} onChange={set("date")} error={err?.fieldErrors.date} />
+          <TextField label="Saat" type="time" required step={300} value={f.startTime} onChange={set("startTime")}
+            error={err?.fieldErrors.startTime ?? (inPast ? "Geçmiş saat seçilemez" : undefined)} />
           <SelectField label="Süre" value={f.durationMinutes} onChange={set("durationMinutes")} error={err?.fieldErrors.durationMinutes}>
             {durations.map((m) => <option key={m} value={m}>{m} dakika</option>)}
           </SelectField>
@@ -337,7 +373,18 @@ function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: P
             <option value="">Seçilmedi</option>
             {resources.chairs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </SelectField>
-          <TextField label="Açıklama" className="full" value={f.reason} onChange={set("reason")} placeholder="Boşsa işlem türü adı kullanılır" />
+          {patient && can("account.read") && (
+            <div className="full money-strip" aria-live="polite">
+              {account.loading && !account.data ? <span className="muted small">Hasta bakiyesi okunuyor…</span> : account.data && (
+                <>
+                  <span><span className="muted small">Açık borç</span><strong>{formatTRY(account.data.totals.openDebt)}</strong></span>
+                  <span><span className="muted small">Avans</span><strong>{formatTRY(account.data.totals.advance)}</strong></span>
+                  {price.data?.price && <span><span className="muted small">İşlem sonrası tahmini borç</span><strong>{formatTRY(addMoney(account.data.totals.openDebt, price.data.price))}</strong></span>}
+                </>
+              )}
+            </div>
+          )}
+          <TextField label="Açıklama" className="full" value={f.reason} onChange={set("reason")} placeholder="Boşsa işlem türü / işlem adı kullanılır" />
           <TextAreaField label="Not" className="full" value={f.note} onChange={set("note")} rows={3} hint="Klinik bilgi yazmayın; idari not içindir." />
         </div>
       </div>
@@ -369,14 +416,16 @@ function AppointmentDetail({ appt, onClose, onChanged, onConflict }: { appt: App
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}
         <dl className="kv">
-          <dt>Durum</dt><dd><StatusBadge status={appt.status} /></dd>
+          <dt>Durum</dt><dd>{isPastPending(appt) ? <><PastPendingBadge /> <span className="muted small">({APPOINTMENT_STATUS_LABELS[appt.status]})</span></> : <StatusBadge status={appt.status} />}</dd>
           <dt>İletişim sonucu</dt><dd><ContactBadge outcome={appt.contactOutcome} /></dd>
           <dt>Hekim</dt><dd>{appt.practitionerName}</dd>
           <dt>Koltuk</dt><dd>{appt.chairName ?? "Belirtilmedi"}</dd>
           <dt>İşlem / neden</dt><dd>{appt.reason ?? "Belirtilmedi"}</dd>
+          <dt>Planlanan işlem</dt><dd>{appt.procedureLabel ?? "Seçilmedi"}{appt.plannedPrice ? <span className="muted"> · tarife {formatTRY(appt.plannedPrice)}</span> : appt.procedureLabel ? <span className="muted"> · tarifede fiyat yok</span> : null}</dd>
           <dt>Not</dt><dd>{appt.note ?? "Belirtilmedi"}</dd>
           {appt.cancelReason && <><dt>İptal nedeni</dt><dd>{appt.cancelReason}</dd></>}
         </dl>
+        {can("account.read") && <PatientBalance patientId={appt.patientId} plannedPrice={appt.status === "completed" ? null : appt.plannedPrice ?? null} />}
         <Link href={`/hastalar/${appt.patientId}`} className="btn btn-sm" style={{ alignSelf: "flex-start" }}>Hasta kartını aç</Link>
         {["planned", "confirmed"].includes(appt.status) && <ReadinessPanel appointmentId={appt.id} />}
         {can("appointment.write") && (
@@ -424,4 +473,19 @@ function AppointmentDetail({ appt, onClose, onChanged, onConflict }: { appt: App
 
 export default function AgendaPage() {
   return <Suspense fallback={<Loading />}><AgendaInner /></Suspense>;
+}
+
+/** Randevu ayrıntısında hastanın güncel bakiyesi ve (tamamlanmamışsa) planlanan işlemle tahmini borç. */
+function PatientBalance({ patientId, plannedPrice }: { patientId: string; plannedPrice: string | null }) {
+  const account = useData<{ totals: { openDebt: string; advance: string } }>(`/patients/${patientId}/account`);
+  if (account.loading && !account.data) return <div className="money-strip"><span className="muted small">Hasta bakiyesi okunuyor…</span></div>;
+  if (!account.data) return null;
+  const t = account.data.totals;
+  return (
+    <div className="money-strip" aria-label="Hasta bakiyesi">
+      <span><span className="muted small">Açık borç</span><strong>{formatTRY(t.openDebt)}</strong></span>
+      <span><span className="muted small">Avans</span><strong>{formatTRY(t.advance)}</strong></span>
+      {plannedPrice && <span><span className="muted small">İşlem sonrası tahmini borç</span><strong>{formatTRY(addMoney(t.openDebt, plannedPrice))}</strong></span>}
+    </div>
+  );
 }

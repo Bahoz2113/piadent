@@ -171,7 +171,11 @@ describe("T06 kapatma", () => {
 
 describe("Haftalık ajanda okuma", () => {
   it("from + days aralığı birden çok günü döner; 14 günden fazlası reddedilir", async () => {
-    const mon = nextWeekday(1, 20);
+    // Önceki testler randevuları nextWeekday(2, 20) salısına verir; hafta o salının pazartesisinden başlatılır
+    // (eskiden nextWeekday(1, 20) bugünün haftanın gününe göre o salıyı dışarıda bırakabiliyordu — tarihe bağlı test hatası).
+    const tue = nextWeekday(2, 20);
+    const [ty, tm, td] = tue.split("-").map(Number);
+    const mon = new Date(Date.UTC(ty!, tm! - 1, td! - 1)).toISOString().slice(0, 10);
     const r = (await sec.get(`/appointments?from=${mon}&days=7`).expect(200)).body;
     expect(r.days).toBe(7);
     const days = new Set(r.items.map((a: { startsAt: string }) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date(a.startsAt))));

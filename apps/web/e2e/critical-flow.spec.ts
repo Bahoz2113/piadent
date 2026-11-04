@@ -8,7 +8,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await expect(page.getByRole("heading", { name: "Bugün", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
 }
 
 /** Mobil emülasyonda tarayıcı taşan sayfayı uzaklaştırır; bu yüzden düzen genişliği proje görünüm alanıyla karşılaştırılır. */
@@ -63,8 +63,15 @@ test("sekreter: hasta oluştur → randevu ver → çakışma reddi → PİA İz
   await ap2.getByRole("button", { name: "Randevuyu kaydet" }).click();
   await ap2.getByRole("button", { name: "Çalışma saati dışında yine de kaydet" }).click();
   await expect(ap2.getByText(/dolu/)).toBeVisible();
-  await ap2.getByRole("button", { name: "Vazgeç" }).click();
-  page.once("dialog", (d) => void d.accept());
+  // Kaydedilmemiş formda kapatma: tarayıcı penceresi değil uygulama içi onay (madde 10)
+  await ap2.getByRole("button", { name: "Kapat" }).click();
+  const leave = page.getByRole("alertdialog", { name: "Kaydedilmemiş değişiklikler" });
+  await expect(leave).toBeVisible();
+  await leave.getByRole("button", { name: "Forma dön" }).click();
+  await expect(ap2).toBeVisible();
+  await ap2.getByRole("button", { name: "Kapat" }).click();
+  await page.getByRole("alertdialog", { name: "Kaydedilmemiş değişiklikler" }).getByRole("button", { name: "Kapat" }).click();
+  await expect(ap2).toBeHidden();
 
   await page.goto(`/hastalar?q=${last}`);
   await page.getByRole("link", { name: `Sentetik ${last}` }).click();
@@ -87,7 +94,7 @@ test("ajanda ve Bugün ekranları klavye ile kullanılabilir, taşma yok", async
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "İçeriğe geç" })).toBeFocused();
   await page.goto("/ajanda");
-  await expect(page.getByRole("heading", { name: "Ajanda" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Randevular", level: 1 })).toBeVisible();
   await noHorizontalOverflow(page);
   await page.goto("/bugun");
   await expect(page.getByRole("heading", { name: "PİA Akış" })).toBeVisible();

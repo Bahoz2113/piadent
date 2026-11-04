@@ -90,9 +90,15 @@ export const CONTACT_OUTCOME_LABELS: Record<(typeof CONTACT_OUTCOMES)[number], s
   not_contacted: "Aranmadı", informed: "Bilgi verildi", unreachable: "Ulaşılamadı",
 };
 
+/** Geçmişe randevu: başlangıç şimdiden bu kadar dakika önceyse yeni randevu reddedilir (ADR-094); yürüyerek gelen hasta için kısa tolerans. */
+export const APPOINTMENT_PAST_GRACE_MINUTES = 10;
 export const AppointmentCreate = z.object({
   patientId: uuid,
   appointmentTypeId: uuid.optional(),
+  /** Planlanan katalog işlemi; fiyat tarifeden gösterilir, tahakkuk yalnız gerçekleşen işlemden doğar. */
+  procedureId: uuid.optional(),
+  /** Geriye dönük düzeltme kaydı (yalnız schedule.manage, gerekçe zorunlu, denetime yazılır). Arayüz yeni randevuda sunmaz. */
+  backdateReason: optionalText(300),
   /** Çalışma saati dışı uyarısını gördükten sonra bilinçli kayıt (audit'e yazılır). Kapatma bunu aşamaz. */
   allowOutsideHours: z.boolean().optional(),
   practitionerId: uuid,
@@ -138,6 +144,8 @@ export const ChairUpsert = z.object({ name: trimmed(60).min(1, "Ad gerekli"), ac
 export const AppointmentTypeUpsert = z.object({
   name: trimmed(80).min(2, "Ad en az 2 karakter"),
   defaultMinutes: z.number().int().min(5).max(720),
+  /** Bu türle verilen randevuya varsayılan olarak bağlanacak katalog işlemi (fiyat gösterimi için). */
+  procedureId: uuid.nullable().optional(),
   active: z.boolean().optional(),
 });
 export const WorkScheduleReplace = z.object({

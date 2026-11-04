@@ -19,3 +19,4 @@ export * from "./password";
 export * from "./audit";
 export * from "./appearance";
 export * from "./invoices";
+export * from "./procedures-standard";

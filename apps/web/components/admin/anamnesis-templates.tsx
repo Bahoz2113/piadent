@@ -7,6 +7,7 @@ import { useData } from "@/lib/use-data";
 import { useSession } from "@/lib/session";
 import { fmtDateTime } from "@/lib/format";
 import { Alert, ErrorState, Loading, TextAreaField, TextField } from "@/components/ui";
+import { confirmDialog } from "@/components/dialogs";
 
 type Notify = (k: "success" | "error", t: string) => void;
 interface Tpl { id: string; version: number; status: "draft" | "published" | "retired"; title: string; note: string | null; questions: AnamnesisQuestion[]; createdAt: string; createdBy: string; publishedAt: string | null; publishedBy: string | null; retiredAt: string | null; usageCount: number }
@@ -91,7 +92,7 @@ export function AnamnesisTemplatesPanel({ notify }: { notify: Notify }) {
                 <td><span className={`badge badge-${t.status === "published" ? "success" : t.status === "draft" ? "warning" : "neutral"}`}>{ANAMNESIS_TEMPLATE_STATUS_LABELS[t.status]}</span></td>
                 <td className="small">{t.publishedAt ? `${t.publishedBy} · ${fmtDateTime(t.publishedAt)}` : "—"}{t.retiredAt && <div className="muted">emekli {fmtDateTime(t.retiredAt)}</div>}</td>
                 <td>{t.usageCount} kayıt</td>
-                <td>{t.status === "published" && can("anamnesis.review") && <button className="btn btn-sm btn-ghost" disabled={busy} onClick={() => { if (window.confirm("Yayındaki form emekli edilecek; yeni anamnezler yerleşik DEMO setle alınır. Eski kayıtlar etkilenmez. Devam?")) void run(() => api(`/anamnesis-templates/${t.id}/retire`, { body: {} }), "Şablon emekli edildi; yerleşik set yürürlükte."); }}>Emekli et</button>}</td></tr>))}</tbody>
+                <td>{t.status === "published" && can("anamnesis.review") && <button className="btn btn-sm btn-ghost" disabled={busy} onClick={async () => { if (await confirmDialog({ title: "Formu emekli et", message: "Yayındaki form emekli edilecek; yeni anamnezler yerleşik DEMO setle alınır. Eski kayıtlar etkilenmez.", confirmLabel: "Emekli et", danger: true })) void run(() => api(`/anamnesis-templates/${t.id}/retire`, { body: {} }), "Şablon emekli edildi; yerleşik set yürürlükte."); }}>Emekli et</button>}</td></tr>))}</tbody>
           </table></div>
         )}
       </section>

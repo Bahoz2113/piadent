@@ -4,16 +4,18 @@ import { BrandLogo } from "./brand";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  BarChart3, Building2, CalendarDays, ChevronsLeft, ClipboardList, LogOut, Menu, Palette, Search, Settings2, Stethoscope, Sun, Users, Wallet, RefreshCw, UserCog,
+  BarChart3, BriefcaseMedical, Building2, CalendarDays, ChevronsLeft, ClipboardList, LayoutDashboard, LogOut, Menu, Palette, Search, Settings2, Stethoscope, Users, Wallet, RefreshCw, UserCog,
 } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { AppearanceDrawer } from "@/components/appearance-drawer";
 import { TableLabels } from "@/components/table-labels";
+import { DialogHost } from "@/components/dialogs";
 
 const NAV = [
-  { href: "/bugun", label: "Bugün", icon: Sun },
+  { href: "/bugun", label: "Panel", icon: LayoutDashboard },
   { href: "/hastalar", label: "Hastalar", icon: Users },
-  { href: "/ajanda", label: "Ajanda", icon: CalendarDays },
+  { href: "/ajanda", label: "Randevular", icon: CalendarDays },
+  { href: "/hekimler", label: "Hekimler", icon: BriefcaseMedical },
   { href: "/tedavi", label: "Tedavi", icon: Stethoscope },
   { href: "/finans", label: "Finans", icon: Wallet },
   { href: "/operasyon", label: "Operasyon", icon: ClipboardList },
@@ -89,6 +91,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </header>
         {appearanceOpen && <AppearanceDrawer onClose={() => setAppearanceOpen(false)} />}
         <TableLabels />
+        <DialogHost />
         {contextChanged && (
           <div className="alert alert-warning" role="alert" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
             <RefreshCw size={18} aria-hidden />
