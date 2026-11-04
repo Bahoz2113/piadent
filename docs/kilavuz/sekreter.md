@@ -3,7 +3,7 @@
 **Sabah: Bugün ekranı.** Günün randevuları ve PİA Akış görevleri (neden, sorumlu, sonraki adım). "Geciken randevu" görevi randevu saati eşik kadar geçince düşer; **Geldi / Gelmedi** ile kapatın.
 ![Bugün](img/10-sekreter-bugun.jpg)
 
-**Ajanda.** Gün/hafta, hekime ya da koltuğa göre. Boş alana tıklayıp randevu verin; çakışma ve çalışma saati dışı uyarıları sunucudan gelir (bilinçli onayla geçilebilir, ikinci bir randevu aynı saate verilemez).
+**Randevular** (eski adı Ajanda). Gün/hafta, hekime ya da koltuğa göre. Boş alana tıklayıp randevu verin (geçmiş saatler kapalıdır); planlanan işlemi seçince tarife fiyatı ve hastanın tahmini borcu görünür; çakışma ve çalışma saati dışı uyarıları sunucudan gelir (bilinçli onayla geçilebilir, ikinci bir randevu aynı saate verilemez).
 ![Ajanda](img/11-sekreter-ajanda.jpg)
 
 **Hasta kaydı.** Hastalar → Yeni hasta. Ad, soyad; doğum tarihi gg.aa.yyyy yazarak ya da takvimden. Aynı ad + doğum tarihi varsa **mükerrer aday** uyarısı çıkar; gerçekten farklı kişiyse "Farklı kişi, yine de kaydet". Kimlik no her zaman maskeli görünür; tam değer için "Göster" (gerekçe ister, denetime yazılır).

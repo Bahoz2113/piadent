@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BarChart3, Download, Play } from "lucide-react";
-import { formatTRY, type ColumnType, type Drill, type ReportColumn, type ReportDef } from "@viadent/contracts";
+import { addDays, formatTRY, type ColumnType, type Drill, type ReportColumn, type ReportDef } from "@viadent/contracts";
 import { api, ApiFailure, getPageContext } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fmtDate, fmtDateTime } from "@/lib/format";
@@ -40,7 +41,16 @@ function cell(v: unknown, type: ColumnType, tz: string) {
   }
 }
 
-export default function ReportsPage() {
+/**
+ * Varsayılan aralık: son 30 gün (raporun üst sınırı daha kısaysa o kadar). Ay başından bugüne varsayılanı ayın ilk günlerinde
+ * raporları boş gösteriyordu (ürün sahibi geri bildirimi 04.11.2026 madde 7).
+ */
+function defaultRange(today: string, maxDays: number): Params {
+  if (maxDays <= 1) return {};
+  return { from: addDays(today, -(Math.min(maxDays, 30) - 1)), to: today };
+}
+
+function ReportsInner() {
   const { tz } = useSession();
   const [cat, setCat] = useState<Catalog | null>(null);
   const [catErr, setCatErr] = useState<ApiFailure | null>(null);
@@ -50,6 +60,8 @@ export default function ReportsPage() {
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState(false);
   const current = stack.at(-1);
+  const search = useSearchParams() ?? new URLSearchParams();
+  const lastRapor = useRef<string | null>(null);
   const def = cat?.reports.find((r) => r.id === current?.id);
 
   const run = useCallback(async (id: string, p: Params) => {
@@ -69,7 +81,7 @@ export default function ReportsPage() {
       const r = c.reports.find((x) => x.id === id);
       if (id && r) {
         q.delete("rapor");
-        const p = { ...(r.maxDays > 1 ? { from: `${c.today.slice(0, 7)}-01`, to: c.today } : {}), ...Object.fromEntries(q.entries()) };
+        const p = { ...defaultRange(c.today, r.maxDays), ...Object.fromEntries(q.entries()) };
         setStack([{ id, params: p }]); setParams(p); void run(id, p);
       }
     }, (e) => setCatErr(e as ApiFailure));
@@ -77,8 +89,10 @@ export default function ReportsPage() {
 
   function open(id: string, p: Params, push = false) {
     const r = cat!.reports.find((x) => x.id === id);
-    const base: Params = r && r.maxDays > 1 ? { from: `${cat!.today.slice(0, 7)}-01`, to: cat!.today } : {};
+    const base: Params = r ? defaultRange(cat!.today, r.maxDays) : {};
     const next = { ...base, ...p };
+    // Adres hemen güncellenir: menüden "Raporlar"a tekrar tıklanınca (adres ?rapor'suz) liste açılır.
+    window.history.replaceState(null, "", `/raporlar?rapor=${id}`);
     setStack((s) => (push ? [...s, { id, params: next }] : [{ id, params: next }]));
     setParams(next); setRes(null); void run(id, next);
   }
@@ -86,7 +100,7 @@ export default function ReportsPage() {
     const s = stack.slice(0, -1);
     setStack(s);
     const prev = s.at(-1);
-    if (prev) { setParams(prev.params); void run(prev.id, prev.params); } else { setRes(null); window.history.replaceState(null, "", "/raporlar"); }
+    if (prev) { window.history.replaceState(null, "", `/raporlar?rapor=${prev.id}`); setParams(prev.params); void run(prev.id, prev.params); } else { setRes(null); window.history.replaceState(null, "", "/raporlar"); }
   }
   async function exportCsv(format: "csv" | "xlsx" = "csv") {
     if (!current) return;
@@ -103,6 +117,13 @@ export default function ReportsPage() {
       URL.revokeObjectURL(a.href);
     } catch (e) { setErr(e as ApiFailure); }
   }
+
+  // Menüden tekrar "Raporlar": adres ?rapor parametresini kaybettiyse açık rapordan listeye dönülür (madde 7).
+  useEffect(() => {
+    const now = search.get("rapor");
+    if (lastRapor.current && !now && stack.length) { setStack([]); setRes(null); setErr(null); }
+    lastRapor.current = now;
+  }, [search, stack.length]);
 
   if (catErr) return <div className="card"><ErrorState error={catErr} /></div>;
   if (!cat) return <div className="card"><Loading /></div>;
@@ -203,4 +224,8 @@ export default function ReportsPage() {
       )}
     </>
   );
+}
+
+export default function ReportsPage() {
+  return <Suspense fallback={<div className="card"><Loading /></div>}><ReportsInner /></Suspense>;
 }

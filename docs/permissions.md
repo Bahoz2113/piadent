@@ -7,7 +7,8 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 |---|:-:|:-:|:-:|:-:|:-:|
 | `patient.read` (maskeli özet) | ✔ | ✔ | ✔ | ✔ | ✔ |
 | `patient.write` | ✔ | ✔ | ✔ | – | – |
-| `patient.identity.unmask` (tam telefon/kimlik) | – | ✔ | ✔ | – | ✔ |
+| `patient.phone.read` (tam telefon; ADR-093) | ✔ | ✔ | ✔ | ✔ | ✔ |
+| `patient.identity.unmask` (kimlik no gösterimi, gerekçeli) | – | ✔ | ✔ | – | ✔ |
 | `patient.health.read` (klinik not, anamnez) | **–** | ✔ | – | ✔ | – |
 | `clinical_note.write` | – | ✔ | – | – | – |
 | `anamnesis.write` (yeni sürüm) | – | ✔ | – | ✔ | – |
@@ -21,7 +22,7 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 | `payment.refund` (iade) | – | – | – | – | ✔ |
 | `receivable.write` (elle alacak, alacak iptali) | – | – | – | – | ✔ |
 | `expense.write` (gider, gider ters kaydı) | – | – | – | – | ✔ |
-| `finance.settings` (kasa/banka hesabı, prim kuralı sürümü) | ✔ | – | – | – | ✔ |
+| `finance.settings` (kasa/banka hesabı, prim kuralı sürümü, hekim ücret modeli — ADR-096) | ✔ | – | – | – | ✔ |
 | `anamnesis.template` (anamnez soru şablonu taslağı; yayın hekim `anamnesis.review` ister) | ✔ | ✔ | – | – | – |
 | `invoice.write` (fatura taslağı; sağlayıcıya gönderim yalnız bağlıysa) | – | – | – | – | ✔ |
 | `document.read` (hasta belgeleri, kanıt olayları) | ✔ | ✔ | ✔ | ✔ | – |
@@ -95,6 +96,12 @@ Dört göz: onay yetkisi olsa bile **isteği açan kişi kendi isteğini onaylay
 **İki adımlı doğrulama (Görev 7):** her kullanıcı Hesabım'dan açabilir. `VIADENT_REQUIRE_MFA_ROLES` (ör. `clinic_admin,finance`) listesindeki rollerde MFA'sız oturum klinik uçlarına `403 MFA_ENROLLMENT_REQUIRED` alır; yalnız Hesabım açıktır. Zorunluluk platform tabanı (ortam) ∪ klinik politikası (Yönetim → Güvenlik, `settings.manage`; Görev 10). MFA sıfırlama `team.manage` ister, gerekçe zorunludur, kendi hesabına ve başka klinikte de üye olan kullanıcıya uygulanamaz.
 
 Hekimin klinik raporlarda yalnız kendi kayıtlarını görmesi sunucuda üyelik → hekim eşlemesiyle uygulanır; istemcinin gönderdiği hekim kimliği ezilir. Laboratuvar maliyeti yetkisiz rollerin yanıtında alan olarak hiç bulunmaz.
+
+## Geri bildirim 04.11.2026 (ADR-093…097)
+- Hekimler listesi `appointment.read`; ücret/hakediş `finance.read`; ücret modeli `finance.settings`; maaş ödemesi ve ters kaydı `commission.payout` (finans).
+- Panel `GET /dashboard` `appointment.read`; para alanları `finance.read`; tedavi dağılımı kategori adedi `treatment.read`.
+- Ürün ve fiyat listesi `stock.read`; tedarikçi fiyatı ve standart ürün listesi `stock.manage`; randevu malzemesi okuma `stock.read`, giriş `stock.write` (asistan, hekim, yönetici); işlem bedeli/katkı `finance.read`.
+- Geriye dönük randevu düzeltmesi `schedule.manage` + gerekçe (ADR-094).
 
 ## Henüz uygulanmayan roller
 - **Laboratuvar dış kullanıcısı** (P1): yalnız atanmış iş ve gerekli teknik bilgi.
