@@ -7,7 +7,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
-import { audit, enqueue } from "../audit/audit.js";
+import { audit, enqueue, auditAdminHealthView } from "../audit/audit.js";
 import { locCols, lookupPrice, presentLoc } from "./pricing.js";
 import { estimateUnitCost } from "../operations/stock-cost.js";
 import { accrueTreatmentCommission, cancelReceivable, createReceivable, lockAccount, reverseTreatmentCommission } from "../finance/ledger.js";
@@ -28,6 +28,7 @@ export class ChartController {
   chart(@Ctx() ctx: RequestContext, @Param("patientId", id) patientId: string) {
     return this.db.tx(ctx, async (c) => {
       if (!(await c.query("select 1 from patients where id = $1", [patientId])).rowCount) throw Errors.notFound("Hasta");
+      await auditAdminHealthView(c, ctx, patientId, "Diş şeması");
       const f = await c.query(
         `select f.id, f.tooth, f.surfaces, f.finding_type, f.note, f.status, f.created_at, u.full_name as by
            from odontogram_findings f join memberships m on m.id = f.recorded_by join users u on u.id = m.user_id

@@ -10,7 +10,7 @@ import { currentKeyId, decryptField, indexHash, totpAt, totpStep } from "@viaden
 import { rotateSecrets } from "../../../packages/db/src/rotate-keys.js";
 import { encryptNationalIds } from "../../../packages/db/src/encrypt-ids.js";
 import { isValidTckn } from "@viadent/contracts";
-import { EMAILS, adminQuery, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, adminQuery, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 import { OWNER_URL, TEST_PASSWORD } from "./env.js";
 
 let app: INestApplication;
@@ -34,6 +34,8 @@ const loginRaw = (server: unknown, email: string, password = TEST_PASSWORD) =>
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [admin, sec, dentist, bAdmin] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aSecretary), login(app, EMAILS.aDentist), login(app, EMAILS.bAdmin)]);
   tenantA = admin.session.activeMembership.tenantId;
   tenantB = bAdmin.session.activeMembership.tenantId;

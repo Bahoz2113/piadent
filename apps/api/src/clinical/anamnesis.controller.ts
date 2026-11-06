@@ -5,7 +5,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
-import { audit, enqueue } from "../audit/audit.js";
+import { audit, enqueue, auditAdminHealthView } from "../audit/audit.js";
 
 const pid = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound("Hasta") });
 
@@ -23,6 +23,7 @@ export class AnamnesisController {
   latest(@Ctx() ctx: RequestContext, @Param("patientId", pid) patientId: string) {
     return this.db.tx(ctx, async (c) => {
       if (!(await c.query("select 1 from patients where id = $1", [patientId])).rowCount) throw Errors.notFound("Hasta");
+      await auditAdminHealthView(c, ctx, patientId, "Anamnez");
       const versions = await c.query(
         `select v.id, v.version, v.questionnaire_version, v.template_id, v.critical_flags, v.created_at, u.full_name as recorded_by,
                 rv.reviewed_at, ru.full_name as reviewed_by
@@ -55,6 +56,7 @@ export class AnamnesisController {
     return this.db.tx(ctx, async (c) => {
       const r = await c.query("select version, answers, critical_flags, created_at, template_id, questionnaire_version from anamnesis_versions where patient_id = $1 and version = $2", [patientId, version]);
       if (!r.rowCount) throw Errors.notFound("Anamnez sürümü");
+      await auditAdminHealthView(c, ctx, patientId, "Anamnez");
       const v = r.rows[0];
       return { version: v.version, answers: v.answers, criticalFlags: v.critical_flags, createdAt: v.created_at, questionnaireVersion: v.questionnaire_version, questions: await questionnaireFor(c, v.template_id) };
     });

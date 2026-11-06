@@ -8,7 +8,7 @@ import type { INestApplication } from "@nestjs/common";
 import pg from "pg";
 import { withContext } from "@viadent/db";
 import { zonedToUtc } from "@viadent/contracts";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 import { APP_URL } from "./env.js";
 
 let app: INestApplication;
@@ -36,6 +36,8 @@ const account = async (patientId: string) => (await fin.get(`/patients/${patient
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [fin, sec, dentist, admin, assistant, bAdmin] = await Promise.all([login(app, EMAILS.aFinance), login(app, EMAILS.aSecretary), login(app, EMAILS.aDentist),
     login(app, EMAILS.aAdmin), login(app, EMAILS.aAssistant), login(app, EMAILS.bAdmin)]);
   tenantA = fin.session.activeMembership.tenantId;

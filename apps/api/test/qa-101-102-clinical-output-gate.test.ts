@@ -10,7 +10,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
-import { EMAILS, login, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication;
 let dentist: Client, sec: Client, admin: Client, asst: Client, fin: Client;
@@ -27,6 +27,8 @@ const day = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul"
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [dentist, sec, admin, asst, fin] = await Promise.all([
     login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aAdmin), login(app, EMAILS.aAssistant), login(app, EMAILS.aFinance)]);
   patientId = (await sec.post("/patients", { firstName: "Kapı", lastName: "QA101 Sentetik", birthDate: "1988-03-03" }).expect(201)).body.patient.id;

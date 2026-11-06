@@ -22,7 +22,7 @@ import type request from "supertest";
 import pg from "pg";
 import { scanAllTenants } from "../../worker/src/jobs.js";
 import { WORKER_URL } from "./env.js";
-import { EMAILS, login, ownerQuery, startApp, tomorrowIstanbul, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, tomorrowIstanbul, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication;
 let admin: Client, dentist: Client, sec: Client;
@@ -56,6 +56,8 @@ async function insertLegacyRule(docTypeId: string, procedureId = kanId) {
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık klinik içeriği görür; sızıntı süzgeci sağlık yetkisiz yönetici kümesiyle sınanır.
+  await useLegacyAdmin(app);
   [admin, dentist, sec] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary)]);
   tenantA = admin.session.activeMembership.tenantId;
   pracId = (await sec.get("/resources").expect(200)).body.practitioners[0].id;

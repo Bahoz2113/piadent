@@ -50,6 +50,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "anamnesis.save": "Anamnez kaydedildi",
   "anamnesis.review": "Anamnez gözden geçirildi",
   "clinical_note.create": "Klinik not eklendi",
+  "patient.health_view": "Yönetici sağlık kaydını görüntüledi",
   "clinical_note.correct": "Klinik not düzeltmesi eklendi",
   "finding.create": "Odontogram bulgusu eklendi",
   "finding.status": "Odontogram bulgu durumu değişti",
@@ -239,7 +240,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   // Entegrasyon, aktarım, rapor
   provider: "Sağlayıcı", secret: "Gizli anahtar", config: "Bağlantı ayarları", operation: "İşlem", approval: "Onay", transport_status: "İletim durumu",
   imported: "Aktarılan satır", skipped: "Atlanan satır", valid: "Geçerli satır", rows: "Satır sayısı", omitted: "Dışarıda bırakılan",
-  sections: "Bölümler", tables: "Tablolar", report: "Rapor", params: "Parametreler",
+  section: "Bölüm", sections: "Bölümler", tables: "Tablolar", report: "Rapor", params: "Parametreler",
 };
 
 /** Alan anahtarını Türkçe etikete çevirir; `amaç:kanal` (iletişim tercihi) ve `document:<id>` (hazırlık) gibi türetilmiş anahtarları da çözer. */

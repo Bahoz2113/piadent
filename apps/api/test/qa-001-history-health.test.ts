@@ -6,7 +6,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
-import { EMAILS, login, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication;
 let admin: Client, dentist: Client, sec: Client, fin: Client;
@@ -21,6 +21,8 @@ const day = (offset: number) => {
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [admin, dentist, sec, fin] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aFinance)]);
   patientId = (await sec.post("/patients", { firstName: "Gecmis", lastName: "Sentetik", birthDate: "1991-02-02" }).expect(201)).body.patient.id;
   await dentist.post(`/patients/${patientId}/findings`, { tooth: "16", surfaces: ["O"], findingType: "caries" }).expect(201);

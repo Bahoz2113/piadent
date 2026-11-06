@@ -12,7 +12,7 @@ import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import pg from "pg";
 import { ClamdScanner, BasicScanner, LocalDiskStorage, documentsMaintenance, processIntegrationJobs, withContext } from "@viadent/db";
-import { EMAILS, adminQuery, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, adminQuery, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 import { Db } from "../src/infra/db.service.js";
 import { APP_URL, WORKER_URL } from "./env.js";
 import { processOutbox, scanAllTenants, type WorkerDeps } from "../../worker/src/jobs.js";
@@ -68,6 +68,8 @@ async function approvedVersion(code: string) {
 beforeAll(async () => {
   setStorageForTests(storage);
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [admin, dentist, sec, assistant, fin, bDentist] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary),
     login(app, EMAILS.aAssistant), login(app, EMAILS.aFinance), login(app, EMAILS.bDentist)]);
   tenantA = sec.session.activeMembership.tenantId;

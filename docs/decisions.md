@@ -351,3 +351,12 @@ Dış erişimli demo için en az parçalı yol seçildi: Vercel'de tek Next.js p
 2. Migration `0034`: `supplier_prices` (tedarikçi × ürün × geçerlilik; sürümlü, yalnız ekleme; geriye dönük 422, aynı gün 409; `stock.manage`).
 3. Birim maliyet önceliği: son alışın tedarikçisinin geçerli fiyatı → en düşük geçerli tedarikçi fiyatı → son alış maliyeti; yoksa **null** ("fiyat tanımsız", sıfır sayılmaz). Kullanım hareketine **snapshot** yazılır (elle kullanım, sarf reçetesi, randevu malzemesi); fiyat sonra değişse de geçmiş gider değişmez; ters kayıt aynı maliyeti taşır.
 4. `stock_movements.appointment_id` (hasta zorunlu). `POST /appointments/:id/materials` (`stock.write`, idempotent): yalnız Geldi/Tedavide/Tamamlandı; çok kalem tek transaction (eksi stok → 409, hiçbir satır yazılmaz); lot seçilmezse en yakın SKT'li yeterli lot. `GET` malzeme gideri = ek malzeme + işlemin sarf reçetesi; işlem bedeli ve "malzeme sonrası katkı" yalnız `finance.read`. Katkı kâr değildir (personel/genel gider yok).
+
+## ADR-098 — Yönetici her şeyi görür ve yapabilir (07.11.2026, ürün sahibi kararı)
+**Bağlam:** Ürün sahibi: "yönetici her şeyi görecek şekilde revize edelim; geri kalan yine rol bazlı devam edecek" → seçim "Her şeyi görsün ve yapabilsin" (sağlık içeriği dahil).
+**Karar:**
+1. `clinic_admin` = tüm yetkiler (`[...PERMISSIONS]`): sağlık içeriği (diş şeması, klinik not, anamnez, klinik dosyalar, klinik görevler), klinik yazma, tahsilat/iade, onaylar. Önceki Plan §05 kısıtı ("yönetici unvanı sağlık içeriğine sınırsız erişim anlamına gelmez", ADR-023'ün yönetici kısmı) ve tahsilatta rol ayrılığı **kaldırıldı**.
+2. Diğer roller değişmedi (sekreter/finans sağlık yetkisiz; hekim finans görmez; destek salt okunur). Dört göz kuralı sürer: yönetici kendi açtığı isteği onaylayamaz.
+3. **Erişim izi:** yöneticinin her sağlık görüntülemesi PİA İz'e `patient.health_view` ("Yönetici sağlık kaydını görüntüledi", bölüm: Diş şeması / Klinik notlar / Anamnez / Hasta kartı sağlık özeti) olarak yazılır. Hekim/asistan okuması rutin klinik iş olduğundan iz üretmez.
+4. Testler: `adr-098-admin.test.ts` yeni davranışı sınar. Sağlık yetkisiz rol süzgecini sınayan eski dosyalar (QA-001, QA-104…110, Görev 1–13 vb.) süzgeç kapsamı kaybolmasın diye `useLegacyAdmin(app)` test kancasıyla eski yönetici kümesinde koşar (beklentiler değişmedi).
+**Risk (kayıtlı):** KVKK özel nitelikli veri — "ihtiyaç kadar erişim" ilkesinden sapma; klinik sahibi sorumluluğu kabul etti. Erişim izi denetim için zorunlu tutuldu.

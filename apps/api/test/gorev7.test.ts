@@ -11,7 +11,7 @@ import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { isValidTckn } from "@viadent/contracts";
 import { decryptField, decryptFile, encryptFile, restoreAndVerify, runBackup, totpAt, totpStep } from "@viadent/db";
-import { EMAILS, adminQuery, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, adminQuery, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 import { ADMIN_URL, BACKUP_URL, OWNER_URL, TEST_PASSWORD } from "./env.js";
 
 let app: INestApplication;
@@ -37,6 +37,8 @@ const imp = (c: Client, body: Record<string, unknown>) => c.post("/imports", { f
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [admin, fin, sec, dentist, bAdmin] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aFinance), login(app, EMAILS.aSecretary),
     login(app, EMAILS.aDentist), login(app, EMAILS.bAdmin)]);
   tenantA = admin.session.activeMembership.tenantId;

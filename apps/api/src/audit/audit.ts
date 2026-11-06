@@ -79,6 +79,15 @@ export async function audit(c: pg.PoolClient, ctx: Pick<RequestContext, "tenantI
   );
 }
 
+/**
+ * ADR-098: yönetici sağlık içeriğini görür; her görüntüleme PİA İz'e düşer (KVKK özel nitelikli veri — erişim izi).
+ * Hekim/asistan rutin klinik işini yaptığından onların okuması kayda geçmez; yalnız yönetici unvanı izlenir.
+ */
+export async function auditAdminHealthView(c: pg.PoolClient, ctx: RequestContext, patientId: string, section: "Diş şeması" | "Klinik notlar" | "Anamnez" | "Hasta kartı sağlık özeti") {
+  if (ctx.role !== "clinic_admin") return;
+  await audit(c, ctx, { action: "patient.health_view", entityType: "patient", entityId: patientId, patientId, changes: { section } });
+}
+
 /** Yalnız değişen alanlar; maskeleyiciyle hassas değer loga tam yazılmaz (PİA İz kuralı). */
 export function diff<T extends Record<string, unknown>>(
   before: T | null,

@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import pg from "pg";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 import { TEST_PASSWORD, WORKER_URL, APP_URL } from "./env.js";
 import { processOutbox } from "../../worker/src/jobs.js";
 
@@ -36,6 +36,8 @@ async function runWorker() {
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   admin = await login(app, EMAILS.aAdmin);
   sec = await login(app, EMAILS.aSecretary);
   dentist = await login(app, EMAILS.aDentist);

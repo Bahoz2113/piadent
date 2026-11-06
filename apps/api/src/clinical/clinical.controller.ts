@@ -4,7 +4,7 @@ import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { Errors, parse } from "../infra/errors.js";
 import type { RequestContext } from "../infra/context.js";
-import { audit } from "../audit/audit.js";
+import { audit, auditAdminHealthView } from "../audit/audit.js";
 
 const uuidPipe = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound("Hasta") });
 
@@ -22,6 +22,7 @@ export class ClinicalController {
     return this.db.tx(ctx, async (c) => {
       const p = await c.query("select 1 from patients where id = $1", [patientId]);
       if (!p.rowCount) throw Errors.notFound("Hasta");
+      await auditAdminHealthView(c, ctx, patientId, "Klinik notlar");
       const r = await c.query(
         `select n.id, n.body, n.created_at, n.corrects_note_id, n.correction_reason, u.full_name as author_name, a.starts_at as visit_at
            from clinical_notes n join memberships m on m.id = n.author_membership_id join users u on u.id = m.user_id
