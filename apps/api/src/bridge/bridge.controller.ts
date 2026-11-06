@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import {
   ConnectionUpdate, JobReject, MockConnectionCreate, MockSimulate, OnlinePaymentCreate, PROVIDER_READINESS, ProviderRefundCreate, fromMinor, toMinor,
 } from "@viadent/contracts";
-import { decryptSecret, encryptSecret, newWebhookSecret, signWebhook } from "@viadent/db";
+import { decryptSecret, encryptSecret, netgsmStatus, newWebhookSecret, signWebhook } from "@viadent/db";
 import { Ctx, Public, Require, Webhook } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
@@ -79,6 +79,7 @@ export class BridgeController {
           webhookPath: `/api/v1/webhooks/${x.id}`, rejections7d: x.rejections_7d })),
         readiness: PROVIDER_READINESS,
         externalSendGate: process.env.VIADENT_EXTERNAL_SEND_ENABLED === "true" ? "open" : "closed",
+        netgsm: netgsmStatus(),
         counts: counts.rows,
       };
     });
@@ -101,6 +102,26 @@ export class BridgeController {
       }
       await audit(c, ctx, { action: "integration_connection.create", entityType: "integration_connection", entityId: r.rows[0].id, changes: { kind: { from: null, to: i.kind }, provider: { from: null, to: "mock" } } });
       return { id: r.rows[0].id, webhookSecret: secret, note: "İmza anahtarı yalnız şimdi gösterilir; sağlayıcı paneline girin." };
+    });
+  }
+
+  /**
+   * ADR-102: Netgsm SMS bağlantısı. Kimlik bilgisi bu uçtan ALINMAZ ve saklanmaz — yalnız ortam değişkenlerinden okunur
+   * (NETGSM_USERCODE, NETGSM_PASSWORD, NETGSM_MSGHEADER). Bağlantı açılsa da bilgiler/kapı eksikse gönderim DENEME sağlayıcıda kalır.
+   */
+  @Post("integrations/connections/netgsm")
+  @Require("integration.manage")
+  createNetgsm(@Ctx() ctx: RequestContext) {
+    return this.db.tx(ctx, async (c) => {
+      if ((await c.query("select 1 from integration_connections where kind = 'sms' and provider = 'netgsm'")).rowCount) {
+        throw new AppError(409, "CONNECTION_EXISTS", "Netgsm bağlantısı zaten var.");
+      }
+      const r = await c.query(
+        `insert into integration_connections(tenant_id, kind, provider, mode, status, activated_by) values ($1,'sms','netgsm','live','active',$2) returning id`,
+        [ctx.tenantId, ctx.userId]);
+      await audit(c, ctx, { action: "integration_connection.create", entityType: "integration_connection", entityId: r.rows[0].id, changes: { kind: { from: null, to: "sms" }, provider: { from: null, to: "netgsm" } } });
+      const st = netgsmStatus();
+      return { id: r.rows[0].id, ready: st.ready, missing: st.missing };
     });
   }
 

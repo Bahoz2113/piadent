@@ -8,6 +8,7 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type pg from "pg";
 import { withContext } from "./context.js";
+import { NetgsmSmsAdapter, netgsmEnv } from "./netgsm.js";
 
 // ------------------------------------------------------------------ sır şifreleme (sürümlü anahtar halkası, ADR-052)
 // VIADENT_SECRET_KEY: güncel anahtar (32 bayt base64) — yeni şifrelemeler bununla yapılır.
@@ -149,6 +150,11 @@ export const defaultRegistry: AdapterRegistry = (c) => {
   if (c.status !== "active") return { unavailable: "Bağlantı etkin değil" };
   if (c.provider === "mock" && c.mode === "mock") return new MockProviderAdapter(c.config);
   if (c.mode === "live" && process.env.VIADENT_EXTERNAL_SEND_ENABLED !== "true") return { unavailable: "Canlı dış gönderim kapısı kapalı" };
+  // ADR-102: Netgsm SMS — kimlik bilgileri yalnız ortamdan; eksikse gönderim yapılmaz.
+  if (c.provider === "netgsm" && c.kind === "sms" && c.mode === "live") {
+    const env = netgsmEnv();
+    return env ? new NetgsmSmsAdapter(env) : { unavailable: "Netgsm kullanıcı kodu, API parolası veya gönderen adı ortamda tanımlı değil" };
+  }
   return { unavailable: `“${c.provider}” için doğrulanmış adaptör yok (sözleşme/test erişimi bekleniyor)` };
 };
 

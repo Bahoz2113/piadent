@@ -7,7 +7,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import pg from "pg";
-import { guardPool, processIntegrationJobs } from "@viadent/db";
+import { guardPool, pollNetgsmReports, processIntegrationJobs, processMessageRules, processMessageSchedules } from "@viadent/db";
 import { createApp } from "./bootstrap.js";
 import { loadConfig } from "./config.js";
 import { processOutbox, scanAllTenants } from "../../worker/src/jobs.js";
@@ -21,7 +21,7 @@ process.env.MIGRATIONS_DIR ||= migrationCandidates.find((d) => { try { return ex
 type Handler = (req: IncomingMessage, res: ServerResponse) => void;
 let handlerP: Promise<Handler> | null = null;
 let workerPool: pg.Pool | null = null;
-let lastScan = 0, ticking = false, pending = false;
+let lastScan = 0, lastMsg = 0, lastGetTick = 0, ticking = false, pending = false;
 
 /** Vercel'de yanıt sonrası iş `waitUntil` ile canlı tutulur; başka ortamda düz çalışır. */
 function keepAlive(p: Promise<unknown>) {
@@ -37,6 +37,11 @@ async function tick() {
     if (!workerPool) guardPool((workerPool = new pg.Pool({ connectionString: url, max: 2, application_name: "viadent-inline-worker" })), "inline-worker");
     do {
       pending = false;
+      // ADR-102: zamanlanmış/otomatik mesajlar ve Netgsm teslim raporu — en çok dakikada bir (sistem kullanıldıkça işlenir).
+      if (Date.now() - lastMsg > 60_000) {
+        lastMsg = Date.now();
+        await processMessageSchedules(workerPool); await processMessageRules(workerPool); await pollNetgsmReports(workerPool);
+      }
       for (let i = 0; i < 5; i++) { if ((await processOutbox(workerPool, 25)) + (await processIntegrationJobs(workerPool)) === 0) break; }
       if (Date.now() - lastScan > 120_000) { await scanAllTenants(workerPool); lastScan = Date.now(); }
     } while (pending);
@@ -51,6 +56,8 @@ export function getHandler(): Promise<Handler> {
     const express = app.getHttpAdapter().getInstance() as Handler;
     return (req, res) => {
       if (req.method && req.method !== "GET" && req.method !== "HEAD") res.on("finish", () => { keepAlive(tick()); });
+      // Okuma isteklerinde de en çok dakikada bir tur: zamanı gelen mesajlar yazma isteği beklemeden işlenir.
+      else if (Date.now() - lastGetTick > 60_000) { lastGetTick = Date.now(); res.on("finish", () => { keepAlive(tick()); }); }
       express(req, res);
     };
   })();

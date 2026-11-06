@@ -94,7 +94,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "anamnesis.template", "appointment.write", "audit.read",
     "treatment.write", "treatment.decision", "procedure.complete", "diagnosis.write",
     "document.read", "document.issue", "document.decision", "document.revoke", "file.read", "file.write", "file.delete", "communication.write",
-    "followup.write", "readiness.exception", "lab.read", "lab.write", "lab.decide", "stock.read", "stock.write", "report.clinical"],
+    "followup.write", "readiness.exception", "lab.read", "lab.write", "lab.decide", "stock.read", "stock.write", "report.clinical",
+    // 07.11.2026 (ADR-102): hekim hastalara bilgi mesajı gönderir ve zamanlar (izin kontrolü aynen geçerli).
+    "message.send"],
   // Sekreterya vezne işini yapar (tahsilat, avans dağıtımı) ama iade yapamaz ve gelir raporlarını göremez (§05).
   secretary: [...base, "patient.write", "patient.identity.unmask", "appointment.write", "treatment.decision", "account.read", "payment.write",
     "document.read", "document.issue", "document.decision", "file.read", "file.write", "communication.write", "message.send",

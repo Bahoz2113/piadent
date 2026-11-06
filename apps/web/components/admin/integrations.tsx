@@ -11,7 +11,8 @@ import { Alert, Drawer, ErrorState, Loading, SelectField, TextAreaField } from "
 type Notify = (k: "success" | "error", t: string) => void;
 interface Conn { id: string; kind: IntegrationKind; provider: string; mode: string; status: "active" | "disabled" | "blocked"; blockedReason: string | null;
   mockBehavior: string; mockQueryResult: string; hasSecret: boolean; secretRotatedAt: string | null; webhookPath: string; rejections7d: number }
-interface Overview { connections: Conn[]; readiness: Record<IntegrationKind, { mock: boolean; waitingFor: string }>; externalSendGate: "open" | "closed" }
+interface Overview { connections: Conn[]; readiness: Record<IntegrationKind, { mock: boolean; waitingFor: string }>; externalSendGate: "open" | "closed";
+  netgsm?: { configured: boolean; gateOpen: boolean; ready: boolean; missing: string[]; sender: string | null } }
 export interface Job { id: string; operation: string; approvalStatus: string; transportStatus: string; outcomeStatus: string; attempts: number; maxAttempts: number;
   nextAttemptAt: string | null; lastError: string | null; providerRef: string | null; createdAt: string; provider: string; mode: string; requestedBy: string;
   approvedBy: string | null; mine: boolean; summary: string }
@@ -65,10 +66,21 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
   return (
     <div className="stack" style={{ gap: 16 }}>
       <Alert kind="info" title="PİA Köprü — dış servis bağlantıları">
-        Bu ortamda yalnız <strong>DENEME</strong> (sahte, etiketli) SMS ve online ödeme sağlayıcısı vardır; gerçek mesaj gönderilmez, gerçek para hareket etmez.
+        {o.netgsm?.ready ? <>SMS <strong>Netgsm</strong> ile gerçekten gönderilir. Online ödeme ve e-belge yalnız <strong>DENEME</strong> (gerçek olmayan, etiketli) sağlayıcıdadır; gerçek para hareket etmez.</>
+          : <>Bu ortamda yalnız <strong>DENEME</strong> (gerçek olmayan, etiketli) SMS ve online ödeme sağlayıcısı vardır; gerçek mesaj gönderilmez, gerçek para hareket etmez.</>}
         Canlı dış gönderim kapısı: <span className={`badge badge-${o.externalSendGate === "open" ? "warning" : "neutral"}`}>{o.externalSendGate === "open" ? "AÇIK" : "KAPALI"}</span>.
         Sağlayıcı “kabul etti” demek, mesajın teslim edildiği veya ödemenin alındığı anlamına gelmez; nihai sonuç yalnız imzası doğrulanmış bildirimle kaydedilir.
       </Alert>
+
+      <section className="card card-pad stack" aria-labelledby="netgsm-h">
+        <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+          <div><h2 id="netgsm-h">Netgsm SMS</h2><p className="muted small">Randevu hatırlatma ve bilgi mesajları için gerçek SMS sağlayıcısı.</p></div>
+          {o.netgsm?.ready ? <span className="badge badge-success">Gerçek gönderime hazır · gönderen {o.netgsm.sender}</span> : <span className="badge badge-warning">Hazır değil — mesajlar DENEME</span>}
+        </div>
+        {!o.netgsm?.ready && <Alert kind="info">Eksik: {o.netgsm?.missing.join(", ") || "—"}. Netgsm kullanıcı kodu, API parolası ve onaylı gönderen adı barındırma ortamının ayarlarına (NETGSM_USERCODE, NETGSM_PASSWORD, NETGSM_MSGHEADER) girilir ve canlı gönderim kapısı açılır. Bu bilgiler bu ekrana veya sohbete yazılmaz.</Alert>}
+        {manage && !o.connections.some((c) => c.provider === "netgsm") && (
+          <div><button className="btn btn-sm" onClick={() => void api("/integrations/connections/netgsm", { body: {} }).then(() => { notify("success", "Netgsm bağlantısı eklendi."); void ov.reload(); }, (e) => notify("error", (e as ApiFailure).message))}>Netgsm bağlantısı ekle</button></div>)}
+      </section>
 
       <section className="card">
         <div className="card-head"><div><h2>Bağlantılar</h2><p className="muted small">Erişim bekleyen servisler etkinleştirilemez; yerine sahte başarı gösterilmez.</p></div></div>
@@ -78,7 +90,7 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
             <tbody>{o.connections.map((c) => (
               <tr key={c.id}>
                 <td><strong>{INTEGRATION_KIND_LABELS[c.kind]}</strong>{c.blockedReason && <div className="small muted">{c.blockedReason}</div>}</td>
-                <td>{c.provider === "mock" ? <span className="badge badge-warning">DENEME</span> : c.status === "blocked" ? <span className="muted">Seçilmedi</span> : c.provider}</td>
+                <td>{c.provider === "mock" ? <span className="badge badge-warning">DENEME</span> : c.status === "blocked" ? <span className="muted">Seçilmedi</span> : c.provider === "netgsm" ? "Netgsm" : c.provider}</td>
                 <td>{c.status === "active" ? <span className="badge badge-success">Etkin</span> : c.status === "disabled" ? <span className="badge badge-neutral">Kapalı</span>
                   : <span className="badge badge-warning">Erişim bekliyor</span>}</td>
                 <td>{c.provider === "mock" && manage ? (

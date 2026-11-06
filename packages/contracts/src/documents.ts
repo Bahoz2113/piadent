@@ -152,6 +152,23 @@ export const MessageSend = z.object({
   channel: z.enum(["sms", "whatsapp", "email"]),
   body: z.string().trim().min(2).max(640),
 });
+/** 07.11.2026 (ADR-102) Mesajlar sekmesi: toplu bilgi mesajı, zamanlanmış mesaj ("alarm"), otomatik randevu öncesi/sonrası mesaj. */
+export const MESSAGE_PURPOSES_INFO = ["treatment_followup", "appointment_reminder", "payment_reminder"] as const;
+export const MessagingSend = z.object({
+  patientIds: z.array(uuid).min(1, "En az bir hasta seçin").max(200, "Tek seferde en çok 200 hasta"),
+  purpose: z.enum(MESSAGE_PURPOSES_INFO).default("treatment_followup"),
+  body: z.string().trim().min(2, "Mesaj metni gerekli").max(640, "En çok 640 karakter"),
+});
+export const MessagingSchedule = MessagingSend.extend({ sendAt: z.iso.datetime({ offset: true }) });
+export const MESSAGE_RULE_KINDS = ["before_appointment", "after_appointment"] as const;
+export type MessageRuleKind = (typeof MESSAGE_RULE_KINDS)[number];
+export const MESSAGE_RULE_LABELS: Record<MessageRuleKind, string> = { before_appointment: "Randevudan önce hatırlatma", after_appointment: "Randevudan sonra bilgilendirme" };
+export const MessageRuleUpsert = z.object({
+  hours: z.coerce.number().int().min(1, "En az 1 saat").max(168, "En çok 168 saat (7 gün)"),
+  body: z.string().trim().min(2, "Mesaj metni gerekli").max(640, "En çok 640 karakter"),
+  active: z.boolean(),
+});
+export const MESSAGE_SOURCE_LABELS: Record<string, string> = { manual: "Elle", schedule: "Zamanlanmış", rule: "Otomatik" };
 export const MESSAGE_STATUS_LABELS: Record<string, string> = {
   draft: "Taslak", queued: "Kuyrukta", submitted: "Sağlayıcıya iletildi (teslim bilinmiyor)", delivered: "Teslim edildi",
   failed: "Başarısız", cancelled: "İptal", unknown: "Sonuç bilinmiyor",

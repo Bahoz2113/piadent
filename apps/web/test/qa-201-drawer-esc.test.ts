@@ -105,7 +105,8 @@ describe("QA-201/202 bağlantı (kaynak düzeyi)", () => {
     expect(drawer).not.toMatch(/if \(dirty\)/); // render kapanışındaki dirty'e doğrudan bakılmaz
   });
   it("Randevu ver: dirty yalnız hasta/açıklama değil, açılış değerinden sapan her alan", () => {
-    const page = readFileSync(new URL("../app/(app)/ajanda/page.tsx", import.meta.url), "utf8");
+    // 07.11.2026: randevu verme tam sayfaya taşındı (components/appointment/new-appointment-page.tsx); kural aynı.
+    const page = readFileSync(new URL("../components/appointment/new-appointment-page.tsx", import.meta.url), "utf8");
     expect(page).not.toMatch(/dirty=\{!!patient \|\| !!f\.reason\}/);
     expect(page).toMatch(/\.some\(\(k\) => f\[k\] !== initialF\[k\]\)/);
   });

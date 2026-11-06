@@ -7,6 +7,8 @@ export * from "./via-akis.js";
 export * from "./files.js";
 export * from "./readiness.js";
 export * from "./bridge.js";
+export * from "./netgsm.js";
+export * from "./messaging.js";
 export * from "./totp.js";
 export * from "./backup.js";
 export * from "./db-tuning.js";

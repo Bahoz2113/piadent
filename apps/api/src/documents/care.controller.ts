@@ -3,7 +3,7 @@ import type { Response } from "express";
 import {
   CommPreferenceSet, FollowUpCancel, FollowUpCreate, MessageSend, ReadinessExceptionCreate, ReadinessRuleCreate, localDate, maskPhone,
 } from "@viadent/contracts";
-import { readinessFor } from "@viadent/db";
+import { netgsmStatus, pickSmsConnection, readinessFor } from "@viadent/db";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
@@ -44,7 +44,9 @@ export class CareController {
         current, history: h.rows.map((r) => ({ purpose: r.purpose, channel: r.channel, status: r.status, source: r.source, note: r.note, at: r.recorded_at, by: r.by })),
         messages: m.rows.map((x) => ({ id: x.id, purpose: x.purpose, channel: x.channel, recipient: x.recipient_masked, body: x.body, provider: x.provider, status: x.status,
           statusReason: x.status_reason, createdAt: x.created_at, submittedAt: x.submitted_at, statusAt: x.status_at, by: x.by, events: x.events ?? [] })),
-        provider: { name: "mock", label: "DENEME — gerçek mesaj gönderilmez (sağlayıcı sözleşmesi yok, Görev 5)" },
+        provider: (await pickSmsConnection(c))?.provider === "netgsm"
+          ? { name: "netgsm", label: `Netgsm — gerçek SMS gönderilir (gönderen: ${netgsmStatus().sender})` }
+          : { name: "mock", label: "DENEME — gerçek mesaj gönderilmez (Netgsm ayarları tamamlanınca gerçek gönderim başlar)" },
       };
     });
   }
@@ -78,22 +80,24 @@ export class CareController {
           "select status from communication_preferences where patient_id = $1 and purpose = $2 and channel = $3 order by recorded_at desc limit 1",
           [i.patientId, i.purpose, i.channel])).rows[0];
         if (pref?.status !== "granted") throw new AppError(422, "CONSENT_MISSING", "Bu amaç ve kanal için hastanın kayıtlı iletişim izni yok. Önce iletişim tercihini kaydedin.");
-        const cn = await activeConnection(c, i.channel); // kanal başına sağlayıcı bağlantısı; yoksa 409 (sessiz başarı yok)
+        // ADR-102: SMS'te Netgsm hazırsa Netgsm, değilse DENEME; diğer kanallar kanal başına bağlantı. Yoksa 409 (sessiz başarı yok).
+        const cn = i.channel === "sms" ? (await pickSmsConnection(c)) ?? await activeConnection(c, i.channel) : await activeConnection(c, i.channel);
+        const provider = cn.provider === "netgsm" ? "netgsm" : "mock";
         const to = i.channel === "email" ? p.email : p.phone_e164;
         if (!to) throw new AppError(422, "RECIPIENT_MISSING", i.channel === "email" ? "Hastanın e-posta adresi yok." : "Hastanın telefonu yok.");
         const m = await c.query(
           `insert into messages(tenant_id, patient_id, purpose, channel, recipient_masked, body, provider, created_by)
-           values ($1,$2,$3,$4,$5,$6,'mock',$7) returning id, status`,
-          [ctx.tenantId, i.patientId, i.purpose, i.channel, i.channel === "email" ? maskEmail(to) : maskPhone(to), i.body, ctx.userId]);
+           values ($1,$2,$3,$4,$5,$6,$8,$7) returning id, status`,
+          [ctx.tenantId, i.patientId, i.purpose, i.channel, i.channel === "email" ? maskEmail(to) : maskPhone(to), i.body, ctx.userId, provider]);
         await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'queued','system',$3)",
-          [ctx.tenantId, m.rows[0].id, cn.provider === "mock" ? "Kuyruğa alındı (Deneme sağlayıcı)" : "Kuyruğa alındı"]);
+          [ctx.tenantId, m.rows[0].id, cn.provider === "mock" ? "Kuyruğa alındı (Deneme sağlayıcı)" : "Kuyruğa alındı (Netgsm)"]);
         // Sağlayıcıya yalnız alıcı ve metin gider; anahtar mesaj kimliğidir (yeniden denemede sağlayıcı tarafında tekilleşir).
         const jobId = await createJob(c, ctx, { connectionId: cn.id, operation: "sms.send", sourceType: "message", sourceId: m.rows[0].id,
           key: `msg_${m.rows[0].id}`, payload: { channel: i.channel, body: i.body }, requiresApproval: false });
         await c.query("update messages set integration_job_id = $2 where id = $1", [m.rows[0].id, jobId]);
         await audit(c, ctx, { action: "message.queue", entityType: "message", entityId: m.rows[0].id, patientId: i.patientId,
           changes: { purpose: { from: null, to: i.purpose }, channel: { from: null, to: i.channel } } });
-        return { id: m.rows[0].id as string, status: "queued", provider: "mock" };
+        return { id: m.rows[0].id as string, status: "queued", provider };
       });
       if (r.replayed) res.setHeader("Idempotent-Replayed", "true");
       return r.body;

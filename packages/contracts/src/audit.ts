@@ -51,6 +51,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "anamnesis.review": "Anamnez gözden geçirildi",
   "clinical_note.create": "Klinik not eklendi",
   "patient.health_view": "Yönetici sağlık kaydını görüntüledi",
+  "message.schedule": "Mesaj zamanlandı", "message.schedule_cancel": "Zamanlanmış mesaj iptal edildi", "message.rule_update": "Otomatik mesaj kuralı güncellendi",
   "health_notes.update": "Sağlık özeti güncellendi (kronik hastalık / ilaç / alerji)",
   "clinical_note.correct": "Klinik not düzeltmesi eklendi",
   "finding.create": "Odontogram bulgusu eklendi",
@@ -241,7 +242,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   // Entegrasyon, aktarım, rapor
   provider: "Sağlayıcı", secret: "Gizli anahtar", config: "Bağlantı ayarları", operation: "İşlem", approval: "Onay", transport_status: "İletim durumu",
   imported: "Aktarılan satır", skipped: "Atlanan satır", valid: "Geçerli satır", rows: "Satır sayısı", omitted: "Dışarıda bırakılan",
-  section: "Bölüm", sections: "Bölümler", tables: "Tablolar", report: "Rapor", params: "Parametreler",
+  send_at: "Gönderim zamanı", section: "Bölüm", sections: "Bölümler", tables: "Tablolar", report: "Rapor", params: "Parametreler",
 };
 
 /** Denetim kaydı türü (entity_type) → Türkçe ad. LOG sorgulamada ham İngilizce tür gösterilmez (07.11.2026 geri bildirimi). */
@@ -257,7 +258,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   template: "Şablon", template_version: "Şablon sürümü", document_type: "Belge türü", patient_document: "Hasta belgesi", readiness_rule: "Hazırlık kuralı",
   file: "Dosya", message: "Mesaj", task: "Görev", membership: "Ekip üyeliği", invitation: "Davet", tenant: "Klinik", report: "Rapor",
   integration_connection: "Entegrasyon bağlantısı", integration_job: "Entegrasyon işi", import_batch: "Veri aktarımı",
-  patient_leave: "Hekim izni", message_schedule: "Zamanlanmış mesaj",
+  patient_leave: "Hekim izni", message_schedule: "Zamanlanmış mesaj", message_rule: "Otomatik mesaj kuralı",
 };
 export function auditEntityLabel(t: string): string { return AUDIT_ENTITY_LABELS[t] ?? t.replace(/_/g, " "); }
 
