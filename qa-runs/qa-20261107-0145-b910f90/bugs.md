@@ -25,11 +25,12 @@ Sürüm: b910f90 (07.11.2026 ürün sahibi geri bildirimi). Tester ürün kodunu
 ## Tur 2 (b910f90, temiz seed, tam regresyon)
 Sonuç: 59/60 PASS; E2E 110 geçti + 10 bilinçli atlama, 0 hata. Gate: BEKLET (F01).
 
-### QA-301 — Randevu sayfasında geçmiş gün yazılınca uyarı yok (S3, OPEN)
+### QA-301 — Randevu sayfasında geçmiş gün yazılınca uyarı yok (S3, FIX_READY)
 - **Vaka:** F01 (madde 1 kabulü: "tarih alanı bugünden öncesini kabul etmez"). Profil: chromium-desktop + chromium-mobile-emulation. Rol: yönetici.
 - **Adımlar:** Randevular → Randevu ver (tam sayfa) → Gün alanına 01.01.2026 yaz → alandan çık.
 - **Beklenen:** Alan geçmiş günü kabul etmez veya açık uyarı ("Geçmiş gün seçilemez"); kayıt düğmesi geçmiş gün için sunucuya gitmeden engeller.
 - **Gözlenen:** Değer "01.01.2026" kalır, uyarı yok (`evidence/tur2/browser-f-summary.json` F01; `masaustu-F01-ajanda.jpg`, `mobil-F01-ajanda.jpg`). Uygun saatler listesi boş görünür ama nedeni söylenmez; elle saat girilirse sunucu 422 APPOINTMENT_IN_PAST verir (veri kaybı/yanlış kayıt yok).
 - **Tanı (hipotez):** eski çekmecede saat alanı `inPast` ile "Geçmiş saat seçilemez" uyarısı veriyordu; tam sayfaya taşınırken (ADR-101) bu istemci denetimi taşınmadı. `DateField min` yalnız takvim seçimini sınırlıyor, elle yazımı değil.
 - **Etki:** Düşük: kayıt sunucuda engelleniyor; kullanıcı neden boş saat olmadığını anlamıyor. **Sorumlu:** cezeri-duzeltici (web).
+- **Durum:** FIX_READY (cezeri-duzeltici, düzeltme 1 — `fix1.md`). Kapanış yalnız bağımsız tester yeniden sınamasıyla.
 - **Tester düzeltmesi (aynı vaka):** gece koşusunda (08:00 öncesi) ajandada bugünün "geçmiş dilimi" yoktur → geçmiş dilim kontrolü dünün gününde yapılır (saat bağımlılığı; beklenti aynı).

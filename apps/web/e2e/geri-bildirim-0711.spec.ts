@@ -108,6 +108,19 @@ test("Randevu ver tam sayfa: tek işlem seçimi, sağlık uyarısı, uygun saatl
   const opt = await islem.locator("option", { hasText: "Kompozit dolgu (tek yüz)" }).first().getAttribute("value");
   await islem.selectOption(opt!);
   await expect(page.getByText(/Fiyat: .*₺|Fiyat: ₺/)).toBeVisible();
+  // QA-301: elle yazılan geçmiş gün → alan uyarır, saat listelenmez, kaydet sunucuya gitmeden engeller.
+  const gun = page.getByPlaceholder("gg.aa.yyyy").first();
+  await gun.fill("01.01.2026");
+  await gun.blur();
+  await expect(page.getByText("Geçmiş gün seçilemez")).toBeVisible();
+  await expect(page.getByText("Geçmiş gün için saat listelenmez; bugün veya ileri bir gün seçin.")).toBeVisible();
+  let apptPosts = 0;
+  const countPost = (r: { method(): string; url(): string }) => { if (r.method() === "POST" && /\/appointments$/.test(new URL(r.url()).pathname)) apptPosts++; };
+  page.on("request", countPost);
+  await page.getByRole("button", { name: "Randevuyu kaydet" }).click();
+  await expect(page.getByText("Geçmiş bir tarih veya saate randevu oluşturulamaz. Lütfen ileri bir saat seçin.")).toBeVisible();
+  page.off("request", countPost);
+  expect(apptPosts, "geçmiş gün için sunucuya randevu isteği gitmemeli").toBe(0);
   // İlk hafta içi gün (seed hekimleri hafta sonu çalışmaz; pazar günü "boş saat yok" doğru davranıştır).
   const tomorrow = new Date(Date.now() + 86_400_000);
   while ([0, 6].includes(tomorrow.getDay())) tomorrow.setDate(tomorrow.getDate() + 1);

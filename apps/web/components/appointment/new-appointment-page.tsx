@@ -13,6 +13,7 @@ import { Alert, DateField, SelectField, TextAreaField, TextField } from "@/compo
 import { confirmDialog } from "@/components/dialogs";
 import { NewPatientDrawer } from "@/components/patient-form";
 import { HealthAlert, useHealthNotes } from "@/components/patient/health-notes";
+import { appointmentPastState, APPOINTMENT_IN_PAST_MESSAGE, PAST_DAY_ERROR, PAST_DAY_SLOTS_NOTE, PAST_TIME_ERROR } from "./past-guard";
 
 export interface Prefill { date: string; time?: string; practitionerId?: string; chairId?: string; patientId?: string }
 interface Proc { id: string; code: string; name: string; category: string | null; defaultMinutes: number | null; price: string | null }
@@ -37,6 +38,8 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
     practitionerId: prefill.practitionerId ?? resources.practitioners[0]?.id ?? "", chairId: prefill.chairId ?? "", reason: "", note: "",
   }));
   const [f, setF] = useState(initialF);
+  // QA-301: elle yazılan geçmiş gün / bugünün geçmiş saati (DateField min yalnız takvimi sınırlar).
+  const { pastDay, inPast } = appointmentPastState(f.date, f.startTime, today, tz);
   const [pay, setPay] = useState<{ mode: PayMode; amount: string; method: PaymentMethod; cashAccountId: string }>({ mode: "none", amount: "", method: "cash", cashAccountId: "" });
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,7 +56,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
   const proc = procedures.find((p) => p.id === f.procedureId);
   const price = useData<{ price: string | null }>(f.procedureId && f.practitionerId ? `/price?procedureId=${f.procedureId}&practitionerId=${f.practitionerId}&date=${f.date}` : null);
   const account = useData<{ totals: { openDebt: string; advance: string } }>(patient && can("account.read") ? `/patients/${patient.id}/account` : null);
-  const avail = useData<Availability>(f.practitionerId && f.date ? `/availability?practitionerId=${f.practitionerId}&date=${f.date}&minutes=${f.durationMinutes}${f.chairId ? `&chairId=${f.chairId}` : ""}` : null);
+  const avail = useData<Availability>(f.practitionerId && f.date && !pastDay ? `/availability?practitionerId=${f.practitionerId}&date=${f.date}&minutes=${f.durationMinutes}${f.chairId ? `&chairId=${f.chairId}` : ""}` : null);
   const canPay = can("payment.write") && can("account.read");
   const cash = useData<{ items: { id: string; name: string; kind: string; active: boolean }[] }>(canPay ? "/cash-accounts" : null);
   useEffect(() => {
@@ -101,6 +104,10 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
 
   async function save(allowOutsideHours = false) {
     if (busy) return;
+    if (!created && inPast) {
+      setErr(new ApiFailure(422, { code: "APPOINTMENT_IN_PAST", message: APPOINTMENT_IN_PAST_MESSAGE, field_errors: pastDay ? { date: PAST_DAY_ERROR } : { startTime: PAST_TIME_ERROR } }));
+      return;
+    }
     if (!patient) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Önce hasta seçin.", field_errors: { patientId: "Hasta seçin" } })); return; }
     if (!f.procedureId) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "İşlem seçin.", field_errors: { procedureId: "İşlem seçin" } })); return; }
     if (!f.startTime) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Uygun saatlerden birini seçin.", field_errors: { startTime: "Saat seçin" } })); return; }
@@ -188,7 +195,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
             <SelectField label="Hekim" required value={f.practitionerId} onChange={set("practitionerId")} error={err?.fieldErrors.practitionerId}>
               {resources.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </SelectField>
-            <DateField label="Gün" required min={today} value={f.date} onChange={set("date")} error={err?.fieldErrors.date} />
+            <DateField label="Gün" required min={today} value={f.date} onChange={set("date")} error={err?.fieldErrors.date ?? (pastDay ? PAST_DAY_ERROR : undefined)} />
             <SelectField label="Süre" value={f.durationMinutes} onChange={set("durationMinutes")} error={err?.fieldErrors.durationMinutes}>
               {durations.map((m) => <option key={m} value={m}>{m} dakika</option>)}
             </SelectField>
@@ -201,7 +208,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
 
         <section className="card card-pad stack" aria-labelledby="ra-saat">
           <h2 id="ra-saat">3 · Uygun saatler <span className="muted small" style={{ fontWeight: 400 }}>· {fmtDate(f.date)}, {f.durationMinutes} dk</span></h2>
-          {avail.loading && !avail.data ? <p className="muted small">Boş saatler hesaplanıyor…</p> : avail.error ? <Alert kind="error">{avail.error.message}</Alert> : avail.data && (
+          {pastDay ? <Alert kind="warning" title="Geçmiş gün">{PAST_DAY_SLOTS_NOTE}</Alert> : avail.loading && !avail.data ? <p className="muted small">Boş saatler hesaplanıyor…</p> : avail.error ? <Alert kind="error">{avail.error.message}</Alert> : avail.data && (
             avail.data.closedAllDay ? <Alert kind="warning" title="Bu gün kapalı">{avail.data.closedAllDay.reason}. Başka gün seçin.</Alert>
             : avail.data.slots.length === 0 ? <Alert kind="info">Bu gün seçilen süre için boş saat yok{avail.data.blocks.length === 0 ? " (hekim bu gün çalışmıyor)" : ""}. Başka gün veya hekim seçin.</Alert>
             : (
@@ -211,11 +218,12 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
                     onClick={() => { setManualTime(false); setF({ ...f, startTime: t }); setErr(null); }}>{t}</button>))}
               </div>
             ))}
-          {avail.data && !avail.data.workingHoursDefined && <p className="small muted">Hekimin çalışma saati tanımlı değil; 09:00–19:00 arası gösteriliyor.</p>}
-          {err?.fieldErrors.startTime && <span className="err">{err.fieldErrors.startTime}</span>}
+          {!pastDay && avail.data && !avail.data.workingHoursDefined && <p className="small muted">Hekimin çalışma saati tanımlı değil; 09:00–19:00 arası gösteriliyor.</p>}
+          {err?.fieldErrors.startTime && !manualTime && <span className="err">{err.fieldErrors.startTime}</span>}
           <details>
             <summary className="small"><Clock size={13} aria-hidden style={{ verticalAlign: "-2px" }} /> Listede olmayan bir saat gir</summary>
-            <TextField label="Saat" type="time" step={300} value={manualTime ? f.startTime : ""} onChange={(e) => { setManualTime(true); setF({ ...f, startTime: e.target.value }); setErr(null); }} hint="Çakışma ve çalışma saati kayıtta kontrol edilir." />
+            <TextField label="Saat" type="time" step={300} value={manualTime ? f.startTime : ""} onChange={(e) => { setManualTime(true); setF({ ...f, startTime: e.target.value }); setErr(null); }} hint="Çakışma ve çalışma saati kayıtta kontrol edilir."
+              error={manualTime ? (err?.fieldErrors.startTime ?? (inPast && !pastDay ? PAST_TIME_ERROR : undefined)) : undefined} />
           </details>
         </section>
 
