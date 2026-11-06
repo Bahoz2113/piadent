@@ -7,7 +7,7 @@ import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, onTestFinished } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import pg from "pg";
@@ -360,6 +360,9 @@ describe("kontrol (follow-up) ve PİA Hazır", () => {
   });
 
   it("yarınki randevuda eksik anamnez/belge görünür ve görev açar; belge kabulü ve hekim istisnasıyla kapanır", async () => {
+    // ADR-100: anamnez kuralı seed'de pasif; kural motorunun anamnez kalemini sınamak için bu senaryoda etkinleştirilir (afterAll'dan önce geri alınır).
+    await ownerQuery(tenantA, "update readiness_rules set active = true where kind = 'anamnesis_reviewed'");
+    onTestFinished(async () => { await ownerQuery(tenantA, "update readiness_rules set active = false where kind = 'anamnesis_reviewed'"); });
     const pid = await newPatient("Hande");
     const procs = (await dentist.get("/procedures").expect(200)).body.items;
     const kan = procs.find((p: { code: string }) => p.code === "KAN-01");

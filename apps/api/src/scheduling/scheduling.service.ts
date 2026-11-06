@@ -174,6 +174,46 @@ export class SchedulingService {
     });
   }
 
+  /**
+   * 07.11.2026: hekim + gün + süre için uygun boş başlangıç saatleri (15 dk adım). Çalışma saati tanımsızsa 09:00–19:00 gösterilir
+   * (kayıt yine sunucuda kontrol edilir). Kapatma/izin/resmî tatil, hekimin ve (verildiyse) koltuğun randevuları ile geçmiş saatler çıkarılır.
+   */
+  async availability(ctx: RequestContext, practitionerId: string, date: string, minutes: number, chairId: string | null) {
+    return this.db.tx(ctx, async (c) => {
+      if (!(await c.query("select 1 from practitioners where id = $1 and active", [practitionerId])).rowCount) throw Errors.validation({ practitionerId: "Hekim bulunamadı veya pasif." });
+      const wd = (await c.query("select extract(isodow from $1::date)::int as wd", [date])).rows[0].wd as number;
+      const defined = !!(await c.query("select 1 from work_schedules where practitioner_id = $1 limit 1", [practitionerId])).rowCount;
+      const blocks = defined
+        ? (await c.query("select start_min, end_min from work_schedules where practitioner_id = $1 and weekday = $2 order by start_min", [practitionerId, wd])).rows.map((b) => ({ start: b.start_min as number, end: b.end_min as number }))
+        : [{ start: 9 * 60, end: 19 * 60 }];
+      const { from, to } = dayRangeUtc(date, ctx.timezone);
+      const busy = await c.query(
+        `select starts_at, ends_at from appointments where starts_at < $2 and ends_at > $1 and status not in ('cancelled', 'no_show')
+            and (practitioner_id = $3 or ($4::uuid is not null and chair_id = $4::uuid))
+         union all
+         select starts_at, ends_at from closures where cancelled_at is null and starts_at < $2 and ends_at > $1
+            and (scope = 'clinic' or practitioner_id = $3 or ($4::uuid is not null and chair_id = $4::uuid))`,
+        [from, to, practitionerId, chairId]);
+      const closures = await c.query(
+        `select reason, kind from closures where cancelled_at is null and starts_at <= $1 and ends_at >= $2 and (scope = 'clinic' or practitioner_id = $3) limit 1`,
+        [from, to, practitionerId]);
+      const ranges = busy.rows.map((b) => [new Date(b.starts_at).getTime(), new Date(b.ends_at).getTime()] as const);
+      const earliest = Date.now() + 5 * 60_000;
+      const slots: string[] = [];
+      for (const b of blocks) {
+        for (let m = Math.ceil(b.start / 15) * 15; m + minutes <= b.end; m += 15) {
+          const hh = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+          const s = zonedToUtc(date, hh, ctx.timezone).getTime();
+          const e = s + minutes * 60_000;
+          if (s < earliest) continue;
+          if (ranges.some(([bs, be]) => bs < e && be > s)) continue;
+          slots.push(hh);
+        }
+      }
+      return { date, minutes, workingHoursDefined: defined, blocks, slots, closedAllDay: closures.rows[0] ? { reason: closures.rows[0].reason, kind: closures.rows[0].kind } : null };
+    });
+  }
+
   private async loadOne(c: import("pg").PoolClient, ctx: RequestContext, id: string) {
     const r = await c.query(`select ${APPT_COLS} from appointments a ${procJoin("$2")} where a.id = $1`, [id, ctx.timezone]);
     return r.rows[0];

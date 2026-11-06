@@ -36,6 +36,8 @@ export const PaymentCreate = z.object({
   cashAccountId: uuid,
   paidAt: z.iso.datetime({ offset: true }).optional(),
   note: optText(300),
+  /** 07.11.2026: randevu sayfasında alınan ödeme randevuya bağlanır (izlenebilirlik); ödeme yine avans/dağıtım kurallarına tabidir. */
+  appointmentId: uuid.optional(),
   /** Dağıtım açıkça verilir; verilmeyen kısım avans olarak kalır (ödeme borçla otomatik karışmaz). */
   allocations: z.array(AllocationLine).max(50).default([]),
 });

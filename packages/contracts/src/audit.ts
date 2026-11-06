@@ -51,6 +51,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "anamnesis.review": "Anamnez gözden geçirildi",
   "clinical_note.create": "Klinik not eklendi",
   "patient.health_view": "Yönetici sağlık kaydını görüntüledi",
+  "health_notes.update": "Sağlık özeti güncellendi (kronik hastalık / ilaç / alerji)",
   "clinical_note.correct": "Klinik not düzeltmesi eklendi",
   "finding.create": "Odontogram bulgusu eklendi",
   "finding.status": "Odontogram bulgu durumu değişti",

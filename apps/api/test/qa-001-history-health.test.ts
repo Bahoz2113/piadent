@@ -64,7 +64,7 @@ describe("QA-001 hasta geçmişi: klinik olaylar yalnız sağlık yetkisiyle", (
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.filter((r) => r.actionCode === "finding.create" || r.actionCode === "diagnosis.create")).toHaveLength(0);
     expect(rows.filter((r) => ["clinical_chart", "clinical_note", "anamnesis"].includes(r.entityType))).toHaveLength(0);
-    expect(rows.filter((r) => /^(Diş şeması|Klinik not|Anamnez)\b/.test(r.entity))).toHaveLength(0);
+    expect(rows.filter((r) => /^(Diş şeması|Klinik not|Anamnez)( ·|$)/.test(r.entity))).toHaveLength(0); // "Anamnez şablonu" klinik değildir
     // Eylem öneki ile süzülünce de sızmaz.
     const f = (await admin.get(`/reports/log?from=${day(0)}&to=${day(0)}&action=finding`).expect(200)).body;
     expect(f.rows).toHaveLength(0);
