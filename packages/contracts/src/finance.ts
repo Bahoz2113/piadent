@@ -13,7 +13,7 @@ export const PAYMENT_METHODS = ["cash", "card_manual", "bank_transfer", "other"]
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 /** Görüntüleme etiketi: kullanıcı girişindeki yöntemler + sağlayıcı kaynaklı "online" (yalnız PİA Köprü yazar). */
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod | "online", string> = {
-  online: "Online (MOCK sağlayıcı)",
+  online: "Online (Deneme sağlayıcı)",
   cash: "Nakit",
   card_manual: "Kart (manuel kayıt · POS bağlantısı yok)",
   bank_transfer: "Havale / EFT",

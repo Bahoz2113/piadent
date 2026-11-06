@@ -90,14 +90,14 @@ export class BridgeController {
     const i = parse(MockConnectionCreate, body);
     return this.db.tx(ctx, async (c) => {
       if ((await c.query("select 1 from integration_connections where kind = $1 and provider = 'mock'", [i.kind])).rowCount) {
-        throw new AppError(409, "CONNECTION_EXISTS", "Bu tür için MOCK bağlantı zaten var.");
+        throw new AppError(409, "CONNECTION_EXISTS", "Bu tür için deneme bağlantı zaten var.");
       }
       const secret = newWebhookSecret();
       const r = await c.query(
         `insert into integration_connections(tenant_id, kind, provider, mode, status, webhook_secret_enc, secret_rotated_at) values ($1,$2,'mock','mock','active',$3, now()) returning id`,
         [ctx.tenantId, i.kind, encryptSecret(secret)]);
       if (i.kind === "payment" && !(await c.query("select 1 from cash_accounts where kind = 'provider'")).rowCount) {
-        await c.query("insert into cash_accounts(tenant_id, name, kind) values ($1,'Online ödeme — MOCK sağlayıcı','provider')", [ctx.tenantId]);
+        await c.query("insert into cash_accounts(tenant_id, name, kind) values ($1,'Online ödeme — Deneme sağlayıcı','provider')", [ctx.tenantId]);
       }
       await audit(c, ctx, { action: "integration_connection.create", entityType: "integration_connection", entityId: r.rows[0].id, changes: { kind: { from: null, to: i.kind }, provider: { from: null, to: "mock" } } });
       return { id: r.rows[0].id, webhookSecret: secret, note: "İmza anahtarı yalnız şimdi gösterilir; sağlayıcı paneline girin." };
@@ -124,7 +124,7 @@ export class BridgeController {
     return this.db.tx(ctx, async (c) => {
       const cn = (await c.query("select provider, status, config from integration_connections where id = $1", [cid])).rows[0];
       if (!cn) throw Errors.notFound("Bağlantı");
-      if ((i.mockBehavior || i.mockQueryResult) && cn.provider !== "mock") throw Errors.validation({ mockBehavior: "Yalnız MOCK bağlantıda ayarlanır." });
+      if ((i.mockBehavior || i.mockQueryResult) && cn.provider !== "mock") throw Errors.validation({ mockBehavior: "Yalnız deneme bağlantıda ayarlanır." });
       if (cn.status === "blocked") throw new AppError(409, "CONNECTION_BLOCKED", "Erişim bekleyen bağlantı etkinleştirilemez.");
       const config = { ...(cn.config ?? {}), ...(i.mockBehavior ? { behavior: i.mockBehavior } : {}), ...(i.mockQueryResult ? { queryResult: i.mockQueryResult } : {}) };
       await c.query("update integration_connections set status = coalesce($2, status), config = $3 where id = $1", [cid, i.status ?? null, JSON.stringify(config)]);
@@ -272,13 +272,13 @@ export class BridgeController {
       `select j.id, j.operation, j.provider_ref, j.idempotency_key, j.payload, j.connection_id, cn.provider, cn.webhook_secret_enc
          from integration_jobs j join integration_connections cn on cn.id = j.connection_id where j.id = $1`, [i.jobId])).rows[0]);
     if (!j) throw Errors.notFound("İş");
-    if (j.provider !== "mock") throw new AppError(409, "NOT_MOCK", "Simülasyon yalnız MOCK sağlayıcıda kullanılabilir.");
+    if (j.provider !== "mock") throw new AppError(409, "NOT_MOCK", "Simülasyon yalnız Deneme sağlayıcıda kullanılabilir.");
     const fits: Record<string, string> = { "message.": "sms.send", "payment.": "payment.create_link", "refund.": "payment.refund" };
     if (fits[i.event.split(".")[0]! + "."] !== j.operation) throw Errors.validation({ event: "Bu olay türü bu işe uymuyor." });
     const data: Record<string, string> = { provider_ref: j.provider_ref ?? "", request_key: j.idempotency_key };
     if (i.event === "payment.succeeded") { data.payment_id = `mockpay_${randomUUID().slice(0, 12)}`; data.amount = i.amount ?? j.payload.amount; }
     if (i.event === "refund.succeeded") data.refund_id = `mockref_${randomUUID().slice(0, 12)}`;
-    if (i.event.endsWith("failed")) data.reason = "MOCK: sağlayıcı başarısız bildirdi";
+    if (i.event.endsWith("failed")) data.reason = "Deneme: sağlayıcı başarısız bildirdi";
     const evt = { id: i.eventId ?? `evt_${randomUUID().replace(/-/g, "").slice(0, 20)}`, type: i.event,
       created: Math.floor((i.occurredAt ? new Date(i.occurredAt) : new Date()).getTime() / 1000), data };
     const raw = JSON.stringify(evt);

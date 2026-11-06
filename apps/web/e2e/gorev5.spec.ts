@@ -33,7 +33,7 @@ test("PİA Köprü: erişim bekleyen bağlantılar dürüstçe gösterilir; dı�
   await expect(page.locator("tr", { hasText: "WhatsApp" }).getByText("Erişim bekliyor")).toBeVisible();
   await expect(page.locator("tr", { hasText: "e-Fatura" }).getByText("Erişim bekliyor")).toBeVisible();
   await expect(page.locator("tr", { hasText: "WhatsApp" }).getByRole("button", { name: "Etkinleştir" })).toHaveCount(0);
-  await expect(page.locator("tr", { hasText: "SMS" }).first().getByText("MOCK")).toBeVisible();
+  await expect(page.locator("tr", { hasText: "SMS" }).first().getByText("DENEME")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Erişim bekleyen entegrasyonlar" })).toBeVisible();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/kopru-${info.project.name}.png`, fullPage: true });
   await noOverflow(page);
@@ -49,11 +49,11 @@ test("online ödeme (MOCK): bağlantı ≠ tahsilat; imzalı bildirim → avans;
   const patientUrl = fin.url();
   const amount = `${200 + (Date.now() % 700)},00`;
   const shown = `${amount.replace(",00", "")},00`;
-  await fin.getByRole("button", { name: "Ödeme bağlantısı (MOCK)" }).click();
+  await fin.getByRole("button", { name: "Ödeme bağlantısı (DENEME)" }).click();
   const d = fin.getByRole("dialog", { name: "Online ödeme bağlantısı" });
   await d.getByLabel("Tutar (₺)").fill(amount);
   await d.getByRole("button", { name: "Bağlantı iste" }).click();
-  await expect(fin.getByText("Ödeme bağlantısı isteği sıraya alındı (MOCK).")).toBeVisible();
+  await expect(fin.getByText("Ödeme bağlantısı isteği sıraya alındı (DENEME).")).toBeVisible();
   const req = fin.locator("section", { has: fin.getByRole("heading", { name: "Online ödeme istekleri" }) }).locator("li", { hasText: shown }).first();
   await until(fin, async () => (await req.getByText("Bağlantı hazır (ödeme bekleniyor)").count()) > 0,
     () => fin.locator("section", { has: fin.getByRole("heading", { name: "Online ödeme istekleri" }) }).getByRole("button", { name: "Yenile" }).click());
@@ -69,9 +69,9 @@ test("online ödeme (MOCK): bağlantı ≠ tahsilat; imzalı bildirim → avans;
   await adm.locator("tr", { hasText: `${shown.replace(",", ".")} TRY ödeme bağlantısı` }).first().getByRole("button", { name: "Ayrıntı" }).click();
   const jd = adm.getByRole("dialog", { name: "Ödeme bağlantısı" });
   await jd.getByLabel("Simüle edilecek olay").selectOption("payment.succeeded");
-  await jd.getByRole("button", { name: "MOCK bildirimi gönder" }).click();
+  await jd.getByRole("button", { name: "Deneme bildirimi gönder" }).click();
   await expect(adm.getByText("Bildirim: İşlendi")).toBeVisible();
-  await jd.getByRole("button", { name: "MOCK bildirimi gönder" }).click(); // ikinci "ödendi" bildirimi ikinci ödeme oluşturmaz
+  await jd.getByRole("button", { name: "Deneme bildirimi gönder" }).click(); // ikinci "ödendi" bildirimi ikinci ödeme oluşturmaz
   await expect(adm.getByText(/Bildirim: Eski\/ters sıra/)).toBeVisible();
   await adm.keyboard.press("Escape");
 
@@ -103,7 +103,7 @@ test("online ödeme (MOCK): bağlantı ≠ tahsilat; imzalı bildirim → avans;
     () => adm.getByRole("button", { name: "Yenile", exact: true }).click());
   await adm.locator("tr", { hasText: "50.00 TRY iade" }).first().getByRole("button", { name: "Ayrıntı" }).click();
   const rj = adm.getByRole("dialog", { name: "Sağlayıcı üzerinden iade" });
-  await rj.getByRole("button", { name: "MOCK bildirimi gönder" }).click();
+  await rj.getByRole("button", { name: "Deneme bildirimi gönder" }).click();
   await expect(adm.getByText("Bildirim: İşlendi")).toBeVisible();
   if (SHOTS) await adm.screenshot({ path: `${SHOTS}/kopru-is-${info.project.name}.png`, fullPage: true });
   await adm.keyboard.press("Escape");

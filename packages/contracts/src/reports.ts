@@ -3,6 +3,7 @@
  * + kaynağa iniş. Kaynak envanter ID'leri (Ek A) `sourceIds` ile izlenir. Boş "hazır" kart yoktur: listede olmayan rapor yoktur.
  */
 import type { Permission } from "./permissions";
+import { AUDIT_ENTITY_LABELS } from "./audit";
 
 export type ReportFilterKind = "range" | "practitioner" | "procedure" | "supplier" | "select" | "text" | "month_range";
 export interface ReportFilter { key: string; label: string; kind: ReportFilterKind; options?: [string, string][] }
@@ -40,7 +41,7 @@ export const REPORTS: ReportDef[] = [
     description: "Tahakkuk (tedavi veya tahsilat bazlı), ters prim, ödenen prim ve ödenecek bakiye. Kazanım ve ödeme ayrı harekettir.",
     filters: [R, PR, { key: "basis", label: "Prim temeli", kind: "select", options: [["", "Tümü"], ["treatment", "Tedavi bazlı (R19)"], ["collection", "Tahsilat bazlı (R20)"]] }] },
   { id: "online-odeme", title: "Online ödeme sorgulama", group: "Finans", sourceIds: ["R24"], perm: "finance.read", maxDays: 366,
-    description: "Online ödeme istekleri (MOCK sağlayıcı). İstek tahsilat değildir; ödeme yalnız imzalı sağlayıcı bildirimiyle kaydedilir.",
+    description: "Online ödeme istekleri (Deneme sağlayıcı). İstek tahsilat değildir; ödeme yalnız imzalı sağlayıcı bildirimiyle kaydedilir.",
     filters: [R, { key: "status", label: "Durum", kind: "select", options: [["", "Tümü"], ["link_ready", "Bağlantı hazır"], ["paid", "Ödendi"], ["failed", "Başarısız"], ["cancelled", "İptal"]] }] },
   { id: "tedavi", title: "Tedavi sorgulama", group: "Tedavi", sourceIds: ["R03"], perm: "report.clinical", maxDays: 366,
     description: "Gerçekleşen işlemler (snapshot bedeliyle). İptal ve düzeltilen kayıtlar ayrı gösterilir; toplam yalnız tamamlananları içerir.",
@@ -64,7 +65,7 @@ export const REPORTS: ReportDef[] = [
     filters: [R, { key: "supplierId", label: "Laboratuvar", kind: "supplier" }, PR,
       { key: "status", label: "Durum", kind: "select", options: [["", "Tümü"], ["open", "Açık (gönderildi/üretimde/revizyon)"], ["overdue", "Geciken"], ["received", "Kabul bekliyor"], ["accepted", "Kabul edildi"], ["cancelled", "İptal"]] }] },
   { id: "mesaj", title: "SMS / mesaj sorgulama", group: "Operasyon", sourceIds: ["R14"], perm: "report.operations", maxDays: 366,
-    description: "Mesajlar ve teslim durumları (alıcı maskeli). Sağlayıcı yalnız MOCK; “iletildi” teslim değildir.",
+    description: "Mesajlar ve teslim durumları (alıcı maskeli). Sağlayıcı yalnız deneme; “iletildi” teslim değildir.",
     filters: [R, { key: "status", label: "Durum", kind: "select", options: [["", "Tümü"], ["submitted", "İletildi"], ["delivered", "Teslim edildi"], ["failed", "Başarısız"], ["unknown", "Bilinmiyor"], ["cancelled", "İptal"]] }] },
   { id: "onam", title: "Onam / belge sorgulama", group: "Operasyon", sourceIds: ["R22"], perm: "report.operations", maxDays: 366,
     description: "Üretilen hasta belgeleri ve karar durumları (kabul/ret/bekliyor/iptal). Belge metni gösterilmez.",
@@ -75,9 +76,10 @@ export const REPORTS: ReportDef[] = [
   { id: "cari", title: "Tedarikçi / laboratuvar carisi", group: "Stok ve cari", sourceIds: ["T18", "T15", "O03"], perm: "finance.read", maxDays: 366,
     description: "Dönem içi borç (fatura/maliyet) ve ödeme hareketleri; açılış ve kapanış bakiyesi hareketlerden.",
     filters: [R, { key: "supplierId", label: "Tedarikçi", kind: "supplier" }] },
-  { id: "log", title: "LOG sorgulama", group: "Denetim", sourceIds: ["R15"], perm: "audit.clinic", maxDays: 92,
-    description: "Klinik geneli denetim izi: kim, ne zaman, hangi kayıt. Değer içerikleri gösterilmez, yalnız değişen alan adları.",
-    filters: [R, { key: "action", label: "Eylem (önek)", kind: "text" }, { key: "entityType", label: "Kayıt türü", kind: "text" }] },
+  { id: "log", title: "İşlem kayıtları sorgulama", group: "Denetim", sourceIds: ["R15"], perm: "audit.clinic", maxDays: 92,
+    description: "Klinikte kim, ne zaman, hangi kayıtta ne yaptı. Değer içerikleri gösterilmez, yalnız değişen alanların adları.",
+    filters: [R, { key: "entityType", label: "Kayıt türü", kind: "select", options: [["", "Tümü"], ...Object.entries(AUDIT_ENTITY_LABELS).sort((a, b) => a[1].localeCompare(b[1], "tr"))] },
+      { key: "q", label: "İşlem içinde ara", kind: "text" }] },
   { id: "isletme", title: "Klinik işletme analizi", group: "Analiz", sourceIds: ["R18"], perm: "report.analytics", maxDays: 366,
     description: "Metrik sözlüğüne (Plan §09) göre: yeni hasta, gerçekleşen randevu, gelmeme oranı, tedavi tutarı, net tahsilat, açık borç, plan kabul oranı, takip tamamlama. Her metrik kaynak rapora iner.",
     filters: [R] },

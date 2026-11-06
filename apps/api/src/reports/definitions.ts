@@ -5,7 +5,7 @@
  */
 import type pg from "pg";
 import type { Drill, ReportColumn } from "@viadent/contracts";
-import { addDays, localDate } from "@viadent/contracts";
+import { AUDIT_ACTION_LABELS, addDays, auditActionLabel, auditEntityLabel, auditFieldLabel, localDate } from "@viadent/contracts";
 import type { RequestContext } from "../infra/context.js";
 import { CLINICAL_ENTITY_TYPES, notClinicalOutputDocSql, notHiddenFileEventSql, notHiddenTaskEventSql } from "../audit/audit.js";
 
@@ -263,10 +263,10 @@ const onlineOdeme: Runner = async (a) => {
   return {
     columns: [col("at", "İstek", "datetime"), col("patient", "Hasta"), col("amount", "Tutar", "money"), col("statusLabel", "Durum", "badge"), col("paidAt", "Ödeme", "datetime"), col("provider", "Sağlayıcı")],
     rows: list.map((x) => ({ at: x.created_at, patient: x.patient, amount: x.amount, status: x.status, statusLabel: ST[x.status], paidAt: x.paid_at,
-      provider: x.provider === "mock" ? "MOCK" : x.provider, _drill: { patientId: x.patient_id, tab: "finans" } })),
+      provider: x.provider === "mock" ? "DENEME" : x.provider, _drill: { patientId: x.patient_id, tab: "finans" } })),
     totals: { count: t.n, requested: t.requested, paidCount: t.paid_n, paid: t.paid },
     totalLabels: { count: ["İstek", "int"], requested: ["İstenen", "money"], paidCount: ["Ödenen istek", "int"], paid: ["Ödenen (sağlayıcı bildirimi)", "money"] },
-    notes: ["Yalnız MOCK sağlayıcı; gerçek para hareketi yok."],
+    notes: ["Yalnız Deneme sağlayıcı; gerçek para hareketi yok."],
     truncated,
   };
 };
@@ -481,7 +481,7 @@ const mesaj: Runner = async (a) => {
       status: x.status, statusLabel: ST[x.status], _drill: { patientId: x.patient_id, tab: "iletisim" } })),
     totals: { count: t.n, submitted: t.submitted, delivered: t.delivered, failed: t.failed, unknown: t.unknown },
     totalLabels: { count: ["Mesaj", "int"], submitted: ["İletildi", "int"], delivered: ["Teslim edildi", "int"], failed: ["Başarısız", "int"], unknown: ["Bilinmiyor", "int"] },
-    notes: ["Sağlayıcı yalnız MOCK. “İletildi” teslim değildir; teslim yalnız imzalı sağlayıcı bildirimiyle kaydedilir. Mesaj metni raporda gösterilmez."],
+    notes: ["Sağlayıcı yalnız deneme. “İletildi” teslim değildir; teslim yalnız imzalı sağlayıcı bildirimiyle kaydedilir. Mesaj metni raporda gösterilmez."],
     truncated,
   };
 };
@@ -570,26 +570,30 @@ const cari: Runner = async (a) => {
 
 // ------------------------------------------------------------------ denetim
 const log: Runner = async (a) => {
-  const action = a.p.action && /^[a-z_.]{2,60}$/.test(a.p.action) ? a.p.action : null;
+  // 07.11.2026: ekranda yabancı terim yok — eylem, kayıt türü ve alan adları Türkçe etiketle; arama Türkçe etiket üzerinde.
+  const prefix = a.p.action && /^[a-z_.]{2,60}$/.test(a.p.action) ? a.p.action : null;
+  const q = (a.p.q ?? "").trim().toLocaleLowerCase("tr").slice(0, 60);
+  const byLabel = q ? Object.entries(AUDIT_ACTION_LABELS).filter(([k, v]) => v.toLocaleLowerCase("tr").includes(q) || k.startsWith(q)).map(([k]) => k) : null;
   const et = a.p.entityType && /^[a-z_]{2,60}$/.test(a.p.entityType) ? a.p.entityType : null;
   // Klinik olaylar (anamnez/klinik not/bulgu-tanı) yalnız sağlık yetkisiyle listelenir (QA-001).
-  const args = [a.r.fromUtc, a.r.toUtc, action, et, a.ctx.permissions.has("patient.health.read"), CLINICAL_ENTITY_TYPES];
+  const args = [a.r.fromUtc, a.r.toUtc, prefix, et, a.ctx.permissions.has("patient.health.read"), CLINICAL_ENTITY_TYPES, byLabel];
   // QA-102: klinik çıktı belgesi olayları da aynı kapıya tabidir; QA-108: gizli dosyanın (ADR-089) olayları da.
-  const where = `e.created_at >= $1 and e.created_at < $2 and ($3::text is null or e.action like $3 || '%') and ($4::text is null or e.entity_type = $4) and ($5::boolean or (e.entity_type <> all($6::text[]) and ${notClinicalOutputDocSql("e")} and ${notHiddenFileEventSql("e")} and ${notHiddenTaskEventSql("e")}))`;
+  const where = `e.created_at >= $1 and e.created_at < $2 and ($3::text is null or e.action like $3 || '%') and ($4::text is null or e.entity_type = $4) and ($7::text[] is null or e.action = any($7::text[])) and ($5::boolean or (e.entity_type <> all($6::text[]) and ${notClinicalOutputDocSql("e")} and ${notHiddenFileEventSql("e")} and ${notHiddenTaskEventSql("e")}))`;
   const { list, truncated } = await rows(a,
     `select e.id, e.created_at, e.action, e.entity_type, e.entity_id, e.patient_id, u.full_name as actor,
-            (select string_agg(k, ', ' order by k) from jsonb_object_keys(case when jsonb_typeof(e.changes) = 'object' then e.changes else '{}'::jsonb end) k) as fields,
+            (select array_agg(k order by k) from jsonb_object_keys(case when jsonb_typeof(e.changes) = 'object' then e.changes else '{}'::jsonb end) k) as fields,
             case when e.patient_id is null then null else upper(left(p.first_name, 1)) || '. ' || upper(left(p.last_name, 1)) || '. · ' || p.file_no end as patient_ref
        from audit_events e left join users u on u.id = e.actor_user_id left join patients p on p.id = e.patient_id
       where ${where} order by e.created_at desc, e.id desc`, args);
   const t = await one(a, `select count(*)::int as n, count(distinct e.actor_user_id)::int as actors from audit_events e where ${where}`, args);
   return {
-    columns: [col("at", "Zaman", "datetime"), col("actor", "Kullanıcı"), col("action", "Eylem"), col("entity", "Kayıt"), col("patient", "Hasta (kısaltma · dosya)"), col("fields", "Değişen alanlar")],
-    rows: list.map((x) => ({ at: x.created_at, actor: x.actor ?? "Sistem", action: x.action, entity: `${x.entity_type}${x.entity_id ? ` · ${String(x.entity_id).slice(0, 8)}` : ""}`,
-      patient: x.patient_ref ?? "", fields: x.fields ?? "", ...(x.patient_id ? { _drill: { patientId: x.patient_id, tab: "gecmis" } } : {}) })),
+    columns: [col("at", "Zaman", "datetime"), col("actor", "Kullanıcı"), col("action", "İşlem"), col("entity", "Kayıt"), col("patient", "Hasta (kısaltma · dosya)"), col("fields", "Değişen alanlar")],
+    rows: list.map((x) => ({ at: x.created_at, actor: x.actor ?? "Sistem", action: auditActionLabel(x.action), actionCode: x.action, entityType: x.entity_type,
+      entity: `${auditEntityLabel(x.entity_type)}${x.entity_id ? ` · ${String(x.entity_id).slice(0, 8)}` : ""}`,
+      patient: x.patient_ref ?? "", fields: ((x.fields ?? []) as string[]).map(auditFieldLabel).join(", "), ...(x.patient_id ? { _drill: { patientId: x.patient_id, tab: "gecmis" } } : {}) })),
     totals: { count: t.n, actors: t.actors },
-    totalLabels: { count: ["Olay", "int"], actors: ["Kullanıcı", "int"] },
-    notes: ["Değer içerikleri (tutar, metin, kimlik) gösterilmez; yalnız değişen alan adları. Hasta ayrıntısı için PİA İz (hasta → Geçmiş)."],
+    totalLabels: { count: ["Kayıt", "int"], actors: ["Kullanıcı", "int"] },
+    notes: ["Değer içerikleri (tutar, metin, kimlik) gösterilmez; yalnız değişen alanların adları. Hasta ayrıntısı için hasta kartı → Geçmiş."],
     truncated,
   };
 };

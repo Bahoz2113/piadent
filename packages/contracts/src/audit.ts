@@ -243,6 +243,23 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   section: "Bölüm", sections: "Bölümler", tables: "Tablolar", report: "Rapor", params: "Parametreler",
 };
 
+/** Denetim kaydı türü (entity_type) → Türkçe ad. LOG sorgulamada ham İngilizce tür gösterilmez (07.11.2026 geri bildirimi). */
+export const AUDIT_ENTITY_LABELS: Record<string, string> = {
+  patient: "Hasta", patient_relation: "Hasta yakını", communication_preference: "İletişim tercihi", appointment: "Randevu", appointment_type: "Randevu türü",
+  practitioner: "Hekim", practitioner_compensation: "Hekim ücret modeli", chair: "Koltuk", closure: "Kapatma / izin", procedure: "İşlem",
+  tariff_version: "Fiyat listesi", treatment_plan: "Tedavi planı", plan_version: "Plan sürümü", performed_procedure: "Gerçekleşen işlem",
+  clinical_chart: "Diş şeması", clinical_note: "Klinik not", anamnesis: "Anamnez", anamnesis_template: "Anamnez şablonu", follow_up: "Kontrol",
+  payment: "Tahsilat", refund: "İade", receipt: "Makbuz", receivable: "Alacak", allocation: "Ödeme dağıtımı", invoice: "Fatura taslağı",
+  expense: "Gider", cash_account: "Kasa / banka", commission_rule_version: "Prim kuralı", commission_payout: "Prim ödemesi", salary_payment: "Maaş ödemesi",
+  online_payment_request: "Online ödeme isteği", supplier: "Tedarikçi", supplier_entry: "Cari hareket", supplier_price: "Tedarikçi fiyatı",
+  stock_item: "Stok kalemi", stock_movement: "Stok hareketi", lab_order: "Laboratuvar iş emri", lab_cost: "Laboratuvar maliyeti",
+  template: "Şablon", template_version: "Şablon sürümü", document_type: "Belge türü", patient_document: "Hasta belgesi", readiness_rule: "Hazırlık kuralı",
+  file: "Dosya", message: "Mesaj", task: "Görev", membership: "Ekip üyeliği", invitation: "Davet", tenant: "Klinik", report: "Rapor",
+  integration_connection: "Entegrasyon bağlantısı", integration_job: "Entegrasyon işi", import_batch: "Veri aktarımı",
+  patient_leave: "Hekim izni", message_schedule: "Zamanlanmış mesaj",
+};
+export function auditEntityLabel(t: string): string { return AUDIT_ENTITY_LABELS[t] ?? t.replace(/_/g, " "); }
+
 /** Alan anahtarını Türkçe etikete çevirir; `amaç:kanal` (iletişim tercihi) ve `document:<id>` (hazırlık) gibi türetilmiş anahtarları da çözer. */
 export function auditFieldLabel(field: string): string {
   const direct = AUDIT_FIELD_LABELS[field];

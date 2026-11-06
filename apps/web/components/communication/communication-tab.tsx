@@ -137,7 +137,7 @@ function SendDrawer({ patientId, comm, onClose, onSaved }: { patientId: string; 
     try { await api("/messages", { body: { patientId, purpose, channel, body }, idempotencyKey: key }); onSaved(); } catch (e) { setErr(e as ApiFailure); }
   }
   return (
-    <Drawer title="Mesaj gönder" subtitle="MOCK sağlayıcı: mesaj dışarı GİTMEZ; akış ve durumlar test edilir." onClose={onClose}
+    <Drawer title="Mesaj gönder" subtitle="Deneme sağlayıcı: mesaj dışarı GİTMEZ; akış ve durumlar test edilir." onClose={onClose}
       footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={!allowed} onClick={() => void save()}>Kuyruğa al</button></>}>
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}

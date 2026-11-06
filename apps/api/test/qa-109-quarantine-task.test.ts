@@ -172,8 +172,8 @@ describe("QA-109: görev dosyayı ele alabilecek role (hekim) yönlenir", () => 
     expect((exp.sections.access_log as { entity_type: string }[]).filter((e) => e.entity_type === "task")).toHaveLength(1);
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date());
     const rows = (await admin.get(`/reports/log?from=${day}&to=${day}&entityType=task`).expect(200)).body.rows as { entity: string }[];
-    expect(rows.some((r) => r.entity === `task · ${taskOf[adminQ]!.slice(0, 8)}`)).toBe(true);
-    for (const id of hiddenTasks()) expect(rows.some((r) => r.entity === `task · ${id.slice(0, 8)}`)).toBe(false);
+    expect(rows.some((r) => r.entity === `Görev · ${taskOf[adminQ]!.slice(0, 8)}`)).toBe(true);
+    for (const id of hiddenTasks()) expect(rows.some((r) => r.entity === `Görev · ${id.slice(0, 8)}`)).toBe(false);
   });
 });
 

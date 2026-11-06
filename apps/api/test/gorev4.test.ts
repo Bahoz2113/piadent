@@ -316,7 +316,7 @@ describe("AT-12 iletişim tercihi ve mesaj", () => {
     await worker();
     let com = (await sec.get(`/patients/${pid}/communication`).expect(200)).body;
     expect(com.messages[0]).toMatchObject({ id: m.id, status: "submitted", provider: "mock", recipient: expect.stringMatching(/\*/) });
-    expect(com.provider.label).toMatch(/MOCK/);
+    expect(com.provider.label).toMatch(/DENEME/); // 07.11.2026: Türkçe etiket
     // 25 saat sonra bakım taraması: teslim bilgisi yok → unknown (delivered asla yazılmaz)
     const pool = new pg.Pool({ connectionString: WORKER_URL, max: 1 });
     try { await withContext(pool, { tenantId: tenantA, userId: null }, (c) => documentsMaintenance(c, tenantA, new Date(Date.now() + 25 * 3600_000))); } finally { await pool.end(); }

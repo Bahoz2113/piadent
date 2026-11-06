@@ -44,7 +44,7 @@ export class CareController {
         current, history: h.rows.map((r) => ({ purpose: r.purpose, channel: r.channel, status: r.status, source: r.source, note: r.note, at: r.recorded_at, by: r.by })),
         messages: m.rows.map((x) => ({ id: x.id, purpose: x.purpose, channel: x.channel, recipient: x.recipient_masked, body: x.body, provider: x.provider, status: x.status,
           statusReason: x.status_reason, createdAt: x.created_at, submittedAt: x.submitted_at, statusAt: x.status_at, by: x.by, events: x.events ?? [] })),
-        provider: { name: "mock", label: "MOCK — gerçek mesaj gönderilmez (sağlayıcı sözleşmesi yok, Görev 5)" },
+        provider: { name: "mock", label: "DENEME — gerçek mesaj gönderilmez (sağlayıcı sözleşmesi yok, Görev 5)" },
       };
     });
   }
@@ -86,7 +86,7 @@ export class CareController {
            values ($1,$2,$3,$4,$5,$6,'mock',$7) returning id, status`,
           [ctx.tenantId, i.patientId, i.purpose, i.channel, i.channel === "email" ? maskEmail(to) : maskPhone(to), i.body, ctx.userId]);
         await c.query("insert into delivery_events(tenant_id, message_id, status, source, detail) values ($1,$2,'queued','system',$3)",
-          [ctx.tenantId, m.rows[0].id, cn.provider === "mock" ? "Kuyruğa alındı (MOCK sağlayıcı)" : "Kuyruğa alındı"]);
+          [ctx.tenantId, m.rows[0].id, cn.provider === "mock" ? "Kuyruğa alındı (Deneme sağlayıcı)" : "Kuyruğa alındı"]);
         // Sağlayıcıya yalnız alıcı ve metin gider; anahtar mesaj kimliğidir (yeniden denemede sağlayıcı tarafında tekilleşir).
         const jobId = await createJob(c, ctx, { connectionId: cn.id, operation: "sms.send", sourceType: "message", sourceId: m.rows[0].id,
           key: `msg_${m.rows[0].id}`, payload: { channel: i.channel, body: i.body }, requiresApproval: false });

@@ -116,7 +116,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
                 {a.payments.map((p) => (
                   <tr key={p.id}>
                     <td>{fmtDateTime(p.paidAt)}<div className="small muted">{p.receivedBy}{p.receiptNo && <> · makbuz <span className="mono">{p.receiptNo}</span></>}</div></td>
-                    <td>{p.method === "online" ? <>Online <span className="badge badge-warning">MOCK sağlayıcı</span></> : PAYMENT_METHOD_LABELS[p.method]}</td>
+                    <td>{p.method === "online" ? <>Online <span className="badge badge-warning">Deneme sağlayıcı</span></> : PAYMENT_METHOD_LABELS[p.method]}</td>
                     <td>{p.accountName}</td>
                     <td className="money">{formatTRY(p.amount)}</td>
                     <td className="money">{formatTRY(p.allocated)}</td>
