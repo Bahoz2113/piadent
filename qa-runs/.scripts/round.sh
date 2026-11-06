@@ -12,6 +12,7 @@ node qa-runs/.scripts/http-cases.mjs > $OUT/http.log 2>&1
 node qa-runs/.scripts/n-cases.mjs > $OUT/n.log 2>&1
 for p in file-sensitivity-probe file-trace-probe evidence-file-probe quarantine-task-probe linked-file-probe readiness-clinical-probe; do node qa-runs/.scripts/$p.mjs > $OUT/$p.log 2>&1; done
 node qa-runs/.scripts/f-cases.mjs > $OUT/f.log 2>&1
+WORKER_URL="$WORKER_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/tsx qa-runs/.scripts/g-cases.mjs > $OUT/g.log 2>&1
 cd apps/web
 for s in browser-cases browser-n browser-f; do cp ../../qa-runs/.scripts/$s.mjs ./.qa-$s.mjs; done
 W=../../$OUT
@@ -19,4 +20,6 @@ BASE=http://127.0.0.1:3000 SUMMARY=$W/http-summary.json OUT=$W node ./.qa-browse
 BASE=http://127.0.0.1:3000 OUT=$W TUR=$TUR node ./.qa-browser-n.mjs 2>&1 | grep -v "pid=" > $W/browser-n.log
 BASE=http://127.0.0.1:3000 SUMMARY=$W/f-summary.json OUT=$W node ./.qa-browser-f.mjs 2>&1 | grep -v "pid=" > $W/browser-f.log
 rm -f ./.qa-browser-cases.mjs ./.qa-browser-n.mjs ./.qa-browser-f.mjs ./.qa-esc.mjs ./.qa-dbg.mjs
+# Ekran görüntüleri: kanıt boyutu için JPEG (kalite 80); PNG silinir.
+for f in ../../$OUT/*.png; do [ -f "$f" ] && python3 -c "import sys;from PIL import Image;Image.MAX_IMAGE_PIXELS=None;Image.open(sys.argv[1]).convert(\"RGB\").save(sys.argv[1][:-4]+\".jpg\",quality=80)" "$f" && rm -f "$f"; done
 echo ROUND_DONE
