@@ -4,6 +4,7 @@
 - Yerel test ortamı: PostgreSQL 16 (FORCE RLS), API :4000 (tsx), worker, web :3000 (next start, üretim derlemesi), temiz seed her turda.
 - Dış servisler: SMS yalnız DENEME (Netgsm kimlik bilgisi yok, canlı gönderim kapısı kapalı); Netgsm adaptörü yerel sahte sunucuyla (G13). Online ödeme / e-belge DENEME. Gerçek mesaj/ödeme yok.
 - Kimlik bilgileri `.demo-credentials`'tan ortam değişkeniyle; kayda/kanıta yazılmaz.
+- Tur 3–4 sürümü: `1a6ba06ee076bb5eceb7505d362785325aa14121` (QA-301 düzeltmesi, push: origin/gelistirme-gecmisi). Migration 36 dosya (0001–0036); temiz DB'ye hepsi uygulandı. Ürün kodu temiz; değişen yalnız tester betikleri (`qa-runs/.scripts`) ve bu koşu klasörü. Tur 4: 07.11.2026 02:20–02:34 (Europe/Istanbul).
 
 ## Önceki koşunun ortam notları
 # Ortam — qa-20261104-1549-65201a2

@@ -80,7 +80,9 @@ for (const profile of ["masaustu", "mobil"]) {
     const dateBox = dlg.locator("input[placeholder='gg.aa.yyyy']").first();
     await dateBox.fill("01.01.2026"); await dateBox.blur();
     const v = await dateBox.inputValue();
-    const errVisible = await dlg.getByText(/Geçmiş saat seçilemez/).count();
+    // Tur 3 tester uyarlaması: eski çekmece geçmiş tarihte "Geçmiş saat seçilemez" yazardı; tam sayfada (QA-301 kabulü, handoff.md) geçmiş gün için
+    // "Geçmiş gün seçilemez". Plan F01 ("tarih alanı bugünden öncesini kabul etmez") değişmedi; ikisi de kabul uyarısıdır.
+    const errVisible = await dlg.getByText(/Geçmiş (saat|gün) seçilemez/).count();
     const ev = await shot(page, profile, "F01-ajanda");
     await dlg.getByRole("button", { name: "Vazgeç" }).click(); await page.waitForTimeout(300);
     if (await page.getByRole("alertdialog").count()) await page.getByRole("alertdialog").getByRole("button", { name: "Çık" }).click();

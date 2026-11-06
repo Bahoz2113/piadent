@@ -1,0 +1,110 @@
+{
+ "at": "2026-11-06T23:24:33.029Z",
+ "results": [
+  {
+   "id": "G01",
+   "status": "PASS",
+   "summary": "6/6 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.407Z",
+   "evidence": "G01-http.json"
+  },
+  {
+   "id": "G02",
+   "status": "PASS",
+   "summary": "5/5 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.425Z",
+   "evidence": "G02-http.json"
+  },
+  {
+   "id": "G03",
+   "status": "PASS",
+   "summary": "4/4 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.474Z",
+   "evidence": "G03-http.json"
+  },
+  {
+   "id": "G04",
+   "status": "PASS",
+   "summary": "13/13 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.545Z",
+   "evidence": "G04-http.json"
+  },
+  {
+   "id": "G05",
+   "status": "PASS",
+   "summary": "6/6 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.575Z",
+   "evidence": "G05-http.json"
+  },
+  {
+   "id": "G06",
+   "status": "PASS",
+   "summary": "6/6 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.595Z",
+   "evidence": "G06-http.json"
+  },
+  {
+   "id": "G07",
+   "status": "PASS",
+   "summary": "3/3 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.599Z",
+   "evidence": "G07-http.json"
+  },
+  {
+   "id": "G08",
+   "status": "PASS",
+   "summary": "6/6 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.623Z",
+   "evidence": "G08-http.json"
+  },
+  {
+   "id": "G09",
+   "status": "PASS",
+   "summary": "8/8 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.650Z",
+   "evidence": "G09-http.json"
+  },
+  {
+   "id": "G10",
+   "status": "PASS",
+   "summary": "3/3 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.673Z",
+   "evidence": "G10-http.json"
+  },
+  {
+   "id": "G11",
+   "status": "PASS",
+   "summary": "3/3 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.717Z",
+   "evidence": "G11-http.json"
+  },
+  {
+   "id": "G12",
+   "status": "PASS",
+   "summary": "10/10 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.933Z",
+   "evidence": "G12-http.json"
+  },
+  {
+   "id": "G13",
+   "status": "PASS",
+   "summary": "5/5 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.941Z",
+   "evidence": "G13-http.json"
+  },
+  {
+   "id": "G14",
+   "status": "PASS",
+   "summary": "11/11 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:32.983Z",
+   "evidence": "G14-http.json"
+  },
+  {
+   "id": "G15",
+   "status": "PASS",
+   "summary": "2/2 kontrol: hepsi geçti",
+   "at": "2026-11-06T23:24:33.029Z",
+   "evidence": "G15-http.json"
+  }
+ ]
+}

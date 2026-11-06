@@ -25,7 +25,7 @@ Sürüm: b910f90 (07.11.2026 ürün sahibi geri bildirimi). Tester ürün kodunu
 ## Tur 2 (b910f90, temiz seed, tam regresyon)
 Sonuç: 59/60 PASS; E2E 110 geçti + 10 bilinçli atlama, 0 hata. Gate: BEKLET (F01).
 
-### QA-301 — Randevu sayfasında geçmiş gün yazılınca uyarı yok (S3, FIX_READY)
+### QA-301 — Randevu sayfasında geçmiş gün yazılınca uyarı yok (S3, VERIFIED — tur4, 1a6ba06)
 - **Vaka:** F01 (madde 1 kabulü: "tarih alanı bugünden öncesini kabul etmez"). Profil: chromium-desktop + chromium-mobile-emulation. Rol: yönetici.
 - **Adımlar:** Randevular → Randevu ver (tam sayfa) → Gün alanına 01.01.2026 yaz → alandan çık.
 - **Beklenen:** Alan geçmiş günü kabul etmez veya açık uyarı ("Geçmiş gün seçilemez"); kayıt düğmesi geçmiş gün için sunucuya gitmeden engeller.
@@ -34,3 +34,6 @@ Sonuç: 59/60 PASS; E2E 110 geçti + 10 bilinçli atlama, 0 hata. Gate: BEKLET (
 - **Etki:** Düşük: kayıt sunucuda engelleniyor; kullanıcı neden boş saat olmadığını anlamıyor. **Sorumlu:** cezeri-duzeltici (web).
 - **Durum:** FIX_READY (cezeri-duzeltici, düzeltme 1 — `fix1.md`). Kapanış yalnız bağımsız tester yeniden sınamasıyla.
 - **Tester düzeltmesi (aynı vaka):** gece koşusunda (08:00 öncesi) ajandada bugünün "geçmiş dilimi" yoktur → geçmiş dilim kontrolü dünün gününde yapılır (saat bağımlılığı; beklenti aynı).
+
+## Tur 3 (1a6ba06) — tester notu
+- F01 tur 3'te FAIL kaldı: `browser-f.mjs` eski çekmecenin metnini (`Geçmiş saat seçilemez`) arıyordu. Tam sayfa, QA-301 kabulünde (handoff.md) yazılan "Geçmiş gün seçilemez" uyarısını gösteriyor (kanıt: evidence/tur3/masaustu-F01-ajanda.png). Plan F01 metni ("tarih alanı bugünden öncesini kabul etmez") değişmedi. Betik iki uyarıyı da kabul edecek şekilde uyarlandı; başka beklenti değişmedi. Tam tur tur4 olarak yeniden koşuldu.

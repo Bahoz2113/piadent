@@ -1,1 +1,11 @@
-[]
+[
+ {
+  "id": "QA-301",
+  "severity": "S3",
+  "state": "VERIFIED",
+  "title": "Randevu sayfasında geçmiş gün yazılınca uyarı yok",
+  "evidence": "evidence/tur2/browser-f-summary.json",
+  "retestEvidence": "evidence/tur4/browser-f-summary.json",
+  "cases": ["F01"]
+ }
+]
