@@ -8,11 +8,12 @@ import { EmptyState, ErrorState, Loading, useToast } from "@/components/ui";
 import { LabOrderDrawer, LabOrdersTable, type LabOrder } from "@/components/operations/lab";
 import { StockPanel } from "@/components/operations/stock";
 import { SuppliersPanel } from "@/components/operations/suppliers";
+import { ProductsPanel } from "@/components/admin/products";
 
 const TABS: { id: string; label: string; perm: Permission }[] = [
   { id: "laboratuvar", label: "Laboratuvar", perm: "lab.read" },
   { id: "stok", label: "Stok", perm: "stock.read" },
-  { id: "tedarikci", label: "Tedarikçiler ve cari", perm: "lab.read" },
+  { id: "tedarikci", label: "Tedarikçi", perm: "lab.read" },
 ];
 const FILTERS = [["open", "Açık"], ["overdue", "Geciken"], ["received", "Kabul bekliyor"], ["closed", "Kapanan"], ["all", "Tümü"]] as const;
 
@@ -30,7 +31,7 @@ export default function OperationsPage() {
   }, [tabs.length]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
-      <div className="page-head"><div><h1>Operasyon</h1><p>Laboratuvar işleri, stok ve tedarikçi carisi.</p></div></div>
+      <div className="page-head"><div><h1>Operasyon</h1><p>Laboratuvar işleri, stok, tedarikçiler, ürün ve fiyat listesi.</p></div></div>
       {tabs.length === 0 ? <div className="card"><EmptyState title="Bu bölüm için yetkiniz yok" /></div> : (
         <>
           <div className="subtabs" role="tablist" aria-label="Operasyon bölümleri">
@@ -39,7 +40,8 @@ export default function OperationsPage() {
           <div role="tabpanel">
             {tab === "laboratuvar" && <LabBoard openId={openId} setOpenId={setOpenId} />}
             {tab === "stok" && <StockPanel notify={toast.show} />}
-            {tab === "tedarikci" && <SuppliersPanel notify={toast.show} />}
+            {/* 07.11.2026: Ürün ve fiyat listesi Tedarikçi sekmesinde (Yönetim'den taşındı). */}
+            {tab === "tedarikci" && <div className="stack" style={{ gap: 16 }}><SuppliersPanel notify={toast.show} />{can("stock.read") && <ProductsPanel notify={toast.show} />}</div>}
           </div>
         </>
       )}

@@ -6,7 +6,7 @@ import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, todayIn } from "@/lib/format";
-import { Alert, Drawer, SelectField, TextField } from "./ui";
+import { Alert, Drawer, SelectField, TextAreaField, TextField } from "./ui";
 
 export interface Candidate { id: string; fileNo: number; fullName: string; birthDate: string | null; phoneMasked: string | null; kind: string; reason: string }
 export interface CreatedPatient { id: string; fullName: string; fileNo: number }
@@ -15,7 +15,10 @@ const EMPTY = { firstName: "", lastName: "", birthDate: "", gender: "", phone: "
 
 /** Yeni hasta: minimum kimlik/iletişim; mükerrer adaylar kayıttan önce gösterilir (Akış A). */
 export function NewPatientDrawer({ onClose, onCreated, initialName }: { onClose: () => void; onCreated: (p: CreatedPatient) => void; initialName?: string }) {
-  const { tz } = useSession();
+  const { tz, can } = useSession();
+  // 07.11.2026 (ADR-100): kayıtta sağlık özeti — yalnız sağlık yetkili ve yazabilen roller (hekim, asistan, yönetici) görür ve girer.
+  const healthOk = can("patient.health.read") && can("anamnesis.write");
+  const [h, setH] = useState({ chronicConditions: "", regularMedications: "", allergies: "" });
   const [first, ...rest] = (initialName ?? "").trim().split(" ");
   const [f, setF] = useState({ ...EMPTY, firstName: first ?? "", lastName: rest.join(" ") });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -23,7 +26,7 @@ export function NewPatientDrawer({ onClose, onCreated, initialName }: { onClose:
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [busy, setBusy] = useState(false);
   const res = useData<{ practitioners: { id: string; name: string }[] }>("/resources");
-  const dirty = Object.entries(f).some(([k, v]) => v !== (EMPTY as Record<string, string>)[k]);
+  const dirty = Object.entries(f).some(([k, v]) => v !== (EMPTY as Record<string, string>)[k]) || Object.values(h).some((v) => v.trim() !== "");
   const set = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
 
   function payload(ack: boolean) {
@@ -47,6 +50,10 @@ export function NewPatientDrawer({ onClose, onCreated, initialName }: { onClose:
     setFailure(null);
     try {
       const r = await api<{ patient: CreatedPatient }>("/patients", { body: payload(ack) });
+      if (healthOk && Object.values(h).some((v) => v.trim())) {
+        try { await api(`/patients/${r.patient.id}/health-notes`, { method: "PUT", body: h }); }
+        catch { /* hasta kaydı oluştu; sağlık özeti hasta kartından yeniden girilebilir */ }
+      }
       onCreated(r.patient);
     } catch (e) {
       const err = e as ApiFailure;
@@ -108,6 +115,16 @@ export function NewPatientDrawer({ onClose, onCreated, initialName }: { onClose:
           <TextField label="Şehir" value={f.city} onChange={set("city")} />
           <TextField label="Nereden duydu?" className="full" value={f.referralSource} onChange={set("referralSource")} hint="Örn. tavsiye, internet araması" />
         </div>
+        {healthOk && (
+          <fieldset className="stack" style={{ border: 0, padding: 0, margin: 0 }}>
+            <legend className="small" style={{ fontWeight: 600, marginBottom: 6 }}>Sağlık özeti (isteğe bağlı)</legend>
+            <div className="form-grid">
+              <TextAreaField label="Kronik hastalık" rows={2} maxLength={1000} value={h.chronicConditions} onChange={(e) => setH({ ...h, chronicConditions: e.target.value })} placeholder="Ör. diyabet, hipertansiyon" />
+              <TextAreaField label="Sürekli kullandığı ilaç" rows={2} maxLength={1000} value={h.regularMedications} onChange={(e) => setH({ ...h, regularMedications: e.target.value })} placeholder="Ör. kan sulandırıcı" />
+              <TextAreaField label="Alerji" className="full" rows={2} maxLength={1000} value={h.allergies} onChange={(e) => setH({ ...h, allergies: e.target.value })} placeholder="Ör. penisilin, lateks" />
+            </div>
+          </fieldset>
+        )}
         <button type="submit" hidden />
       </form>
     </Drawer>

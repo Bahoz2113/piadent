@@ -253,6 +253,8 @@ table.table { width: 100%; border-collapse: collapse; }
 .kv dd { margin: 0; font-weight: 500; }
 
 /* ---------------------------------------------------------------- randevu: bakiye şeridi, geçmiş dilim */
+.slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr)); gap: var(--s2); }
+.slot-grid .btn { justify-content: center; font-variant-numeric: tabular-nums; }
 .money-strip { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); padding: var(--s3) var(--s4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
 .money-strip > span, .money-strip > div { display: grid; gap: 2px; min-width: 120px; }
 .money-strip strong { font-variant-numeric: tabular-nums; }

@@ -13,6 +13,7 @@ import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, DateField, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, useToast } from "@/components/ui";
+import { LeavesCard } from "@/components/admin/leaves";
 import { PractitionerDrawer, ScheduleDrawer, useAdminResources, type Prac } from "@/components/admin/resources";
 import { parseMoneyInput } from "@/components/finance/money-input";
 import { alertDialog, promptDialog } from "@/components/dialogs";
@@ -109,6 +110,7 @@ function Inner() {
               )}
             </div>
           </div>
+          <LeavesCard practitionerId={cur.id} practitionerName={cur.name} notify={toast.show} />
           {finance ? <Compensation id={cur.id} notify={toast.show} onChanged={() => void list.reload()} />
             : <Alert kind="info">Ücret, prim ve maaş bilgileri yalnız finans yetkisi olan kullanıcılara görünür.</Alert>}
         </section>
