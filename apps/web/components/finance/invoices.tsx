@@ -36,7 +36,7 @@ export function Invoices({ patientId, receivables }: { patientId: string; receiv
         <div style={{ minWidth: 0, flex: "1 1 240px" }}><h2><FileText size={18} aria-hidden style={{ verticalAlign: "-3px" }} /> Fatura taslakları</h2>
           <p className="muted small">PİA-DENT fatura numarası üretmez. Taslak burada hazırlanır; resmî belge yalnız bağlı e-belge sağlayıcısı düzenler.
             {list.data && !list.data.providerConnected && <> <span className="badge badge-warning">e-Belge sağlayıcısı bağlı değil</span></>}
-            {list.data?.providerMock && <> <span className="badge badge-warning">Deneme e-belge sağlayıcısı — numaralar resmî değildir</span></>}</p></div>
+            {list.data?.providerMock && <> <span className="badge badge-warning" style={{ whiteSpace: "normal" }}>Deneme e-belge sağlayıcısı — numaralar resmî değildir</span></>}</p></div>
         {can("invoice.write") && <button className="btn btn-sm" onClick={() => setOpen("new")}><Plus size={15} aria-hidden />Taslak oluştur</button>}
       </div>
       {msg && <div style={{ padding: "0 20px" }}><Alert kind={msg.kind}>{msg.text}</Alert></div>}

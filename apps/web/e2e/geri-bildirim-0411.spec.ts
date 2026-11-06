@@ -107,80 +107,72 @@ test("Raporlar: rapor açıkken menüden Raporlar listeye döner; varsayılan ar
   await expect(page).toHaveURL(/\/raporlar$/);
 });
 
-test("Kaydedilmemiş form: Esc de X gibi uyarır, yalnız Not/Süre değişimi kirli sayılır; temiz ve ön doldurulmuş form uyarısız kapanır (QA-201, QA-202)", async ({ page }) => {
+test("Kaydedilmemiş form: randevu sayfası ve yeni hasta çekmecesi uyarır, yalnız Not/Süre değişimi kirli sayılır; temiz ve ön doldurulmuş form uyarısız kapanır (QA-201, QA-202)", async ({ page }) => {
   await login(page, "sekreter@demo-yesil.test");
   const leave = page.getByRole("alertdialog", { name: "Kaydedilmemiş değişiklikler" });
-  const closeX = (d: Locator) => d.getByRole("button", { name: "Kapat", exact: true }).click();
+  // 07.11.2026 (ADR-101): "Randevu ver" artık tam sayfa; kapatma = "Vazgeç". Kirli sayfa uygulama modalıyla uyarır (QA-201/202 kuralı aynı).
   await page.goto("/ajanda");
-  const open = async () => {
-    await page.getByRole("button", { name: "Randevu ver" }).first().click();
-    const d = page.getByRole("dialog", { name: "Randevu ver" });
-    await expect(d).toBeVisible();
-    return d;
-  };
+  const ap = page.locator("main");
+  const title = page.getByRole("heading", { name: "Randevu ver", level: 1 });
+  const list = page.getByRole("heading", { name: "Randevular", level: 1 });
+  const open = async () => { await page.getByRole("button", { name: "Randevu ver" }).first().click(); await expect(title).toBeVisible(); };
+  const cancel = () => ap.getByRole("button", { name: "Vazgeç" }).click();
 
-  // Temiz form: Esc ve X uyarısız kapatır
-  let ap = await open();
-  await page.keyboard.press("Escape");
-  await expect(ap).toBeHidden();
-  await expect(leave).toHaveCount(0);
-  ap = await open();
-  await closeX(ap);
-  await expect(ap).toBeHidden();
+  // Temiz sayfa: uyarısız döner
+  await open();
+  await cancel();
+  await expect(list).toBeVisible();
   await expect(leave).toHaveCount(0);
 
-  // QA-201: Açıklama yazıldıktan sonra Esc → uygulama modalı; "Forma dön" metni korur
-  ap = await open();
+  // Açıklama yazıldıktan sonra → uygulama modalı; "Forma dön" metni korur; modalda Esc yalnız modalı kapatır
+  await open();
   await ap.getByLabel("Açıklama", { exact: true }).fill("E2E Esc kontrolü");
-  await page.keyboard.press("Escape");
+  await cancel();
   await expect(leave).toBeVisible();
   await leave.getByRole("button", { name: "Forma dön" }).click();
   await expect(leave).toBeHidden();
-  await expect(ap).toBeVisible();
   await expect(ap.getByLabel("Açıklama", { exact: true })).toHaveValue("E2E Esc kontrolü");
-  // Modal açıkken Esc yalnız modalı kapatır (Forma dön); çekmece açık kalır
-  await page.keyboard.press("Escape");
+  await cancel();
   await expect(leave).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(leave).toBeHidden();
-  await expect(ap).toBeVisible();
-  // Takvim açıkken Esc yalnız takvimi kapatır
-  await ap.locator(".date-field", { hasText: "Tarih" }).getByRole("button", { name: "Takvimi aç" }).click();
-  const cal = ap.getByRole("dialog", { name: "Tarih takvimi" });
+  await expect(title).toBeVisible();
+  // Takvim açıkken Esc yalnız takvimi kapatır; sayfa açık kalır
+  await ap.locator(".date-field", { hasText: "Gün" }).getByRole("button", { name: "Takvimi aç" }).click();
+  const cal = page.getByRole("dialog", { name: "Gün takvimi" });
   await expect(cal).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(cal).toBeHidden();
   await expect(leave).toHaveCount(0);
-  await expect(ap).toBeVisible();
-  // Esc → "Kapat" → çekmece kapanır
-  await page.keyboard.press("Escape");
-  await leave.getByRole("button", { name: "Kapat" }).click();
-  await expect(ap).toBeHidden();
+  await expect(title).toBeVisible();
+  // "Çık" → sayfa kapanır
+  await cancel();
+  await leave.getByRole("button", { name: "Çık" }).click();
+  await expect(list).toBeVisible();
 
-  // QA-202: yalnız Not doldurulunca X ve Esc uyarır
-  ap = await open();
+  // QA-202: yalnız Not doldurulunca uyarır
+  await open();
   await expect(ap.getByLabel("Açıklama", { exact: true })).toHaveValue("");
   await ap.getByLabel("Not", { exact: true }).fill("Yalnız idari not");
-  await closeX(ap);
+  await cancel();
   await expect(leave).toBeVisible();
   await leave.getByRole("button", { name: "Forma dön" }).click();
   await expect(ap.getByLabel("Not", { exact: true })).toHaveValue("Yalnız idari not");
-  await page.keyboard.press("Escape");
-  await expect(leave).toBeVisible();
-  await leave.getByRole("button", { name: "Kapat" }).click();
-  await expect(ap).toBeHidden();
+  await cancel();
+  await leave.getByRole("button", { name: "Çık" }).click();
+  await expect(list).toBeVisible();
 
   // QA-202: yalnız Süre değişince de kirli; açılış değerine dönünce temiz
-  ap = await open();
+  await open();
   const dur = ap.getByLabel("Süre", { exact: true });
   const initialDur = await dur.inputValue();
   await dur.selectOption(initialDur === "45" ? "60" : "45");
-  await closeX(ap);
+  await cancel();
   await expect(leave).toBeVisible();
   await leave.getByRole("button", { name: "Forma dön" }).click();
   await dur.selectOption(initialDur);
-  await closeX(ap);
-  await expect(ap).toBeHidden();
+  await cancel();
+  await expect(list).toBeVisible();
   await expect(leave).toHaveCount(0);
 
   // Ön doldurulmuş hasta (hasta kartından "Randevu ver") kirli sayılmaz
@@ -188,10 +180,10 @@ test("Kaydedilmemiş form: Esc de X gibi uyarır, yalnız Not/Süre değişimi k
   await page.locator("tbody tr.row-click").first().locator("td:visible").last().click({ position: { x: 4, y: 4 } });
   await expect(page).toHaveURL(/\/hastalar\/[0-9a-f-]{36}/);
   await page.getByRole("link", { name: "Randevu ver" }).first().click();
-  ap = page.getByRole("dialog", { name: "Randevu ver" });
+  await expect(title).toBeVisible();
   await expect(ap.getByRole("button", { name: "Değiştir" })).toBeVisible(); // ön doldurulan hasta yüklendi
-  await closeX(ap);
-  await expect(ap).toBeHidden();
+  await cancel();
+  await expect(list).toBeVisible();
   await expect(leave).toHaveCount(0);
 
   // QA-201: Yeni hasta çekmecesinde de Esc uyarır

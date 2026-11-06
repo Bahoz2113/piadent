@@ -77,7 +77,7 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
           <div><h2 id="netgsm-h">Netgsm SMS</h2><p className="muted small">Randevu hatırlatma ve bilgi mesajları için gerçek SMS sağlayıcısı.</p></div>
           {o.netgsm?.ready ? <span className="badge badge-success">Gerçek gönderime hazır · gönderen {o.netgsm.sender}</span> : <span className="badge badge-warning">Hazır değil — mesajlar DENEME</span>}
         </div>
-        {!o.netgsm?.ready && <Alert kind="info">Eksik: {o.netgsm?.missing.join(", ") || "—"}. Netgsm kullanıcı kodu, API parolası ve onaylı gönderen adı barındırma ortamının ayarlarına (NETGSM_USERCODE, NETGSM_PASSWORD, NETGSM_MSGHEADER) girilir ve canlı gönderim kapısı açılır. Bu bilgiler bu ekrana veya sohbete yazılmaz.</Alert>}
+        {!o.netgsm?.ready && <Alert kind="info"><span style={{ overflowWrap: "anywhere" }}>Eksik: {o.netgsm?.missing.join(", ") || "—"}. Netgsm kullanıcı kodu, API parolası ve onaylı gönderen adı barındırma ortamının ayarlarına (NETGSM_USERCODE, NETGSM_PASSWORD, NETGSM_MSGHEADER) girilir ve canlı gönderim kapısı açılır. Bu bilgiler bu ekrana veya sohbete yazılmaz.</span></Alert>}
         {manage && !o.connections.some((c) => c.provider === "netgsm") && (
           <div><button className="btn btn-sm" onClick={() => void api("/integrations/connections/netgsm", { body: {} }).then(() => { notify("success", "Netgsm bağlantısı eklendi."); void ov.reload(); }, (e) => notify("error", (e as ApiFailure).message))}>Netgsm bağlantısı ekle</button></div>)}
       </section>

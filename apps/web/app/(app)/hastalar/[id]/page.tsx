@@ -123,7 +123,7 @@ function PatientInner() {
               <span>Açık takip: <b>{p.openTaskCount}</b></span>
             </div>
             {/* 07.11.2026 (ADR-100): anamnez uyarıları yerine sağlık özeti (kronik hastalık / ilaç / alerji). */}
-            <div className="row" style={{ marginTop: 8, gap: 6, flexWrap: "wrap" }} aria-label="Uyarılar">
+            <div className="row" style={{ marginTop: 8, gap: 6, flexWrap: "wrap" }} role="group" aria-label="Uyarılar">
               <HealthChips patientId={p.id} />
               {p.isMinor && <span className="badge badge-info">18 yaş altı{p.legalRepresentativeCount === 0 ? " · yasal temsilci yok" : ""}</span>}
             </div>

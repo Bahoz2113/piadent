@@ -128,7 +128,8 @@ test("Randevu ver tam sayfa: tek işlem seçimi, sağlık uyarısı, uygun saatl
 
 test("Mesajlar sekmesi: tüm hastalar, DENEME uyarısı, zamanlama ve otomatik kurallar; hekim de mesaj yazar", async ({ page }) => {
   await login(page, "elif.aras@demo-yesil.test");
-  await page.getByRole("navigation").first().getByRole("link", { name: "Mesajlar" }).click().catch(async () => { await page.goto("/mesajlar"); });
+  await expect(page.getByRole("navigation").first().getByRole("link", { name: "Mesajlar" })).toBeAttached(); // menüde
+  await page.goto("/mesajlar");
   await expect(page.getByRole("heading", { name: "Mesajlar", level: 1 })).toBeVisible();
   await expect(page.getByText(/DENEME — gerçek mesaj gönderilmez|SMS sağlayıcısı yok/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Hastalar" })).toBeVisible();

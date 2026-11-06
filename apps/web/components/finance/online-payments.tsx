@@ -28,7 +28,7 @@ export function OnlinePayments({ patientId, onChanged }: { patientId: string; on
     <section className="card">
       <div className="card-head">
         <div><h2>Online ödeme istekleri</h2><p className="muted small">Bağlantı oluşturmak tahsilat değildir. Ödeme yalnız sağlayıcının imzalı bildirimiyle avans olarak kaydedilir; borca dağıtım ayrıca yapılır.</p></div>
-        <div className="row" style={{ gap: 6 }}>
+        <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
           <button className="btn btn-sm btn-ghost" onClick={() => { void list.reload(); onChanged(); }}>Yenile</button>
           {can("payment.write") && <button className="btn btn-sm" onClick={() => setOpen(true)}><Link2 size={15} aria-hidden />Ödeme bağlantısı (DENEME)</button>}
         </div>
