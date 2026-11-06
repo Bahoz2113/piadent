@@ -81,7 +81,7 @@ export const CommissionRuleCreate = z.object({
   note: optText(200),
 });
 
-export const EXPENSE_CATEGORIES = ["Kira", "Personel", "Malzeme", "Laboratuvar", "Fatura (elektrik/su/internet)", "Vergi/harç", "Diğer"] as const;
+export const EXPENSE_CATEGORIES = ["Kira", "Aidat", "Personel", "Malzeme", "Laboratuvar", "Fatura (elektrik/su/internet)", "Vergi/harç", "Diğer"] as const;
 
 /** Yüzde oranla prim: kuruşa yuvarlama (yarım yukarı), işaret korunur. Örn. 600.00 × %10 = 60.00; −100.00 → −10.00. */
 export function commissionAmount(base: string, rate: string): string {

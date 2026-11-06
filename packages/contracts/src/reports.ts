@@ -11,7 +11,17 @@ export type ReportGroup = "Finans" | "Tedavi" | "Operasyon" | "Stok ve cari" | "
 export interface ReportDef {
   id: string; title: string; group: ReportGroup; sourceIds: string[]; perm: Permission; description: string;
   filters: ReportFilter[]; maxDays: number;
+  /**
+   * 07.11.2026 ürün sahibi kararı: rapor kartı listede görünmez; rapor yalnız başka rapordan iniş (kaynak satırlar) veya
+   * ilgili sekme (ör. Mesajlar) içinden açılır. Toplam–alt kayıt mutabakatı bozulmasın diye tanım kaldırılmadı.
+   */
+  hidden?: boolean;
+  /** Raporlar sayfasında ayrı sekme olarak açılır (Gelirler / Giderler / Tedarikçi); kart listesinde yer almaz. */
+  tab?: "gelirler" | "giderler" | "tedarikci";
 }
+/** Giderler sekmesinin alt başlıkları (07.11.2026): Maaşlar, Malzemeler, Kira, Aidat, Faturalar + kalan giderler. */
+export const EXPENSE_HEADS = [["maas", "Maaşlar"], ["malzeme", "Malzemeler"], ["kira", "Kira"], ["aidat", "Aidat"], ["fatura", "Faturalar"], ["diger", "Diğer giderler"]] as const;
+export type ExpenseHead = (typeof EXPENSE_HEADS)[number][0];
 export type ColumnType = "text" | "money" | "int" | "qty" | "date" | "datetime" | "percent" | "badge";
 export interface ReportColumn { key: string; label: string; type: ColumnType }
 /** Satırdan başka rapora (filtreli) veya kayda iniş. */
@@ -21,6 +31,15 @@ const R: ReportFilter = { key: "range", label: "Tarih aralığı", kind: "range"
 const PR: ReportFilter = { key: "practitionerId", label: "Hekim", kind: "practitioner" };
 
 export const REPORTS: ReportDef[] = [
+  { id: "gelirler", tab: "gelirler", title: "Gelirler — hasta ödemeleri", group: "Finans", sourceIds: ["R01"], perm: "finance.read", maxDays: 366,
+    description: "Dönemde alınan tüm hasta ödemeleri: tarih, hasta, yöntem, makbuz no, tutar, iade edilen ve net.",
+    filters: [R, { key: "method", label: "Yöntem", kind: "select", options: [["", "Tümü"], ["cash", "Nakit"], ["card_manual", "Kart (POS)"], ["bank_transfer", "Havale/EFT"], ["online", "Online"], ["other", "Diğer"]] }] },
+  { id: "giderler", tab: "giderler", title: "Giderler", group: "Finans", sourceIds: ["G05"], perm: "finance.read", maxDays: 366,
+    description: "Maaşlar, malzemeler, kira, aidat, faturalar ve diğer giderler; her başlık ayrı listelenir.",
+    filters: [R, { key: "kalem", label: "Gider başlığı", kind: "select", options: [["", "Özet (tüm başlıklar)"], ...EXPENSE_HEADS.map(([k, l]) => [k, l] as [string, string])] }] },
+  { id: "tedarikci", tab: "tedarikci", title: "Tedarikçi alımları", group: "Stok ve cari", sourceIds: ["T18", "T15"], perm: "finance.read", maxDays: 366,
+    description: "Tedarikçiden alınan ürünler, ödenen ve kalan tutar. Tedarikçi seçilince alım ve ödeme satırları listelenir.",
+    filters: [R, { key: "supplierId", label: "Tedarikçi", kind: "supplier" }] },
   { id: "gelir-gider", title: "Gelir – gider (nakit akışı)", group: "Finans", sourceIds: ["R01", "G05"], perm: "finance.read", maxDays: 366,
     description: "Haftalık/aylık/günlük karşılaştırma. Kasa/banka hareketlerinden: tahsilat, iade, gider, tedarikçi ödemesi, prim ödemesi, maaş ödemesi ve net nakit. Kazanılmış tedavi tutarı ayrı sütundur; nakit değildir.",
     filters: [R, { key: "groupBy", label: "Gruplama", kind: "select", options: [["month", "Ay"], ["week", "Hafta"], ["day", "Gün"]] }] },
@@ -37,34 +56,34 @@ export const REPORTS: ReportDef[] = [
     description: "Açık borcu olan hastalar; avans ayrı. Vade yaşına ve en az tutara göre süzülür.",
     filters: [{ key: "bucket", label: "Vade yaşı", kind: "select", options: [["", "Tümü"], ["notDue", "Vadesi gelmemiş"], ["d0_30", "0–30 gün"], ["d31_60", "31–60 gün"], ["d61_90", "61–90 gün"], ["d90p", "90+ gün"]] },
       { key: "minAmount", label: "En az borç (₺)", kind: "text" }] },
-  { id: "prim", title: "Hekim primleri", group: "Finans", sourceIds: ["R19", "R20"], perm: "finance.read", maxDays: 366,
+  { id: "prim", hidden: true, title: "Hekim primleri", group: "Finans", sourceIds: ["R19", "R20"], perm: "finance.read", maxDays: 366,
     description: "Tahakkuk (tedavi veya tahsilat bazlı), ters prim, ödenen prim ve ödenecek bakiye. Kazanım ve ödeme ayrı harekettir.",
     filters: [R, PR, { key: "basis", label: "Prim temeli", kind: "select", options: [["", "Tümü"], ["treatment", "Tedavi bazlı (R19)"], ["collection", "Tahsilat bazlı (R20)"]] }] },
-  { id: "online-odeme", title: "Online ödeme sorgulama", group: "Finans", sourceIds: ["R24"], perm: "finance.read", maxDays: 366,
+  { id: "online-odeme", hidden: true, title: "Online ödeme sorgulama", group: "Finans", sourceIds: ["R24"], perm: "finance.read", maxDays: 366,
     description: "Online ödeme istekleri (Deneme sağlayıcı). İstek tahsilat değildir; ödeme yalnız imzalı sağlayıcı bildirimiyle kaydedilir.",
     filters: [R, { key: "status", label: "Durum", kind: "select", options: [["", "Tümü"], ["link_ready", "Bağlantı hazır"], ["paid", "Ödendi"], ["failed", "Başarısız"], ["cancelled", "İptal"]] }] },
-  { id: "tedavi", title: "Tedavi sorgulama", group: "Tedavi", sourceIds: ["R03"], perm: "report.clinical", maxDays: 366,
+  { id: "tedavi", hidden: true, title: "Tedavi sorgulama", group: "Tedavi", sourceIds: ["R03"], perm: "report.clinical", maxDays: 366,
     description: "Gerçekleşen işlemler (snapshot bedeliyle). İptal ve düzeltilen kayıtlar ayrı gösterilir; toplam yalnız tamamlananları içerir.",
     filters: [R, PR, { key: "procedureId", label: "İşlem", kind: "procedure" },
       { key: "status", label: "Durum", kind: "select", options: [["completed", "Tamamlanan"], ["cancelled", "İptal"], ["corrected", "Düzeltilen"], ["", "Tümü"]] }] },
   { id: "aylik-islem", title: "Aylık işlem sorgulama", group: "Tedavi", sourceIds: ["R13"], perm: "report.clinical", maxDays: 731,
     description: "Ay × işlem: adet ve tutar (yalnız tamamlanan işlemler).", filters: [R, PR] },
-  { id: "plan", title: "Plan sorgulama", group: "Tedavi", sourceIds: ["R04"], perm: "report.clinical", maxDays: 366,
+  { id: "plan", hidden: true, title: "Plan sorgulama", group: "Tedavi", sourceIds: ["R04"], perm: "report.clinical", maxDays: 366,
     description: "Dönemde sunulan teklif sürümleri; kabul oranı = kabul / (kabul + ret). Kararsız ve bekleyen ayrı; sürümler hasta sayısını şişirmez.",
     filters: [R, PR, { key: "status", label: "Karar", kind: "select", options: [["", "Tümü"], ["accepted", "Kabul"], ["rejected", "Ret"], ["pending", "Bekliyor / kararsız"]] }] },
-  { id: "hekim-hasta", title: "Hekim hasta sayıları", group: "Tedavi", sourceIds: ["R23"], perm: "report.clinical", maxDays: 366,
+  { id: "hekim-hasta", hidden: true, title: "Hekim hasta sayıları", group: "Tedavi", sourceIds: ["R23"], perm: "report.clinical", maxDays: 366,
     description: "Hekim bazında tamamlanan randevu, görülen farklı hasta, gerçekleşen işlem ve yeni hasta (kayıtta birincil hekim).", filters: [R] },
   { id: "randevu", title: "Randevu ve gelmeme", group: "Operasyon", sourceIds: ["O01"], perm: "report.operations", maxDays: 366,
     description: "Durumlara göre randevular. Gelmeme oranı = gelmedi / (tamamlandı + gelmedi); iptal ve gelecek randevular paydaya girmez.",
     filters: [R, PR] },
-  { id: "kontrol", title: "Kontrol sorgulama", group: "Operasyon", sourceIds: ["R05"], perm: "report.operations", maxDays: 366,
+  { id: "kontrol", hidden: true, title: "Kontrol sorgulama", group: "Operasyon", sourceIds: ["R05"], perm: "report.operations", maxDays: 366,
     description: "Vadesi aralıkta olan kontroller; takip tamamlama = yapıldı / (vadesi gelen − iptal).",
     filters: [R, PR, { key: "status", label: "Durum", kind: "select", options: [["", "Tümü"], ["open", "Açık"], ["scheduled", "Randevu verildi"], ["done", "Yapıldı"], ["cancelled", "İptal"]] }] },
   { id: "laboratuvar", title: "Laboratuvar sorgulama", group: "Operasyon", sourceIds: ["R09", "H12"], perm: "lab.read", maxDays: 366,
     description: "İş emirleri, aşamaları, gecikme ve (yetkiye bağlı) maliyet. Teslim ve kabul ayrı olaydır.",
     filters: [R, { key: "supplierId", label: "Laboratuvar", kind: "supplier" }, PR,
       { key: "status", label: "Durum", kind: "select", options: [["", "Tümü"], ["open", "Açık (gönderildi/üretimde/revizyon)"], ["overdue", "Geciken"], ["received", "Kabul bekliyor"], ["accepted", "Kabul edildi"], ["cancelled", "İptal"]] }] },
-  { id: "mesaj", title: "SMS / mesaj sorgulama", group: "Operasyon", sourceIds: ["R14"], perm: "report.operations", maxDays: 366,
+  { id: "mesaj", hidden: true, title: "SMS / mesaj sorgulama", group: "Operasyon", sourceIds: ["R14"], perm: "report.operations", maxDays: 366,
     description: "Mesajlar ve teslim durumları (alıcı maskeli). Sağlayıcı yalnız deneme; “iletildi” teslim değildir.",
     filters: [R, { key: "status", label: "Durum", kind: "select", options: [["", "Tümü"], ["submitted", "İletildi"], ["delivered", "Teslim edildi"], ["failed", "Başarısız"], ["unknown", "Bilinmiyor"], ["cancelled", "İptal"]] }] },
   { id: "onam", title: "Onam / belge sorgulama", group: "Operasyon", sourceIds: ["R22"], perm: "report.operations", maxDays: 366,
