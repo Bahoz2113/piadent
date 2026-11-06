@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BarChart3, Download, Play } from "lucide-react";
 import { EXPENSE_HEADS, addDays, formatTRY, type ColumnType, type Drill, type ReportColumn, type ReportDef } from "@viadent/contracts";
-import { api, ApiFailure, getPageContext } from "@/lib/api";
+import { api, ApiFailure, getPageContext, saveBlob } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, EmptyState, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
@@ -129,12 +129,8 @@ function ReportsInner() {
       const q = new URLSearchParams(format === "xlsx" ? { ...params, format } : params).toString();
       const r = await fetch(`/api/v1/reports/${current.id}/export${q ? `?${q}` : ""}`, { credentials: "same-origin", headers: { "x-viadent-context": getPageContext() } });
       if (!r.ok) { const b = await r.json().catch(() => ({ code: "HTTP_ERROR", message: "Dışa aktarılamadı." })); throw new ApiFailure(r.status, b); }
-      const blob = await r.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `viadent-${current.id}.${format}`;
-      a.click();
-      URL.revokeObjectURL(a.href);
+      // 07.11.2026: ortak indirme yardımcısı (bağlantı belgeye eklenir; adres hemen kapatılmaz).
+      await saveBlob(await r.blob(), /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `viadent-${current.id}.${format}`);
     } catch (e) { setErr(e as ApiFailure); }
   }
 

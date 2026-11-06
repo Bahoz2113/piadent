@@ -53,21 +53,39 @@ export function newIdempotencyKey(): string {
   return `w-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 }
 
-/** Dosya indirme (CSV/JSON): sunucu attachment döner; tarayıcıda kaydedilir. POST gövdeli dışa aktarımlar da desteklenir. */
-export async function download(path: string, init: { body?: unknown; fallbackName: string }): Promise<void> {
+/**
+ * Dosya indirme (CSV/JSON): sunucu attachment döner; tarayıcıda kaydedilir. POST gövdeli dışa aktarımlar da desteklenir.
+ * 07.11.2026 ("dışa aktarım çalışmıyor"): bağlantı belgeye eklenip tıklanır (belgeye eklenmemiş bağlantıda bazı tarayıcılar ve
+ * uygulama içi tarayıcılar indirmeyi sessizce yok sayıyordu); nesne adresi hemen kapatılmaz. Dönen `{ url, name }` ile ekran,
+ * indirme başlamazsa kullanıcıya elle indirme bağlantısı gösterir.
+ */
+export async function saveBlob(blob: Blob, name: string): Promise<{ url: string; name: string }> {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name; a.rel = "noopener"; a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { a.remove(); }, 0);
+  setTimeout(() => URL.revokeObjectURL(url), 10 * 60_000);
+  return { url, name };
+}
+
+export async function download(path: string, init: { body?: unknown; fallbackName: string }): Promise<{ url: string; name: string }> {
   const headers: Record<string, string> = {};
   if (pageContext) headers["x-viadent-context"] = pageContext;
   if (init.body !== undefined) { headers["x-viadent-request"] = "1"; headers["content-type"] = "application/json"; }
-  const r = await fetch(`/api/v1${path}`, { method: init.body !== undefined ? "POST" : "GET", headers, credentials: "same-origin",
-    body: init.body !== undefined ? JSON.stringify(init.body) : undefined });
+  let r: Response;
+  try {
+    r = await fetch(`/api/v1${path}`, { method: init.body !== undefined ? "POST" : "GET", headers, credentials: "same-origin",
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined });
+  } catch {
+    throw new ApiFailure(0, { code: "NETWORK", message: "Sunucuya ulaşılamadı; dosya indirilemedi. Bağlantınızı kontrol edip tekrar deneyin." });
+  }
   if (!r.ok) {
-    const b = await r.json().catch(() => ({ code: "HTTP_ERROR", message: "Dosya indirilemedi." }));
+    const b = await r.json().catch(() => ({ code: "HTTP_ERROR", message: r.status === 413 ? "Dosya çok büyük; indirilemedi." : `Dosya indirilemedi (HTTP ${r.status}).` }));
     throw new ApiFailure(r.status, b);
   }
   const blob = await r.blob();
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? init.fallbackName;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  const name = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? init.fallbackName;
+  return saveBlob(blob, name);
 }
