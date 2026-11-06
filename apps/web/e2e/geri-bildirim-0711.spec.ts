@@ -32,8 +32,8 @@ test("Panel ve Hekimler sadeleşti; hekim kartında izin / rapor / resmî tatil"
   await expect(table.getByRole("columnheader", { name: "Bu ay randevu" })).toHaveCount(0);
   await table.locator("tbody tr").first().locator("button.link-button").click();
   await expect(page.getByRole("heading", { name: "İzin, rapor ve resmî tatiller" })).toBeVisible();
-  await page.getByRole("button", { name: "Ekle" }).first().click();
-  const dr = page.getByRole("dialog");
+  await page.getByRole("region", { name: "İzin, rapor ve resmî tatiller" }).getByRole("button", { name: "Ekle" }).click();
+  const dr = page.getByRole("dialog", { name: /İzin, rapor veya resmî tatil ekle/ });
   await dr.getByLabel("Tür").selectOption("public_holiday");
   await expect(dr.getByLabel("Resmî tatil")).toBeVisible();
   await expect(dr.getByLabel("Resmî tatil").locator("option", { hasText: "Cumhuriyet Bayramı" }).first()).toBeAttached();
@@ -96,7 +96,7 @@ test("Randevu ver tam sayfa: tek işlem seçimi, sağlık uyarısı, uygun saatl
   await expect(page.getByLabel("İşlem türü")).toHaveCount(0);
   await expect(page.getByLabel("Planlanan işlem")).toHaveCount(0);
   // yeni hasta + sağlık özeti
-  await page.getByLabel("Hasta").fill("Sayfa Randevu");
+  await page.getByRole("textbox", { name: "Hasta", exact: true }).fill("Sayfa Randevu");
   await page.getByRole("button", { name: /Yeni hasta oluştur/ }).click();
   const np = page.getByRole("dialog", { name: "Yeni hasta" });
   await np.getByLabel("Kronik hastalık").fill("Hipertansiyon (sentetik)");
@@ -104,16 +104,18 @@ test("Randevu ver tam sayfa: tek işlem seçimi, sağlık uyarısı, uygun saatl
   await np.getByRole("button", { name: "Hastayı kaydet" }).click();
   const warn = page.getByRole("alert").filter({ hasText: "Sağlık uyarısı" }).or(page.locator(".alert", { hasText: "Sağlık uyarısı" }));
   await expect(warn.first()).toContainText("Kan sulandırıcı (sentetik)");
-  await page.getByLabel("İşlem").selectOption({ label: /Kompozit dolgu \(tek yüz\)/ } as never).catch(async () => {
-    const opt = await page.getByLabel("İşlem").locator("option", { hasText: "Kompozit dolgu (tek yüz)" }).first().getAttribute("value");
-    await page.getByLabel("İşlem").selectOption(opt!);
-  });
+  const islem = page.getByRole("combobox", { name: "İşlem", exact: true });
+  const opt = await islem.locator("option", { hasText: "Kompozit dolgu (tek yüz)" }).first().getAttribute("value");
+  await islem.selectOption(opt!);
+  await expect(page.getByText(/Fiyat: .*₺|Fiyat: ₺/)).toBeVisible();
+  // İlk hafta içi gün (seed hekimleri hafta sonu çalışmaz; pazar günü "boş saat yok" doğru davranıştır).
   const tomorrow = new Date(Date.now() + 86_400_000);
+  while ([0, 6].includes(tomorrow.getDay())) tomorrow.setDate(tomorrow.getDate() + 1);
   const ddmmyyyy = `${String(tomorrow.getDate()).padStart(2, "0")}.${String(tomorrow.getMonth() + 1).padStart(2, "0")}.${tomorrow.getFullYear()}`;
   await page.getByPlaceholder("gg.aa.yyyy").first().fill(ddmmyyyy);
+  await expect(page.getByRole("heading", { name: new RegExp(`Uygun saatler.*${ddmmyyyy.replace(/\./g, "\\.")}`) })).toBeVisible();
   const slots = page.getByRole("radiogroup", { name: "Uygun saatler" });
-  await expect(slots.getByRole("radio").first()).toBeVisible();
-  expect(await slots.getByRole("radio").count()).toBeGreaterThan(3);
+  await expect.poll(() => slots.getByRole("radio").count(), { timeout: 10_000 }).toBeGreaterThan(3);
   await slots.getByRole("radio").nth(1).click();
   await page.getByRole("radiogroup", { name: "Ödeme" }).getByRole("radio", { name: "Kısmi ödeme" }).click();
   await page.getByLabel("Alınan tutar (₺)").fill("250,00");

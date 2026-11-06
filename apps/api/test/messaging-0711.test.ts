@@ -115,7 +115,7 @@ describe("Mesajlar sekmesi API", () => {
     await sec.put("/messaging/rules/before_appointment", { hours: 24, body: "x y", active: true }).expect(403);
     await admin.put("/messaging/rules/before_appointment", { hours: 48, body: "Sayın {hasta}, {tarih} {saat} randevunuz var.", active: true }).expect(200);
     const pid = await patient("Kural", ["appointment_reminder"]);
-    const prac = (await ownerQuery(tenantA, "select id from practitioners where active order by display_name limit 1"))[0]!.id;
+    const prac = (await admin.post("/practitioners", { displayName: `Dt. Kural ${randomUUID().slice(0, 4)}` }).expect(201)).body.id; // çakışmasız kendi hekimi
     const a = (await sec.post("/appointments", { patientId: pid, practitionerId: prac, date: day(1), startTime: "22:40", durationMinutes: 15, allowOutsideHours: true }).expect(201)).body;
     const { WORKER_URL } = await import("./env.js");
     const pool = new pg.Pool({ connectionString: WORKER_URL, max: 2 });

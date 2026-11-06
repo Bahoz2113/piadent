@@ -337,7 +337,9 @@ describe("AT-12 iletişim tercihi ve mesaj", () => {
     expect(com.messages[0]).toMatchObject({ status: "cancelled", statusReason: "Gönderim anında iletişim izni yok" });
     expect(com.current["appointment_reminder:sms"].status).toBe("withdrawn");
     expect(com.history).toHaveLength(2); // geçmiş korunur
-    expect((await dentist.post("/messages", { patientId: pid, purpose: "appointment_reminder", channel: "sms", body: "x deneme" }).set("idempotency-key", key())).status).toBe(403);
+    // ADR-102 (07.11.2026): hekim artık bilgi mesajı gönderebilir; izin geri çekildiği için yine gönderilmez (422 izin yok).
+    const dm = await dentist.post("/messages", { patientId: pid, purpose: "appointment_reminder", channel: "sms", body: "x deneme" }).set("idempotency-key", key());
+    expect(dm.status).toBe(422); expect(dm.body.code).toBe("CONSENT_MISSING");
   });
 });
 
