@@ -39,14 +39,22 @@ test("sekreter: hasta oluştur → randevu ver → çakışma reddi → PİA İz
   await expect(page.getByRole("heading", { name: `Sentetik ${last}`, level: 1 })).toBeVisible();
   await noHorizontalOverflow(page);
 
+  // 07.11.2026 (ADR-101): randevu verme tam sayfa; tek "İşlem" seçimi; boş saat listesi + listede olmayan saat için elle giriş.
   await page.getByRole("link", { name: "Randevu ver" }).click();
-  const ap = page.getByRole("dialog", { name: "Randevu ver" });
+  await expect(page.getByRole("heading", { name: "Randevu ver", level: 1 })).toBeVisible();
+  const ap = page.locator("main");
   await expect(ap.getByText(`Sentetik ${last}`)).toBeVisible();
   const offset = 20 + (Number(stamp) % 300) * 2 + (mobile ? 1 : 0); // her koşuda farklı gün
   const day = new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
-  await ap.getByRole("textbox", { name: "Tarih", exact: true }).fill(day);
-  await ap.getByRole("textbox", { name: "Saat", exact: true }).fill(mobile ? "07:00" : "07:30");
-  await ap.getByLabel("Açıklama").fill("Kontrol");
+  const pickProc = async () => {
+    const sel = ap.getByRole("combobox", { name: "İşlem", exact: true });
+    await sel.selectOption((await sel.locator("option", { hasText: "Kontrol muayenesi" }).first().getAttribute("value"))!);
+  };
+  const manualTime = async (t: string) => { await ap.getByText("Listede olmayan bir saat gir").click(); await ap.getByRole("textbox", { name: "Saat", exact: true }).fill(t); };
+  await pickProc();
+  await ap.getByRole("textbox", { name: "Gün", exact: true }).fill(day);
+  await manualTime(mobile ? "07:00" : "07:30");
+  await ap.getByRole("textbox", { name: "Açıklama", exact: true }).fill("Kontrol");
   await ap.getByRole("button", { name: "Randevuyu kaydet" }).click();
   // 07:xx çalışma saati dışında: uyarı gösterilir, bilinçli onayla kaydedilir (T05).
   await expect(ap.getByText("Çalışma saati dışı", { exact: true })).toBeVisible();
@@ -55,23 +63,24 @@ test("sekreter: hasta oluştur → randevu ver → çakışma reddi → PİA İz
 
   // Aynı hekim/saat ikinci kez → anlamlı çakışma (sunucu kontrolü).
   await page.getByRole("button", { name: "Randevu ver" }).first().click();
-  const ap2 = page.getByRole("dialog", { name: "Randevu ver" });
-  await ap2.getByRole("textbox", { name: "Hasta", exact: true }).fill(last);
-  await ap2.getByRole("option", { name: new RegExp(last, "i") }).click();
-  await ap2.getByRole("textbox", { name: "Tarih", exact: true }).fill(day);
-  await ap2.getByRole("textbox", { name: "Saat", exact: true }).fill(mobile ? "07:00" : "07:30");
-  await ap2.getByRole("button", { name: "Randevuyu kaydet" }).click();
-  await ap2.getByRole("button", { name: "Çalışma saati dışında yine de kaydet" }).click();
-  await expect(ap2.getByText(/dolu/)).toBeVisible();
-  // Kaydedilmemiş formda kapatma: tarayıcı penceresi değil uygulama içi onay (madde 10)
-  await ap2.getByRole("button", { name: "Kapat" }).click();
+  await expect(page.getByRole("heading", { name: "Randevu ver", level: 1 })).toBeVisible();
+  await ap.getByRole("textbox", { name: "Hasta", exact: true }).fill(last);
+  await ap.getByRole("option", { name: new RegExp(last, "i") }).click();
+  await pickProc();
+  await ap.getByRole("textbox", { name: "Gün", exact: true }).fill(day);
+  await manualTime(mobile ? "07:00" : "07:30");
+  await ap.getByRole("button", { name: "Randevuyu kaydet" }).click();
+  await ap.getByRole("button", { name: "Çalışma saati dışında yine de kaydet" }).click();
+  await expect(ap.getByText(/dolu/)).toBeVisible();
+  // Kaydedilmemiş sayfadan çıkış: tarayıcı penceresi değil uygulama içi onay (madde 10)
+  await ap.getByRole("button", { name: "Vazgeç" }).click();
   const leave = page.getByRole("alertdialog", { name: "Kaydedilmemiş değişiklikler" });
   await expect(leave).toBeVisible();
   await leave.getByRole("button", { name: "Forma dön" }).click();
-  await expect(ap2).toBeVisible();
-  await ap2.getByRole("button", { name: "Kapat" }).click();
-  await page.getByRole("alertdialog", { name: "Kaydedilmemiş değişiklikler" }).getByRole("button", { name: "Kapat" }).click();
-  await expect(ap2).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Randevu ver", level: 1 })).toBeVisible();
+  await ap.getByRole("button", { name: "Vazgeç" }).click();
+  await page.getByRole("alertdialog", { name: "Kaydedilmemiş değişiklikler" }).getByRole("button", { name: "Çık" }).click();
+  await expect(page.getByRole("heading", { name: "Randevular", level: 1 })).toBeVisible();
 
   await page.goto(`/hastalar?q=${last}`);
   await page.getByRole("link", { name: `Sentetik ${last}` }).click();

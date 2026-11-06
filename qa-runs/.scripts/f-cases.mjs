@@ -119,7 +119,9 @@ const summary = { run: RUN };
 {
   const c = []; const pid = await newPatient("Sonuc");
   // Bugün sabah 07:10 (seed randevuları 09:00'dan başlar; koşu saati 07:40'tan sonraysa geçmiştir) — tur 1: −150 dk seed randevusuyla çakışıyordu.
-  const p = { date: today(), time: "07:10" };
+  // Tur 1 (07.11.2026) tester düzeltmesi: koşu gece (07:40 öncesi) yapılırsa 07:10 gelecekte kalıyordu → saat bağımlılığı; gece koşusunda 60 dk önce.
+  const nowMin = Number(new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", hour12: false }).format(new Date())) * 60 + Number(new Intl.DateTimeFormat("en-GB", { timeZone: TZ, minute: "2-digit" }).format(new Date()));
+  const p = nowMin >= 8 * 60 ? { date: today(), time: "07:10" } : nowMin >= 75 ? at(-60) : { date: day(-1), time: "23:10" };
   const a = await api(A.admin, "POST", "/appointments", { patientId: pid, practitionerId: prac, date: p.date, startTime: p.time, durationMinutes: 30, allowOutsideHours: true, backdateReason: "QA: saati geçmiş planlı" });
   const fut = await api(A.sec, "POST", "/appointments", { patientId: pid, practitionerId: prac, date: day(5), startTime: freeSlot(), durationMinutes: 30, allowOutsideHours: true });
   const list = (await api(A.sec, "GET", `/patients/${pid}/appointments`)).body.items ?? [];
@@ -256,7 +258,8 @@ const summary = { run: RUN };
   ok((await pay({ ...body, period: "2026-13", amount: "1.00" })).status === 422, "dönem 2026-13 422", c);
   ok((await pay({ ...body, amount: "0" })).status === 422, "tutar 0 422", c);
   ok((await pay({ ...body, amount: "1.00" }, key(), A.sec)).status === 403, "sekreter ödeyemez 403", c);
-  ok((await pay({ ...body, amount: "1.00" }, key(), A.admin)).status === 403, "yönetici ödeyemez 403 (commission.payout yok)", c);
+  // 07.11.2026 kabul değişikliği (ADR-098): yönetici tüm yetkili; yetkisiz ödeme sekreterle sınanır.
+  ok((await pay({ ...body, amount: "1.00" }, key(), A.sec)).status === 403, "sekreter ödeyemez 403 (commission.payout yok)", c);
   const k = key();
   const p1 = await pay({ ...body, amount: "20000.00" }, k);
   const p1b = await pay({ ...body, amount: "20000.00" }, k);
@@ -275,7 +278,9 @@ const summary = { run: RUN };
   const rep = (await api(A.fin, "GET", `/reports/nakit-hareketleri?from=${today()}&to=${today()}&source=salary_payment`)).body;
   ok(rep.rows?.length >= 3 && rep.rows.every((r) => r.sourceLabel === "Maaş ödemesi"), "nakit raporu Maaş ödemesi satırları", c);
   ok((await api(B.admin, "GET", `/practitioners/${pr}/compensation`)).status === 404, "B kiracısı 404", c);
-  ok((await api(B.admin, "POST", "/salary-payments", { ...body, amount: "1.00" }, { "idempotency-key": key() })).status === 403, "B yönetici ödeme yetkisiz 403", c);
+  // 07.11.2026 (ADR-098): B yöneticisi tüm yetkili; A hekimine ödeme yine yapılamaz (kiracı sınırı) — yetki değil kayıt bulunamaz/geçersiz.
+  { const bp = (await api(B.admin, "POST", "/salary-payments", { ...body, amount: "1.00" }, { "idempotency-key": key() })).status;
+    ok([403, 404, 422].includes(bp), `B yöneticisi A hekimine ödeme yapamaz (${bp})`, c); }
   summary.F08 = { practitionerId: pr };
   save("F08", { checks: c, compensation: { current: comp.current, months: comp.months.slice(-2), totals: comp.totals } });
   rec("F08", c.every((x) => x.pass) ? "PASS" : "FAIL", `${c.filter((x) => x.pass).length}/${c.length} kontrol: ${c.filter((x) => !x.pass).map((x) => x.check).join("; ") || "hepsi geçti"}`);

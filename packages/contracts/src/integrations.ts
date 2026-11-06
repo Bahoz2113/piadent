@@ -14,13 +14,13 @@ export const INTEGRATION_KIND_LABELS: Record<IntegrationKind, string> = {
  * Sağlayıcı durumu kataloğu (dürüst rapor). MOCK dışında doğrulanmış adaptör yoktur; her biri için üretime geçiş kanıtı Plan §08'dedir.
  */
 export const PROVIDER_READINESS: Record<IntegrationKind, { mock: boolean; waitingFor: string }> = {
-  sms: { mock: true, waitingFor: "Sağlayıcı seçimi, sözleşme, test hesabı, teslim webhook dokümanı; iletişim izni değerlendirmesi" },
-  payment: { mock: true, waitingFor: "Ödeme kuruluşu sözleşmesi, sandbox erişimi, callback imza dokümanı; kart verisi PİA-DENT'te tutulmaz" },
-  whatsapp: { mock: false, waitingFor: "Resmî WhatsApp Business Platform erişimi (QR oturumu resmî API değildir), şablon onayı" },
-  email: { mock: false, waitingFor: "E-posta sağlayıcısı ve alan adı doğrulaması (SPF/DKIM)" },
-  e_invoice: { mock: true, waitingFor: "Yetkili GİB entegratörü sözleşmesi, test belgesi, iptal/itiraz senaryosu ve mali müşavir onayı (MOCK yalnız akış gösterimi; numara resmî değildir)" },
+  sms: { mock: true, waitingFor: "Netgsm adaptörü hazır: gerçek gönderim için Netgsm kullanıcı kodu, API parolası, onaylı gönderen adı ortam değişkenlerine girilmeli ve canlı gönderim kapısı açılmalı" },
+  payment: { mock: true, waitingFor: "Ödeme kuruluşu sözleşmesi, deneme ortamı erişimi, bildirim imza dokümanı; kart verisi PİA-DENT'te tutulmaz" },
+  whatsapp: { mock: false, waitingFor: "Resmî WhatsApp Business Platform erişimi (QR oturumu resmî bağlantı yöntemi değildir), şablon onayı" },
+  email: { mock: false, waitingFor: "E-posta sağlayıcısı ve alan adı doğrulaması (gönderen alan adı doğrulama kayıtları)" },
+  e_invoice: { mock: true, waitingFor: "Yetkili GİB entegratörü sözleşmesi, test belgesi, iptal/itiraz senaryosu ve mali müşavir onayı (deneme sağlayıcı yalnız akış gösterimi; numara resmî değildir)" },
   health_registry: { mock: false, waitingFor: "Sağlık Bakanlığı DHBS/SBYS güncel kapsam teyidi, kayıt/tescil, test ortamı ve veri seti eşlemesi" },
-  signature: { mock: false, waitingFor: "Yöntemin klinik/hukuki uygunluk değerlendirmesi ve sağlayıcı seçimi (ADR-033)" },
+  signature: { mock: false, waitingFor: "Yöntemin klinik/hukuki uygunluk değerlendirmesi ve sağlayıcı seçimi" },
 };
 
 export const OPERATION_LABELS: Record<string, string> = { "sms.send": "SMS gönderimi", "payment.create_link": "Ödeme bağlantısı", "payment.refund": "Sağlayıcı üzerinden iade" };

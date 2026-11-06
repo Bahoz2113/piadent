@@ -63,23 +63,29 @@ for (const profile of ["masaustu", "mobil"]) {
   });
 
   await tryCase(profile, "F01", async () => {
-    await page.goto(`${BASE}/ajanda`); await page.getByRole("heading", { name: "Randevular", level: 1 }).waitFor();
+    // Tur 2 tester düzeltmesi (saat bağımlılığı): ajanda 08:00'de başlar; koşu 08:30 öncesiyse bugünde geçmiş dilim yoktur → dünün günü.
+    const hourTR = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", hour: "2-digit", hour12: false }).format(new Date()));
+    const ymd = (dd) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(dd);
+    await page.goto(`${BASE}/ajanda${hourTR < 9 ? `?tarih=${ymd(new Date(Date.now() - 86_400_000))}` : ""}`); await page.getByRole("heading", { name: "Randevular", level: 1 }).waitFor();
     await page.waitForTimeout(800);
     const pastCount = profile === "mobil" ? -1 : await page.locator(".agenda-slot.is-past").count(); // mobilde ızgara yerine liste görünümü
     const pastClickable = await page.locator("button.agenda-slot.is-past").count();
     let opened = false;
-    if (pastCount > 0) { await page.locator(".agenda-slot.is-past").first().click({ force: true }); opened = await page.getByRole("dialog", { name: "Randevu ver" }).isVisible().catch(() => false); }
+    // 07.11.2026 kabul değişikliği (ADR-101): randevu verme tam sayfa (çekmece değil); geçmiş dilim sayfayı da açmamalı.
+    const title = page.getByRole("heading", { name: "Randevu ver", level: 1 });
+    if (pastCount > 0) { await page.locator(".agenda-slot.is-past").first().click({ force: true }); await page.waitForTimeout(400); opened = await title.isVisible().catch(() => false); }
     await page.getByRole("button", { name: "Randevu ver" }).first().click();
-    const dlg = page.getByRole("dialog", { name: "Randevu ver" });
-    await dlg.waitFor();
+    await title.waitFor();
+    const dlg = page.locator("main");
     const dateBox = dlg.locator("input[placeholder='gg.aa.yyyy']").first();
     await dateBox.fill("01.01.2026"); await dateBox.blur();
     const v = await dateBox.inputValue();
-    const errVisible = await dlg.getByText(/Geçmiş saat seçilemez/).count();
+    // Tur 3 tester uyarlaması: eski çekmece geçmiş tarihte "Geçmiş saat seçilemez" yazardı; tam sayfada (QA-301 kabulü, handoff.md) geçmiş gün için
+    // "Geçmiş gün seçilemez". Plan F01 ("tarih alanı bugünden öncesini kabul etmez") değişmedi; ikisi de kabul uyarısıdır.
+    const errVisible = await dlg.getByText(/Geçmiş (saat|gün) seçilemez/).count();
     const ev = await shot(page, profile, "F01-ajanda");
-    await page.keyboard.press("Escape").catch(() => {});
-    await page.waitForTimeout(300);
-    if (await page.getByRole("alertdialog").count()) await page.getByRole("alertdialog").getByRole("button", { name: "Kapat" }).click();
+    await dlg.getByRole("button", { name: "Vazgeç" }).click(); await page.waitForTimeout(300);
+    if (await page.getByRole("alertdialog").count()) await page.getByRole("alertdialog").getByRole("button", { name: "Çık" }).click();
     const pass = (profile === "mobil" || pastCount > 0) && pastClickable === 0 && !opened && (v !== "01.01.2026" || errVisible > 0);
     return { pass, summary: `geçmiş dilim ${pastCount} (düğme ${pastClickable}), tıklayınca form açıldı=${opened}; tarih alanına 01.01.2026 → değer "${v}", uyarı ${errVisible}`, evidence: ev };
   });
@@ -188,39 +194,40 @@ for (const profile of ["masaustu", "mobil"]) {
   });
 
   await tryCase(profile, "F11", async () => {
+    // 07.11.2026 kabul değişikliği (ADR-101): "Randevu ver" tam sayfa → kapatma "Vazgeç"; çekmece Esc/X/arka plan kuralı "Yeni hasta" çekmecesinde sınanır.
     await page.goto(`${BASE}/ajanda`); await page.getByRole("heading", { name: "Randevular", level: 1 }).waitFor();
-    const open = async () => { await page.getByRole("button", { name: "Randevu ver" }).first().click(); const d = page.getByRole("dialog", { name: "Randevu ver" }); await d.waitFor(); return d; };
+    const title = page.getByRole("heading", { name: "Randevu ver", level: 1 }), list = page.getByRole("heading", { name: "Randevular", level: 1 });
+    const modal = page.getByRole("alertdialog", { name: "Kaydedilmemiş değişiklikler" });
+    const open = async () => { await page.getByRole("button", { name: "Randevu ver" }).first().click(); await title.waitFor(); return page.locator("main"); };
     const steps = [];
-    // temiz form: uyarısız kapanır
-    let d = await open(); await d.getByRole("button", { name: "Kapat" }).first().click(); await page.waitForTimeout(300);
-    steps.push(["temiz X", (await page.getByRole("alertdialog").count()) === 0 && !(await d.isVisible().catch(() => false))]);
-    for (const how of profile === "mobil" ? ["X", "Esc"] : ["X", "Esc", "arka plan"]) { // mobilde çekmece tam ekran: arka plan yok
-      d = await open();
-      await d.getByLabel("Açıklama").fill(`QA kirli ${how}`);
-      if (how === "X") await d.getByRole("button", { name: "Kapat" }).first().click();
-      else if (how === "Esc") { await d.getByLabel("Açıklama").press("Escape"); }
+    let d = await open(); await d.getByRole("button", { name: "Vazgeç" }).click(); await page.waitForTimeout(300);
+    steps.push(["temiz sayfa: uyarısız döner", (await modal.count()) === 0 && (await list.isVisible())]);
+    d = await open(); await d.getByLabel("Açıklama", { exact: true }).fill("QA kirli sayfa");
+    await d.getByRole("button", { name: "Vazgeç" }).click(); await page.waitForTimeout(300);
+    const shown = await modal.isVisible().catch(() => false); steps.push(["kirli sayfa: modal", shown]);
+    if (shown) { await modal.getByRole("button", { name: "Forma dön" }).click(); await page.waitForTimeout(200);
+      steps.push(["Forma dön veriyi korudu", (await d.getByLabel("Açıklama", { exact: true }).inputValue()) === "QA kirli sayfa"]);
+      await d.getByRole("button", { name: "Vazgeç" }).click(); await modal.getByRole("button", { name: "Çık" }).click(); await page.waitForTimeout(300);
+      steps.push(["Çık sayfayı kapattı", await list.isVisible()]); }
+    d = await open(); await d.getByLabel("Not", { exact: true }).fill("QA yalnız not");
+    await d.getByRole("button", { name: "Vazgeç" }).click(); await page.waitForTimeout(300);
+    const noteModal = await modal.isVisible().catch(() => false); steps.push(["yalnız Not dolu: modal", noteModal]);
+    if (noteModal) await modal.getByRole("button", { name: "Çık" }).click();
+    // çekmece kuralı: Yeni hasta çekmecesi
+    await page.goto(`${BASE}/hastalar`); await page.getByRole("button", { name: /Yeni hasta/ }).first().click();
+    const np = page.getByRole("dialog", { name: "Yeni hasta" }); await np.waitFor();
+    for (const how of profile === "mobil" ? ["X", "Esc"] : ["X", "Esc", "arka plan"]) {
+      await np.getByRole("textbox", { name: "Ad", exact: true }).fill(`QA ${how}`);
+      if (how === "X") await np.getByRole("button", { name: "Kapat" }).first().click();
+      else if (how === "Esc") await np.getByRole("textbox", { name: "Ad", exact: true }).press("Escape");
       else await page.mouse.click(5, 300);
       await page.waitForTimeout(400);
-      const modal = page.getByRole("alertdialog", { name: "Kaydedilmemiş değişiklikler" });
-      const shown = await modal.isVisible().catch(() => false);
-      if (shown) {
-        await modal.getByRole("button", { name: "Forma dön" }).click(); await page.waitForTimeout(200);
-        const kept = await d.getByLabel("Açıklama").inputValue();
-        steps.push([`kirli ${how}: modal`, true], [`kirli ${how}: Forma dön veriyi korudu`, kept === `QA kirli ${how}`]);
-        await d.getByRole("button", { name: "Kapat" }).first().click(); await page.waitForTimeout(200);
-        await page.getByRole("alertdialog").getByRole("button", { name: "Kapat" }).click(); await page.waitForTimeout(300);
-        steps.push([`kirli ${how}: Kapat formu kapattı`, !(await d.isVisible().catch(() => false))]);
-      } else {
-        steps.push([`kirli ${how}: modal`, false]);
-        if (await d.isVisible().catch(() => false)) { await d.getByRole("button", { name: "Kapat" }).first().click(); await page.waitForTimeout(200); if (await page.getByRole("alertdialog").count()) await page.getByRole("alertdialog").getByRole("button", { name: "Kapat" }).click(); }
-      }
+      const sh = await modal.isVisible().catch(() => false); steps.push([`yeni hasta kirli ${how}: modal`, sh]);
+      if (sh) { await modal.getByRole("button", { name: "Forma dön" }).click(); await page.waitForTimeout(200);
+        steps.push([`yeni hasta ${how}: Forma dön veriyi korudu`, (await np.getByRole("textbox", { name: "Ad", exact: true }).inputValue()) === `QA ${how}`]); }
     }
-    // yalnız Not alanı doldurulmuş form
-    d = await open(); await d.getByLabel("Not").fill("QA yalnız not");
-    await d.getByRole("button", { name: "Kapat" }).first().click(); await page.waitForTimeout(400);
-    const noteModal = await page.getByRole("alertdialog").isVisible().catch(() => false);
-    steps.push(["yalnız Not dolu: modal", noteModal]);
-    if (noteModal) { await page.getByRole("alertdialog").getByRole("button", { name: "Kapat" }).click(); }
+    await np.getByRole("button", { name: "Kapat" }).first().click(); await modal.getByRole("button", { name: "Kapat" }).click(); await page.waitForTimeout(300);
+    steps.push(["yeni hasta: Kapat çekmeceyi kapattı", !(await np.isVisible().catch(() => false))]);
     const ev = await shot(page, profile, "F11-kapatma");
     steps.push(["tarayıcı yerel penceresi hiç açılmadı", page.nativeDialogs === 0]);
     const failed = steps.filter((s) => !s[1]).map((s) => s[0]);
@@ -229,23 +236,27 @@ for (const profile of ["masaustu", "mobil"]) {
 
   await tryCase(profile, "F12", async () => {
     await page.goto(`${BASE}/ajanda`); await page.getByRole("heading", { name: "Randevular", level: 1 }).waitFor();
+    // 07.11.2026 kabul değişikliği (ADR-101): tek "İşlem" seçimi (fiyatıyla), tam sayfa; bakiye şeridi ödeme planında.
     await page.getByRole("button", { name: "Randevu ver" }).first().click();
-    const d = page.getByRole("dialog", { name: "Randevu ver" }); await d.waitFor();
-    const opts = await d.getByLabel("Planlanan işlem").locator("option").allInnerTexts();
-    await d.getByLabel("Planlanan işlem").selectOption({ label: opts.find((o) => o.startsWith("TEM-01")) });
+    await page.getByRole("heading", { name: "Randevu ver", level: 1 }).waitFor();
+    const d = page.locator("main");
+    const sel = d.getByRole("combobox", { name: "İşlem", exact: true });
+    const opts = await sel.locator("option").allInnerTexts();
+    const twoSelects = (await d.getByLabel("İşlem türü").count()) + (await d.getByLabel("Planlanan işlem").count());
+    await sel.selectOption((await sel.locator("option", { hasText: "Diş taşı temizliği" }).first().getAttribute("value")));
     await page.waitForTimeout(800);
     const hint = await d.innerText();
     const priceShown = hint.includes(num(S.F12.plannedPrice));
-    await d.locator("#ap-q").fill("Sınama");
+    await d.locator("#ra-q").fill("Sınama");
     await page.waitForTimeout(900);
     await d.getByRole("option").first().click();
     await page.waitForTimeout(900);
     const strip = await d.locator(".money-strip").innerText().catch(() => "");
     const ev = await shot(page, profile, "F12-form");
-    await d.getByRole("button", { name: "Kapat" }).first().click(); await page.waitForTimeout(300);
-    if (await page.getByRole("alertdialog").count()) await page.getByRole("alertdialog").getByRole("button", { name: "Kapat" }).click();
-    const pass = opts.length > 50 && priceShown && /Açık borç/.test(strip) && /tahmini borç/i.test(strip);
-    return { pass, summary: `işlem seçenekleri ${opts.length}; TEM-01 fiyatı ${fmt(S.F12.plannedPrice)} görünür=${priceShown}; şerit: ${strip.replace(/\s+/g, " ").slice(0, 120)}`, evidence: ev };
+    await d.getByRole("button", { name: "Vazgeç" }).click(); await page.waitForTimeout(300);
+    if (await page.getByRole("alertdialog").count()) await page.getByRole("alertdialog").getByRole("button", { name: "Çık" }).click();
+    const pass = opts.length > 50 && twoSelects === 0 && priceShown && /açık borç/i.test(strip) && /toplam borç/i.test(strip);
+    return { pass, summary: `tek işlem seçimi (eski iki alan ${twoSelects}); işlem seçenekleri ${opts.length}; TEM-01 fiyatı ${fmt(S.F12.plannedPrice)} görünür=${priceShown}; şerit: ${strip.replace(/\s+/g, " ").slice(0, 120)}`, evidence: ev };
   });
   await ctx.close();
 

@@ -1,0 +1,11 @@
+-- CEZERİ R07: kiracı tabloları FORCE RLS, uygulama rolü bayrakları, DELETE yetkileri, yeni tabloların politikası
+select 'tenant_tables_without_force_rls|'||count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r'
+  and exists (select 1 from pg_attribute a where a.attrelid=c.oid and a.attname='tenant_id' and not a.attisdropped) and not (c.relrowsecurity and c.relforcerowsecurity);
+select 'tenant_tables_total|'||count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r'
+  and exists (select 1 from pg_attribute a where a.attrelid=c.oid and a.attname='tenant_id' and not a.attisdropped);
+select 'tables_without_policy|'||coalesce(string_agg(c.relname, ','),'') from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r'
+  and exists (select 1 from pg_attribute a where a.attrelid=c.oid and a.attname='tenant_id') and not exists (select 1 from pg_policies p where p.tablename=c.relname);
+select 'app_role_delete_grants|'||coalesce(string_agg(distinct table_name, ',' order by table_name),'') from information_schema.role_table_grants where grantee='viadent_app' and privilege_type='DELETE';
+select 'app_role_update_on_append_only|'||coalesce(string_agg(distinct table_name, ','),'') from information_schema.role_table_grants where grantee='viadent_app' and privilege_type='UPDATE' and table_name in ('receipts','payments','refunds','allocations','audit_events','stock_movements','receipt_counters');
+select 'app_role_flags super/bypassrls/createrole|'||rolsuper||'/'||rolbypassrls||'/'||rolcreaterole from pg_roles where rolname='viadent_app';
+select 'new_tables_force_rls|'||string_agg(c.relname||'='||(c.relrowsecurity and c.relforcerowsecurity), ',' order by c.relname) from pg_class c where c.relname in ('receipts','receipt_counters','invoices','invoice_lines','anamnesis_templates','procedure_consumables','practitioner_compensation_versions','salary_payments','supplier_prices');

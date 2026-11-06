@@ -68,10 +68,11 @@ describe("QA-103 sağlayıcı durumları: TASLAK yok, sağlayıcı durumu görü
       expect(html).not.toContain("bağlı değil");
       if (x.invoiceNo) expect(html).toContain(x.invoiceNo);
       if (x.invoiceNo?.startsWith("MOCK") || x.providerMock) {
-        expect(v.notice).toContain("MOCK — resmî değil");
-        expect(html).toContain("MOCK — resmî değil");
+        // 07.11.2026: etiket Türkçe ("DENEME"); açıkça işaretli olma kuralı aynı.
+        expect(v.notice).toContain("DENEME — resmî değil");
+        expect(html).toContain("DENEME — resmî değil");
       } else {
-        expect(v.notice).not.toContain("MOCK");
+        expect(v.notice).not.toContain("DENEME");
       }
       if (x.status === "cancelled") expect(v.watermark).toBe("İPTAL");
     });

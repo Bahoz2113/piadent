@@ -22,7 +22,7 @@ import type request from "supertest";
 import pg from "pg";
 import { scanAllTenants } from "../../worker/src/jobs.js";
 import { WORKER_URL } from "./env.js";
-import { EMAILS, login, ownerQuery, startApp, tomorrowIstanbul, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, tomorrowIstanbul, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication;
 let admin: Client, dentist: Client, sec: Client;
@@ -56,8 +56,12 @@ async function insertLegacyRule(docTypeId: string, procedureId = kanId) {
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık klinik içeriği görür; sızıntı süzgeci sağlık yetkisiz yönetici kümesiyle sınanır.
+  await useLegacyAdmin(app);
   [admin, dentist, sec] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary)]);
   tenantA = admin.session.activeMembership.tenantId;
+  // ADR-100: seed'de anamnez kuralı artık pasif; bu dosya 0031 düzeltmesinin onam + anamnez kalemlerini sınadığından kural sınama süresince etkinleştirilir.
+  await ownerQuery(tenantA, "update readiness_rules set active = true where kind = 'anamnesis_reviewed'");
   pracId = (await sec.get("/resources").expect(200)).body.practitioners[0].id;
   types = (await dentist.get("/document-types").expect(200)).body.items;
   epi = types.find((t) => t.code === "EPIKRIZ")!;
@@ -75,6 +79,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await ownerQuery(tenantA, "update readiness_rules set active = false where kind = 'anamnesis_reviewed'");
   if (legacyTasks.length) await ownerQuery(tenantA, "delete from tasks where id = any($1::uuid[])", [legacyTasks]);
   if (legacyRules.length) await ownerQuery(tenantA, "delete from readiness_rules where id = any($1::uuid[])", [legacyRules]);
   await app.close();

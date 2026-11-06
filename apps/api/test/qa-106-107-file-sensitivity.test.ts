@@ -26,7 +26,7 @@ import { AuthService } from "../src/auth/auth.service.js";
 import { setStorageForTests } from "../src/documents/files.controller.js";
 import { processOutbox, type WorkerDeps } from "../../worker/src/jobs.js";
 import { WORKER_URL } from "./env.js";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, useLegacyAdmin, grantExtra, clearExtra, type Client } from "./helpers.js";
 
 let app: INestApplication;
 let dentist: Client, sec: Client, admin: Client;
@@ -82,14 +82,9 @@ async function snapshot(ids: string[], consentDocId?: string) {
 }
 
 async function withHealth<T>(membershipId: string, fn: () => Promise<T>): Promise<T> {
-  const auth = app.get(AuthService);
-  const orig = auth.buildContext.bind(auth);
-  const spy = vi.spyOn(auth, "buildContext").mockImplementation((s, m, corr) => {
-    const ctx = orig(s, m, corr);
-    if (m.id === membershipId) ctx.permissions = new Set([...ctx.permissions, "patient.health.read"]);
-    return ctx;
-  });
-  try { return await fn(); } finally { spy.mockRestore(); }
+  // ADR-098: kanca, useLegacyAdmin ile kurulan tek buildContext casusuna ek yetki olarak bağlanır.
+  grantExtra(membershipId, "patient.health.read");
+  try { return await fn(); } finally { clearExtra(membershipId); }
 }
 async function newConsentDoc() {
   const types = (await sec.get("/document-types").expect(200)).body.items as { category: string; requiresAcceptance: boolean; issuerRole: string | null; active: boolean; approvedTemplates: { versionId: string }[] }[];
@@ -105,6 +100,8 @@ const exportOf = async (c: Client) => {
 beforeAll(async () => {
   setStorageForTests(storage);
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [dentist, sec, admin] = await Promise.all([login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aAdmin)]);
   tenantA = admin.session.activeMembership.tenantId;
   patientId = (await sec.post("/patients", { firstName: "Dosya", lastName: `QA106 Sentetik ${Math.random().toString(36).slice(2, 7)}`, birthDate: "1981-08-08" }).expect(201)).body.patient.id;

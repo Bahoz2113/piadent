@@ -6,7 +6,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
-import { EMAILS, login, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication;
 let admin: Client, dentist: Client, sec: Client, fin: Client;
@@ -21,6 +21,8 @@ const day = (offset: number) => {
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [admin, dentist, sec, fin] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aFinance)]);
   patientId = (await sec.post("/patients", { firstName: "Gecmis", lastName: "Sentetik", birthDate: "1991-02-02" }).expect(201)).body.patient.id;
   await dentist.post(`/patients/${patientId}/findings`, { tooth: "16", surfaces: ["O"], findingType: "caries" }).expect(201);
@@ -57,10 +59,12 @@ describe("QA-001 hasta geçmişi: klinik olaylar yalnız sağlık yetkisiyle", (
 
   it("denetim (log) raporu: sağlık yetkisi yoksa klinik olaylar listelenmez", async () => {
     const rep = (await admin.get(`/reports/log?from=${day(0)}&to=${day(0)}`).expect(200)).body;
-    const rows = rep.rows as { action: string; entity: string }[];
+    // 07.11.2026: ekranda Türkçe etiket; ham kod satırda ayrı alan (actionCode / entityType) olarak kalır ve sınanır.
+    const rows = rep.rows as { action: string; actionCode: string; entity: string; entityType: string }[];
     expect(rows.length).toBeGreaterThan(0);
-    expect(rows.filter((r) => r.action === "finding.create" || r.action === "diagnosis.create")).toHaveLength(0);
-    expect(rows.filter((r) => /^(clinical_chart|clinical_note|anamnesis)\b/.test(r.entity))).toHaveLength(0);
+    expect(rows.filter((r) => r.actionCode === "finding.create" || r.actionCode === "diagnosis.create")).toHaveLength(0);
+    expect(rows.filter((r) => ["clinical_chart", "clinical_note", "anamnesis"].includes(r.entityType))).toHaveLength(0);
+    expect(rows.filter((r) => /^(Diş şeması|Klinik not|Anamnez)( ·|$)/.test(r.entity))).toHaveLength(0); // "Anamnez şablonu" klinik değildir
     // Eylem öneki ile süzülünce de sızmaz.
     const f = (await admin.get(`/reports/log?from=${day(0)}&to=${day(0)}&action=finding`).expect(200)).body;
     expect(f.rows).toHaveLength(0);

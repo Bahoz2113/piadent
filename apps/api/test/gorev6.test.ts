@@ -492,7 +492,9 @@ describe("raporlar: yetki, toplam = alt kayıtlar, kaynağa iniş, AT-19, CSV", 
       expect(x.rows, id).toHaveLength(x.totals.count);
     }
     const lg = await report(admin, "log", { ...r, action: "lab_order." });
-    expect(lg.rows.every((x: { action: string }) => x.action.startsWith("lab_order."))).toBe(true);
+    expect(lg.rows.length).toBeGreaterThan(0);
+    expect(lg.rows.every((x: { actionCode: string }) => x.actionCode.startsWith("lab_order."))).toBe(true); // ham kod ayrı alanda (07.11.2026)
+    expect(lg.rows.every((x: { action: string }) => !/^[a-z_]+\.[a-z_]+$/.test(x.action))).toBe(true); // ekranda Türkçe etiket
     expect(JSON.stringify(lg.rows)).not.toMatch(/Lale|Okluzyon/); // değer içeriği yok
     const st = await report(assistant, "stok");
     expect(st.rows).toHaveLength(st.totals.items);

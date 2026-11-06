@@ -26,26 +26,26 @@ export function OnlinePayments({ patientId, onChanged }: { patientId: string; on
   const items = list.data?.items ?? [];
   return (
     <section className="card">
-      <div className="card-head">
+      <div className="card-head" style={{ flexWrap: "wrap" }}>
         <div><h2>Online ödeme istekleri</h2><p className="muted small">Bağlantı oluşturmak tahsilat değildir. Ödeme yalnız sağlayıcının imzalı bildirimiyle avans olarak kaydedilir; borca dağıtım ayrıca yapılır.</p></div>
-        <div className="row" style={{ gap: 6 }}>
+        <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
           <button className="btn btn-sm btn-ghost" onClick={() => { void list.reload(); onChanged(); }}>Yenile</button>
-          {can("payment.write") && <button className="btn btn-sm" onClick={() => setOpen(true)}><Link2 size={15} aria-hidden />Ödeme bağlantısı (MOCK)</button>}
+          {can("payment.write") && <button className="btn btn-sm" onClick={() => setOpen(true)}><Link2 size={15} aria-hidden />Ödeme bağlantısı (DENEME)</button>}
         </div>
       </div>
       {msg && <div style={{ padding: "0 20px" }}><Alert kind={msg.kind}>{msg.text}</Alert></div>}
       {list.loading && !list.data ? <Loading rows={1} /> : items.length === 0 ? <p className="muted small" style={{ padding: "8px 20px 16px" }}>Online ödeme isteği yok.</p> : (
         <ul className="list" style={{ padding: "0 20px 12px" }}>{items.map((o) => (
           <li key={o.id} className="row" style={{ justifyContent: "space-between", padding: "8px 0", gap: 8, flexWrap: "wrap" }}>
-            <span><strong>{formatTRY(o.amount)}</strong> · {o.description} {o.isMock && <span className="badge badge-warning">MOCK</span>}
+            <span><strong>{formatTRY(o.amount)}</strong> · {o.description} {o.isMock && <span className="badge badge-warning">DENEME</span>}
               <div className="small muted">{fmtDateTime(o.createdAt)} · {o.by}{o.paidAt ? ` · ödendi ${fmtDateTime(o.paidAt)}` : ""}{o.failureReason ? ` · ${o.failureReason}` : ""}</div>
-              {o.checkoutUrl && o.status === "link_ready" && <div className="small">Bağlantı: <code style={{ wordBreak: "break-all" }}>{o.checkoutUrl}</code> <span className="muted">(MOCK — gerçek ödeme sayfası değildir; hastaya gönderilmez)</span></div>}</span>
+              {o.checkoutUrl && o.status === "link_ready" && <div className="small">Bağlantı: <code style={{ wordBreak: "break-all" }}>{o.checkoutUrl}</code> <span className="muted">(DENEME — gerçek ödeme sayfası değildir; hastaya gönderilmez)</span></div>}</span>
             <span className="row" style={{ gap: 6 }}>
               <span className={`badge badge-${TONE[o.status] ?? "neutral"}`}>{ONLINE_PAYMENT_STATUS_LABELS[o.status] ?? o.status}</span>
               {can("payment.write") && ["created", "link_ready"].includes(o.status) && <button className="btn btn-sm btn-ghost" onClick={() => void cancel(o)}>İptal</button>}
             </span>
           </li>))}</ul>)}
-      {open && <CreateDrawer patientId={patientId} onClose={() => setOpen(false)} onSaved={() => { setOpen(false); setMsg({ kind: "success", text: "Ödeme bağlantısı isteği sıraya alındı (MOCK)." }); void list.reload(); }} />}
+      {open && <CreateDrawer patientId={patientId} onClose={() => setOpen(false)} onSaved={() => { setOpen(false); setMsg({ kind: "success", text: "Ödeme bağlantısı isteği sıraya alındı (DENEME)." }); void list.reload(); }} />}
     </section>
   );
 }
@@ -64,7 +64,7 @@ function CreateDrawer({ patientId, onClose, onSaved }: { patientId: string; onCl
     catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
   return (
-    <Drawer title="Online ödeme bağlantısı" subtitle="MOCK sağlayıcı · gerçek para hareketi yok" onClose={onClose} dirty={!!amount}
+    <Drawer title="Online ödeme bağlantısı" subtitle="Deneme sağlayıcı · gerçek para hareketi yok" onClose={onClose} dirty={!!amount}
       footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy} onClick={() => void save()}>Bağlantı iste</button></>}>
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}

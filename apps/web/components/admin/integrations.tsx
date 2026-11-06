@@ -11,7 +11,8 @@ import { Alert, Drawer, ErrorState, Loading, SelectField, TextAreaField } from "
 type Notify = (k: "success" | "error", t: string) => void;
 interface Conn { id: string; kind: IntegrationKind; provider: string; mode: string; status: "active" | "disabled" | "blocked"; blockedReason: string | null;
   mockBehavior: string; mockQueryResult: string; hasSecret: boolean; secretRotatedAt: string | null; webhookPath: string; rejections7d: number }
-interface Overview { connections: Conn[]; readiness: Record<IntegrationKind, { mock: boolean; waitingFor: string }>; externalSendGate: "open" | "closed" }
+interface Overview { connections: Conn[]; readiness: Record<IntegrationKind, { mock: boolean; waitingFor: string }>; externalSendGate: "open" | "closed";
+  netgsm?: { configured: boolean; gateOpen: boolean; ready: boolean; missing: string[]; sender: string | null } }
 export interface Job { id: string; operation: string; approvalStatus: string; transportStatus: string; outcomeStatus: string; attempts: number; maxAttempts: number;
   nextAttemptAt: string | null; lastError: string | null; providerRef: string | null; createdAt: string; provider: string; mode: string; requestedBy: string;
   approvedBy: string | null; mine: boolean; summary: string }
@@ -24,7 +25,13 @@ const HOOK_STATUS: Record<string, [string, string]> = {
   processed: ["İşlendi", "success"], duplicate: ["Tekrar (yok sayıldı)", "neutral"], ignored_stale: ["Eski/ters sıra (yok sayıldı)", "neutral"],
   ignored_unknown: ["Eşleşmedi", "warning"], error: ["İnceleme gerekli", "danger"],
 };
-const REJECT_REASON: Record<string, string> = { signature_invalid: "Geçersiz imza", timestamp_out_of_window: "Zaman penceresi dışı (tekrar saldırısı?)", malformed: "Bozuk gövde" };
+/** 07.11.2026: ekranda yabancı terim yok — sağlayıcı olay kodları Türkçe adla gösterilir. */
+const EVENT_LABELS: Record<string, string> = {
+  "message.delivered": "Mesaj teslim edildi", "message.failed": "Mesaj teslim edilemedi", "payment.succeeded": "Ödeme alındı", "payment.failed": "Ödeme başarısız",
+  "refund.succeeded": "İade tamamlandı", "refund.failed": "İade başarısız",
+};
+const ATTEMPT_RESULT: Record<string, string> = { accepted: "Kabul edildi", rejected: "Reddedildi", timeout: "Zaman aşımı", unavailable: "Ulaşılamadı", not_found: "Kayıt yok", error: "Hata" };
+const REJECT_REASON: Record<string, string> = { signature_invalid: "Geçersiz imza", timestamp_out_of_window: "Zaman sınırı dışı (yeniden gönderilmiş olabilir)", malformed: "Bozuk gövde" };
 const EVENTS_FOR: Record<string, string[]> = {
   "sms.send": ["message.delivered", "message.failed"], "payment.create_link": ["payment.succeeded", "payment.failed"], "payment.refund": ["refund.succeeded", "refund.failed"],
 };
@@ -59,20 +66,31 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
   return (
     <div className="stack" style={{ gap: 16 }}>
       <Alert kind="info" title="PİA Köprü — dış servis bağlantıları">
-        Bu ortamda yalnız <strong>MOCK</strong> (sahte, etiketli) SMS ve online ödeme sağlayıcısı vardır; gerçek mesaj gönderilmez, gerçek para hareket etmez.
+        {o.netgsm?.ready ? <>SMS <strong>Netgsm</strong> ile gerçekten gönderilir. Online ödeme ve e-belge yalnız <strong>DENEME</strong> (gerçek olmayan, etiketli) sağlayıcıdadır; gerçek para hareket etmez.</>
+          : <>Bu ortamda yalnız <strong>DENEME</strong> (gerçek olmayan, etiketli) SMS ve online ödeme sağlayıcısı vardır; gerçek mesaj gönderilmez, gerçek para hareket etmez.</>}
         Canlı dış gönderim kapısı: <span className={`badge badge-${o.externalSendGate === "open" ? "warning" : "neutral"}`}>{o.externalSendGate === "open" ? "AÇIK" : "KAPALI"}</span>.
         Sağlayıcı “kabul etti” demek, mesajın teslim edildiği veya ödemenin alındığı anlamına gelmez; nihai sonuç yalnız imzası doğrulanmış bildirimle kaydedilir.
       </Alert>
+
+      <section className="card card-pad stack" aria-labelledby="netgsm-h">
+        <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+          <div><h2 id="netgsm-h">Netgsm SMS</h2><p className="muted small">Randevu hatırlatma ve bilgi mesajları için gerçek SMS sağlayıcısı.</p></div>
+          {o.netgsm?.ready ? <span className="badge badge-success">Gerçek gönderime hazır · gönderen {o.netgsm.sender}</span> : <span className="badge badge-warning">Hazır değil — mesajlar DENEME</span>}
+        </div>
+        {!o.netgsm?.ready && <Alert kind="info"><span style={{ overflowWrap: "anywhere" }}>Eksik: {o.netgsm?.missing.join(", ") || "—"}. Netgsm kullanıcı kodu, API parolası ve onaylı gönderen adı barındırma ortamının ayarlarına (NETGSM_USERCODE, NETGSM_PASSWORD, NETGSM_MSGHEADER) girilir ve canlı gönderim kapısı açılır. Bu bilgiler bu ekrana veya sohbete yazılmaz.</span></Alert>}
+        {manage && !o.connections.some((c) => c.provider === "netgsm") && (
+          <div><button className="btn btn-sm" onClick={() => void api("/integrations/connections/netgsm", { body: {} }).then(() => { notify("success", "Netgsm bağlantısı eklendi."); void ov.reload(); }, (e) => notify("error", (e as ApiFailure).message))}>Netgsm bağlantısı ekle</button></div>)}
+      </section>
 
       <section className="card">
         <div className="card-head"><div><h2>Bağlantılar</h2><p className="muted small">Erişim bekleyen servisler etkinleştirilemez; yerine sahte başarı gösterilmez.</p></div></div>
         <div className="table-wrap" tabIndex={0}>
           <table className="table table-wide">
-            <thead><tr><th>Servis</th><th>Sağlayıcı</th><th>Durum</th><th>MOCK davranışı</th><th>Webhook</th><th><span className="sr-only">İşlem</span></th></tr></thead>
+            <thead><tr><th>Servis</th><th>Sağlayıcı</th><th>Durum</th><th>Deneme davranışı</th><th>Sağlayıcı bildirimi</th><th><span className="sr-only">İşlem</span></th></tr></thead>
             <tbody>{o.connections.map((c) => (
               <tr key={c.id}>
                 <td><strong>{INTEGRATION_KIND_LABELS[c.kind]}</strong>{c.blockedReason && <div className="small muted">{c.blockedReason}</div>}</td>
-                <td>{c.provider === "mock" ? <span className="badge badge-warning">MOCK</span> : c.status === "blocked" ? <span className="muted">Seçilmedi</span> : c.provider}</td>
+                <td>{c.provider === "mock" ? <span className="badge badge-warning">DENEME</span> : c.status === "blocked" ? <span className="muted">Seçilmedi</span> : c.provider === "netgsm" ? "Netgsm" : c.provider}</td>
                 <td>{c.status === "active" ? <span className="badge badge-success">Etkin</span> : c.status === "disabled" ? <span className="badge badge-neutral">Kapalı</span>
                   : <span className="badge badge-warning">Erişim bekliyor</span>}</td>
                 <td>{c.provider === "mock" && manage ? (
@@ -84,7 +102,7 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
                       <option value="accepted">Sorgu: kayıt var</option><option value="not_found">Sorgu: kayıt yok</option>
                     </select>
                   </div>) : c.provider === "mock" ? BEHAVIOR[c.mockBehavior] : "—"}</td>
-                <td className="small">{c.hasSecret ? <><ShieldCheck size={14} aria-hidden /> HMAC imzalı · <code>{c.webhookPath}</code>
+                <td className="small">{c.hasSecret ? <><ShieldCheck size={14} aria-hidden /> İmzalı bildirim adresi · <code>{c.webhookPath}</code>
                   {c.rejections7d > 0 && <div><span className="badge badge-danger">{c.rejections7d} reddedilen istek (7 gün)</span></div>}</> : "—"}</td>
                 <td>{manage && c.status !== "blocked" && (
                   <div className="row" style={{ gap: 6 }}>
@@ -113,7 +131,7 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
               <thead><tr><th>İş</th><th>Durum</th><th>Deneme</th><th>İsteyen / onaylayan</th><th><span className="sr-only">İşlem</span></th></tr></thead>
               <tbody>{jobs.data.items.map((j) => (
                 <tr key={j.id}>
-                  <td><strong>{OPERATION_LABELS[j.operation] ?? j.operation}</strong> <span className="badge badge-warning">MOCK</span><div className="small muted">{j.summary} · {fmtDateTime(j.createdAt)}</div></td>
+                  <td><strong>{OPERATION_LABELS[j.operation] ?? j.operation}</strong> <span className="badge badge-warning">DENEME</span><div className="small muted">{j.summary} · {fmtDateTime(j.createdAt)}</div></td>
                   <td>{transportBadge(j)}{j.lastError && <div className="small muted">{j.lastError}</div>}</td>
                   <td className="small">{j.attempts}/{j.maxAttempts}{j.nextAttemptAt && ["queued", "unknown"].includes(j.transportStatus) && <div className="muted">Sonraki: {fmtDateTime(j.nextAttemptAt)}</div>}</td>
                   <td className="small">{j.requestedBy}{j.approvedBy && <div className="muted">Onay: {j.approvedBy}</div>}</td>
@@ -140,7 +158,7 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
         {!hooks.data ? <Loading /> : hooks.data.events.length === 0 ? <p className="muted" style={{ padding: "12px 20px" }}>Henüz bildirim yok.</p> : (
           <ul className="list" style={{ padding: "0 20px 12px" }}>{hooks.data.events.slice(0, 30).map((e) => (
             <li key={`${e.kind}-${e.eventId}`} className="row small" style={{ justifyContent: "space-between", padding: "6px 0", gap: 8 }}>
-              <span><code>{e.type}</code> · {fmtDateTime(e.receivedAt)} <span className="muted">· {e.eventId}</span>{e.detail && <span className="muted"> · {e.detail}</span>}</span>
+              <span>{EVENT_LABELS[e.type] ?? e.type} · {fmtDateTime(e.receivedAt)} <span className="muted">· olay no {e.eventId}</span>{e.detail && <span className="muted"> · {e.detail}</span>}</span>
               <span className={`badge badge-${HOOK_STATUS[e.status]?.[1] ?? "neutral"}`}>{HOOK_STATUS[e.status]?.[0] ?? e.status}</span>
             </li>))}</ul>)}
       </section>
@@ -149,12 +167,12 @@ export function IntegrationsPanel({ notify }: { notify: Notify }) {
         <div className="card-head"><div><h2>Erişim bekleyen entegrasyonlar</h2><p className="muted small">Yetkili güncel doküman ve test erişimi olmadan gerçek adaptör yazılmaz.</p></div></div>
         <ul className="list" style={{ padding: "0 20px 12px" }}>{(Object.keys(o.readiness) as IntegrationKind[]).map((k) => (
           <li key={k} className="small" style={{ padding: "6px 0" }}><strong>{INTEGRATION_KIND_LABELS[k]}</strong>{" "}
-            {o.readiness[k].mock ? <span className="badge badge-warning">MOCK hazır · gerçek sağlayıcı bekleniyor</span> : <span className="badge badge-neutral">Erişim bekliyor</span>}
+            {o.readiness[k].mock ? <span className="badge badge-warning">Deneme hazır · gerçek sağlayıcı bekleniyor</span> : <span className="badge badge-neutral">Erişim bekliyor</span>}
             <div className="muted">{o.readiness[k].waitingFor}</div></li>))}</ul>
       </section>
 
       {secret && (
-        <Drawer title="Yeni webhook imza anahtarı" onClose={() => setSecret(null)} footer={<button className="btn btn-primary" onClick={() => setSecret(null)}>Kaydettim, kapat</button>}>
+        <Drawer title="Yeni bildirim imza anahtarı" onClose={() => setSecret(null)} footer={<button className="btn btn-primary" onClick={() => setSecret(null)}>Kaydettim, kapat</button>}>
           <Alert kind="warning">Anahtar yalnız bir kez gösterilir. Sağlayıcı paneline girin; eski anahtarla imzalanan bildirimler artık reddedilir.</Alert>
           <p><code style={{ wordBreak: "break-all" }}>{secret}</code></p>
         </Drawer>)}
@@ -194,16 +212,16 @@ function JobDrawer({ job, canSimulate, notify, onClose, onChanged }: { job: Job;
       <h3>Denemeler</h3>
       {!d.data ? <Loading rows={2} /> : d.data.attempts.length === 0 ? <p className="muted small">Henüz deneme yok.</p> : (
         <ul className="list">{d.data.attempts.map((a, i) => (
-          <li key={i} className="small" style={{ padding: "4px 0" }}>{fmtDateTime(a.started_at)} · {a.kind === "status_query" ? "Durum sorgusu" : "Gönderim"} → <strong>{a.result}</strong>{a.detail ? ` · ${a.detail}` : ""}</li>))}</ul>)}
+          <li key={i} className="small" style={{ padding: "4px 0" }}>{fmtDateTime(a.started_at)} · {a.kind === "status_query" ? "Durum sorgusu" : "Gönderim"} → <strong>{ATTEMPT_RESULT[a.result] ?? TRANSPORT_LABELS[a.result] ?? a.result}</strong>{a.detail ? ` · ${a.detail}` : ""}</li>))}</ul>)}
       <h3>Bildirimler</h3>
       {d.data && (d.data.webhooks.length === 0 ? <p className="muted small">Bildirim yok.</p> : (
         <ul className="list">{d.data.webhooks.map((w) => (
-          <li key={w.provider_event_id} className="small" style={{ padding: "4px 0" }}><code>{w.event_type}</code> · {fmtDateTime(w.received_at)} · {HOOK_STATUS[w.status]?.[0] ?? w.status}</li>))}</ul>))}
+          <li key={w.provider_event_id} className="small" style={{ padding: "4px 0" }}>{EVENT_LABELS[w.event_type] ?? w.event_type} · {fmtDateTime(w.received_at)} · {HOOK_STATUS[w.status]?.[0] ?? w.status}</li>))}</ul>))}
       {canSimulate && job.mode === "mock" && events.length > 0 && (
         <div className="stack" style={{ gap: 8, marginTop: 16 }}>
-          <Alert kind="warning">MOCK sağlayıcı bildirimi: bağlantının anahtarıyla imzalanır ve gerçek webhook ile aynı doğrulamadan geçer. Yalnız deneme içindir.</Alert>
-          <SelectField label="Simüle edilecek olay" value={event} onChange={(e) => setEvent(e.target.value)}>{events.map((e) => <option key={e} value={e}>{e}</option>)}</SelectField>
-          <button className="btn btn-primary" onClick={() => void simulate()}>MOCK bildirimi gönder</button>
+          <Alert kind="warning">Deneme sağlayıcı bildirimi: bağlantının anahtarıyla imzalanır ve gerçek sağlayıcı bildirimiyle aynı doğrulamadan geçer. Yalnız deneme içindir.</Alert>
+          <SelectField label="Simüle edilecek olay" value={event} onChange={(e) => setEvent(e.target.value)}>{events.map((e) => <option key={e} value={e}>{EVENT_LABELS[e] ?? e}</option>)}</SelectField>
+          <button className="btn btn-primary" onClick={() => void simulate()}>Deneme bildirimi gönder</button>
         </div>)}
     </Drawer>
   );

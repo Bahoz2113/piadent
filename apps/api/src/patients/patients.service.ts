@@ -7,7 +7,7 @@ import { questionLabel,
 import { Db } from "../infra/db.service.js";
 import { AppError, Errors } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
-import { CLINICAL_ENTITY_TYPES, audit, diff, enqueue, notClinicalOutputDocSql, notHiddenFileEventSql, notHiddenTaskEventSql } from "../audit/audit.js";
+import { CLINICAL_ENTITY_TYPES, audit, diff, enqueue, notClinicalOutputDocSql, notHiddenFileEventSql, notHiddenTaskEventSql, auditAdminHealthView } from "../audit/audit.js";
 import { decryptField, encryptField, indexHash } from "@viadent/db";
 
 export interface DuplicateCandidate {
@@ -244,6 +244,7 @@ export class PatientsService {
       // Kritik anamnez işaretleri yalnız sağlık yetkili rollere döner (sekreter/yönetici varlığını bile görmez).
       let clinical: { criticalFlags: string[]; criticalFlagLabels: string[]; anamnesisVersion: number | null; anamnesisReviewed: boolean } | null = null;
       if (has(ctx, "patient.health.read")) {
+        await auditAdminHealthView(c, ctx, id, "Hasta kartı sağlık özeti");
         const a = await c.query(
           `select v.version, v.critical_flags, exists(select 1 from anamnesis_reviews rv where rv.anamnesis_id = v.id) as reviewed,
                   (select t.questions from anamnesis_templates t where t.id = v.template_id) as questions

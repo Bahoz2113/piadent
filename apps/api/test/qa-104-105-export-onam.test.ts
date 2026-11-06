@@ -20,7 +20,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import { dayRangeUtc } from "@viadent/contracts";
 import { AuthService } from "../src/auth/auth.service.js";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, useLegacyAdmin, grantExtra, clearExtra, type Client } from "./helpers.js";
 
 let app: INestApplication;
 let dentist: Client, sec: Client, admin: Client;
@@ -47,18 +47,15 @@ const exportOf = async (c: Client) => {
 
 /** Yalnız verilen üyeliğin istek bağlamına `patient.health.read` ekler (test kancası; ürün rol matrisi değişmez). */
 async function withHealth<T>(membershipId: string, fn: () => Promise<T>): Promise<T> {
-  const auth = app.get(AuthService);
-  const orig = auth.buildContext.bind(auth);
-  const spy = vi.spyOn(auth, "buildContext").mockImplementation((s, m, corr) => {
-    const ctx = orig(s, m, corr);
-    if (m.id === membershipId) ctx.permissions = new Set([...ctx.permissions, "patient.health.read"]);
-    return ctx;
-  });
-  try { return await fn(); } finally { spy.mockRestore(); }
+  // ADR-098: kanca, useLegacyAdmin ile kurulan tek buildContext casusuna ek yetki olarak bağlanır.
+  grantExtra(membershipId, "patient.health.read");
+  try { return await fn(); } finally { clearExtra(membershipId); }
 }
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [dentist, sec, admin] = await Promise.all([login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aAdmin)]);
   tenantA = admin.session.activeMembership.tenantId;
   const last = `QA104 Sentetik ${Math.random().toString(36).slice(2, 7)}`;

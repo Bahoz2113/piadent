@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post, Query } from "@nestjs/common";
-import { AppointmentContactChange, AppointmentCreate, AppointmentStatusChange, DayQuery } from "@viadent/contracts";
+import { AppointmentContactChange, AppointmentCreate, AppointmentStatusChange, AvailabilityQuery, DayQuery } from "@viadent/contracts";
 import { SchedulingService } from "./scheduling.service.js";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Errors, parse } from "../infra/errors.js";
@@ -23,6 +23,13 @@ export class SchedulingController {
   day(@Ctx() ctx: RequestContext, @Query() query: unknown) {
     const q = parse(DayQuery, query);
     return this.scheduling.day(ctx, q.from ?? q.date, q.days ?? 1);
+  }
+
+  @Get("availability")
+  @Require("appointment.read")
+  availability(@Ctx() ctx: RequestContext, @Query() query: unknown) {
+    const q = parse(AvailabilityQuery, query);
+    return this.scheduling.availability(ctx, q.practitionerId, q.date, q.minutes, q.chairId ?? null);
   }
 
   @Get("patients/:id/appointments")

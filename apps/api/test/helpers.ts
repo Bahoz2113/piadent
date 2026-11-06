@@ -95,3 +95,38 @@ export async function adminQuery<T = any>(sql: string, params: unknown[] = []): 
 export async function resetRateLimiter() {
   await ownerQuery(null, "delete from auth_throttle");
 }
+
+/**
+ * ADR-098 (07.11.2026): yönetici artık tüm yetkilere sahip. Sağlık yetkisi OLMAYAN rolün korumalarını (klinik olay/dosya/belge
+ * süzgeçleri, KVKK dışa aktarım dışlamaları) sınayan eski dosyalar, "yönetici" kullanıcısını ADR-098 öncesi yetki kümesiyle
+ * çalıştırır: süzgeç kodu gerçek rollerde (sekreter, finans) aynen kullanıldığı için kapsam korunur. Yeni yönetici davranışı
+ * `adr-098-admin.test.ts` dosyasında sınanır.
+ */
+export const LEGACY_ADMIN_PERMISSIONS = [
+  "patient.read", "patient.phone.read", "appointment.read", "task.read", "task.write", "treatment.read",
+  "patient.write", "appointment.write", "audit.read", "team.manage", "schedule.manage", "settings.manage", "finance.read", "catalog.manage",
+  "account.read", "finance.settings",
+  "document.read", "document.revoke", "template.manage", "anamnesis.template", "file.read", "file.delete", "communication.write", "message.send",
+  "integration.read", "integration.manage", "integration.approve",
+  "lab.read", "lab.write", "lab.cost", "supplier.manage", "supplier.ledger", "stock.read", "stock.write", "stock.manage",
+  "report.operations", "report.clinical", "report.analytics", "report.export", "audit.clinic",
+  "import.manage", "export.clinic", "export.patient",
+] as const;
+const extraPermissions = new Map<string, Set<string>>();
+/** Test kancası: üyeliğe geçici ek yetki (ör. "sağlık yetkili dışa aktaran" senaryosu). `useLegacyAdmin` ile birlikte çalışır. */
+export function grantExtra(membershipId: string, perm: string) { extraPermissions.set(membershipId, new Set([...(extraPermissions.get(membershipId) ?? []), perm])); }
+export function clearExtra(membershipId: string) { extraPermissions.delete(membershipId); }
+export async function useLegacyAdmin(app: INestApplication): Promise<() => void> {
+  const { vi } = await import("vitest");
+  const { AuthService } = await import("../src/auth/auth.service.js");
+  const auth = app.get(AuthService);
+  const orig = auth.buildContext.bind(auth);
+  const spy = vi.spyOn(auth, "buildContext").mockImplementation((s, m, corr) => {
+    const ctx = orig(s, m, corr);
+    const perms = new Set<string>(m.role === "clinic_admin" ? LEGACY_ADMIN_PERMISSIONS : ctx.permissions);
+    for (const x of extraPermissions.get(m.id) ?? []) perms.add(x);
+    ctx.permissions = perms as typeof ctx.permissions;
+    return ctx;
+  });
+  return () => { spy.mockRestore(); extraPermissions.clear(); };
+}

@@ -163,15 +163,18 @@ export class AccountController {
         if (!(await c.query("select 1 from patients where id = $1", [i.patientId])).rowCount) throw Errors.notFound("Hasta");
         await activeAccount(c, i.cashAccountId);
         await lockAccount(c, i.patientId);
+        if (i.appointmentId && !(await c.query("select 1 from appointments where id = $1 and patient_id = $2", [i.appointmentId, i.patientId])).rowCount) {
+          throw Errors.validation({ appointmentId: "Randevu bu hastaya ait değil." });
+        }
         const p = await c.query(
-          `insert into payments(tenant_id, patient_id, amount, method, cash_account_id, paid_at, note, received_by)
-           values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
-          [ctx.tenantId, i.patientId, i.amount, i.method, i.cashAccountId, at, i.note ?? null, ctx.userId],
+          `insert into payments(tenant_id, patient_id, amount, method, cash_account_id, paid_at, note, received_by, appointment_id)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
+          [ctx.tenantId, i.patientId, i.amount, i.method, i.cashAccountId, at, i.note ?? null, ctx.userId, i.appointmentId ?? null],
         );
         const pid = p.rows[0].id as string;
         await cashMovement(c, ctx, { accountId: i.cashAccountId, amount: i.amount, source: "payment", sourceId: pid, at });
         await audit(c, ctx, { action: "payment.create", entityType: "payment", entityId: pid, patientId: i.patientId,
-          changes: { amount: { from: null, to: i.amount }, method: { from: null, to: i.method } } });
+          changes: { amount: { from: null, to: i.amount }, method: { from: null, to: i.method }, ...(i.appointmentId ? { appointment_id: { from: null, to: i.appointmentId } } : {}) } });
         await this.checkReceivables(c, i.patientId, i.allocations.map((a) => a.receivableId));
         const allocationIds: string[] = [];
         for (const a of [...i.allocations].sort((x, y) => x.receivableId.localeCompare(y.receivableId))) {

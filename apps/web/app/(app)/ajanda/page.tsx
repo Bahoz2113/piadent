@@ -14,6 +14,7 @@ import { Alert, ContactBadge, Drawer, EmptyState, ErrorState, Loading, SelectFie
 import { NewPatientDrawer } from "@/components/patient-form";
 import { isPastPending, PastPendingBadge } from "@/components/appointment-status";
 import { AppointmentMaterialsCard } from "@/components/appointment-materials";
+import { NewAppointmentPage } from "@/components/appointment/new-appointment-page";
 
 const DAY_START = 8 * 60;
 const DAY_END = 20 * 60;
@@ -54,9 +55,10 @@ function AgendaInner() {
   // isteği + metadata (<title>) yeniden kurulumu yapıyordu; istek aksarsa tam sayfa yüklemeye düşüyor ve geçiş anında
   // belge başlıksız yakalanabiliyordu. Next.js `history.replaceState`'i router durumuyla (useSearchParams) eşler.
   useEffect(() => {
+    if (creating) return;
     const href = `/ajanda?tarih=${date}${view === "week" ? `&gorunum=hafta${weekPrac ? `&hekim=${weekPrac}` : ""}` : ""}`;
     if (`${window.location.pathname}${window.location.search}` !== href) window.history.replaceState(null, "", href);
-  }, [date, view, weekPrac]);
+  }, [date, view, weekPrac, creating]);
   useEffect(() => { if (!weekPrac && res.data?.practitioners[0]) setWeekPrac(res.data.practitioners[0].id); }, [res.data, weekPrac]);
 
   const items = range.data?.items ?? [];
@@ -99,6 +101,15 @@ function AgendaInner() {
   const title = view === "week"
     ? `${fmtLongDay(start)} – ${fmtLongDay(addDays(start, 6))}`
     : fmtLongDay(date);
+
+  // 07.11.2026: randevu verme çekmece değil, tam sayfa (adres ?yeni=1 korunur; yenilemede sayfa açık kalır).
+  if (creating && res.data) return (
+    <>
+      <NewAppointmentPage prefill={creating} resources={res.data} onCancel={() => { setCreating(null); window.history.replaceState(null, "", `/ajanda?tarih=${date}`); }}
+        onCreated={(a) => { setCreating(null); setDate(a.date); toast.show("success", a.message); reload(); window.history.replaceState(null, "", `/ajanda?tarih=${a.date}`); }} />
+      {toast.node}
+    </>
+  );
 
   return (
     <>
@@ -231,10 +242,7 @@ function AgendaInner() {
         )}
       </section>
 
-      {creating && res.data && (
-        <NewAppointment prefill={creating} resources={res.data} onClose={() => setCreating(null)}
-          onCreated={(a) => { setCreating(null); setDate(a.date); toast.show("success", "Randevu oluşturuldu."); reload(); }} />
-      )}
+
       {selected && (
         <AppointmentDetail appt={selected} onClose={() => setSelected(null)}
           onChanged={(msg) => { setSelected(null); toast.show("success", msg); reload(); }}
@@ -250,151 +258,6 @@ function nextQuarter(tz: string): string {
   const now = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
   const m = Math.ceil((now.getHours() * 60 + now.getMinutes() + 1) / 15) * 15;
   return m >= 24 * 60 ? "23:45" : hhmm(m);
-}
-
-function NewAppointment({ prefill, resources, onClose, onCreated }: { prefill: Prefill; resources: Resources; onClose: () => void; onCreated: (a: { date: string }) => void }) {
-  const { tz, can } = useSession();
-  const today = todayIn(tz);
-  const [patient, setPatient] = useState<{ id: string; fullName: string; fileNo?: number } | null>(null);
-  const [q, setQ] = useState("");
-  const [newPatient, setNewPatient] = useState(false);
-  // Açılış değerleri (slot/hasta ön doldurması dahil) saklanır; "kirli" = kullanıcı bunlardan birini değiştirdi (QA-202).
-  const [initialF] = useState(() => ({
-    date: prefill.date < today ? today : prefill.date,
-    startTime: prefill.time ?? (prefill.date <= today ? nextQuarter(tz) : "09:00"), durationMinutes: "30", appointmentTypeId: "", procedureId: "",
-    practitionerId: prefill.practitionerId ?? resources.practitioners[0]?.id ?? "", chairId: prefill.chairId ?? "", reason: "", note: "",
-  }));
-  const [f, setF] = useState(initialF);
-  const [err, setErr] = useState<ApiFailure | null>(null);
-  const [busy, setBusy] = useState(false);
-  const search = useData<{ items: { id: string; fullName: string; fileNo: number; phone: string | null; birthDate: string | null }[] }>(q.trim().length >= 2 ? `/patients?limit=8&q=${encodeURIComponent(q)}` : null);
-  const pre = useData<{ id: string; fullName: string; fileNo: number }>(prefill.patientId ? `/patients/${prefill.patientId}` : null);
-  useEffect(() => { if (pre.data && !patient) setPatient(pre.data); }, [pre.data, patient]);
-  const dirty = (patient?.id ?? null) !== (pre.data?.id ?? null) || q.trim() !== ""
-    || (Object.keys(initialF) as (keyof typeof initialF)[]).some((k) => f[k] !== initialF[k]);
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); if (err?.code === "OUTSIDE_WORKING_HOURS") setErr(null); };
-  const durations = Array.from(new Set([15, 20, 30, 45, 60, 90, 120, Number(f.durationMinutes)])).sort((a, b) => a - b);
-  const procedures = resources.procedures ?? [];
-  // Planlanan işlemin tarife fiyatı (bilgi amaçlı; borç yalnız işlem gerçekleşince oluşur) ve hastanın güncel bakiyesi.
-  const price = useData<{ price: string | null }>(f.procedureId && f.practitionerId ? `/price?procedureId=${f.procedureId}&practitionerId=${f.practitionerId}&date=${f.date}` : null);
-  const account = useData<{ totals: { openDebt: string; advance: string } }>(patient && can("account.read") ? `/patients/${patient.id}/account` : null);
-  const startsAt = f.date && /^\d{2}:\d{2}$/.test(f.startTime) ? zonedToUtc(f.date, f.startTime, tz) : null;
-  const inPast = !!startsAt && startsAt.getTime() < Date.now() - APPOINTMENT_PAST_GRACE_MINUTES * 60_000;
-
-  function pickType(id: string) {
-    const t = resources.appointmentTypes.find((x) => x.id === id);
-    const proc = t?.procedureId ? procedures.find((p) => p.id === t.procedureId) : undefined;
-    setF({ ...f, appointmentTypeId: id, durationMinutes: t ? String(t.defaultMinutes) : f.durationMinutes, procedureId: proc ? proc.id : f.procedureId });
-  }
-  function pickProcedure(id: string) {
-    const p = procedures.find((x) => x.id === id);
-    setF({ ...f, procedureId: id, durationMinutes: p?.defaultMinutes && !f.appointmentTypeId ? String(p.defaultMinutes) : f.durationMinutes });
-  }
-
-  async function save(allowOutsideHours = false) {
-    if (busy) return;
-    if (!patient) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Önce hasta seçin.", field_errors: { patientId: "Hasta seçin" } })); return; }
-    if (inPast) { setErr(new ApiFailure(422, { code: "APPOINTMENT_IN_PAST", message: "Geçmiş bir tarih veya saate randevu oluşturulamaz. Lütfen ileri bir saat seçin.", field_errors: { startTime: "Geçmiş saat seçilemez" } })); return; }
-    setBusy(true); setErr(null);
-    try {
-      await api("/appointments", { body: {
-        patientId: patient.id, practitionerId: f.practitionerId, chairId: f.chairId || undefined, appointmentTypeId: f.appointmentTypeId || undefined, procedureId: f.procedureId || undefined,
-        date: f.date, startTime: f.startTime, durationMinutes: Number(f.durationMinutes), reason: f.reason || undefined, note: f.note || undefined,
-        allowOutsideHours: allowOutsideHours || undefined,
-      } });
-      onCreated({ date: f.date });
-    } catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
-  }
-
-  if (newPatient) return <NewPatientDrawer initialName={q} onClose={() => setNewPatient(false)} onCreated={(p) => { setPatient(p); setNewPatient(false); }} />;
-
-  const outside = err?.code === "OUTSIDE_WORKING_HOURS";
-  const blocks = (err?.body.details as { blocks?: { start: number; end: number }[] } | undefined)?.blocks ?? [];
-  return (
-    <Drawer title="Randevu ver" subtitle="Müsaitlik, çalışma saati ve kapatmalar kayıt anında sunucuda kontrol edilir." onClose={onClose} dirty={dirty}
-      footer={<>
-        <button className="btn" onClick={onClose}>Vazgeç</button>
-        {outside
-          ? <button className="btn btn-primary" disabled={busy} onClick={() => void save(true)}>Çalışma saati dışında yine de kaydet</button>
-          : <button className="btn btn-primary" disabled={busy} onClick={() => void save()}>{busy ? "Kaydediliyor…" : "Randevuyu kaydet"}</button>}
-      </>}>
-      <div className="stack">
-        {err && (outside ? (
-          <Alert kind="warning" title="Çalışma saati dışı">
-            {err.message} {blocks.length ? `O günkü çalışma saatleri: ${blocks.map((b) => `${hhmm(b.start)}–${hhmm(b.end)}`).join(", ")}.` : "Hekim o gün çalışmıyor."} Kayıt yine de yapılırsa geçmişe not düşülür.
-          </Alert>
-        ) : (
-          <Alert kind={err.code === "APPOINTMENT_CONFLICT" || err.code === "RESOURCE_CLOSED" || err.code === "APPOINTMENT_IN_PAST" ? "warning" : "error"}
-            title={err.code === "APPOINTMENT_CONFLICT" ? "Çakışma" : err.code === "RESOURCE_CLOSED" ? "Kapalı aralık" : err.code === "APPOINTMENT_IN_PAST" ? "Geçmiş saat" : undefined}>{err.message}</Alert>
-        ))}
-        {patient ? (
-          <div className="alert alert-success" role="status">
-            <div style={{ flex: 1 }}><strong>{patient.fullName}</strong>{patient.fileNo ? <span className="small"> · Dosya #{patient.fileNo}</span> : null}</div>
-            <button className="btn btn-sm" onClick={() => setPatient(null)}>Değiştir</button>
-          </div>
-        ) : (
-          <div className="field">
-            <label htmlFor="ap-q">Hasta<span className="req" aria-hidden>*</span></label>
-            <input id="ap-q" className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ad, telefon veya dosya no" aria-invalid={!!err?.fieldErrors.patientId} autoComplete="off" />
-            {err?.fieldErrors.patientId && <span className="err">{err.fieldErrors.patientId}</span>}
-            {q.trim().length >= 2 && (
-              <div className="picker-results" role="listbox" aria-label="Hasta sonuçları">
-                {search.loading && <div className="card-pad muted small">Aranıyor…</div>}
-                {search.data?.items.map((p) => (
-                  <button key={p.id} role="option" aria-selected={false} onClick={() => setPatient(p)}>
-                    <strong>{p.fullName}</strong> <span className="muted small">· #{p.fileNo}{p.phone ? ` · ${formatPhone(p.phone)}` : ""}</span>
-                  </button>
-                ))}
-                {search.data && search.data.items.length === 0 && <div className="card-pad muted small">Eşleşen hasta yok.</div>}
-                <button onClick={() => setNewPatient(true)}><UserPlus size={15} aria-hidden style={{ verticalAlign: "-2px" }} /> Yeni hasta oluştur{q ? `: “${q}”` : ""}</button>
-              </div>
-            )}
-          </div>
-        )}
-        <div className="form-grid">
-          <SelectField label="İşlem türü" value={f.appointmentTypeId} onChange={(e) => pickType(e.target.value)} hint="Seçilince süre varsayılana ayarlanır." error={err?.fieldErrors.appointmentTypeId}>
-            <option value="">Seçilmedi</option>
-            {resources.appointmentTypes.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.defaultMinutes} dk)</option>)}
-          </SelectField>
-          <SelectField label="Hekim" required value={f.practitionerId} onChange={set("practitionerId")} error={err?.fieldErrors.practitionerId}>
-            {resources.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </SelectField>
-          <SelectField label="Planlanan işlem" value={f.procedureId} onChange={(e) => pickProcedure(e.target.value)} error={err?.fieldErrors.procedureId}
-            hint={!f.procedureId ? "Fiyat ve hasta bakiyesi için işlem seçin." : price.loading ? "Fiyat okunuyor…" : price.data?.price ? `Tarife fiyatı: ${formatTRY(price.data.price)}` : "Bu işlem için yayında tarife fiyatı yok."}>
-            <option value="">Seçilmedi</option>
-            {[...new Set(procedures.map((p) => p.category ?? "Diğer"))].map((cat) => (
-              <optgroup key={cat} label={cat}>
-                {procedures.filter((p) => (p.category ?? "Diğer") === cat).map((p) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
-              </optgroup>
-            ))}
-          </SelectField>
-          <DateField label="Tarih" required min={today} value={f.date} onChange={set("date")} error={err?.fieldErrors.date} />
-          <TextField label="Saat" type="time" required step={300} value={f.startTime} onChange={set("startTime")}
-            error={err?.fieldErrors.startTime ?? (inPast ? "Geçmiş saat seçilemez" : undefined)} />
-          <SelectField label="Süre" value={f.durationMinutes} onChange={set("durationMinutes")} error={err?.fieldErrors.durationMinutes}>
-            {durations.map((m) => <option key={m} value={m}>{m} dakika</option>)}
-          </SelectField>
-          <SelectField label="Koltuk" value={f.chairId} onChange={set("chairId")} error={err?.fieldErrors.chairId}>
-            <option value="">Seçilmedi</option>
-            {resources.chairs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </SelectField>
-          {patient && can("account.read") && (
-            <div className="full money-strip" aria-live="polite">
-              {account.loading && !account.data ? <span className="muted small">Hasta bakiyesi okunuyor…</span> : account.data && (
-                <>
-                  <span><span className="muted small">Açık borç</span><strong>{formatTRY(account.data.totals.openDebt)}</strong></span>
-                  <span><span className="muted small">Avans</span><strong>{formatTRY(account.data.totals.advance)}</strong></span>
-                  {price.data?.price && <span><span className="muted small">İşlem sonrası tahmini borç</span><strong>{formatTRY(addMoney(account.data.totals.openDebt, price.data.price))}</strong></span>}
-                </>
-              )}
-            </div>
-          )}
-          <TextField label="Açıklama" className="full" value={f.reason} onChange={set("reason")} placeholder="Boşsa işlem türü / işlem adı kullanılır" />
-          <TextAreaField label="Not" className="full" value={f.note} onChange={set("note")} rows={3} hint="Klinik bilgi yazmayın; idari not içindir." />
-        </div>
-      </div>
-    </Drawer>
-  );
 }
 
 function AppointmentDetail({ appt, onClose, onChanged, onConflict }: { appt: Appt; onClose: () => void; onChanged: (m: string) => void; onConflict: (m: string) => void }) {

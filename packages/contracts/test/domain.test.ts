@@ -76,9 +76,11 @@ describe("kurallar", () => {
     expect(APPOINTMENT_TRANSITIONS.cancelled).toEqual([]);
     expect(APPOINTMENT_TRANSITIONS.planned).toContain("checked_in");
   });
-  it("rol matrisi: sekreter klinik not yazamaz; yönetici sağlık içeriğini okuyamaz", () => {
+  it("rol matrisi: sekreter klinik not yazamaz; yönetici her şeyi görür (ADR-098)", () => {
     expect(can("secretary", "clinical_note.write")).toBe(false);
-    expect(can("clinic_admin", "patient.health.read")).toBe(false);
+    expect(can("secretary", "patient.health.read")).toBe(false);
+    expect(can("finance", "patient.health.read")).toBe(false);
+    expect(can("clinic_admin", "patient.health.read")).toBe(true); // ADR-098: ürün sahibi kararı 07.11.2026
     expect(can("dentist", "clinical_note.write")).toBe(true);
     expect(can("assistant", "payment.refund")).toBe(false);
   });
@@ -102,7 +104,7 @@ describe("finans (Görev 3)", () => {
     expect(can("secretary", "finance.read")).toBe(false);
     expect(can("finance", "payment.refund")).toBe(true);
     expect(can("dentist", "account.read")).toBe(false);
-    expect(can("clinic_admin", "payment.write")).toBe(false);
+    expect(can("clinic_admin", "payment.write")).toBe(true); // ADR-098: yönetici her şeyi yapabilir
   });
   it("ödeme: sıfır/negatif tutar ve TRY dışı para birimi reddedilir", async () => {
     const { PaymentCreate } = await import("../src/index.js");

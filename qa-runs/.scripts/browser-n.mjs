@@ -67,19 +67,21 @@ for (const profile of ["masaustu", "mobil"]) {
     await openPatient(s2.page, "Fatura Sınama", "Finans");
     const secBtn = await s2.page.locator("section.card", { hasText: "Fatura taslakları" }).getByRole("button", { name: "Taslak oluştur" }).count();
     await s2.ctx.close();
-    const ok = /MOCK/.test(text) && /İptal/.test(text) && /numara yok/.test(text) && /resmî belge değil/.test(dt) && /Sağlayıcı/.test(dt) && noDraftMark && secBtn === 0 && (await overflow(page)) <= 0;
-    rec(profile, "N02", ok ? "PASS" : "FAIL", `liste: MOCK rozeti=${/MOCK/.test(text)}, iptal=${/İptal/.test(text)}, taslak 'numara yok'=${/numara yok/.test(text)}; ayrıntıda 'resmî belge değil'=${/resmî belge değil/.test(dt)}, TASLAK ibaresi yok=${noDraftMark}; sekreter düğmesi ${secBtn}; taşma ${await overflow(page)}`, `evidence/${TUR}/${profile}-N02-fatura.jpg`);
+    // 07.11.2026 (ADR-099): etiket Türkçe "DENEME"; açıkça işaretli olma kuralı aynı.
+    const ok = /DENEME|Deneme e-belge/.test(text) && /İptal/.test(text) && /numara yok/.test(text) && /resmî belge değil/.test(dt) && /Sağlayıcı/.test(dt) && noDraftMark && secBtn === 0 && (await overflow(page)) <= 0;
+    rec(profile, "N02", ok ? "PASS" : "FAIL", `liste: DENEME rozeti=${/DENEME|Deneme e-belge/.test(text)}, iptal=${/İptal/.test(text)}, taslak 'numara yok'=${/numara yok/.test(text)}; ayrıntıda 'resmî belge değil'=${/resmî belge değil/.test(dt)}, TASLAK ibaresi yok=${noDraftMark}; sekreter düğmesi ${secBtn}; taşma ${await overflow(page)}`, `evidence/${TUR}/${profile}-N02-fatura.jpg`);
     await ctx.close();
   } catch (e) { rec(profile, "N02", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }
 
-  // N04 — eski şablonla alınmış kayıt uyarısı; yürürlükteki form
+  // N04 — 07.11.2026 kabul değişikliği (ADR-100): anamnez paneli arayüzden kaldırıldı; Sağlık sekmesinde "Sağlık özeti" olmalı,
+  // anamnez paneli/şablon soruları olmamalı. Sürümlü anamnez kuralları API'de (n-cases N04) sınanmaya devam eder.
   try {
     const { ctx, page } = await session(profile, "elif.aras@demo-yesil.test");
     await openPatient(page, "Anamnez Sınama", "Sağlık");
     const t = await page.locator("main").innerText();
     await shot(page, `${profile}-N04-anamnez`);
-    const ok = /Kalp pili var mı\?/.test(t) && /yerleşik DEMO/.test(t);
-    rec(profile, "N04", ok ? "PASS" : "FAIL", `son kayıt kendi sorusuyla (Kalp pili)=${/Kalp pili var mı/.test(t)}; yürürlük yerleşik set bildirimi=${/yerleşik DEMO/.test(t)}`, `evidence/${TUR}/${profile}-N04-anamnez.jpg`);
+    const ok = /Sağlık özeti/.test(t) && !/Kalp pili var mı\?/.test(t) && !/Gözden geçirdim, onayla/.test(t);
+    rec(profile, "N04", ok ? "PASS" : "FAIL", `Sağlık özeti kartı=${/Sağlık özeti/.test(t)}; eski anamnez paneli yok=${!/Kalp pili var mı/.test(t) && !/Gözden geçirdim, onayla/.test(t)}`, `evidence/${TUR}/${profile}-N04-anamnez.jpg`);
     await ctx.close();
   } catch (e) { rec(profile, "N04", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }
 

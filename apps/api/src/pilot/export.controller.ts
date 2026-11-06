@@ -32,10 +32,15 @@ const CLINIC_TABLES: [string, string[]][] = [
   ["readiness_rules", []], ["readiness_exceptions", []], ["tasks", []],
   ["integration_connections", ["webhook_secret_enc", "config"]], ["integration_jobs", []], ["online_payment_requests", []],
   ["suppliers", []], ["supplier_entries", []], ["lab_orders", []], ["lab_events", []], ["lab_costs", []],
-  ["stock_items", []], ["stock_lots", []], ["stock_movements", []], ["import_batches", []], ["audit_events", []],
+  ["stock_items", []], ["stock_lots", []], ["stock_movements", []], ["import_batches", []],
+  // 07.11.2026: sonradan eklenen iş tabloları da taşınabilirlik dökümüne girer (fatura, makbuz, ücret/maaş, fiyat, sarf, sağlık özeti, mesaj planları).
+  ["anamnesis_templates", []], ["procedure_consumables", []], ["receipts", []], ["invoices", []], ["invoice_lines", []],
+  ["practitioner_compensation_versions", []], ["salary_payments", []], ["supplier_prices", []], ["patient_health_notes", []],
+  ["message_rules", []], ["message_schedules", []], ["message_rule_runs", []],
+  ["audit_events", []],
 ];
 /** Sağlık içeriği taşıyan tablolar (hasta dışa aktarımında ayrıca sağlık yetkisi ister). */
-const HEALTH = new Set(["anamnesis_versions", "anamnesis_reviews", "clinical_notes", "odontogram_findings", "diagnoses"]);
+const HEALTH = new Set(["anamnesis_versions", "anamnesis_reviews", "clinical_notes", "odontogram_findings", "diagnoses", "patient_health_notes"]);
 /** QA-104: bölüm kalır ama klinik çıktı belgesi (ADR-085) satırları sağlık yetkisi yoksa çıkarılır; `omitted` içinde böyle işaretlenir. */
 const CLINICAL_OUTPUT_OMITTED = ["patient_documents:clinical_output", "consent_requests:clinical_output", "evidence_events:clinical_output", "files:clinical_output"] as const;
 /** QA-106 (ADR-089): klinik hassasiyetli dosyalar (`sensitivity = 'clinical'`: radyograf, klinik fotoğraf, klinik belge) dosya listesiyle aynı kuralla çıkarılır. */
@@ -114,6 +119,7 @@ export class ExportController {
         relations: await q("select * from patient_relations where patient_id = $1 or related_patient_id = $1"),
         appointments: await q("select * from appointments where patient_id = $1 order by starts_at"),
         anamnesis_versions: await q("select * from anamnesis_versions where patient_id = $1 order by version"),
+        patient_health_notes: await q("select * from patient_health_notes where patient_id = $1"), // 07.11.2026 sağlık özeti (sağlık yetkisi ister)
         clinical_notes: await q("select * from clinical_notes where patient_id = $1 order by created_at"),
         odontogram_findings: await q("select * from odontogram_findings where patient_id = $1"),
         diagnoses: await q("select * from diagnoses where patient_id = $1"),

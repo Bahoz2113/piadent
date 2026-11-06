@@ -2,7 +2,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 
 /**
  * QA-103 (S3) — Fatura ayrıntısı durumu yansıtır: MOCK sağlayıcının düzenlediği ve sonra iptal ettiği faturada
- * "TASLAK" uyarısı, "Taslağı yazdır" düğmesi ve TASLAK filigranı YOKTUR; "MOCK — resmî değil" görünür.
+ * "TASLAK" uyarısı, "Taslağı yazdır" düğmesi ve TASLAK filigranı YOKTUR; "DENEME — resmî değil" görünür.
  * Bağlantı sonradan pasifleşse de iptal edilmiş faturada "e-Belge sağlayıcısı bağlı değil; gönderim…" cümlesi çıkmaz.
  * Gereken: API + web + worker (MOCK e-belge işlerini işler) aynı sentetik seed üzerinde.
  */
@@ -59,7 +59,7 @@ test("QA-103: MOCK düzenlenmiş → iptal faturada TASLAK/“bağlı değil” 
   }
   async function assertProviderView(v: ReturnType<Page["getByRole"]>) {
     await expect(v.getByText(invoiceNo).first()).toBeVisible();
-    await expect(v.getByRole("status").filter({ hasText: "MOCK — resmî değil" })).toBeVisible();
+    await expect(v.getByRole("status").filter({ hasText: "DENEME — resmî değil" })).toBeVisible();
     await expect(v.getByText(/TASLAK — resmî belge değildir/)).toHaveCount(0);
     await expect(v.getByText(/gönderim denemesi reddedilir/)).toHaveCount(0);
     await expect(v.getByRole("button", { name: "Taslağı yazdır" })).toHaveCount(0);
@@ -67,7 +67,7 @@ test("QA-103: MOCK düzenlenmiş → iptal faturada TASLAK/“bağlı değil” 
     await popup.waitForLoadState("domcontentloaded");
     const main = popup.locator("main");
     await expect(main).toContainText(invoiceNo);
-    await expect(main).toContainText("MOCK — resmî değil");
+    await expect(main).toContainText("DENEME — resmî değil");
     await expect(main).not.toContainText("TASLAK");
     await popup.close();
   }

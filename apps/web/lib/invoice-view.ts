@@ -19,7 +19,7 @@ export interface InvoicePrintInput extends InvoiceViewInput {
   subtotal: string; vatTotal: string; grandTotal: string; createdBy: string; createdAt: string;
 }
 
-export const MOCK_NOT_OFFICIAL = "MOCK — resmî değil";
+export const MOCK_NOT_OFFICIAL = "DENEME — resmî değil";
 export const PROVIDER_NOT_CONNECTED = "e-Belge sağlayıcısı bağlı değil; gönderim denemesi reddedilir ve kaydedilir.";
 
 export function invoiceView(x: InvoiceViewInput) {
@@ -32,20 +32,20 @@ export function invoiceView(x: InvoiceViewInput) {
     notice = `${x.notice}${!x.providerConnected ? ` ${PROVIDER_NOT_CONNECTED}` : ""}`;
     kind = "warning";
   } else if (x.status === "pending_provider") {
-    notice = `${mock ? "MOCK sağlayıcıya" : "e-Belge sağlayıcısına"} iletildi; fatura numarası yalnız sağlayıcı yanıtıyla oluşur.${tag}`;
+    notice = `${mock ? "Deneme sağlayıcıya" : "e-Belge sağlayıcısına"} iletildi; fatura numarası yalnız sağlayıcı yanıtıyla oluşur.${tag}`;
     kind = mock ? "warning" : "info";
   } else if (x.status === "issued") {
-    notice = mock ? `MOCK sağlayıcı tarafından düzenlendi (${x.invoiceNo ?? "numara yok"}). ${MOCK_NOT_OFFICIAL}; gerçek e-belge değildir.`
+    notice = mock ? `Deneme sağlayıcı tarafından düzenlendi (${x.invoiceNo ?? "numara yok"}). ${MOCK_NOT_OFFICIAL}; gerçek e-belge değildir.`
       : `Sağlayıcı belgesi: ${x.invoiceNo ?? "—"}${x.providerLabel ? ` · ${x.providerLabel}` : ""}.`;
     kind = mock ? "warning" : "info";
   } else {
     // cancelled: numara varsa sağlayıcıda düzenlenip iptal edilmiştir; yoksa taslak aşamasında iptal edilmiştir.
     notice = x.invoiceNo
-      ? (mock ? `MOCK sağlayıcıda düzenlenen fatura iptal edildi (${x.invoiceNo}). ${MOCK_NOT_OFFICIAL}.` : `Sağlayıcı belgesi iptal edildi: ${x.invoiceNo}.`)
+      ? (mock ? `Deneme sağlayıcıda düzenlenen fatura iptal edildi (${x.invoiceNo}). ${MOCK_NOT_OFFICIAL}.` : `Sağlayıcı belgesi iptal edildi: ${x.invoiceNo}.`)
       : "Taslak, sağlayıcıya gönderilmeden iptal edildi; resmî belge düzenlenmedi.";
     kind = mock ? "warning" : "info";
   }
-  const watermark = isDraft ? "TASLAK" : x.status === "cancelled" ? "İPTAL" : mock ? "MOCK" : null;
+  const watermark = isDraft ? "TASLAK" : x.status === "cancelled" ? "İPTAL" : mock ? "DENEME" : null;
   const heading = `${INVOICE_DOC_TYPE_LABELS[x.docType]} — ${isDraft ? "TASLAK" : INVOICE_STATUS_LABELS[x.status]}`;
   const numberLine = isDraft || !x.invoiceNo
     ? "Fatura no: <strong>yok</strong> (sağlayıcı düzenlemedi)"

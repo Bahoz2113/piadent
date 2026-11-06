@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import pg from "pg";
 import { withContext } from "@viadent/db";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 import { APP_URL, WORKER_URL } from "./env.js";
 import { processOutbox } from "../../worker/src/jobs.js";
 
@@ -43,6 +43,8 @@ async function planVersion(versionId: string) {
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [admin, dentist, sec, assistant] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aAssistant)]);
   tenantA = sec.session.activeMembership.tenantId;
   const list = (await dentist.get("/procedures").expect(200)).body.items;

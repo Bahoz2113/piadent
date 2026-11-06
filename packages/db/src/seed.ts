@@ -315,7 +315,8 @@ export async function seed(connectionString: string, opts: { password?: string; 
         await c.query(
           `insert into readiness_rules(tenant_id, kind, procedure_id, document_type_id, created_by) values ($1,'document_for_procedure',$2,$3,$4)`,
           [tenantId, procIds["KAN-01"], typeIds["ENDO-ONAM"], creator]);
-        await c.query("insert into readiness_rules(tenant_id, kind, max_age_days, created_by) values ($1,'anamnesis_reviewed',365,$2)", [tenantId, creator]);
+        // ADR-100 (07.11.2026): anamnez modülü arayüzden kaldırıldı; kural geçmiş için pasif durur (etkinse her hasta "anamnez eksik" görünürdü).
+        await c.query("insert into readiness_rules(tenant_id, kind, max_age_days, created_by, active) values ($1,'anamnesis_reviewed',365,$2,false)", [tenantId, creator]);
         await c.query(
           `insert into communication_preferences(tenant_id, patient_id, purpose, channel, status, source, note, recorded_by)
            values ($1,$2,'appointment_reminder','sms','granted','in_person','Sentetik demo izni',$3)`, [tenantId, patientIds[0], creator]);

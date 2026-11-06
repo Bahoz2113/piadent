@@ -1,6 +1,6 @@
 import pg from "pg";
 import { guardPool, loadEnv } from "@viadent/db";
-import { processIntegrationJobs } from "@viadent/db";
+import { pollNetgsmReports, processIntegrationJobs, processMessageRules, processMessageSchedules } from "@viadent/db";
 import { processOutbox, scanAllTenants } from "./jobs.js";
 
 loadEnv();
@@ -14,10 +14,16 @@ process.on("unhandledRejection", (e) => console.error(`[worker] işlenmemiş ret
 process.on("uncaughtException", (e) => console.error(`[worker] yakalanmamış istisna: ${(e as Error)?.name ?? ""} ${String((e as Error)?.message ?? e).slice(0, 200)}`));
 let stopping = false;
 let lastScan = 0;
+let lastMsg = 0;
 
 async function loop() {
   while (!stopping) {
     try {
+      // ADR-102: zamanlanmış ve otomatik mesajlar ile Netgsm teslim raporu dakikada bir.
+      if (Date.now() - lastMsg > 60_000) {
+        await processMessageSchedules(pool); await processMessageRules(pool); await pollNetgsmReports(pool);
+        lastMsg = Date.now();
+      }
       const n = (await processOutbox(pool)) + (await processIntegrationJobs(pool));
       if (Date.now() - lastScan > 60_000) {
         await scanAllTenants(pool);

@@ -16,24 +16,29 @@ const noOverflow = async (page: Page) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth), "yatay taşma").toBeLessThanOrEqual(vw + 1);
 };
 
-test("hekim: anamnezi görür ve onaylar; sekreter sağlık sekmesine erişemez", async ({ page, browser }) => {
+// 07.11.2026 (ADR-100): anamnez paneli kaldırıldı; yerine hasta kartında sağlık özeti (kronik hastalık / ilaç / alerji).
+test("hekim: sağlık özetini girer ve başlıkta uyarı görür; sekreter içeriği görmez, sağlık sekmesine erişemez", async ({ page, browser }) => {
   await login(page, "elif.aras@demo-yesil.test");
   await page.goto("/hastalar?q=1");
   await page.locator("a.rowlink").first().click();
-  await expect(page.getByText(/Alerji \(ilaç/).first()).toBeVisible(); // başlıktaki kritik uyarı
   await page.getByRole("tab", { name: "Sağlık" }).click();
-  const approve = page.getByRole("button", { name: "Gözden geçirdim, onayla" });
-  // Panel yüklenene kadar bekle: ya onay düğmesi ya da önceden verilmiş onay görünür (yarış koşulu olmasın).
-  await expect(approve.or(page.getByText(/Hekim onayı: /))).toBeVisible();
-  if (await approve.isVisible()) await approve.click();
-  await expect(page.getByText(/Hekim onayı: /)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sağlık özeti" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Anamnez/ })).toHaveCount(0);
+  await page.getByRole("button", { name: /^(Ekle|Düzenle)$/ }).first().click();
+  const dr = page.getByRole("dialog", { name: "Sağlık özeti" });
+  const allergy = `Penisilin (sentetik E2E ${Date.now().toString().slice(-6)})`; // koşu başına farklı: aynı değer formu kirletmez
+  await dr.getByRole("textbox", { name: "Alerji", exact: true }).fill(allergy);
+  await dr.getByRole("button", { name: "Kaydet" }).click();
+  await expect(dr).toBeHidden();
+  await expect(page.locator(".chip-alert", { hasText: `Alerji: ${allergy}`.slice(0, 47) })).toBeVisible(); // başlık 40 karakterde kısaltır
   await noOverflow(page);
 
   const sec = await (browser as Browser).newPage();
   await login(sec, "sekreter@demo-yesil.test");
   await sec.goto("/hastalar?q=1");
   await sec.locator("a.rowlink").first().click();
-  await expect(sec.getByText(/Alerji \(ilaç/)).toHaveCount(0); // sağlık bilgisi sekretere sızmaz
+  await expect(sec.locator(".chip-alert", { hasText: "Sağlık uyarısı var" })).toBeVisible();
+  await expect(sec.getByText(/Penisilin/)).toHaveCount(0); // sağlık içeriği sekretere sızmaz
   await sec.getByRole("tab", { name: "Sağlık" }).click();
   await expect(sec.getByText("Sağlık bilgileri rolünüze kapalı")).toBeVisible();
   await sec.close();

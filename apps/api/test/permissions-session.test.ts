@@ -2,12 +2,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { adminQuery, EMAILS, login, ownerQuery, startApp } from "./helpers.js";
+import { adminQuery, EMAILS, login, ownerQuery, startApp, useLegacyAdmin } from "./helpers.js";
 
 let app: INestApplication;
 /** Hekimin klinik not yazdığı taze hasta; "PİA İz" testi bu kimliği kullanır (QA-005: liste indeksine bağımlılık kaldırıldı). */
 let notedPatientId: string;
-beforeAll(async () => { app = await startApp(); });
+// ADR-098: bu dosya sağlık yetkisi olmayan yönetici rolünün süzgecini sınar; eski yönetici yetki kümesiyle koşar.
+beforeAll(async () => { app = await startApp(); await useLegacyAdmin(app); });
 afterAll(async () => app.close());
 
 async function anyPatient(email: string) {

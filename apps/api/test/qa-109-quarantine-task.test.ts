@@ -23,7 +23,7 @@ import { BasicScanner, LocalDiskStorage } from "@viadent/db";
 import { setStorageForTests } from "../src/documents/files.controller.js";
 import { processOutbox, type WorkerDeps } from "../../worker/src/jobs.js";
 import { WORKER_URL } from "./env.js";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication;
 let dentist: Client, sec: Client, admin: Client;
@@ -68,6 +68,8 @@ const leaks = (text: string) => [...hiddenFiles(), ...hiddenTasks()].filter((s) 
 beforeAll(async () => {
   setStorageForTests(storage);
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [dentist, sec, admin] = await Promise.all([login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aAdmin)]);
   tenantA = admin.session.activeMembership.tenantId;
   patientId = (await sec.post("/patients", { firstName: "Karantina", lastName: `QA109 Sentetik ${tag}`, birthDate: "1981-04-04" }).expect(201)).body.patient.id;
@@ -170,8 +172,8 @@ describe("QA-109: görev dosyayı ele alabilecek role (hekim) yönlenir", () => 
     expect((exp.sections.access_log as { entity_type: string }[]).filter((e) => e.entity_type === "task")).toHaveLength(1);
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date());
     const rows = (await admin.get(`/reports/log?from=${day}&to=${day}&entityType=task`).expect(200)).body.rows as { entity: string }[];
-    expect(rows.some((r) => r.entity === `task · ${taskOf[adminQ]!.slice(0, 8)}`)).toBe(true);
-    for (const id of hiddenTasks()) expect(rows.some((r) => r.entity === `task · ${id.slice(0, 8)}`)).toBe(false);
+    expect(rows.some((r) => r.entity === `Görev · ${taskOf[adminQ]!.slice(0, 8)}`)).toBe(true);
+    for (const id of hiddenTasks()) expect(rows.some((r) => r.entity === `Görev · ${id.slice(0, 8)}`)).toBe(false);
   });
 });
 

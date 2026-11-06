@@ -43,7 +43,7 @@ export class ReportsController {
       const own = ctx.role === "dentist" ? (await c.query("select id from practitioners where membership_id = $1", [ctx.membershipId])).rows[0]?.id ?? null : null;
       const pr = await c.query("select id, display_name as name from practitioners order by display_name");
       const procs = await c.query("select id, code, name from procedures order by code");
-      const sup = ctx.permissions.has("lab.read") ? await c.query("select id, name, kind from suppliers order by name") : { rows: [] };
+      const sup = ctx.permissions.has("lab.read") || ctx.permissions.has("finance.read") ? await c.query("select id, name, kind from suppliers order by name") : { rows: [] };
       return {
         reports: visible.map((r) => ({ ...r, ownOnly: r.perm === "report.clinical" && ctx.role === "dentist" })),
         canExport: ctx.permissions.has("report.export"),

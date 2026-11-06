@@ -6,12 +6,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import { ANAMNESIS_QUESTIONS } from "@viadent/contracts";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication; let admin: Client; let dentist: Client; let sec: Client; let bDentist: Client; let tenantA: string;
 let tplId: string; let patientId: string;
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [admin, dentist, sec, bDentist] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.bDentist)]);
   tenantA = admin.session.activeMembership.tenantId;
   patientId = (await sec.post("/patients", { firstName: "Şablon", lastName: "Anamnez", birthDate: "1979-07-07" }).expect(201)).body.patient.id;

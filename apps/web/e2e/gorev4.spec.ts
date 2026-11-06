@@ -65,7 +65,7 @@ test("iletişim: izin tablosu ve MOCK mesaj — teslim uydurulmaz", async ({ pag
   await login(page, "sekreter@demo-yesil.test");
   await openPatient(page, "İletişim");
   await expect(page.getByRole("button", { name: /Randevu hatırlatma · SMS: İzin var/ })).toBeVisible();
-  await expect(page.getByText(/MOCK — gerçek mesaj gönderilmez/)).toBeVisible();
+  await expect(page.getByText(/DENEME — gerçek mesaj gönderilmez/)).toBeVisible();
   await page.getByRole("button", { name: "Mesaj gönder" }).click();
   const d = page.getByRole("dialog", { name: "Mesaj gönder" });
   await d.getByRole("button", { name: "Kuyruğa al" }).click();

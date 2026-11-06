@@ -1,14 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { EmptyState, useToast } from "@/components/ui";
 import { TeamPanel } from "@/components/admin/team";
 import { ResourcesPanel } from "@/components/admin/resources";
-import { ClosuresPanel, TypesPanel } from "@/components/admin/agenda-settings";
+import { ProcedurePricesPanel } from "@/components/admin/agenda-settings";
 import { CatalogPanel } from "@/components/admin/catalog";
-import { ProductsPanel } from "@/components/admin/products";
 import { TemplatesPanel } from "@/components/admin/templates";
-import { AnamnesisTemplatesPanel } from "@/components/admin/anamnesis-templates";
 import { IntegrationsPanel } from "@/components/admin/integrations";
 import { ExportPanel, ImportPanel } from "@/components/admin/data-transfer";
 import { SecurityPanel } from "@/components/admin/security";
@@ -16,24 +15,28 @@ import { SecurityPanel } from "@/components/admin/security";
 const TABS = [
   { id: "ekip", label: "Ekip ve davet", perm: "team.manage" },
   { id: "kaynaklar", label: "Hekim ve koltuklar", perm: "schedule.manage" },
-  { id: "turler", label: "İşlem türleri", perm: "schedule.manage" },
-  { id: "kapatma", label: "Kapatmalar", perm: "schedule.manage" },
+  { id: "turler", label: "İşlem türleri", perm: "treatment.read" },
   { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
-  { id: "urunler", label: "Ürün ve fiyat listesi", perm: "stock.read" },
   { id: "belge", label: "Belge şablonları", perm: "template.manage" },
-  { id: "anamnez", label: "Anamnez şablonu", perm: "anamnesis.template" },
   { id: "kopru", label: "Entegrasyonlar (PİA Köprü)", perm: "integration.read" },
   { id: "aktarim", label: "Veri aktarımı", perm: "import.manage" },
   { id: "disa", label: "Dışa aktarım", perm: "export.clinic" },
   { id: "guvenlik", label: "Güvenlik", perm: "settings.manage" },
 ] as const;
+/**
+ * 07.11.2026 taşınan sekmeler (eski bağlantılar çalışsın): Kapatmalar → Hekimler (izin / rapor / resmî tatil),
+ * Ürün ve fiyat listesi → Operasyon → Tedarikçi, Anamnez şablonu → kaldırıldı (sağlık özeti hasta kartında).
+ */
+const MOVED: Record<string, string> = { kapatma: "/hekimler", urunler: "/operasyon?sekme=tedarikci", anamnez: "/yonetim" };
 
 export default function AdminPage() {
   const { can, session } = useSession();
   const tabs = TABS.filter((t) => can(t.perm));
   const [tab, setTab] = useState<string>(tabs[0]?.id ?? "");
+  const router = useRouter();
   useEffect(() => {
     const want = new URLSearchParams(window.location.search).get("sekme");
+    if (want && MOVED[want]) { router.replace(MOVED[want]); return; }
     if (want && tabs.some((t) => t.id === want)) setTab(want);
   }, [tabs.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const toast = useToast();
@@ -50,12 +53,9 @@ export default function AdminPage() {
           <div role="tabpanel">
             {tab === "ekip" && <TeamPanel notify={toast.show} />}
             {tab === "kaynaklar" && <ResourcesPanel notify={toast.show} />}
-            {tab === "turler" && <TypesPanel notify={toast.show} />}
-            {tab === "kapatma" && <ClosuresPanel notify={toast.show} />}
+            {tab === "turler" && <ProcedurePricesPanel />}
             {tab === "katalog" && <CatalogPanel notify={toast.show} />}
-            {tab === "urunler" && <ProductsPanel notify={toast.show} />}
             {tab === "belge" && <TemplatesPanel notify={toast.show} />}
-            {tab === "anamnez" && <AnamnesisTemplatesPanel notify={toast.show} />}
             {tab === "kopru" && <IntegrationsPanel notify={toast.show} />}
             {tab === "aktarim" && <ImportPanel notify={toast.show} />}
             {tab === "disa" && <ExportPanel notify={toast.show} />}

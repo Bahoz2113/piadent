@@ -6,14 +6,15 @@
  */
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { BriefcaseMedical, CalendarClock, Clock, Pencil, Plus, Wallet } from "lucide-react";
+import { BriefcaseMedical, Clock, Pencil, Plus, Wallet } from "lucide-react";
 import { COMMISSION_BASIS_LABELS, PAY_MODEL_LABELS, formatTRY, type PayModel } from "@viadent/contracts";
 import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, DateField, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, useToast } from "@/components/ui";
-import { PractitionerDrawer, ScheduleDrawer, scheduleSummary, useAdminResources, type Prac } from "@/components/admin/resources";
+import { LeavesCard } from "@/components/admin/leaves";
+import { PractitionerDrawer, ScheduleDrawer, useAdminResources, type Prac } from "@/components/admin/resources";
 import { parseMoneyInput } from "@/components/finance/money-input";
 import { alertDialog, promptDialog } from "@/components/dialogs";
 
@@ -35,7 +36,6 @@ interface Comp {
 }
 type Notify = (k: "success" | "error", t: string) => void;
 
-const hours = (min: number) => (min ? `${(min / 60).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} sa/hafta` : "Kısıt yok");
 const monthLabel = (ym: string) => {
   const [y, m] = ym.split("-").map(Number);
   return new Date(Date.UTC(y!, m! - 1, 1)).toLocaleString("tr-TR", { month: "long", year: "numeric", timeZone: "UTC" });
@@ -69,7 +69,7 @@ function Inner() {
       <div className="page-head">
         <div>
           <h1>Hekimler</h1>
-          <p className="muted">Çalışma saatleri, ücret modeli, prim ve maaş hakedişi tek yerde · {monthLabel(list.data!.month)}</p>
+          <p className="muted">Hekim kartları, ücret modeli, prim ve maaş hakedişi · {monthLabel(list.data!.month)}</p>
         </div>
         {can("schedule.manage") && <button className="btn btn-primary" onClick={() => setEditing("new")}><Plus size={17} aria-hidden />Hekim ekle</button>}
       </div>
@@ -79,15 +79,13 @@ function Inner() {
         {items.length === 0 ? <EmptyState icon={<BriefcaseMedical size={28} />} title="Henüz hekim yok">Randevu verebilmek için önce hekim ekleyin.</EmptyState> : (
           <div className="table-wrap" tabIndex={0}>
             <table className="table table-wide">
-              <thead><tr><th>Hekim</th><th>Çalışma saatleri</th><th className="num">Bu ay randevu</th>
+              <thead><tr><th>Hekim</th>
                 {finance && <><th>Ücret modeli</th><th className="money">Prim bakiyesi</th><th className="money">Bu ay kalan maaş</th></>}</tr></thead>
               <tbody>{items.map((r) => (
                 <tr key={r.id} className={`row-click ${r.id === selected ? "is-selected" : ""}`} aria-selected={r.id === selected}
                   onClick={(e) => { if ((e.target as HTMLElement).closest("a,button,input,select")) return; select(r.id === selected ? null : r.id); }}>
                   <td><button className="link-button" onClick={() => select(r.id)}><strong>{r.name}</strong></button>{!r.active && <> <span className="badge badge-neutral">Pasif</span></>}
                     <div className="small muted">{r.title ?? (r.memberName ? `Kullanıcı: ${r.memberName}` : "Kullanıcıya bağlı değil")}</div></td>
-                  <td><div className="small">{scheduleSummary(r.schedule)}</div><div className="small muted">{hours(r.weeklyMinutes)}</div></td>
-                  <td className="num">{r.month.appointments}<div className="small muted">{r.month.completed} tamamlandı</div></td>
                   {finance && <>
                     <td>{modelLabel(r.pay)}{r.pay?.monthlySalary && <div className="small muted">{formatTRY(r.pay.monthlySalary)} / ay</div>}</td>
                     <td className="money">{formatTRY(r.pay?.commissionPayable ?? "0")}</td>
@@ -111,13 +109,8 @@ function Inner() {
                 </div>
               )}
             </div>
-            <div className="card-pad kpis" style={{ marginBottom: 0 }}>
-              <div className="kpi card"><div className="kpi-top"><span className="kpi-label">Haftalık çalışma</span><span className="kpi-icon" aria-hidden><Clock size={18} /></span></div>
-                <div className="kpi-value">{hours(cur.weeklyMinutes)}</div><div className="kpi-sub">{scheduleSummary(cur.schedule)}</div></div>
-              <div className="kpi card"><div className="kpi-top"><span className="kpi-label">Bu ay randevu</span><span className="kpi-icon" aria-hidden><CalendarClock size={18} /></span></div>
-                <div className="kpi-value">{cur.month.appointments}</div><div className="kpi-sub">{cur.month.completed} tamamlandı · {cur.month.noShow} gelmedi</div></div>
-            </div>
           </div>
+          <LeavesCard practitionerId={cur.id} practitionerName={cur.name} notify={toast.show} />
           {finance ? <Compensation id={cur.id} notify={toast.show} onChanged={() => void list.reload()} />
             : <Alert kind="info">Ücret, prim ve maaş bilgileri yalnız finans yetkisi olan kullanıcılara görünür.</Alert>}
         </section>

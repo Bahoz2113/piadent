@@ -48,7 +48,7 @@ Değerlendirme: **rol + klinik üyeliği + (şube kapsamı) + kaynak ilişkisi +
 | `catalog.manage` (işlem kataloğu, tarife sürümleri) | ✔ | – | – | – | – |
 
 Notlar:
-- “Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez” (Plan §05) → yönetici klinik notları **okuyamaz** (testli).
+- **ADR-098 (07.11.2026):** klinik yöneticisi **tüm yetkilere** sahiptir — sağlık içeriği ve klinik yazma dahil; her sağlık görüntülemesi PİA İz'e `patient.health_view` olarak düşer. Aşağıdaki "yönetici görmez / tahsilat girmez" ifadeleri ADR-098 öncesi kuraldır; tablo yönetici sütunu artık tümüyle ✓'dir. Diğer roller değişmedi.
 - PİA İz: hasta geçmişi `patient.read` ile görünür, ancak `clinical_note` ve `anamnesis` olayları yalnız `patient.health.read` ile; not/yanıt içeriği audit'e hiç yazılmaz. Gizli dosyaların (ADR-089) `file.*` olayları da yalnız `patient.health.read` ile; onam kanıtındaki gizli dosya kimliği bu yetki yoksa boş döner (ADR-090; KVKK dışa aktarım `access_log`/`evidence_events` ve LOG raporu aynı kural).
 - Hasta özetindeki kritik anamnez işaretleri (`clinical`) yalnız `patient.health.read` rollerine döner; diğer rollerde alan `null`.
 - Rol değişikliği ve erişim kaldırma kişinin kendisine uygulanamaz; üyelik her istekte okunduğundan bir sonraki istekte geçerlidir.

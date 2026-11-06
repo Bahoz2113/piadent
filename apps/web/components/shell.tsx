@@ -4,7 +4,7 @@ import { BrandLogo } from "./brand";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  BarChart3, BriefcaseMedical, Building2, CalendarDays, ChevronsLeft, ClipboardList, LayoutDashboard, LogOut, Menu, Palette, Search, Settings2, Stethoscope, Users, Wallet, RefreshCw, UserCog,
+  BarChart3, BriefcaseMedical, Building2, CalendarDays, ChevronsLeft, ClipboardList, LayoutDashboard, LogOut, Menu, Palette, Search, Settings2, Stethoscope, Users, Wallet, RefreshCw, UserCog, MessageSquare,
 } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { AppearanceDrawer } from "@/components/appearance-drawer";
@@ -20,6 +20,7 @@ const NAV = [
   { href: "/finans", label: "Finans", icon: Wallet },
   { href: "/operasyon", label: "Operasyon", icon: ClipboardList },
   { href: "/raporlar", label: "Raporlar", icon: BarChart3 },
+  { href: "/mesajlar", label: "Mesajlar", icon: MessageSquare },
   { href: "/yonetim", label: "Yönetim", icon: Settings2 },
 ];
 

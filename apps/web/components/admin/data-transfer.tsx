@@ -287,10 +287,11 @@ export function ExportPanel({ notify }: { notify: Notify }) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<ApiFailure | null>(null);
+  const [file, setFile] = useState<{ url: string; name: string } | null>(null);
   async function go() {
     if (busy) return;
-    setBusy(true); setErr(null);
-    try { await download("/exports/clinic", { body: { reason }, fallbackName: "viadent-klinik-disa-aktarim.json" }); notify("success", "Dışa aktarım indirildi ve denetim kaydına yazıldı."); setReason(""); }
+    setBusy(true); setErr(null); setFile(null);
+    try { setFile(await download("/exports/clinic", { body: { reason }, fallbackName: "viadent-klinik-disa-aktarim.json" })); notify("success", "Dışa aktarım hazırlandı ve denetim kaydına yazıldı."); setReason(""); }
     catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
   return (
@@ -305,6 +306,7 @@ export function ExportPanel({ notify }: { notify: Notify }) {
       {err && <Alert kind="error">{err.message}</Alert>}
       <TextField label="Gerekçe" required placeholder="ör. Yıllık arşiv kopyası, sistem değişikliği" value={reason} onChange={(e) => setReason(e.target.value)} error={err?.fieldErrors.reason} />
       <div><button className="btn btn-primary" disabled={busy || reason.trim().length < 5} onClick={() => void go()}><ShieldCheck size={17} aria-hidden />{busy ? "Hazırlanıyor…" : "Dışa aktar (JSON)"}</button></div>
+      {file && <Alert kind="success" title="Dosya hazır">İndirme başlamadıysa: <a href={file.url} download={file.name}>{file.name} dosyasını indir</a>. Bağlantı 10 dakika geçerlidir.</Alert>}
     </section>
   );
 }

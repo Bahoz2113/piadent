@@ -5,7 +5,7 @@
  */
 import type pg from "pg";
 import type { Drill, ReportColumn } from "@viadent/contracts";
-import { addDays, localDate } from "@viadent/contracts";
+import { AUDIT_ACTION_LABELS, addDays, auditActionLabel, auditEntityLabel, auditFieldLabel, localDate } from "@viadent/contracts";
 import type { RequestContext } from "../infra/context.js";
 import { CLINICAL_ENTITY_TYPES, notClinicalOutputDocSql, notHiddenFileEventSql, notHiddenTaskEventSql } from "../audit/audit.js";
 
@@ -263,10 +263,10 @@ const onlineOdeme: Runner = async (a) => {
   return {
     columns: [col("at", "İstek", "datetime"), col("patient", "Hasta"), col("amount", "Tutar", "money"), col("statusLabel", "Durum", "badge"), col("paidAt", "Ödeme", "datetime"), col("provider", "Sağlayıcı")],
     rows: list.map((x) => ({ at: x.created_at, patient: x.patient, amount: x.amount, status: x.status, statusLabel: ST[x.status], paidAt: x.paid_at,
-      provider: x.provider === "mock" ? "MOCK" : x.provider, _drill: { patientId: x.patient_id, tab: "finans" } })),
+      provider: x.provider === "mock" ? "DENEME" : x.provider, _drill: { patientId: x.patient_id, tab: "finans" } })),
     totals: { count: t.n, requested: t.requested, paidCount: t.paid_n, paid: t.paid },
     totalLabels: { count: ["İstek", "int"], requested: ["İstenen", "money"], paidCount: ["Ödenen istek", "int"], paid: ["Ödenen (sağlayıcı bildirimi)", "money"] },
-    notes: ["Yalnız MOCK sağlayıcı; gerçek para hareketi yok."],
+    notes: ["Yalnız Deneme sağlayıcı; gerçek para hareketi yok."],
     truncated,
   };
 };
@@ -481,7 +481,7 @@ const mesaj: Runner = async (a) => {
       status: x.status, statusLabel: ST[x.status], _drill: { patientId: x.patient_id, tab: "iletisim" } })),
     totals: { count: t.n, submitted: t.submitted, delivered: t.delivered, failed: t.failed, unknown: t.unknown },
     totalLabels: { count: ["Mesaj", "int"], submitted: ["İletildi", "int"], delivered: ["Teslim edildi", "int"], failed: ["Başarısız", "int"], unknown: ["Bilinmiyor", "int"] },
-    notes: ["Sağlayıcı yalnız MOCK. “İletildi” teslim değildir; teslim yalnız imzalı sağlayıcı bildirimiyle kaydedilir. Mesaj metni raporda gösterilmez."],
+    notes: ["Sağlayıcı yalnız deneme. “İletildi” teslim değildir; teslim yalnız imzalı sağlayıcı bildirimiyle kaydedilir. Mesaj metni raporda gösterilmez."],
     truncated,
   };
 };
@@ -568,28 +568,157 @@ const cari: Runner = async (a) => {
   };
 };
 
+// ------------------------------------------------------------------ 07.11.2026 sekmeleri: Gelirler / Giderler / Tedarikçi
+const PAY_METHOD: Record<string, string> = { cash: "Nakit", card_manual: "Kart (POS)", bank_transfer: "Havale/EFT", other: "Diğer", online: "Online" };
+
+/** Gelirler: dönemde alınan tüm hasta ödemeleri; satır = ödeme. İade edilen = bu ödemeye bağlı ve aralık sonuna kadar yapılmış iadeler. */
+const gelirler: Runner = async (a) => {
+  const method = pick(a.p.method, ["cash", "card_manual", "bank_transfer", "online", "other"] as const);
+  const args = [a.r.fromUtc, a.r.toUtc, method];
+  const base = `from payments x join patients p on p.id = x.patient_id
+     where x.paid_at >= $1 and x.paid_at < $2 and ($3::text is null or x.method = $3)`;
+  const refunded = `coalesce((select sum(f.amount) from refunds f where f.payment_id = x.id and f.refunded_at < $2), 0)`;
+  const { list, truncated } = await rows(a,
+    `select x.id, x.paid_at as at, x.patient_id, p.first_name || ' ' || p.last_name as patient, p.file_no, x.method, x.amount::text as amount,
+            (select rc.receipt_no from receipts rc where rc.kind = 'payment' and rc.payment_id = x.id) as receipt_no,
+            ${refunded}::numeric(14,2)::text as refunded, (x.amount - ${refunded})::numeric(14,2)::text as net
+       ${base} order by x.paid_at, x.created_at`, args);
+  const t = await one(a, `select count(*)::int as n, coalesce(sum(x.amount), 0)::numeric(14,2)::text as amount,
+      coalesce(sum(${refunded}), 0)::numeric(14,2)::text as refunded, coalesce(sum(x.amount - ${refunded}), 0)::numeric(14,2)::text as net ${base}`, args);
+  return {
+    columns: [col("at", "Tarih", "datetime"), col("patient", "Hasta"), col("fileNo", "Dosya no"), col("method", "Yöntem"), col("receiptNo", "Makbuz no"),
+      col("amount", "Alınan", "money"), col("refunded", "İade edilen", "money"), col("net", "Net", "money")],
+    rows: list.map((x) => ({ at: x.at, patient: x.patient, fileNo: x.file_no ?? "", method: PAY_METHOD[x.method] ?? x.method, receiptNo: x.receipt_no ?? "",
+      amount: x.amount, refunded: x.refunded, net: x.net, _drill: { patientId: x.patient_id, tab: "finans" } })),
+    totals: { count: t.n, amount: t.amount, refunded: t.refunded, net: t.net },
+    totalLabels: { count: ["Ödeme", "int"], amount: ["Alınan", "money"], refunded: ["İade edilen", "money"], net: ["Net gelir", "money"] },
+    notes: ["Satır = hasta ödemesi (tahsilat). Tedavi tutarı ve açık borç gelir değildir; hasta kartı → Finans'ta görünür."],
+    truncated,
+  };
+};
+
+const HEAD_LABEL: Record<string, string> = { maas: "Maaşlar", malzeme: "Malzemeler", kira: "Kira", aidat: "Aidat", fatura: "Faturalar", diger: "Diğer giderler" };
+/** Tüm gider kaynakları tek kümede: nakit maaş/prim ödemeleri, stok kullanım maliyeti (snapshot), elle girilen giderler (kategoriye göre başlık). */
+const GIDER_CTE = `with g as (
+  select case when m.source = 'salary_payment' then 'Maaş ödemesi' else 'Prim ödemesi' end as kind_label, 'maas' as head, m.occurred_at as at,
+         (select pr.display_name from salary_payments y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id and m.source = 'salary_payment')
+           || '' as l1,
+         (select pr.display_name from commission_payouts y join practitioners pr on pr.id = y.practitioner_id where y.id = m.source_id and m.source = 'commission_payout') as l2,
+         (-m.amount)::numeric(14,2) as amount, null::uuid as patient_id, false as unpriced
+    from cash_movements m where m.source in ('salary_payment', 'commission_payout') and m.occurred_at >= $1 and m.occurred_at < $2
+  union all
+  select case when s.kind = 'waste' then 'Fire' when s.appointment_id is not null then 'Randevuda kullanılan malzeme' else 'Stok kullanımı' end, 'malzeme', s.occurred_at,
+         si.name || ' · ' || trim(to_char(-s.quantity, 'FM999999990.###')) || ' ' || si.unit, null,
+         round(-s.quantity * coalesce(s.unit_cost, 0), 2)::numeric(14,2), s.patient_id, s.unit_cost is null
+    from stock_movements s join stock_items si on si.id = s.item_id where s.kind in ('usage', 'waste') and s.occurred_at >= $1 and s.occurred_at < $2
+  union all
+  select 'Gider · ' || e.category, case e.category when 'Kira' then 'kira' when 'Aidat' then 'aidat' when 'Fatura (elektrik/su/internet)' then 'fatura'
+         when 'Malzeme' then 'malzeme' when 'Personel' then 'maas' else 'diger' end, e.occurred_at, e.description, null, e.amount, null, false
+    from expenses e where e.occurred_at >= $1 and e.occurred_at < $2)`;
+const giderler: Runner = async (a): Promise<ReportResult> => {
+  const head = pick(a.p.kalem, ["maas", "malzeme", "kira", "aidat", "fatura", "diger"] as const);
+  const args = [a.r.fromUtc, a.r.toUtc, head];
+  const t = await one(a, `${GIDER_CTE} select count(*)::int as n, coalesce(sum(amount), 0)::numeric(14,2)::text as amount,
+      count(*) filter (where unpriced)::int as unpriced from g where ($3::text is null or head = $3)`, args);
+  if (!head) {
+    const r = await a.c.query(`${GIDER_CTE} select head, count(*)::int as n, coalesce(sum(amount), 0)::numeric(14,2)::text as amount from g group by head`, args.slice(0, 2));
+    const by = new Map(r.rows.map((x) => [x.head, x]));
+    return {
+      columns: [col("head", "Gider başlığı"), col("count", "Kayıt", "int"), col("amount", "Tutar", "money")],
+      rows: Object.keys(HEAD_LABEL).map((k) => ({ head: HEAD_LABEL[k], count: by.get(k)?.n ?? 0, amount: by.get(k)?.amount ?? "0.00",
+        _drill: { report: "giderler", params: { from: a.r.from, to: a.r.to, kalem: k } } })),
+      totals: { count: t.n, amount: t.amount },
+      totalLabels: { count: ["Kayıt", "int"], amount: ["Toplam gider", "money"] },
+      notes: ["Maaşlar = maaş ve prim ödemeleri + 'Personel' giderleri. Malzemeler = stokta kullanılan/fire ürünlerin birim maliyeti + 'Malzeme' giderleri.",
+        "Tedarikçiye yapılan ödemeler bu toplama girmez (alınan ürün kullanıldıkça Malzemeler'e yansır); tedarikçi borcu Tedarikçi sekmesindedir. Kâr hesabı değildir."],
+    };
+  }
+  const { list, truncated } = await rows(a, `${GIDER_CTE} select * from g where head = $3 order by at`, args);
+  return {
+    columns: [col("at", "Tarih", "datetime"), col("kind", "Tür", "badge"), col("label", "Açıklama"), col("amount", "Tutar", "money")],
+    rows: list.map((x) => ({ at: x.at, kind: x.kind_label, label: `${x.l1 ?? x.l2 ?? ""}${x.unpriced ? " (fiyat tanımsız — 0 sayıldı)" : ""}`, amount: String(x.amount),
+      ...(x.patient_id ? { _drill: { patientId: x.patient_id, tab: "finans" } } : {}) })),
+    totals: { count: t.n, amount: t.amount, ...(head === "malzeme" ? { unpriced: t.unpriced } : {}) },
+    totalLabels: { count: ["Kayıt", "int"], amount: [HEAD_LABEL[head]!, "money"], ...(head === "malzeme" ? { unpriced: ["Fiyatı tanımsız kullanım", "int"] as [string, "int"] } : {}) },
+    notes: head === "malzeme" ? ["Kullanım maliyeti, kullanım anındaki birim maliyetle (tedarikçi fiyatı / son alış) yazılır; fiyat sonra değişse de geçmiş gider değişmez. Ters kayıt eksi tutarla görünür."]
+      : ["Ters kayıtlar eksi tutarla görünür; toplam ters kayıtları içerir."],
+    truncated,
+  };
+};
+
+/** Tedarikçi alımları: özet (tedarikçi başına alım, ödeme, kalan) veya seçili tedarikçinin satırları (alınan ürünler + ödemeler). */
+const tedarikci: Runner = async (a): Promise<ReportResult> => {
+  const sid = uuidOrNull(a.p.supplierId);
+  const args = [a.r.fromUtc, a.r.toUtc, sid];
+  if (!sid) {
+    const r = await a.c.query(
+      `select s.id, s.name,
+              (select count(*) from stock_movements m where m.supplier_id = s.id and m.kind = 'receipt' and m.reverses_id is null and m.occurred_at >= $1 and m.occurred_at < $2)::int as items,
+              coalesce(sum(e.amount) filter (where e.kind = 'bill' and e.occurred_at >= $1 and e.occurred_at < $2), 0)::numeric(14,2)::text as billed,
+              coalesce(sum(e.amount) filter (where e.kind = 'payment' and e.occurred_at >= $1 and e.occurred_at < $2), 0)::numeric(14,2)::text as paid,
+              coalesce(sum(case when e.kind = 'bill' then e.amount else -e.amount end) filter (where e.occurred_at < $2), 0)::numeric(14,2)::text as remaining
+         from suppliers s left join supplier_entries e on e.supplier_id = s.id group by s.id order by s.name`, args.slice(0, 2));
+    const sum = (k: string) => r.rows.reduce((acc, x) => acc + BigInt(Math.round(Number(x[k]) * 100)), 0n);
+    const money = (v: bigint) => `${v < 0n ? "-" : ""}${(v < 0n ? -v : v) / 100n}.${String((v < 0n ? -v : v) % 100n).padStart(2, "0")}`;
+    return {
+      columns: [col("name", "Tedarikçi"), col("items", "Alınan ürün kalemi", "int"), col("billed", "Alım tutarı", "money"), col("paid", "Ödenen", "money"), col("remaining", "Kalan borç", "money")],
+      rows: r.rows.map((x) => ({ name: x.name, items: x.items, billed: x.billed, paid: x.paid, remaining: x.remaining,
+        _drill: { report: "tedarikci", params: { from: a.r.from, to: a.r.to, supplierId: x.id } } })),
+      totals: { items: r.rows.reduce((n, x) => n + x.items, 0), billed: money(sum("billed")), paid: money(sum("paid")), remaining: money(sum("remaining")) },
+      totalLabels: { items: ["Ürün kalemi", "int"], billed: ["Alım", "money"], paid: ["Ödenen", "money"], remaining: ["Kalan borç", "money"] },
+      notes: ["Kalan borç aralık sonundaki bakiyedir (önceki dönemler dahil). Alım tutarı = stok girişi faturaları + elle girilen tedarikçi borçları."],
+    };
+  }
+  const { list, truncated } = await rows(a,
+    `select e.id, e.occurred_at as at, e.kind, e.amount::text as amount, e.description, e.document_no, e.reverses_id,
+            case when e.source = 'stock_receipt' then (select si.name || ' · ' || trim(to_char(m.quantity, 'FM999999990.###')) || ' ' || si.unit
+                                                         || coalesce(' × ' || m.unit_cost::text || ' ₺', '')
+                                                         from stock_movements m join stock_items si on si.id = m.item_id where m.id = e.source_id) end as product
+       from supplier_entries e where e.supplier_id = $3 and e.occurred_at >= $1 and e.occurred_at < $2 order by e.occurred_at, e.created_at`, args);
+  const t = await one(a,
+    `select coalesce(sum(e.amount) filter (where e.kind = 'bill' and e.occurred_at >= $1 and e.occurred_at < $2), 0)::numeric(14,2)::text as billed,
+            coalesce(sum(e.amount) filter (where e.kind = 'payment' and e.occurred_at >= $1 and e.occurred_at < $2), 0)::numeric(14,2)::text as paid,
+            coalesce(sum(case when e.kind = 'bill' then e.amount else -e.amount end) filter (where e.occurred_at < $1), 0)::numeric(14,2)::text as opening,
+            coalesce(sum(case when e.kind = 'bill' then e.amount else -e.amount end) filter (where e.occurred_at < $2), 0)::numeric(14,2)::text as remaining
+       from supplier_entries e where e.supplier_id = $3`, args);
+  return {
+    columns: [col("at", "Tarih", "datetime"), col("kind", "Tür", "badge"), col("product", "Ürün / açıklama"), col("docNo", "Belge no"),
+      col("billed", "Alım", "money"), col("paid", "Ödeme", "money")],
+    rows: list.map((x) => ({ at: x.at, kind: x.kind === "bill" ? (x.reverses_id ? "Alım (ters kayıt)" : "Alım") : (x.reverses_id ? "Ödeme (ters kayıt)" : "Ödeme"),
+      product: x.product ?? x.description, docNo: x.document_no ?? "", billed: x.kind === "bill" ? x.amount : "0.00", paid: x.kind === "payment" ? x.amount : "0.00" })),
+    totals: { opening: t.opening, billed: t.billed, paid: t.paid, remaining: t.remaining },
+    totalLabels: { opening: ["Dönem başı borç", "money"], billed: ["Alım", "money"], paid: ["Ödenen", "money"], remaining: ["Kalan borç", "money"] },
+    notes: ["Kalan borç = dönem başı borç + alım − ödeme. Düzeltmeler ters kayıtla yapılır."],
+    truncated,
+  };
+};
+
 // ------------------------------------------------------------------ denetim
 const log: Runner = async (a) => {
-  const action = a.p.action && /^[a-z_.]{2,60}$/.test(a.p.action) ? a.p.action : null;
+  // 07.11.2026: ekranda yabancı terim yok — eylem, kayıt türü ve alan adları Türkçe etiketle; arama Türkçe etiket üzerinde.
+  const prefix = a.p.action && /^[a-z_.]{2,60}$/.test(a.p.action) ? a.p.action : null;
+  const q = (a.p.q ?? "").trim().toLocaleLowerCase("tr").slice(0, 60);
+  const byLabel = q ? Object.entries(AUDIT_ACTION_LABELS).filter(([k, v]) => v.toLocaleLowerCase("tr").includes(q) || k.startsWith(q)).map(([k]) => k) : null;
   const et = a.p.entityType && /^[a-z_]{2,60}$/.test(a.p.entityType) ? a.p.entityType : null;
   // Klinik olaylar (anamnez/klinik not/bulgu-tanı) yalnız sağlık yetkisiyle listelenir (QA-001).
-  const args = [a.r.fromUtc, a.r.toUtc, action, et, a.ctx.permissions.has("patient.health.read"), CLINICAL_ENTITY_TYPES];
+  const args = [a.r.fromUtc, a.r.toUtc, prefix, et, a.ctx.permissions.has("patient.health.read"), CLINICAL_ENTITY_TYPES, byLabel];
   // QA-102: klinik çıktı belgesi olayları da aynı kapıya tabidir; QA-108: gizli dosyanın (ADR-089) olayları da.
-  const where = `e.created_at >= $1 and e.created_at < $2 and ($3::text is null or e.action like $3 || '%') and ($4::text is null or e.entity_type = $4) and ($5::boolean or (e.entity_type <> all($6::text[]) and ${notClinicalOutputDocSql("e")} and ${notHiddenFileEventSql("e")} and ${notHiddenTaskEventSql("e")}))`;
+  const where = `e.created_at >= $1 and e.created_at < $2 and ($3::text is null or e.action like $3 || '%') and ($4::text is null or e.entity_type = $4) and ($7::text[] is null or e.action = any($7::text[])) and ($5::boolean or (e.entity_type <> all($6::text[]) and ${notClinicalOutputDocSql("e")} and ${notHiddenFileEventSql("e")} and ${notHiddenTaskEventSql("e")}))`;
   const { list, truncated } = await rows(a,
     `select e.id, e.created_at, e.action, e.entity_type, e.entity_id, e.patient_id, u.full_name as actor,
-            (select string_agg(k, ', ' order by k) from jsonb_object_keys(case when jsonb_typeof(e.changes) = 'object' then e.changes else '{}'::jsonb end) k) as fields,
+            (select array_agg(k order by k) from jsonb_object_keys(case when jsonb_typeof(e.changes) = 'object' then e.changes else '{}'::jsonb end) k) as fields,
             case when e.patient_id is null then null else upper(left(p.first_name, 1)) || '. ' || upper(left(p.last_name, 1)) || '. · ' || p.file_no end as patient_ref
        from audit_events e left join users u on u.id = e.actor_user_id left join patients p on p.id = e.patient_id
       where ${where} order by e.created_at desc, e.id desc`, args);
   const t = await one(a, `select count(*)::int as n, count(distinct e.actor_user_id)::int as actors from audit_events e where ${where}`, args);
   return {
-    columns: [col("at", "Zaman", "datetime"), col("actor", "Kullanıcı"), col("action", "Eylem"), col("entity", "Kayıt"), col("patient", "Hasta (kısaltma · dosya)"), col("fields", "Değişen alanlar")],
-    rows: list.map((x) => ({ at: x.created_at, actor: x.actor ?? "Sistem", action: x.action, entity: `${x.entity_type}${x.entity_id ? ` · ${String(x.entity_id).slice(0, 8)}` : ""}`,
-      patient: x.patient_ref ?? "", fields: x.fields ?? "", ...(x.patient_id ? { _drill: { patientId: x.patient_id, tab: "gecmis" } } : {}) })),
+    columns: [col("at", "Zaman", "datetime"), col("actor", "Kullanıcı"), col("action", "İşlem"), col("entity", "Kayıt"), col("patient", "Hasta (kısaltma · dosya)"), col("fields", "Değişen alanlar")],
+    rows: list.map((x) => ({ at: x.created_at, actor: x.actor ?? "Sistem", action: auditActionLabel(x.action), actionCode: x.action, entityType: x.entity_type,
+      entity: `${auditEntityLabel(x.entity_type)}${x.entity_id ? ` · ${String(x.entity_id).slice(0, 8)}` : ""}`,
+      patient: x.patient_ref ?? "", fields: ((x.fields ?? []) as string[]).map(auditFieldLabel).join(", "), ...(x.patient_id ? { _drill: { patientId: x.patient_id, tab: "gecmis" } } : {}) })),
     totals: { count: t.n, actors: t.actors },
-    totalLabels: { count: ["Olay", "int"], actors: ["Kullanıcı", "int"] },
-    notes: ["Değer içerikleri (tutar, metin, kimlik) gösterilmez; yalnız değişen alan adları. Hasta ayrıntısı için PİA İz (hasta → Geçmiş)."],
+    totalLabels: { count: ["Kayıt", "int"], actors: ["Kullanıcı", "int"] },
+    notes: ["Değer içerikleri (tutar, metin, kimlik) gösterilmez; yalnız değişen alanların adları. Hasta ayrıntısı için hasta kartı → Geçmiş."],
     truncated,
   };
 };
@@ -634,6 +763,7 @@ const isletme: Runner = async (a) => {
 };
 
 export const RUNNERS: Record<string, Runner> = {
+  gelirler, giderler, tedarikci,
   "gelir-gider": gelirGider, "nakit-hareketleri": nakit, "muhasebe-donem": muhasebeDonem, "aylik-ciro": aylikCiro, "borc-bakiye": borc, prim, "online-odeme": onlineOdeme,
   tedavi, "aylik-islem": aylikIslem, plan, "hekim-hasta": hekimHasta, randevu, kontrol, laboratuvar, mesaj, onam, stok, cari, log, isletme,
 };

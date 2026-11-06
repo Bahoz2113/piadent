@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import { vatOf } from "@viadent/contracts";
-import { EMAILS, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication; let fin: Client; let sec: Client; let bAdmin: Client; let admin: Client;
 let tenantA: string; let pracId: string;
@@ -21,6 +21,8 @@ const draft = (patientId: string, extra: Record<string, unknown> = {}) => ({
 
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [fin, sec, bAdmin, admin] = await Promise.all([login(app, EMAILS.aFinance), login(app, EMAILS.aSecretary), login(app, EMAILS.bAdmin), login(app, EMAILS.aAdmin)]);
   tenantA = fin.session.activeMembership.tenantId;
   pracId = (await sec.get("/resources").expect(200)).body.practitioners[0].id;
@@ -110,7 +112,7 @@ describe("mali müşavir dönem dökümü (Faz 2.3)", () => {
     const cashId = (await fin.get("/cash-accounts").expect(200)).body.items.find((a: { kind: string }) => a.kind === "cash").id;
     const pay = (await fin.post("/payments", { patientId: p, amount: "150.00", method: "cash", cashAccountId: cashId, allocations: [] }).set("idempotency-key", key()).expect(201)).body;
     const ref = (await fin.post(`/payments/${pay.id}/refunds`, { amount: "50.00", method: "cash", cashAccountId: cashId, reason: "Sentetik dönem iadesi" }).set("idempotency-key", key()).expect(201)).body;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date()); // klinik günü (UTC değil; gece yarısı penceresi)
     const rep = (await fin.get(`/reports/muhasebe-donem?from=${today}&to=${today}`).expect(200)).body;
     const mine = rep.rows.filter((r: { docNo: string }) => r.docNo === pay.receiptNo || r.docNo === ref.receiptNo);
     expect(mine).toHaveLength(2);

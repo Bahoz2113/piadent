@@ -1,16 +1,15 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { CalendarClock, CheckCircle2, ClipboardCheck, PhoneCall, RefreshCw, UserRoundX, Clock3, ArrowRight, Ban, Stethoscope, BriefcaseMedical, Armchair, Banknote, Wallet, ChevronDown } from "lucide-react";
+import { CalendarClock, CheckCircle2, ClipboardCheck, PhoneCall, RefreshCw, UserRoundX, Clock3, Ban, Stethoscope, BriefcaseMedical, Armchair, Banknote, Wallet, ChevronDown } from "lucide-react";
 import { addDays, formatTRY, type AppointmentStatus } from "@viadent/contracts";
 import { BarList, ColumnChart, LineChart, compact, type Point } from "@/components/charts";
-import { isPastPending, PastPendingBadge } from "@/components/appointment-status";
 import { api, ApiFailure } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
-import { fmtDateTime, fmtLongDay, fmtTime, todayIn } from "@/lib/format";
+import { fmtDateTime, fmtLongDay, todayIn } from "@/lib/format";
 import type { Appt, Task } from "@/lib/types";
-import { ContactBadge, EmptyState, ErrorState, Loading, StatusBadge, useToast } from "@/components/ui";
+import { ContactBadge, EmptyState, ErrorState, Loading, useToast } from "@/components/ui";
 
 
 const KIND_ICON: Record<string, typeof Clock3> = { overdue_checkin: Clock3, contact_pending: PhoneCall, missing_contact: UserRoundX, closure_conflict: Ban, anamnesis_review: Stethoscope, plan_unscheduled: CalendarClock, plan_decision_pending: ClipboardCheck, follow_up: CalendarClock, readiness_missing: ClipboardCheck, file_quarantined: Ban };
@@ -27,7 +26,6 @@ const monthLabel = (ym: string) => {
   return `${new Date(Date.UTC(y!, m! - 1, 1)).toLocaleString("tr-TR", { month: "short", timeZone: "UTC" })} ${String(y).slice(2)}`;
 };
 const dayLabel = (d: string) => `${Number(d.slice(8))}.${d.slice(5, 7)}`;
-const DAY_LIST_LIMIT = 6;
 const FLOW_LIMIT = 4;
 
 export default function TodayPage() {
@@ -36,7 +34,6 @@ export default function TodayPage() {
   const tasks = useData<{ items: Task[] }>("/tasks");
   const dash = useData<Dashboard>("/dashboard");
   const [showOthers, setShowOthers] = useState(false);
-  const [showAllDay, setShowAllDay] = useState(false);
   const [showAllMine, setShowAllMine] = useState(false);
   const day = useData<{ items: Appt[] }>(`/appointments?date=${today}`);
   // Teyit görevleri yarınki randevulara bağlıdır.
@@ -62,8 +59,6 @@ export default function TodayPage() {
   const density: Point[] = (d?.charts.appointmentDensity ?? []).map((x) => ({ key: x.date, label: dayLabel(x.date), value: x.count, display: `${x.count} randevu` }));
   const newPatients: Point[] = (d?.charts.newPatients ?? []).map((x) => ({ key: x.month, label: monthLabel(x.month), value: x.count, display: `${x.count} hasta` }));
   const treatments: Point[] = (d?.charts.treatments ?? []).map((x) => ({ key: x.category, label: x.category, value: x.count, display: `${compact(x.count)} işlem` }));
-  const upcomingToday = appts.filter((a) => a.status !== "cancelled");
-  const dayShown = showAllDay ? upcomingToday : upcomingToday.slice(0, DAY_LIST_LIMIT);
 
   async function act(key: string, fn: () => Promise<unknown>, ok: string) {
     setBusy(key);
@@ -147,33 +142,6 @@ export default function TodayPage() {
           )}
         </section>
 
-        <section className="card" aria-labelledby="gun-h">
-          <div className="card-head">
-            <h2 id="gun-h">Günün randevuları</h2>
-            <Link href="/ajanda" className="btn btn-sm btn-ghost">Randevular <ArrowRight size={15} aria-hidden /></Link>
-          </div>
-          {day.loading && !day.data ? <Loading rows={5} /> : day.error ? <ErrorState error={day.error} onRetry={day.reload} /> : appts.length === 0 ? (
-            <EmptyState icon={<CalendarClock size={32} aria-hidden />} title="Bugün randevu yok" action={can("appointment.write") ? <Link className="btn btn-primary" href="/ajanda?yeni=1">Randevu ver</Link> : undefined} />
-          ) : (
-            <>
-            <ul className="list">
-              {dayShown.map((a) => (
-                <li key={a.id} className="day-row">
-                  <strong>{fmtTime(a.startsAt, tz)}</strong>
-                  <div style={{ minWidth: 0 }}>
-                    <Link href={`/hastalar/${a.patientId}`} style={{ fontWeight: 600, color: "var(--text)" }}>{a.patientName}</Link>
-                    <div className="muted small">{a.practitionerName}{a.chairName ? ` · ${a.chairName}` : ""}{a.reason ? ` · ${a.reason}` : ""}</div>
-                  </div>
-                  {isPastPending(a) ? <PastPendingBadge /> : <StatusBadge status={a.status} />}
-                </li>
-              ))}
-            </ul>
-            {upcomingToday.length > DAY_LIST_LIMIT && !showAllDay && (
-              <div className="card-pad"><button className="btn btn-sm btn-ghost" onClick={() => setShowAllDay(true)}><ChevronDown size={15} aria-hidden />Tümünü göster ({upcomingToday.length})</button></div>
-            )}
-            </>
-          )}
-        </section>
       </div>
       {toast.node}
     </>

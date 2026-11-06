@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Patch, Post, Put, Query } from "@nestjs/common";
 import { z } from "zod";
 import {
-  AppointmentTypeUpsert, ChairUpsert, ClosureCreate, PractitionerUpsert, WorkScheduleReplace, addDays, dayRangeUtc, zonedToUtc,
+  AppointmentTypeUpsert, CLOSURE_KIND_LABELS, ChairUpsert, ClosureCreate, PractitionerUpsert, WorkScheduleReplace, addDays, dayRangeUtc, zonedToUtc, type ClosureKind,
 } from "@viadent/contracts";
 import { Ctx, Require } from "../auth/decorators.js";
 import { Db } from "../infra/db.service.js";
@@ -188,11 +188,11 @@ export class ResourcesController {
   listClosures(@Ctx() ctx: RequestContext) {
     return this.db.tx(ctx, async (c) => {
       const r = await c.query(
-        `select cl.id, cl.scope, cl.practitioner_id, cl.chair_id, cl.starts_at, cl.ends_at, cl.reason, p.display_name, ch.name as chair_name, u.full_name as creator
+        `select cl.id, cl.kind, cl.scope, cl.practitioner_id, cl.chair_id, cl.starts_at, cl.ends_at, cl.reason, p.display_name, ch.name as chair_name, u.full_name as creator
            from closures cl left join practitioners p on p.id = cl.practitioner_id left join chairs ch on ch.id = cl.chair_id join users u on u.id = cl.created_by
           where cl.cancelled_at is null and cl.ends_at > now() - interval '1 day' order by cl.starts_at`,
       );
-      return { items: r.rows.map((x) => ({ id: x.id, scope: x.scope, practitionerId: x.practitioner_id, chairId: x.chair_id,
+      return { items: r.rows.map((x) => ({ id: x.id, kind: x.kind, kindLabel: CLOSURE_KIND_LABELS[x.kind as ClosureKind], scope: x.scope, practitionerId: x.practitioner_id, chairId: x.chair_id,
         targetName: x.scope === "clinic" ? "Tüm klinik" : x.display_name ?? x.chair_name, startsAt: x.starts_at, endsAt: x.ends_at, reason: x.reason, createdBy: x.creator })) };
     });
   }
@@ -213,10 +213,10 @@ export class ResourcesController {
       if (input.practitionerId && !(await c.query("select 1 from practitioners where id = $1", [input.practitionerId])).rowCount) throw Errors.validation({ practitionerId: "Hekim bulunamadı." });
       if (input.chairId && !(await c.query("select 1 from chairs where id = $1", [input.chairId])).rowCount) throw Errors.validation({ chairId: "Koltuk bulunamadı." });
       const r = await c.query(
-        `insert into closures(tenant_id, scope, practitioner_id, chair_id, starts_at, ends_at, reason, created_by)
-         values ($1,$2,$3,$4,$5,$6,$7,$8) returning id`,
+        `insert into closures(tenant_id, scope, practitioner_id, chair_id, starts_at, ends_at, reason, created_by, kind)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
         [ctx.tenantId, input.scope, input.scope === "practitioner" ? input.practitionerId : null, input.scope === "chair" ? input.chairId : null,
-         startsAt, endsAt, input.reason, ctx.userId],
+         startsAt, endsAt, input.reason, ctx.userId, input.kind],
       );
       const affected = await c.query(
         `select a.id, a.starts_at, p.first_name || ' ' || p.last_name as patient_name
@@ -227,7 +227,7 @@ export class ResourcesController {
         [startsAt, endsAt, input.scope, input.practitionerId ?? null, input.chairId ?? null],
       );
       await audit(c, ctx, { action: "closure.create", entityType: "closure", entityId: r.rows[0].id,
-        changes: { scope: { from: null, to: input.scope }, reason: { from: null, to: input.reason }, affected: { from: null, to: affected.rowCount } } });
+        changes: { kind: { from: null, to: CLOSURE_KIND_LABELS[input.kind] }, scope: { from: null, to: input.scope }, reason: { from: null, to: input.reason }, affected: { from: null, to: affected.rowCount } } });
       await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "closure.create" });
       return { id: r.rows[0].id, affected: affected.rows.map((a) => ({ id: a.id, startsAt: a.starts_at, patientName: a.patient_name })) };
     });

@@ -21,11 +21,17 @@ export class CatalogController {
   procedures(@Ctx() ctx: RequestContext, @Query("all") all?: string) {
     return this.db.tx(ctx, async (c) => {
       const r = await c.query(
-        `select id, code, name, category, tooth_scope, default_minutes, active from procedures
-          where ($1::boolean or active) order by category nulls last, code`,
-        [all === "1"],
+        `select p.id, p.code, p.name, p.category, p.tooth_scope, p.default_minutes, p.active, pr.price
+           from procedures p
+           left join lateral (
+             select ti.price::text as price from tariff_items ti join tariff_versions tv on tv.id = ti.tariff_version_id
+              where ti.procedure_id = p.id and tv.status = 'published' and tv.practitioner_id is null and tv.valid_from <= (now() at time zone $2)::date
+              order by tv.valid_from desc, tv.published_at desc limit 1) pr on true
+          where ($1::boolean or p.active) order by p.category nulls last, p.code`,
+        [all === "1", ctx.timezone],
       );
-      return { items: r.rows.map((p) => ({ id: p.id, code: p.code, name: p.name, category: p.category, toothScope: p.tooth_scope, defaultMinutes: p.default_minutes, active: p.active })) };
+      // 07.11.2026: "İşlem türleri" listesi tüm işlemleri klinik genel tarifedeki bugünkü fiyatıyla gösterir (fiyat yoksa null).
+      return { items: r.rows.map((p) => ({ id: p.id, code: p.code, name: p.name, category: p.category, toothScope: p.tooth_scope, defaultMinutes: p.default_minutes, active: p.active, price: p.price ?? null })) };
     });
   }
 

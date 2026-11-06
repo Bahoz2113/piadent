@@ -7,12 +7,12 @@ import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, onTestFinished } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import pg from "pg";
 import { ClamdScanner, BasicScanner, LocalDiskStorage, documentsMaintenance, processIntegrationJobs, withContext } from "@viadent/db";
-import { EMAILS, adminQuery, login, ownerQuery, startApp, type Client } from "./helpers.js";
+import { EMAILS, adminQuery, login, ownerQuery, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 import { Db } from "../src/infra/db.service.js";
 import { APP_URL, WORKER_URL } from "./env.js";
 import { processOutbox, scanAllTenants, type WorkerDeps } from "../../worker/src/jobs.js";
@@ -68,6 +68,8 @@ async function approvedVersion(code: string) {
 beforeAll(async () => {
   setStorageForTests(storage);
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [admin, dentist, sec, assistant, fin, bDentist] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary),
     login(app, EMAILS.aAssistant), login(app, EMAILS.aFinance), login(app, EMAILS.bDentist)]);
   tenantA = sec.session.activeMembership.tenantId;
@@ -314,7 +316,7 @@ describe("AT-12 iletişim tercihi ve mesaj", () => {
     await worker();
     let com = (await sec.get(`/patients/${pid}/communication`).expect(200)).body;
     expect(com.messages[0]).toMatchObject({ id: m.id, status: "submitted", provider: "mock", recipient: expect.stringMatching(/\*/) });
-    expect(com.provider.label).toMatch(/MOCK/);
+    expect(com.provider.label).toMatch(/DENEME/); // 07.11.2026: Türkçe etiket
     // 25 saat sonra bakım taraması: teslim bilgisi yok → unknown (delivered asla yazılmaz)
     const pool = new pg.Pool({ connectionString: WORKER_URL, max: 1 });
     try { await withContext(pool, { tenantId: tenantA, userId: null }, (c) => documentsMaintenance(c, tenantA, new Date(Date.now() + 25 * 3600_000))); } finally { await pool.end(); }
@@ -335,7 +337,9 @@ describe("AT-12 iletişim tercihi ve mesaj", () => {
     expect(com.messages[0]).toMatchObject({ status: "cancelled", statusReason: "Gönderim anında iletişim izni yok" });
     expect(com.current["appointment_reminder:sms"].status).toBe("withdrawn");
     expect(com.history).toHaveLength(2); // geçmiş korunur
-    expect((await dentist.post("/messages", { patientId: pid, purpose: "appointment_reminder", channel: "sms", body: "x deneme" }).set("idempotency-key", key())).status).toBe(403);
+    // ADR-102 (07.11.2026): hekim artık bilgi mesajı gönderebilir; izin geri çekildiği için yine gönderilmez (422 izin yok).
+    const dm = await dentist.post("/messages", { patientId: pid, purpose: "appointment_reminder", channel: "sms", body: "x deneme" }).set("idempotency-key", key());
+    expect(dm.status).toBe(422); expect(dm.body.code).toBe("CONSENT_MISSING");
   });
 });
 
@@ -358,6 +362,9 @@ describe("kontrol (follow-up) ve PİA Hazır", () => {
   });
 
   it("yarınki randevuda eksik anamnez/belge görünür ve görev açar; belge kabulü ve hekim istisnasıyla kapanır", async () => {
+    // ADR-100: anamnez kuralı seed'de pasif; kural motorunun anamnez kalemini sınamak için bu senaryoda etkinleştirilir (afterAll'dan önce geri alınır).
+    await ownerQuery(tenantA, "update readiness_rules set active = true where kind = 'anamnesis_reviewed'");
+    onTestFinished(async () => { await ownerQuery(tenantA, "update readiness_rules set active = false where kind = 'anamnesis_reviewed'"); });
     const pid = await newPatient("Hande");
     const procs = (await dentist.get("/procedures").expect(200)).body.items;
     const kan = procs.find((p: { code: string }) => p.code === "KAN-01");

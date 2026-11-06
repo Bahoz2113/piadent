@@ -7,7 +7,45 @@ import { useData } from "@/lib/use-data";
 import { fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
 import { confirmDialog } from "@/components/dialogs";
+import { formatTRY } from "@viadent/contracts";
 import { useAdminResources } from "./resources";
+
+/**
+ * 07.11.2026: "İşlem türleri" = kataloğun tüm işlemleri, klinik genel tarifedeki bugünkü fiyatıyla. Randevuda yalnız işlem seçilir
+ * (ayrı "işlem türü" seçeneği kaldırıldı); süre işlemin varsayılan süresinden gelir. Fiyat ve süre değişikliği: Katalog ve tarife.
+ */
+export function ProcedurePricesPanel() {
+  const procs = useData<{ items: { id: string; code: string; name: string; category: string | null; defaultMinutes: number | null; active: boolean; price: string | null }[] }>("/procedures");
+  const [q, setQ] = useState("");
+  if (procs.loading && !procs.data) return <div className="card"><Loading /></div>;
+  if (procs.error) return <div className="card"><ErrorState error={procs.error} /></div>;
+  const norm = (t: string) => t.toLocaleLowerCase("tr");
+  const items = procs.data!.items.filter((p) => !q.trim() || norm(`${p.code} ${p.name} ${p.category ?? ""}`).includes(norm(q.trim())));
+  const cats = [...new Set(items.map((p) => p.category ?? "Diğer"))];
+  const unpriced = procs.data!.items.filter((p) => !p.price).length;
+  return (
+    <section className="card">
+      <div className="card-head">
+        <div><h2>İşlem türleri</h2><p className="muted small">Kliniğin tüm işlemleri ve bugünkü tarife fiyatı. Randevu verirken bu listeden işlem seçilir; süre işlemin varsayılan süresine ayarlanır. Fiyat ve süre: Yönetim → Katalog ve tarife.</p></div>
+        <TextField label="İşlem ara" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Kod, ad veya kategori" />
+      </div>
+      {unpriced > 0 && <div className="card-pad" style={{ paddingTop: 0 }}><Alert kind="warning">{unpriced} işlemin yayında fiyatı yok; randevuda fiyat "tanımsız" görünür.</Alert></div>}
+      <div className="table-wrap" tabIndex={0}>
+        <table className="table">
+          <thead><tr><th>Kod</th><th>İşlem</th><th className="num">Süre</th><th className="money">Fiyat</th></tr></thead>
+          {cats.map((cat) => (
+            <tbody key={cat}>
+              <tr><th colSpan={4} className="small muted" style={{ textAlign: "left", paddingTop: 14 }}>{cat}</th></tr>
+              {items.filter((p) => (p.category ?? "Diğer") === cat).map((p) => (
+                <tr key={p.id}><td className="mono small">{p.code}</td><td>{p.name}</td><td className="num">{p.defaultMinutes ? `${p.defaultMinutes} dk` : "—"}</td>
+                  <td className="money">{p.price ? formatTRY(p.price) : <span className="muted">Fiyat tanımsız</span>}</td></tr>))}
+            </tbody>))}
+        </table>
+      </div>
+      {items.length === 0 && <EmptyState title="Eşleşen işlem yok" />}
+    </section>
+  );
+}
 
 export function TypesPanel({ notify }: { notify: (k: "success" | "error", t: string) => void }) {
   const data = useAdminResources();

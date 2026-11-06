@@ -14,7 +14,7 @@ import { promptDialog } from "@/components/dialogs";
 import { isPastPending, PastPendingBadge } from "@/components/appointment-status";
 import type { Appt, Task } from "@/lib/types";
 import { RelationsCard } from "@/components/patient/relations";
-import { AnamnesisPanel } from "@/components/patient/anamnesis";
+import { HealthChips, HealthNotesCard } from "@/components/patient/health-notes";
 import { TreatmentTab } from "@/components/treatment/treatment-tab";
 import { ToothSummaryCard } from "@/components/treatment/tooth-summary";
 import { AccountTab } from "@/components/finance/account-tab";
@@ -23,7 +23,6 @@ import { CommunicationTab } from "@/components/communication/communication-tab";
 import { FollowUpsCard } from "@/components/care/follow-ups";
 import { PatientLabTab } from "@/components/operations/lab";
 import { PatientMaterials } from "@/components/operations/stock";
-import { questionLabel } from "@viadent/contracts";
 import { AlertTriangle } from "lucide-react";
 
 interface Patient {
@@ -54,6 +53,7 @@ function PatientInner() {
   const { can, tz } = useSession();
   const [tab, setTab] = useState<TabId>(() => (TABS.some((t) => t.id === params.get("sekme")) ? (params.get("sekme") as TabId) : "ozet"));
   const [editing, setEditing] = useState(params.get("duzenle") === "1");
+  const [healthVer, setHealthVer] = useState(0); // sağlık özeti kaydedilince başlıktaki uyarılar yenilenir
   const toast = useToast();
   const [revealed, setRevealed] = useState<string | null>(null);
   // Kimlik no varsayılan maskeli; tam değer gerekçeyle açılır ve denetim kaydına yazılır (ADR-063).
@@ -123,14 +123,11 @@ function PatientInner() {
               <span>Sıradaki randevu: <b>{p.nextAppointmentAt ? fmtDateTime(p.nextAppointmentAt, tz) : "Yok"}</b></span>
               <span>Açık takip: <b>{p.openTaskCount}</b></span>
             </div>
-            {(p.isMinor || (p.clinical && p.clinical.criticalFlags.length > 0) || (p.clinical && p.clinical.anamnesisVersion === null)) && (
-              <div className="row" style={{ marginTop: 8, gap: 6 }} aria-label="Uyarılar">
-                {p.clinical?.criticalFlags.map((f, i) => <span key={f} className="chip-alert"><AlertTriangle size={13} aria-hidden />{p.clinical?.criticalFlagLabels?.[i] ?? questionLabel(f)}</span>)}
-                {p.clinical && p.clinical.anamnesisVersion !== null && !p.clinical.anamnesisReviewed && <span className="badge badge-warning">Anamnez onay bekliyor</span>}
-                {p.clinical && p.clinical.anamnesisVersion === null && <span className="badge badge-neutral">Anamnez girilmemiş</span>}
-                {p.isMinor && <span className="badge badge-info">18 yaş altı{p.legalRepresentativeCount === 0 ? " · yasal temsilci yok" : ""}</span>}
-              </div>
-            )}
+            {/* 07.11.2026 (ADR-100): anamnez uyarıları yerine sağlık özeti (kronik hastalık / ilaç / alerji). */}
+            <div className="row" style={{ marginTop: 8, gap: 6, flexWrap: "wrap" }} role="group" aria-label="Uyarılar">
+              <HealthChips key={healthVer} patientId={p.id} />
+              {p.isMinor && <span className="badge badge-info">18 yaş altı{p.legalRepresentativeCount === 0 ? " · yasal temsilci yok" : ""}</span>}
+            </div>
           </div>
           <div className="row actions">
             {can("patient.write") && <button className="btn" onClick={() => setEditing(true)}><Pencil size={16} aria-hidden />Bilgileri düzenle</button>}
@@ -195,11 +192,11 @@ function PatientInner() {
         )}
         {tab === "saglik" && (can("patient.health.read") ? (
           <div className="stack" style={{ gap: 16 }}>
-            <AnamnesisPanel patientId={p.id} onSaved={() => { void patient.reload(); void tasks.reload(); }} />
+            <HealthNotesCard patientId={p.id} onSaved={() => { setHealthVer((v) => v + 1); void patient.reload(); }} />
             <ClinicalNotes patientId={p.id} canWrite={can("clinical_note.write")} />
           </div>
         ) : (
-          <div className="card"><EmptyState icon={<Lock size={28} aria-hidden />} title="Sağlık bilgileri rolünüze kapalı">Anamnez ve klinik notlar yalnız yetkili klinik kullanıcılara görünür.</EmptyState></div>
+          <div className="card"><EmptyState icon={<Lock size={28} aria-hidden />} title="Sağlık bilgileri rolünüze kapalı">Sağlık özeti ve klinik notlar yalnız hekim, asistan ve yöneticiye görünür.</EmptyState></div>
         ))}
         {tab === "gecmis" && <Timeline patientId={p.id} resources={res.data} />}
         {tab === "tedavi" && <div className="stack" style={{ gap: 16 }}><TreatmentTab patientId={p.id} onChanged={() => { void tasks.reload(); }} /><FollowUpsCard patientId={p.id} /></div>}

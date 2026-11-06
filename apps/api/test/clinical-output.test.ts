@@ -5,11 +5,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
 import { clinicalOutputStarterBody, unknownTemplateFields } from "@viadent/contracts";
-import { EMAILS, login, startApp, type Client } from "./helpers.js";
+import { EMAILS, login, startApp, useLegacyAdmin, type Client } from "./helpers.js";
 
 let app: INestApplication; let dentist: Client; let sec: Client; let admin: Client; let patientId: string;
 beforeAll(async () => {
   app = await startApp();
+  // ADR-098: yönetici artık her şeyi görür; bu dosya sağlık yetkisiz rolün süzgecini sınadığından eski yönetici kümesi kullanılır.
+  await useLegacyAdmin(app);
   [dentist, sec, admin] = await Promise.all([login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aAdmin)]);
   patientId = (await sec.post("/patients", { firstName: "Epikriz", lastName: "Çıktı", birthDate: "1990-05-15" }).expect(201)).body.patient.id;
 });

@@ -58,12 +58,17 @@ test("pilot günü provası: veri taşıma → randevu → tedavi görünümü �
   await sec.waitForURL(/\/hastalar\//);
   const url = sec.url();
   await expect(sec.getByText("Kontrol").first()).toBeVisible(); // aktarılan geçmiş randevu
+  // 07.11.2026 (ADR-101): tam sayfa randevu; tek işlem seçimi; liste dışı saat elle.
   await sec.getByRole("link", { name: "Randevu ver" }).click();
-  const ap = sec.getByRole("dialog", { name: "Randevu ver" });
+  await expect(sec.getByRole("heading", { name: "Randevu ver", level: 1 })).toBeVisible();
+  const ap = sec.locator("main");
   await expect(ap.getByText(`${first} ${last}`)).toBeVisible();
-  await ap.getByRole("textbox", { name: "Tarih", exact: true }).fill(trDay(40 + (Date.now() % 200)));
+  const sel = ap.getByRole("combobox", { name: "İşlem", exact: true });
+  await sel.selectOption((await sel.locator("option", { hasText: "Kontrol muayenesi" }).first().getAttribute("value"))!);
+  await ap.getByRole("textbox", { name: "Gün", exact: true }).fill(trDay(40 + (Date.now() % 200)));
+  await ap.getByText("Listede olmayan bir saat gir").click();
   await ap.getByRole("textbox", { name: "Saat", exact: true }).fill(`1${Date.now() % 7}:${["00", "15", "30", "45"][Date.now() % 4]}`); // 10:00–16:45 arası; gün koşu başına farklı
-  await ap.getByLabel("Açıklama").fill("Kontrol (prova)");
+  await ap.getByRole("textbox", { name: "Açıklama", exact: true }).fill("Kontrol (prova)");
   await ap.getByRole("button", { name: "Randevuyu kaydet" }).click();
   const outside = ap.getByRole("button", { name: "Çalışma saati dışında yine de kaydet" });
   await Promise.race([sec.getByText("Randevu oluşturuldu.").waitFor({ timeout: 10_000 }), outside.waitFor({ timeout: 10_000 })]);

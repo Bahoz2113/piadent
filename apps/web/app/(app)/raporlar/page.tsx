@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BarChart3, Download, Play } from "lucide-react";
-import { addDays, formatTRY, type ColumnType, type Drill, type ReportColumn, type ReportDef } from "@viadent/contracts";
-import { api, ApiFailure, getPageContext } from "@/lib/api";
+import { EXPENSE_HEADS, addDays, formatTRY, type ColumnType, type Drill, type ReportColumn, type ReportDef } from "@viadent/contracts";
+import { api, ApiFailure, getPageContext, saveBlob } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { Alert, EmptyState, ErrorState, Loading, SelectField, TextField, DateField } from "@/components/ui";
@@ -20,6 +20,9 @@ interface Result {
 type Params = Record<string, string>;
 const GROUPS = ["Finans", "Tedavi", "Operasyon", "Stok ve cari", "Denetim", "Analiz"] as const;
 const MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+/** 07.11.2026: Raporlar sekmeleri. "Tüm raporlar" kart listesidir; diğerleri doğrudan raporu açar. */
+type Tab = "tum" | "gelirler" | "giderler" | "tedarikci";
+const TABS: [Tab, string][] = [["tum", "Tüm raporlar"], ["gelirler", "Gelirler"], ["giderler", "Giderler"], ["tedarikci", "Tedarikçi"]];
 const TAB_FOR: Record<string, string> = { finans: "finans", tedavi: "tedavi", iletisim: "iletisim", belgeler: "belgeler", gecmis: "gecmis", lab: "lab" };
 
 function cell(v: unknown, type: ColumnType, tz: string) {
@@ -63,6 +66,7 @@ function ReportsInner() {
   const search = useSearchParams() ?? new URLSearchParams();
   const lastRapor = useRef<string | null>(null);
   const def = cat?.reports.find((r) => r.id === current?.id);
+  const rootTab: Tab = (cat?.reports.find((r) => r.id === stack[0]?.id)?.tab as Tab | undefined) ?? "tum";
 
   const run = useCallback(async (id: string, p: Params) => {
     setBusy(true); setErr(null);
@@ -79,10 +83,15 @@ function ReportsInner() {
       const q = new URLSearchParams(window.location.search);
       const id = q.get("rapor");
       const r = c.reports.find((x) => x.id === id);
+      const sekme = q.get("sekme");
+      const tr = !id && sekme ? c.reports.find((x) => x.tab === sekme) : undefined;
       if (id && r) {
         q.delete("rapor");
         const p = { ...defaultRange(c.today, r.maxDays), ...Object.fromEntries(q.entries()) };
         setStack([{ id, params: p }]); setParams(p); void run(id, p);
+      } else if (tr) {
+        const p = defaultRange(c.today, tr.maxDays);
+        setStack([{ id: tr.id, params: p }]); setParams(p); void run(tr.id, p);
       }
     }, (e) => setCatErr(e as ApiFailure));
   }, [run]);
@@ -95,6 +104,17 @@ function ReportsInner() {
     window.history.replaceState(null, "", `/raporlar?rapor=${id}`);
     setStack((s) => (push ? [...s, { id, params: next }] : [{ id, params: next }]));
     setParams(next); setRes(null); void run(id, next);
+  }
+  function openTab(t: Tab) {
+    setErr(null);
+    if (t === "tum") { setStack([]); setRes(null); window.history.replaceState(null, "", "/raporlar"); return; }
+    const r = cat!.reports.find((x) => x.tab === t);
+    if (r) open(r.id, {});
+  }
+  function setHead(k: string) {
+    if (!current) return;
+    const p = { ...params, kalem: k };
+    setParams(p); setStack((s) => [...s.slice(0, -1), { id: current.id, params: p }]); void run(current.id, p);
   }
   function back() {
     const s = stack.slice(0, -1);
@@ -109,19 +129,15 @@ function ReportsInner() {
       const q = new URLSearchParams(format === "xlsx" ? { ...params, format } : params).toString();
       const r = await fetch(`/api/v1/reports/${current.id}/export${q ? `?${q}` : ""}`, { credentials: "same-origin", headers: { "x-viadent-context": getPageContext() } });
       if (!r.ok) { const b = await r.json().catch(() => ({ code: "HTTP_ERROR", message: "Dışa aktarılamadı." })); throw new ApiFailure(r.status, b); }
-      const blob = await r.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `viadent-${current.id}.${format}`;
-      a.click();
-      URL.revokeObjectURL(a.href);
+      // 07.11.2026: ortak indirme yardımcısı (bağlantı belgeye eklenir; adres hemen kapatılmaz).
+      await saveBlob(await r.blob(), /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `viadent-${current.id}.${format}`);
     } catch (e) { setErr(e as ApiFailure); }
   }
 
   // Menüden tekrar "Raporlar": adres ?rapor parametresini kaybettiyse açık rapordan listeye dönülür (madde 7).
   useEffect(() => {
     const now = search.get("rapor");
-    if (lastRapor.current && !now && stack.length) { setStack([]); setRes(null); setErr(null); }
+    if (lastRapor.current && !now && !search.get("sekme") && stack.length) { setStack([]); setRes(null); setErr(null); }
     lastRapor.current = now;
   }, [search, stack.length]);
 
@@ -132,11 +148,17 @@ function ReportsInner() {
       <div className="page-head">
         <div><h1>Raporlar</h1><p>Her toplam kaynak kayıtlarla mutabıktır; satıra tıklayarak kaynağa inebilirsiniz. Gün sınırı klinik saat dilimidir ({tz}).</p></div>
       </div>
+      {cat.reports.some((r) => r.tab) && (
+        <div className="subtabs" role="tablist" aria-label="Rapor bölümleri">
+          {TABS.filter(([t]) => t === "tum" || cat.reports.some((r) => r.tab === t)).map(([t, l]) => (
+            <button key={t} role="tab" aria-selected={rootTab === t} className={`btn btn-sm ${rootTab === t ? "btn-primary" : ""}`} onClick={() => openTab(t)}>{l}</button>))}
+        </div>
+      )}
       {!current || !def ? (
         cat.reports.length === 0 ? <div className="card"><EmptyState icon={<BarChart3 size={28} />} title="Rolünüz için rapor yok" /></div> : (
           <div className="stack" style={{ gap: 20 }}>
             {GROUPS.map((g) => {
-              const rs = cat.reports.filter((r) => r.group === g);
+              const rs = cat.reports.filter((r) => r.group === g && !r.hidden && !r.tab);
               if (!rs.length) return null;
               return (
                 <section key={g}>
@@ -155,12 +177,20 @@ function ReportsInner() {
       ) : (
         <div className="stack" style={{ gap: 16 }}>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button className="btn btn-sm" onClick={back}><ArrowLeft size={15} aria-hidden />{stack.length > 1 ? "Önceki rapor" : "Rapor listesi"}</button>
+            {(stack.length > 1 || !cat.reports.find((r) => r.id === stack[0]?.id)?.tab) && (
+              <button className="btn btn-sm" onClick={back}><ArrowLeft size={15} aria-hidden />{stack.length > 1 ? "Önceki rapor" : "Rapor listesi"}</button>)}
             <h2 style={{ margin: 0 }}>{def.title}</h2>
           </div>
+          {def.id === "giderler" && (
+            <div className="subtabs" role="tablist" aria-label="Gider başlıkları">
+              {[["", "Özet"] as const, ...EXPENSE_HEADS].map(([k, l]) => (
+                <button key={k} role="tab" aria-selected={(params.kalem ?? "") === k} className={`btn btn-sm ${(params.kalem ?? "") === k ? "btn-primary" : ""}`}
+                  onClick={() => setHead(k)}>{l}</button>))}
+            </div>
+          )}
           <section className="card card-pad">
             <form className="filters" onSubmit={(e) => { e.preventDefault(); setStack((s) => [...s.slice(0, -1), { id: def.id, params }]); void run(def.id, params); }}>
-              {def.filters.map((f) => {
+              {def.filters.filter((f) => !(def.id === "giderler" && f.key === "kalem")).map((f) => {
                 if (f.kind === "range") return (
                   <div key="range" className="row" style={{ gap: 8 }}>
                     <DateField label="Başlangıç" value={params.from ?? ""} onChange={(e) => setParams({ ...params, from: e.target.value })} />

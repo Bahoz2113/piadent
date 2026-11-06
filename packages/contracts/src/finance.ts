@@ -13,7 +13,7 @@ export const PAYMENT_METHODS = ["cash", "card_manual", "bank_transfer", "other"]
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 /** Görüntüleme etiketi: kullanıcı girişindeki yöntemler + sağlayıcı kaynaklı "online" (yalnız PİA Köprü yazar). */
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod | "online", string> = {
-  online: "Online (MOCK sağlayıcı)",
+  online: "Online (Deneme sağlayıcı)",
   cash: "Nakit",
   card_manual: "Kart (manuel kayıt · POS bağlantısı yok)",
   bank_transfer: "Havale / EFT",
@@ -36,6 +36,8 @@ export const PaymentCreate = z.object({
   cashAccountId: uuid,
   paidAt: z.iso.datetime({ offset: true }).optional(),
   note: optText(300),
+  /** 07.11.2026: randevu sayfasında alınan ödeme randevuya bağlanır (izlenebilirlik); ödeme yine avans/dağıtım kurallarına tabidir. */
+  appointmentId: uuid.optional(),
   /** Dağıtım açıkça verilir; verilmeyen kısım avans olarak kalır (ödeme borçla otomatik karışmaz). */
   allocations: z.array(AllocationLine).max(50).default([]),
 });
@@ -81,7 +83,7 @@ export const CommissionRuleCreate = z.object({
   note: optText(200),
 });
 
-export const EXPENSE_CATEGORIES = ["Kira", "Personel", "Malzeme", "Laboratuvar", "Fatura (elektrik/su/internet)", "Vergi/harç", "Diğer"] as const;
+export const EXPENSE_CATEGORIES = ["Kira", "Aidat", "Personel", "Malzeme", "Laboratuvar", "Fatura (elektrik/su/internet)", "Vergi/harç", "Diğer"] as const;
 
 /** Yüzde oranla prim: kuruşa yuvarlama (yarım yukarı), işaret korunur. Örn. 600.00 × %10 = 60.00; −100.00 → −10.00. */
 export function commissionAmount(base: string, rate: string): string {

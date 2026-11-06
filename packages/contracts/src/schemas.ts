@@ -153,8 +153,21 @@ export const WorkScheduleReplace = z.object({
     .max(28)
     .refine((b) => b.every((x) => x.end > x.start), { message: "Bitiş başlangıçtan sonra olmalı" }),
 });
+/** 07.11.2026: kapatma türü. Resmî tatil tüm kliniği, rapor ve izin tek hekimi kapatır (hekim çalışma saatleri altında girilir). */
+export const CLOSURE_KINDS = ["closure", "public_holiday", "sick_leave", "leave"] as const;
+export type ClosureKind = (typeof CLOSURE_KINDS)[number];
+export const CLOSURE_KIND_LABELS: Record<ClosureKind, string> = { closure: "Kapatma", public_holiday: "Resmî tatil", sick_leave: "Rapor", leave: "İzin" };
+/** Sabit tarihli resmî tatiller (gün-ay). Dinî bayramların tarihi her yıl değişir; elle girilir. */
+export const FIXED_PUBLIC_HOLIDAYS: [string, string][] = [
+  ["01-01", "Yılbaşı"], ["04-23", "Ulusal Egemenlik ve Çocuk Bayramı"], ["05-01", "Emek ve Dayanışma Günü"], ["05-19", "Atatürk'ü Anma, Gençlik ve Spor Bayramı"],
+  ["07-15", "Demokrasi ve Millî Birlik Günü"], ["08-30", "Zafer Bayramı"], ["10-29", "Cumhuriyet Bayramı"],
+];
+export const AvailabilityQuery = z.object({
+  practitionerId: uuid, date: isoDate, minutes: z.coerce.number().int().min(5).max(720).default(30), chairId: uuid.optional(),
+});
 export const ClosureCreate = z
   .object({
+    kind: z.enum(CLOSURE_KINDS).default("closure"),
     scope: z.enum(["clinic", "practitioner", "chair"]),
     practitionerId: uuid.optional(),
     chairId: uuid.optional(),
@@ -165,7 +178,13 @@ export const ClosureCreate = z
     reason: trimmed(300).min(2, "Neden gerekli"),
   })
   .refine((v) => v.scope !== "practitioner" || !!v.practitionerId, { message: "Hekim seçin", path: ["practitionerId"] })
-  .refine((v) => v.scope !== "chair" || !!v.chairId, { message: "Koltuk seçin", path: ["chairId"] });
+  .refine((v) => v.scope !== "chair" || !!v.chairId, { message: "Koltuk seçin", path: ["chairId"] })
+  .refine((v) => v.kind !== "public_holiday" || v.scope === "clinic", { message: "Resmî tatil tüm kliniği kapatır", path: ["scope"] })
+  .refine((v) => (v.kind !== "sick_leave" && v.kind !== "leave") || v.scope === "practitioner", { message: "Rapor ve izin bir hekim için girilir", path: ["practitionerId"] });
+
+/** 07.11.2026 (anamnez yerine): hasta kartında sağlık özeti. Sağlık verisidir; içerik yalnız sağlık yetkili rollere döner. */
+const healthText = z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), z.string().trim().max(1000, "En fazla 1000 karakter").nullable().optional());
+export const PatientHealthNotesInput = z.object({ chronicConditions: healthText, regularMedications: healthText, allergies: healthText });
 
 // ---------------------------------------------------------------- hasta yakınları
 export const RELATIONS = ["mother", "father", "legal_guardian", "spouse", "child", "sibling", "relative", "other"] as const;

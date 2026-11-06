@@ -66,10 +66,11 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
         </div>
         <div className="card-pad">
           <div className="net-tiles">
-            <NetTile label="Açık borç" value={t.openDebt} tone={minor(t.openDebt) > 0n ? "warning" : "neutral"} active={explain === "debt"} onClick={() => setExplain(explain === "debt" ? null : "debt")} />
+            {/* 07.11.2026: toplam borç → toplam ödeme → kalan ödeme sırasıyla (ürün sahibi geri bildirimi). */}
+            <NetTile label="Toplam borç" value={t.receivable} sub={minor(t.cancelledReceivable) > 0n ? `Tedavi ve elle alacak · iptal edilen: ${formatTRY(t.cancelledReceivable)}` : "Tedavi ve elle alacak"} />
+            <NetTile label="Toplam ödeme" value={t.paid} sub={minor(t.refunded) > 0n ? `İade: ${formatTRY(t.refunded)}` : undefined} active={explain === "paid"} onClick={() => setExplain(explain === "paid" ? null : "paid")} />
+            <NetTile label="Kalan ödeme" value={t.openDebt} sub="Açık borç" tone={minor(t.openDebt) > 0n ? "warning" : "neutral"} active={explain === "debt"} onClick={() => setExplain(explain === "debt" ? null : "debt")} />
             <NetTile label="Kullanılabilir avans" value={t.advance} tone={minor(t.advance) > 0n ? "info" : "neutral"} active={explain === "advance"} onClick={() => setExplain(explain === "advance" ? null : "advance")} />
-            <NetTile label="Toplam tahsilat" value={t.paid} sub={minor(t.refunded) > 0n ? `İade: ${formatTRY(t.refunded)}` : undefined} active={explain === "paid"} onClick={() => setExplain(explain === "paid" ? null : "paid")} />
-            <NetTile label="Toplam borçlandırma" value={t.receivable} sub={minor(t.cancelledReceivable) > 0n ? `İptal edilen: ${formatTRY(t.cancelledReceivable)}` : undefined} />
           </div>
           {explain && <ExplainPanel kind={explain} a={a} />}
           <p className={`small ${a.reconciled ? "muted" : ""}`} style={{ marginTop: 10, color: a.reconciled ? undefined : "var(--error)" }}>
@@ -116,7 +117,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
                 {a.payments.map((p) => (
                   <tr key={p.id}>
                     <td>{fmtDateTime(p.paidAt)}<div className="small muted">{p.receivedBy}{p.receiptNo && <> · makbuz <span className="mono">{p.receiptNo}</span></>}</div></td>
-                    <td>{p.method === "online" ? <>Online <span className="badge badge-warning">MOCK sağlayıcı</span></> : PAYMENT_METHOD_LABELS[p.method]}</td>
+                    <td>{p.method === "online" ? <>Online <span className="badge badge-warning">Deneme sağlayıcı</span></> : PAYMENT_METHOD_LABELS[p.method]}</td>
                     <td>{p.accountName}</td>
                     <td className="money">{formatTRY(p.amount)}</td>
                     <td className="money">{formatTRY(p.allocated)}</td>

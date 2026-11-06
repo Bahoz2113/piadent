@@ -88,18 +88,15 @@ export type Permission = (typeof PERMISSIONS)[number];
 const base: Permission[] = ["patient.read", "patient.phone.read", "appointment.read", "task.read", "task.write", "treatment.read"];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
-  // Yönetici unvanı tüm klinik sağlık içeriğine sınırsız erişim anlamına gelmez (§05).
-  clinic_admin: [...base, "patient.write", "appointment.write", "audit.read", "team.manage", "schedule.manage", "settings.manage", "finance.read", "catalog.manage",
-    "account.read", "finance.settings",
-    "document.read", "document.revoke", "template.manage", "anamnesis.template", "file.read", "file.delete", "communication.write", "message.send",
-    "integration.read", "integration.manage", "integration.approve",
-    "lab.read", "lab.write", "lab.cost", "supplier.manage", "supplier.ledger", "stock.read", "stock.write", "stock.manage",
-    "report.operations", "report.clinical", "report.analytics", "report.export", "audit.clinic",
-    "import.manage", "export.clinic", "export.patient"],
+  // ADR-098 (ürün sahibi kararı 07.11.2026): yönetici her şeyi görür ve yapabilir — sağlık içeriği dahil. Önceki §05 kısıtı
+  // (yönetici unvanı sağlık içeriğine erişim vermez) kaldırıldı; sağlık kaydı görüntüleme ve klinik yazma denetime düşer.
+  clinic_admin: [...PERMISSIONS],
   dentist: [...base, "patient.write", "patient.identity.unmask", "patient.health.read", "clinical_note.write", "anamnesis.write", "anamnesis.review", "anamnesis.template", "appointment.write", "audit.read",
     "treatment.write", "treatment.decision", "procedure.complete", "diagnosis.write",
     "document.read", "document.issue", "document.decision", "document.revoke", "file.read", "file.write", "file.delete", "communication.write",
-    "followup.write", "readiness.exception", "lab.read", "lab.write", "lab.decide", "stock.read", "stock.write", "report.clinical"],
+    "followup.write", "readiness.exception", "lab.read", "lab.write", "lab.decide", "stock.read", "stock.write", "report.clinical",
+    // 07.11.2026 (ADR-102): hekim hastalara bilgi mesajı gönderir ve zamanlar (izin kontrolü aynen geçerli).
+    "message.send"],
   // Sekreterya vezne işini yapar (tahsilat, avans dağıtımı) ama iade yapamaz ve gelir raporlarını göremez (§05).
   secretary: [...base, "patient.write", "patient.identity.unmask", "appointment.write", "treatment.decision", "account.read", "payment.write",
     "document.read", "document.issue", "document.decision", "file.read", "file.write", "communication.write", "message.send",

@@ -1,0 +1,12 @@
+{
+ "checks": [
+  {
+   "check": "malzeme girişi 201",
+   "pass": true
+  },
+  {
+   "check": "Malzemeler'de 3 × 33,30 = 99,90",
+   "pass": true
+  }
+ ]
+}
