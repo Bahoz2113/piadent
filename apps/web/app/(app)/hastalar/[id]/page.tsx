@@ -53,6 +53,7 @@ function PatientInner() {
   const { can, tz } = useSession();
   const [tab, setTab] = useState<TabId>(() => (TABS.some((t) => t.id === params.get("sekme")) ? (params.get("sekme") as TabId) : "ozet"));
   const [editing, setEditing] = useState(params.get("duzenle") === "1");
+  const [healthVer, setHealthVer] = useState(0); // sağlık özeti kaydedilince başlıktaki uyarılar yenilenir
   const toast = useToast();
   const [revealed, setRevealed] = useState<string | null>(null);
   // Kimlik no varsayılan maskeli; tam değer gerekçeyle açılır ve denetim kaydına yazılır (ADR-063).
@@ -124,7 +125,7 @@ function PatientInner() {
             </div>
             {/* 07.11.2026 (ADR-100): anamnez uyarıları yerine sağlık özeti (kronik hastalık / ilaç / alerji). */}
             <div className="row" style={{ marginTop: 8, gap: 6, flexWrap: "wrap" }} role="group" aria-label="Uyarılar">
-              <HealthChips patientId={p.id} />
+              <HealthChips key={healthVer} patientId={p.id} />
               {p.isMinor && <span className="badge badge-info">18 yaş altı{p.legalRepresentativeCount === 0 ? " · yasal temsilci yok" : ""}</span>}
             </div>
           </div>
@@ -191,7 +192,7 @@ function PatientInner() {
         )}
         {tab === "saglik" && (can("patient.health.read") ? (
           <div className="stack" style={{ gap: 16 }}>
-            <HealthNotesCard patientId={p.id} onSaved={() => { void patient.reload(); }} />
+            <HealthNotesCard patientId={p.id} onSaved={() => { setHealthVer((v) => v + 1); void patient.reload(); }} />
             <ClinicalNotes patientId={p.id} canWrite={can("clinical_note.write")} />
           </div>
         ) : (

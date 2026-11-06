@@ -26,10 +26,11 @@ test("hekim: sağlık özetini girer ve başlıkta uyarı görür; sekreter içe
   await expect(page.getByRole("heading", { name: /^Anamnez/ })).toHaveCount(0);
   await page.getByRole("button", { name: /^(Ekle|Düzenle)$/ }).first().click();
   const dr = page.getByRole("dialog", { name: "Sağlık özeti" });
-  await dr.getByLabel("Alerji").fill("Penisilin (sentetik E2E)");
+  const allergy = `Penisilin (sentetik E2E ${Date.now().toString().slice(-6)})`; // koşu başına farklı: aynı değer formu kirletmez
+  await dr.getByRole("textbox", { name: "Alerji", exact: true }).fill(allergy);
   await dr.getByRole("button", { name: "Kaydet" }).click();
   await expect(dr).toBeHidden();
-  await expect(page.locator(".chip-alert", { hasText: "Alerji: Penisilin (sentetik E2E)" })).toBeVisible();
+  await expect(page.locator(".chip-alert", { hasText: `Alerji: ${allergy}`.slice(0, 47) })).toBeVisible(); // başlık 40 karakterde kısaltır
   await noOverflow(page);
 
   const sec = await (browser as Browser).newPage();
