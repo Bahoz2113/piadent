@@ -1,0 +1,29 @@
+{
+ "case": "V04",
+ "run": "mw69pyj6",
+ "receivable": 201,
+ "concurrentStatuses": [
+  201,
+  201
+ ],
+ "sequentialStatus": 201,
+ "replayHeaders": 2,
+ "singlePaymentId": true,
+ "paymentsOf300": 1,
+ "openDebtBefore": "1800.00",
+ "expectedAfter": "2500.00",
+ "openDebtAfter300": "2500.00",
+ "advance": "0.00",
+ "reconciled": true,
+ "cashMovementRefs": 0,
+ "refund": {
+  "allocationReverse": 201,
+  "refund": 201,
+  "refundsCount": 1,
+  "openDebtAfter": "2800.00",
+  "advanceAfter": "200.00",
+  "reconciled": true
+ },
+ "timeline": [],
+ "verdict": "PASS"
+}

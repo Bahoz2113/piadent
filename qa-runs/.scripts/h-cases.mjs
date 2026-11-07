@@ -170,10 +170,17 @@ const DCM = Buffer.concat([Buffer.alloc(128), Buffer.from("DICM"), Buffer.from("
     const r = await api(A.sec, "POST", "/patients", { firstName: "Cins", lastName: `${g}${RUN}`, gender: g, acknowledgeDuplicates: true }); ok(r.status === want, `cinsiyet ${g} ${r.status}`, c);
   }
   const db = await q("select pg_get_constraintdef(oid) as d from pg_constraint where conname = 'patients_gender_check'"); ok(/'female'.*'male'.*'unspecified'/.test(db[0]?.d ?? "") && !/other/.test(db[0]?.d ?? ""), `DB kısıtı ${db[0]?.d}`, c);
-  let bad = false; try { await q("update patients set gender = 'other' where id = (select id from patients limit 1)"); } catch { bad = true; } ok(bad, "DB 'other' yazımını reddeder", c);
+  // Tester düzeltmesi (tur3): hata alan transaction geri alınmadan bağlantı havuza dönüyordu (25P02); ayrı bağlantı + rollback.
+  let bad = false; { const cl = await pool.connect(); try { await cl.query("begin"); await cl.query("select set_config('app.tenant_id', $1, true)", [TENANT]);
+    await cl.query("update patients set gender = 'other' where id = (select id from patients limit 1)"); } catch { bad = true; } finally { await cl.query("rollback").catch(() => {}); cl.release(); } }
+  ok(bad, "DB 'other' yazımını reddeder", c);
   const fresh = (await q("select count(*)::int as n from patients where gender = 'other'"))[0].n; ok(fresh === 0, `'other' kayıt ${fresh}`, c);
   const ap = await api(A.fin, "GET", "/me/appearance"); ok(ap.status === 200 && ap.body.scheme === "light" && ap.body.accent === "mavi" && ap.body.scale === 3, `başlangıç görünümü ${JSON.stringify(ap.body)}`, c);
-  const ses = (await (await fetch(`${BASE}/api/v1/session`, { headers: { cookie: A.fin.cookie } })).json()); ok(!ses.user.appearance || Object.keys(ses.user.appearance).length === 0, "seçim yapmamış kullanıcıda saklı görünüm yok (varsayılan istemcide)", c);
+  // Tester düzeltmesi (tur4): oturum yanıtı görünümü varsayılanla doldurulmuş döner; saklı değer DB'de boş kalmalı.
+  const ses = (await (await fetch(`${BASE}/api/v1/session`, { headers: { cookie: A.fin.cookie } })).json());
+  ok(JSON.stringify(ses.user.appearance) === '{"scheme":"light","accent":"mavi","scale":3}', `oturumda başlangıç görünümü ${JSON.stringify(ses.user.appearance)}`, c);
+  const stored = (await pool.query("select appearance from users where email = 'finans@demo-yesil.test'")).rows[0]?.appearance;
+  ok(!stored || Object.keys(stored).length === 0, `seçim yapmamış kullanıcıda saklı görünüm yok (${JSON.stringify(stored)})`, c);
   rec("H09", c);
 }
 
