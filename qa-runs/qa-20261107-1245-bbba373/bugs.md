@@ -38,3 +38,4 @@
 ## Tur 8 (df0ea1d) — son tam tur
 - 69 zorunlu vakanın hepsi PASS: HTTP + tarayıcı (masaüstü 1366 + 360 px), H01–H09, V06 EŞLEŞTİ, R01 414/414, R02 21/21, R03 113/113, R04/R05 E2E 118 geçti / 10 bilinçli atlama / 0 hata, R06, R07.
 - QA-401 ve QA-402 VERIFIED (bugs.json). Açık bulgu yok.
+- Tur 8 sonrası yeni revizyon 6fe082d (ADR-104 eki: katalog uygulama içinden tamamlanır — canlı demoda 0037'nin büyük SQL'i yerine). Plan'a H10 eklendi; tam tur tur9.

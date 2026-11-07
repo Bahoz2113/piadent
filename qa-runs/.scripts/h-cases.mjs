@@ -164,6 +164,21 @@ const DCM = Buffer.concat([Buffer.alloc(128), Buffer.from("DICM"), Buffer.from("
   rec("H05", c, ` (doğrulama: ${vr.join(", ")})`);
 }
 
+// H10 — ADR-104 ek: katalog uygulama içinden tamamlanır (canlı demo yolu); B kiracısı etkilenmez; tekrar yazmaz
+{ const c = [];
+  const bBefore = (await q("select count(*)::int as n from template_versions", [], B.admin.tenantId))[0].n;
+  await q("update template_versions v set status = 'retired' from templates t, document_types d where v.template_id = t.id and t.document_type_id = d.id and d.code in ('APIKAL-REZ-ONAM','ORTO-SONU-BILGI') and v.status = 'approved'");
+  const gone = (await api(A.sec, "GET", "/document-types")).body.items.filter((t) => ["APIKAL-REZ-ONAM", "ORTO-SONU-BILGI"].includes(t.code));
+  ok(gone.length === 2 && gone.every((t) => t.approvedTemplates.length === 1), `şablonu kaldırılan 2 tür ilk açılışta yeniden şablonlu (${gone.map((t) => t.approvedTemplates.length).join("/")})`, c);
+  const n1 = (await q("select count(*)::int as n from template_versions"))[0].n; await api(A.sec, "GET", "/document-types");
+  ok((await q("select count(*)::int as n from template_versions"))[0].n === n1, "ikinci açılış yazmaz", c);
+  ok((await q("select count(*)::int as n from audit_events where action = 'document_catalog.install'"))[0].n >= 1, "denetim olayı", c);
+  ok((await q("select count(*)::int as n from template_versions", [], B.admin.tenantId))[0].n === bBefore, "B kiracısı değişmedi", c);
+  const pv = await api(A.sec, "POST", `/template-versions/${gone[0].approvedTemplates[0].versionId}/preview`, { patientId: await newPatient("Kat") });
+  ok(pv.status === 200 && /^PİA-DENT ÖRNEK METİN \(DEMO\)/.test(pv.body.content), `yeni şablon önizlenir ${pv.status}`, c);
+  rec("H10", c);
+}
+
 // H09 — ADR-106: cinsiyet üç seçenek; başlangıç görünümü açık + mavi (seçim yapmamış kullanıcı)
 { const c = [];
   for (const [g, want] of [["female", 201], ["male", 201], ["unspecified", 201], ["other", 422], ["diger", 422]]) {
