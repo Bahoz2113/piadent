@@ -1,0 +1,16 @@
+{
+ "patientCreate": 201,
+ "uploadClinical": 201,
+ "uploadAdmin": 201,
+ "adminFileListStatus": 200,
+ "adminListSeesClinical": true,
+ "adminListSeesAdministrative": true,
+ "adminExportStatus": 200,
+ "adminExportHasClinicalFile": true,
+ "adminExportHasAdministrativeFile": true,
+ "exportOmitted": [],
+ "exportFileSensitivities": [
+  "administrative:identity",
+  "clinical:radiograph"
+ ]
+}

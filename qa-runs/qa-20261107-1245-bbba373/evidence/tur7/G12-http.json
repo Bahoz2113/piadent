@@ -1,0 +1,44 @@
+{
+ "checks": [
+  {
+   "check": "Netgsm hazır değil → DENEME",
+   "pass": true
+  },
+  {
+   "check": "durumda sır yok",
+   "pass": true
+  },
+  {
+   "check": "gönder 1/1",
+   "pass": true
+  },
+  {
+   "check": "zamanla",
+   "pass": true
+  },
+  {
+   "check": "kural",
+   "pass": true
+  },
+  {
+   "check": "zamanı gelen alarm kuyrukta",
+   "pass": true
+  },
+  {
+   "check": "kural bir kez",
+   "pass": true
+  },
+  {
+   "check": "şablon doldu",
+   "pass": true
+  },
+  {
+   "check": "izinsize mesaj yok",
+   "pass": true
+  },
+  {
+   "check": "sağlayıcı DENEME",
+   "pass": true
+  }
+ ]
+}

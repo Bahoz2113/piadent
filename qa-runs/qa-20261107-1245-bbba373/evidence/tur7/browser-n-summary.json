@@ -1,0 +1,90 @@
+{
+ "at": "2026-11-07T11:23:48.576Z",
+ "base": "http://127.0.0.1:3000",
+ "results": [
+  {
+   "profile": "masaustu",
+   "id": "N01",
+   "status": "PASS",
+   "summary": "listede TM-2026-000007; pencere no+uyarı=true; taşma 0",
+   "evidence": "evidence/tur7/masaustu-N01-makbuz-pencere.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "N02",
+   "status": "PASS",
+   "summary": "liste: DENEME rozeti=true, iptal=true, taslak 'numara yok'=true; ayrıntıda 'resmî belge değil'=true, TASLAK ibaresi yok=true; sekreter düğmesi 0; taşma 0",
+   "evidence": "evidence/tur7/masaustu-N02-fatura.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "N04",
+   "status": "PASS",
+   "summary": "Sağlık özeti kartı=true; eski anamnez paneli yok=true",
+   "evidence": "evidence/tur7/masaustu-N04-anamnez.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "N05",
+   "status": "PASS",
+   "summary": "Belgeler'de epikriz görünür=false; Geçmiş'te belge olayı görünür=false",
+   "evidence": "evidence/tur7/masaustu-N05-sekreter-gecmis.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "N06",
+   "status": "PASS",
+   "summary": "uygulandı {\"scheme\":\"dark\",\"accent\":\"lacivert\",\"scale\":\"4\",\"root\":\"17px\"}; axe ciddi/kritik []; yenilemede dark/lacivert; varsayılan mavi/16px; taşma 0",
+   "evidence": "evidence/tur7/masaustu-N06-koyu-panel.jpg"
+  },
+  {
+   "profile": "masaustu",
+   "id": "N09",
+   "status": "PASS",
+   "summary": "stok satırı display=table-row (beklenen table-row), etiket Kalem, Sayım açıldı=true; taşma stok 0 rapor 0; ham kod=false; Excel=true",
+   "evidence": "evidence/tur7/masaustu-N09-stok.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "N01",
+   "status": "PASS",
+   "summary": "listede TM-2026-000007; pencere no+uyarı=true; taşma 0",
+   "evidence": "evidence/tur7/mobil-N01-makbuz-pencere.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "N02",
+   "status": "PASS",
+   "summary": "liste: DENEME rozeti=true, iptal=true, taslak 'numara yok'=true; ayrıntıda 'resmî belge değil'=true, TASLAK ibaresi yok=true; sekreter düğmesi 0; taşma 0",
+   "evidence": "evidence/tur7/mobil-N02-fatura.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "N04",
+   "status": "PASS",
+   "summary": "Sağlık özeti kartı=true; eski anamnez paneli yok=true",
+   "evidence": "evidence/tur7/mobil-N04-anamnez.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "N05",
+   "status": "PASS",
+   "summary": "Belgeler'de epikriz görünür=false; Geçmiş'te belge olayı görünür=false",
+   "evidence": "evidence/tur7/mobil-N05-sekreter-gecmis.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "N06",
+   "status": "PASS",
+   "summary": "uygulandı {\"scheme\":\"dark\",\"accent\":\"lacivert\",\"scale\":\"4\",\"root\":\"17px\"}; axe ciddi/kritik []; yenilemede dark/lacivert; varsayılan mavi/16px; taşma 0",
+   "evidence": "evidence/tur7/mobil-N06-koyu-panel.jpg"
+  },
+  {
+   "profile": "mobil",
+   "id": "N09",
+   "status": "PASS",
+   "summary": "stok satırı display=grid (beklenen grid), etiket Kalem, Sayım açıldı=true; taşma stok 0 rapor 0; ham kod=false; Excel=true",
+   "evidence": "evidence/tur7/mobil-N09-stok.jpg"
+  }
+ ]
+}

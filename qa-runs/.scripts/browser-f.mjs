@@ -241,6 +241,8 @@ for (const profile of ["masaustu", "mobil"]) {
     await page.getByRole("heading", { name: "Randevu ver", level: 1 }).waitFor();
     const d = page.locator("main");
     const sel = d.getByRole("combobox", { name: "İşlem", exact: true });
+    // Tester düzeltmesi (tur7): işlem listesi sayfa açıldıktan sonra yüklenir; sayım yüklenmeyi beklemeden yapılıyordu (yarış). Ölçüt aynı (> 50).
+    await sel.locator("option").nth(50).waitFor({ state: "attached", timeout: 8000 }).catch(() => {});
     const opts = await sel.locator("option").allInnerTexts();
     const twoSelects = (await d.getByLabel("İşlem türü").count()) + (await d.getByLabel("Planlanan işlem").count());
     await sel.selectOption((await sel.locator("option", { hasText: "Diş taşı temizliği" }).first().getAttribute("value")));

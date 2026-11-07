@@ -1,0 +1,22 @@
+{
+ "secPrint": 404,
+ "secPrintFake": 404,
+ "secDecision": 404,
+ "secDecisionFake": 404,
+ "admRevoke": 404,
+ "admRevokeFake": 404,
+ "secFileLink": 422,
+ "secFileLinkFake": 422,
+ "statusAfter": "issued",
+ "evidenceDelta": 0,
+ "drPrint": 200,
+ "adminExportStatus": 200,
+ "adminExportHasClinicalDoc": true,
+ "adminExportOmitted": [],
+ "dentistExportStatus": 403,
+ "dentistExportStatusHasDoc": true,
+ "onamSecretaryHasClinical": false,
+ "onamSecretaryStatus": 200,
+ "secHistoryHasDoc2": false,
+ "drRevoke": 200
+}

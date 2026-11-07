@@ -1,1 +1,4 @@
-[]
+[
+ { "id": "QA-401", "severity": "S3", "state": "VERIFIED", "title": "Odontogram erişilebilir adında bulgu tedavi işaretlerinin arkasında", "evidence": "evidence/tur1/R04-R05-e2e-temiz-seed.log", "retestEvidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log", "cases": ["R04", "R05"] },
+ { "id": "QA-402", "severity": "S3", "state": "VERIFIED", "title": "appointment-past-procedure testi saate bağlı olarak seed randevusuyla çakışıyor (FLAKY)", "evidence": "evidence/tur5/R01-api.log", "retestEvidence": "evidence/tur8/R01-api.log", "cases": ["R01"] }
+]

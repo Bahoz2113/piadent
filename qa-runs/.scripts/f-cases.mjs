@@ -83,7 +83,10 @@ const summary = { run: RUN };
   const c = []; const pid = await newPatient("Gecmis");
   const before = (await q("select count(*)::int n from appointments where patient_id=$1", [pid]))[0].n;
   ok((await q("select count(*)::int n from patients where id=$1", [pid]))[0].n === 1, "doğrulama bağlamı: hasta DB'de görünür (pozitif kontrol)", c);
-  const base = { patientId: pid, practitionerId: prac, durationMinutes: 30, allowOutsideHours: true };
+  // Tester düzeltmesi (tur6, QA-402 ile aynı kök neden): "şimdi"ye göre açılan randevular seed hekiminin gün içi randevularıyla
+  // (ör. 14:00) çakışabiliyordu → F01 için koşuya özel hekim. Beklentiler aynı.
+  const pracF01 = (await api(A.admin, "POST", "/practitioners", { displayName: `Zz Dt. QA F01 ${Date.now().toString(36).slice(-5)}` })).body.id;
+  const base = { patientId: pid, practitionerId: pracF01, durationMinutes: 30, allowOutsideHours: true };
   const y = await api(A.sec, "POST", "/appointments", { ...base, date: day(-1), startTime: "10:00" });
   const h2 = await api(A.sec, "POST", "/appointments", { ...base, ...{ date: at(-120).date, startTime: at(-120).time } });
   ok(y.status === 422 && y.body.code === "APPOINTMENT_IN_PAST" && y.body.field_errors?.date, "dün → 422 APPOINTMENT_IN_PAST + alan hatası", c);
