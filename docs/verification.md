@@ -15,6 +15,9 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
+## CEZERİ teslim testi (07.11.2026, sürüm f91df0d) — 07.11 geri bildirimi 2. paket (ADR-103…106)
+Koşu klasörü `qa-runs/qa-20261107-1245-bbba373/` (plan.json kilitli 70 zorunlu vaka: önceki 60 + H01–H10; results.json; bugs.md QA-401…403; fix1–3.md; release.md; evidence/tur1…tur11 maskeli). Karar: `node qa/cezeri/gate.cjs … f91df0d → TESLİME ADAY` (çıkış 0). Son tur (11, temiz seed, çalışan süreç sürümü `evidence/tur11/stack-version.txt`): 70/70 PASS, 0 FLAKY/NOT_RUN; API **415/415**; contracts 21; web 113; typecheck 5/5; audit 0; **E2E 118 geçti + 10 atlama, 0 hata**; V06 yedek → izole geri yükleme mutabakatı EŞLEŞTİ. Tur 9 sayılmadı (test ortamı arızası: eski API süreci). Bulgular QA-401…403 hepsi VERIFIED. Canlıda yalnız oturumsuz duman testi (`deployment.md` §11c).
+
 ## CEZERİ teslim testi (02.11.2026, sürüm 95ac8de) — Faz 0–4 teslim adayı
 Koşu klasörü `qa-runs/qa-20261102-1209-12fc6fd/` (plan.json kilitli 27 zorunlu vaka + 8 profil; results.json = results-tur7.json; bugs.md; handoff.md Devir 1–6; fix1–6.md; release.md; evidence/tur1…tur7 maskeli). Karar: `node qa/cezeri/gate.cjs … → TESLİME ADAY` (çıkış 0). Son tur (7, temiz seed): V01–V05 + P01–P03 HTTP 8/8; N01–N10 9/9 HTTP + N11 sondaları; tarayıcı masaüstü + 360 px 22/22; V06 şifreli yedek → izole geri yükleme `differences=[]`, 25 sütunlu bağımsız mutabakat EŞLEŞTİ; API **364/364**; contracts 15; web 72; typecheck 5/5; audit 0; **E2E temiz seed 89 geçti + 9 atlama, 0 hata, retries=0**; RLS 75/75 FORCE. Bulgular QA-101…110 hepsi VERIFIED. Canlı ortamda koşulmadı.
 
