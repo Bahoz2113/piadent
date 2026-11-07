@@ -61,7 +61,7 @@ describe("diş durumu türetme", () => {
     });
     expect(s["17"]!.visual.caries).toEqual(["D"]);
     expect(s["17"]!.visual.filled).toEqual(["O"]);
-    expect(visualLabels(s["17"]!.visual)).toEqual(["Dolgu (O)", "Çürük (D)"]);
+    expect(visualLabels(s["17"]!.visual)).toEqual(["Çürük (D)", "Dolgu (O)"]);
     expect(s["17"]!.records.map((r) => r.kind)).toEqual(["done", "planned", "finding", "diagnosis"]);
     expect(s["17"]!).toMatchObject({ planned: 1, diagnoses: 1 });
     expect(s["18"]!.visual).toMatchObject({ missing: true, extracted: false });

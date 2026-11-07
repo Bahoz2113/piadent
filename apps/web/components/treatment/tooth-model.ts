@@ -128,6 +128,10 @@ export function visualLabels(v: ToothVisual): string[] {
   const out: string[] = [];
   if (v.extracted) out.push(TOOTH_EFFECT_LABELS.extraction);
   else if (v.missing) out.push(FINDING_LABELS.missing);
+  // QA-401: güncel sorun (çürük, kırık) tedavi işaretlerinden önce
+  if (v.cariesWhole) out.push("Çürük");
+  else if (v.caries.length) out.push(`Çürük (${v.caries.join("")})`);
+  if (v.fracture) out.push(FINDING_LABELS.fracture);
   if (v.implant) out.push(TOOTH_EFFECT_LABELS.implant);
   if (v.pontic) out.push(FINDING_LABELS.bridge_pontic);
   if (v.crown) out.push(TOOTH_EFFECT_LABELS.crown);
@@ -138,8 +142,5 @@ export function visualLabels(v: ToothVisual): string[] {
   if (v.sealant) out.push(TOOTH_EFFECT_LABELS.sealant);
   if (v.fillWhole) out.push("Dolgu");
   else if (v.filled.length) out.push(`Dolgu (${v.filled.join("")})`);
-  if (v.cariesWhole) out.push("Çürük");
-  else if (v.caries.length) out.push(`Çürük (${v.caries.join("")})`);
-  if (v.fracture) out.push(FINDING_LABELS.fracture);
   return out;
 }
