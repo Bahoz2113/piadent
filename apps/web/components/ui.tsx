@@ -7,8 +7,8 @@ import { confirmDialog } from "@/components/dialogs";
 import { createDrawerCloser, handleDrawerEscape, type DrawerLatest } from "@/components/drawer-close";
 
 // ---------------------------------------------------------------- çekmece
-export function Drawer({ title, subtitle, onClose, children, footer, dirty }: {
-  title: string; subtitle?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; dirty?: boolean;
+export function Drawer({ title, subtitle, onClose, children, footer, dirty, wide }: {
+  title: string; subtitle?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; dirty?: boolean; wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -44,7 +44,7 @@ export function Drawer({ title, subtitle, onClose, children, footer, dirty }: {
   return (
     <>
       <div className="drawer-backdrop" onClick={() => void tryClose()} />
-      <div className="drawer" role="dialog" aria-modal="true" aria-label={title} ref={ref}>
+      <div className={`drawer${wide ? " drawer-wide" : ""}`} role="dialog" aria-modal="true" aria-label={title} ref={ref}>
         <div className="drawer-head">
           <div>
             <h2 id={titleId}>{title}</h2>

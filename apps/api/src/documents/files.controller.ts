@@ -54,12 +54,17 @@ export class FilesController {
         [i.patientDocumentId, i.patientId, has(ctx, "patient.health.read")])).rowCount) {
         throw Errors.validation({ patientDocumentId: "Belge bu hastaya ait değil." });
       }
+      if (i.takenOn) {
+        const today = (await c.query("select (now() at time zone $1)::date::text as d", [ctx.timezone])).rows[0].d as string;
+        if (i.takenOn > today || i.takenOn < "1900-01-01") throw Errors.validation({ takenOn: "Çekim tarihi gelecekte olamaz." });
+      }
       const fid = (await c.query("select gen_random_uuid() as id")).rows[0].id as string;
       await c.query(
-        `insert into file_assets(id, tenant_id, patient_id, appointment_id, patient_document_id, category, sensitivity, original_name, declared_type, declared_size, object_key, uploaded_by)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+        `insert into file_assets(id, tenant_id, patient_id, appointment_id, patient_document_id, category, sensitivity, original_name, declared_type, declared_size, object_key, uploaded_by,
+                                 imaging_kind, taken_on, teeth, imaging_note)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
         [fid, ctx.tenantId, i.patientId, i.appointmentId ?? null, i.patientDocumentId ?? null, i.category, sensitivity, i.originalName, i.contentType, i.size,
-         objectKey(ctx.tenantId, fid), ctx.userId]);
+         objectKey(ctx.tenantId, fid), ctx.userId, i.imagingKind ?? null, i.imagingKind ? (i.takenOn ?? null) : null, i.teeth ?? [], i.imagingNote ?? null]);
       await this.event(c, ctx, fid, "upload_initiated");
       return { id: fid, status: "initiated", uploadPath: `/files/${fid}/content` };
     });
@@ -109,14 +114,15 @@ export class FilesController {
       if (!(await c.query("select 1 from patients where id = $1", [patientId])).rowCount) throw Errors.notFound("Hasta");
       const r = await c.query(
         `select f.id, f.category, f.sensitivity, f.original_name, f.declared_type, f.declared_size, f.size_bytes, f.sha256, f.status, f.status_reason,
-                f.scan_engine, f.scanned_at, f.created_at, f.available_at, f.upload_failures, f.patient_document_id, u.full_name as uploaded_by
+                f.scan_engine, f.scanned_at, f.created_at, f.available_at, f.upload_failures, f.patient_document_id, u.full_name as uploaded_by,
+                f.imaging_kind, f.taken_on::text as taken_on, f.teeth, f.imaging_note
            from file_assets f join users u on u.id = f.uploaded_by
           where f.patient_id = $1 and ${VISIBLE} order by f.created_at desc`,
         [patientId, has(ctx, "patient.health.read")]);
       return { items: r.rows.map((f) => ({ id: f.id, category: f.category, sensitivity: f.sensitivity, name: f.original_name, contentType: f.declared_type,
         size: Number(f.size_bytes ?? f.declared_size), sha256: f.sha256, status: f.status, statusReason: f.status_reason, scanEngine: f.scan_engine,
         scannedAt: f.scanned_at, createdAt: f.created_at, availableAt: f.available_at, uploadFailures: f.upload_failures, patientDocumentId: f.patient_document_id,
-        uploadedBy: f.uploaded_by })) };
+        uploadedBy: f.uploaded_by, imagingKind: f.imaging_kind, takenOn: f.taken_on, teeth: f.teeth ?? [], imagingNote: f.imaging_note })) };
     });
   }
 

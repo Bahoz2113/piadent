@@ -22,3 +22,4 @@ export * from "./audit";
 export * from "./appearance";
 export * from "./invoices";
 export * from "./procedures-standard";
+export * from "./document-templates-standard";

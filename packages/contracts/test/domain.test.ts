@@ -134,3 +134,31 @@ describe("içe aktarma başlık eşlemesi (ADR-069)", () => {
     expect(bad.missing).toEqual(["first_name", "last_name"]);
   });
 });
+
+describe("odontogram işlem yansıması (ADR-103)", async () => {
+  const { procedureToothEffects, toothKind, STANDARD_PROCEDURES } = await import("../src/index");
+  it("standart kodlar dişe doğru iz bırakır", () => {
+    expect(procedureToothEffects("DOL-02", "Kompozit dolgu (iki yüz)")).toEqual(["filling"]);
+    expect(procedureToothEffects("CEK-03", "x")).toEqual(["extraction"]);
+    expect(procedureToothEffects("KAN-01", "x")).toEqual(["root_canal"]);
+    expect(procedureToothEffects("IMP-02", "x")).toEqual(["implant", "crown"]);
+    expect(procedureToothEffects("KRN-01", "x")).toEqual(["crown"]);
+    expect(procedureToothEffects("LAM-01", "x")).toEqual(["veneer"]);
+    expect(procedureToothEffects("RAD-01", "Periapikal röntgen")).toEqual([]);
+    expect(procedureToothEffects("KAN-05", "Kuafaj / pulpa örtüleme")).toEqual([]); // kanal kelimesi geçse de değil
+  });
+  it("kliniğin kendi işlemi adla eşlenir; bilinmeyen iz bırakmaz", () => {
+    expect(procedureToothEffects("X-9", "Yirmi yaş DİŞ ÇEKİMİ")).toEqual(["extraction"]);
+    expect(procedureToothEffects("Z1", "Amalgam dolgu")).toEqual(["filling"]);
+    expect(procedureToothEffects("Z2", "İmplant üstü kuron")).toEqual(["implant", "crown"]);
+    expect(procedureToothEffects("Z3", "Diş taşı temizliği")).toEqual([]);
+    expect(procedureToothEffects(null, null)).toEqual([]);
+  });
+  it("standart listedeki diş/yüzey kapsamlı her işlem bilinçli olarak eşlenmiş", () => {
+    const unmapped = STANDARD_PROCEDURES.filter((p) => (p.toothScope === "tooth" || p.toothScope === "surface") && procedureToothEffects(p.code, p.name).length === 0).map((p) => p.code);
+    expect(unmapped.sort()).toEqual(["ANS-01", "CER-01", "IMP-03", "KAN-05", "PED-03", "RAD-01"]);
+  });
+  it("diş türü", () => {
+    expect(["11", "12", "13", "14", "16", "38", "51", "53", "55"].map(toothKind)).toEqual(["central", "lateral", "canine", "premolar", "molar", "molar", "central", "canine", "molar"]);
+  });
+});

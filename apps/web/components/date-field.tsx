@@ -4,7 +4,7 @@
  * - Değer sözleşmesi dışa doğru ISO (yyyy-mm-dd) kalır: onChange, yalnız `target.value` okunan ChangeEvent benzeri bir nesne alır,
  *   böylece mevcut `set("alan")` işleyicileri değişmeden çalışır. Geçersiz/eksik giriş dışa yayılmaz; alan altında yerel hata gösterilir.
  * - Yazarken noktalar kendiliğinden eklenir; ISO yapıştırma (yyyy-mm-dd) da kabul edilir (E2E ve kopyala-yapıştır uyumu).
- * - Takvim: ok tuşlarıyla gün, PageUp/PageDown ile ay, Home/End ile hafta başı/sonu; Enter seçer, Esc kapatır. min/max dışı günler kapalı.
+ * - Takvim: başlıkta ay ve yıl seçimi (uzak yıllara tek adımda); ok tuşlarıyla gün, PageUp/PageDown ile ay, Home/End ile hafta başı/sonu; Enter seçer, Esc kapatır. min/max dışı günler kapalı.
  * - Tarayıcının yerel `type="date"` denetimi kullanılmaz: biçimi işletim sistemi diline bağlıdır ve klinik standardı gg.aa.yyyy'dir.
  */
 import { useEffect, useId, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
@@ -157,6 +157,11 @@ export function DateField({ label, value, onChange, min, max, required, disabled
   const n = daysIn(vy, vm);
   const cells: (string | null)[] = [...Array<null>(lead).fill(null), ...Array.from({ length: n }, (_, i) => `${vy}-${pad(vm)}-${pad(i + 1)}`)];
   while (cells.length % 7) cells.push(null);
+  // Yıl seçimi (07.11.2026 geri bildirimi): doğum tarihi gibi uzak yıllara ay ay geri gitmeden atlanır. Aralık min/max'a göre; yeni yıllar üstte.
+  const todayY = Number((today ?? new Date().toISOString().slice(0, 10)).slice(0, 4));
+  const yMin = Math.min(min ? Number(min.slice(0, 4)) : 1900, vy);
+  const yMax = Math.max(max ? Number(max.slice(0, 4)) : todayY + 10, vy);
+  const years = Array.from({ length: yMax - yMin + 1 }, (_, i) => yMax - i);
   const shownErr = error ?? localErr ?? undefined;
   const labelId = `${id}-l`;
 
@@ -175,7 +180,15 @@ export function DateField({ label, value, onChange, min, max, required, disabled
         <div className="date-pop" role="dialog" aria-label={`${label} takvimi`} onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setOpen(false); document.getElementById(id)?.focus(); } }}>
           <div className="date-pop-head">
             <button type="button" className="btn btn-ghost btn-icon" aria-label="Önceki ay" onClick={() => setView(addMonths(vy, vm, -1))}><ChevronLeft size={16} aria-hidden /></button>
-            <strong aria-live="polite">{MONTHS[vm - 1]} {vy}</strong>
+            <div className="date-pop-title">
+              <select className="date-pop-select" aria-label="Ay" value={vm} onChange={(e) => setView([vy, Number(e.target.value)])}>
+                {MONTHS.map((mName, i) => <option key={mName} value={i + 1}>{mName}</option>)}
+              </select>
+              <select className="date-pop-select" aria-label="Yıl" value={vy} onChange={(e) => setView([Number(e.target.value), vm])}>
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <span className="sr-only" aria-live="polite">{MONTHS[vm - 1]} {vy}</span>
+            </div>
             <button type="button" className="btn btn-ghost btn-icon" aria-label="Sonraki ay" onClick={() => setView(addMonths(vy, vm, 1))}><ChevronRight size={16} aria-hidden /></button>
           </div>
           <div className="date-grid" role="grid" aria-labelledby={labelId} ref={gridRef} onKeyDown={onGridKey}>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isoDate } from "./zdate";
+import { ALL_TEETH } from "./dental";
 
 const uuid = z.uuid("Geçersiz kimlik");
 const optText = (max: number) => z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().max(max).optional());
@@ -109,19 +110,43 @@ export const FILE_CATEGORY_LABELS: Record<FileCategory, string> = {
 export const FILE_SENSITIVITY: Record<FileCategory, "clinical" | "administrative"> = {
   radiograph: "clinical", clinical_photo: "clinical", clinical_document: "clinical", document_scan: "administrative", identity: "administrative", other: "administrative",
 };
-export const FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"] as const;
+export const FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf", "application/dicom"] as const;
+/** Görüntüleme dışı dosyalar (belge taraması vb.) DICOM almaz. */
+export const DOCUMENT_FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"] as const;
 export const FILE_MAX_BYTES = 20 * 1024 * 1024;
 export const FILE_STATUS_LABELS: Record<string, string> = {
   initiated: "Yükleme bekleniyor", uploaded: "Taranıyor", quarantined: "Karantinada", available: "Kullanılabilir", rejected: "Reddedildi", deleted: "Silindi",
 };
+/**
+ * Görüntüleme türleri (ADR-105). Fotoğraflar clinical_photo, diğerleri radiograph kategorisine yazılır (ikisi de sağlık verisi).
+ * MR / ultrason dişhekimliği dışı kaynaktan gelen rapor görüntüsü olarak da saklanabilir.
+ */
+export const IMAGING_KINDS = ["periapical", "panoramic", "bitewing", "cephalometric", "occlusal", "cbct", "ct", "mr", "ultrasound", "intraoral_photo", "extraoral_photo", "other"] as const;
+export type ImagingKind = (typeof IMAGING_KINDS)[number];
+export const IMAGING_KIND_LABELS: Record<ImagingKind, string> = {
+  periapical: "Periapikal röntgen", panoramic: "Panoramik röntgen", bitewing: "Bitewing röntgen", cephalometric: "Sefalometrik röntgen",
+  occlusal: "Okluzal röntgen", cbct: "Konik ışınlı tomografi (CBCT)", ct: "Bilgisayarlı tomografi (BT)", mr: "MR görüntüsü", ultrasound: "Ultrason",
+  intraoral_photo: "Ağız içi fotoğraf", extraoral_photo: "Ağız dışı / yüz fotoğrafı", other: "Diğer görüntüleme",
+};
+export const imagingCategory = (k: ImagingKind): "radiograph" | "clinical_photo" => (k === "intraoral_photo" || k === "extraoral_photo" ? "clinical_photo" : "radiograph");
+
 export const FileInitiate = z.object({
   patientId: uuid,
   category: z.enum(FILE_CATEGORIES),
   originalName: z.string().trim().min(1).max(200),
-  contentType: z.enum(FILE_TYPES, "Desteklenen türler: JPEG, PNG, WEBP, PDF"),
+  contentType: z.enum(FILE_TYPES, "Desteklenen türler: JPEG, PNG, WEBP, PDF, DICOM"),
   size: z.number().int().min(1, "Boş dosya").max(FILE_MAX_BYTES, "En fazla 20 MB"),
   appointmentId: uuid.optional(),
   patientDocumentId: uuid.optional(),
+  imagingKind: z.enum(IMAGING_KINDS, "Görüntüleme türü seçin").optional(),
+  takenOn: isoDate.optional(),
+  teeth: z.array(z.string().refine((t) => ALL_TEETH.has(t), "Geçersiz diş numarası (FDI)")).max(32).optional(),
+  imagingNote: optText(500),
+}).superRefine((v, ctx) => {
+  if (v.imagingKind && v.category !== imagingCategory(v.imagingKind)) ctx.addIssue({ code: "custom", path: ["category"], message: "Görüntüleme türüyle kategori uyuşmuyor." });
+  if (!v.imagingKind && (v.takenOn || v.teeth?.length || v.imagingNote)) ctx.addIssue({ code: "custom", path: ["imagingKind"], message: "Görüntüleme türü seçin." });
+  if (v.contentType === "application/dicom" && v.category !== "radiograph") ctx.addIssue({ code: "custom", path: ["contentType"], message: "DICOM yalnız röntgen / tomografi / MR görüntülemesi olarak yüklenir." });
+  if (v.teeth && new Set(v.teeth).size !== v.teeth.length) ctx.addIssue({ code: "custom", path: ["teeth"], message: "Aynı diş iki kez yazılmış." });
 });
 export const FileDelete = z.object({ reason: z.string().trim().min(3, "Gerekçe gerekli").max(300) });
 

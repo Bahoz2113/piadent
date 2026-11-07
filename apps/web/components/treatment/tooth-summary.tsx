@@ -3,18 +3,18 @@
  * Hasta kartı Özet: diş şeması (madde 4). İşlem yapılan dişler işaretli; dişe tıklayınca o dişe uygulanan, planlanan işlemler ve
  * bulgular görünür. Salt okunur — kayıt işlemleri Tedavi sekmesinde. Sağlık verisi olduğundan yalnız `patient.health.read` (ADR-085).
  */
-import { useMemo, useState } from "react";
-import { FINDING_LABELS, type FindingType } from "@viadent/contracts";
+import { useEffect, useMemo, useState } from "react";
+import { type FindingType } from "@viadent/contracts";
 import { useData } from "@/lib/use-data";
 import { useSession } from "@/lib/session";
-import { fmtDate } from "@/lib/format";
 import { Alert, ErrorState, Loading } from "@/components/ui";
-import { Odontogram, toothStates } from "./odontogram";
+import { Odontogram, ToothRecords, toothStates, toothTitle } from "./odontogram";
+import { visualLabels } from "./tooth-model";
 
 type Loc = { kind: string; tooth?: string | null; surfaces?: string[] };
 interface Chart {
-  findings: { id: string; tooth: string; surfaces: string[]; type: FindingType; status: string }[];
-  diagnoses: { id: string; location: Loc; description: string; status: string }[];
+  findings: { id: string; tooth: string; surfaces: string[]; type: FindingType; status: string; at: string; by: string }[];
+  diagnoses: { id: string; location: Loc; code: string | null; description: string; status: string; at: string; by: string }[];
   planned: { id: string; code: string; name: string; location: Loc; quantity: number; performedQty: number }[];
   performed: { id: string; code: string; name: string; location: Loc; status: string; at: string; practitioner: string }[];
 }
@@ -26,24 +26,23 @@ export function ToothSummaryCard({ patientId, onOpenTreatment }: { patientId: st
   const [tooth, setTooth] = useState<string | null>(null);
   const [dentition, setDentition] = useState<"permanent" | "primary" | "mixed">("permanent");
   const states = useMemo(() => toothStates(chart.data), [chart.data]);
+  // Süt dişinde kayıt varsa karma diziyle aç (çocuk hasta); kullanıcı değiştirdiyse dokunma.
+  const [touched, setTouched] = useState(false);
+  useEffect(() => { if (!touched && Object.keys(states).some((t) => /^[5-8]/.test(t))) setDentition("mixed"); }, [states, touched]);
   if (!health) return null;
   const doneTeeth = Object.entries(states).filter(([, s]) => s.done > 0).map(([t]) => t).sort();
-  const sel = chart.data && tooth ? {
-    done: chart.data.performed.filter((x) => x.location.tooth === tooth && x.status === "completed"),
-    planned: chart.data.planned.filter((x) => x.location.tooth === tooth && x.performedQty < x.quantity),
-    findings: chart.data.findings.filter((x) => x.tooth === tooth && x.status === "current"),
-  } : null;
+  const sel = tooth ? states[tooth] : undefined;
   return (
     <section className="card" aria-label="Diş şeması">
       <div className="card-head">
         <div>
           <h2>Diş şeması</h2>
-          <p className="muted small">{doneTeeth.length ? `İşlem yapılan dişler: ${doneTeeth.join(", ")}` : "Henüz dişe bağlı tamamlanmış işlem yok."} Ayrıntı için dişe tıklayın.</p>
+          <p className="muted small">{doneTeeth.length ? `İşlem yapılan dişler: ${doneTeeth.join(", ")}` : "Henüz dişe bağlı tamamlanmış işlem yok."} Dişin üstüne gelin ya da dokunun: yapılan işlemler tarih ve hekimle görünür.</p>
         </div>
         <div className="row">
           <div className="row" role="group" aria-label="Diş dizisi">
             {(["permanent", "primary", "mixed"] as const).map((d) => (
-              <button key={d} className={`btn btn-sm ${dentition === d ? "btn-primary" : ""}`} aria-pressed={dentition === d} onClick={() => setDentition(d)}>
+              <button key={d} className={`btn btn-sm ${dentition === d ? "btn-primary" : ""}`} aria-pressed={dentition === d} onClick={() => { setDentition(d); setTouched(true); }}>
                 {{ permanent: "Daimi", primary: "Süt", mixed: "Karma" }[d]}
               </button>
             ))}
@@ -54,16 +53,11 @@ export function ToothSummaryCard({ patientId, onOpenTreatment }: { patientId: st
       {chart.loading && !chart.data ? <Loading /> : chart.error ? <ErrorState error={chart.error} /> : (
         <div className="card-pad">
           <Odontogram dentition={dentition} states={states} selected={tooth} onSelect={(t) => setTooth(t === tooth ? null : t)} />
-          {sel && (
+          {tooth && (
             <div className="tooth-detail" aria-live="polite">
-              <h3>Diş {tooth}</h3>
-              {sel.done.length + sel.planned.length + sel.findings.length === 0 ? <p className="muted small">Bu dişe ait kayıt yok.</p> : (
-                <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-                  <div><h4 className="small muted">Uygulanan işlemler</h4>{sel.done.length ? sel.done.map((x) => <p key={x.id} className="small"><strong>{x.code}</strong> {x.name}{x.location.surfaces?.length ? ` (${x.location.surfaces.join("")})` : ""} · {fmtDate(x.at)} · {x.practitioner}</p>) : <p className="small muted">Yok</p>}</div>
-                  <div><h4 className="small muted">Planlanan</h4>{sel.planned.length ? sel.planned.map((x) => <p key={x.id} className="small"><strong>{x.code}</strong> {x.name} · {x.performedQty}/{x.quantity}</p>) : <p className="small muted">Yok</p>}</div>
-                  <div><h4 className="small muted">Mevcut durum</h4>{sel.findings.length ? sel.findings.map((x) => <p key={x.id} className="small">{FINDING_LABELS[x.type]}{x.surfaces.length ? ` (${x.surfaces.join("")})` : ""}</p>) : <p className="small muted">Yok</p>}</div>
-                </div>
-              )}
+              <h3>{toothTitle(tooth)}</h3>
+              {sel && visualLabels(sel.visual).length > 0 && <div className="tooth-tip-state" style={{ marginBottom: 8 }}>{visualLabels(sel.visual).map((x) => <span key={x} className="badge badge-neutral">{x}</span>)}</div>}
+              <ToothRecords state={sel} />
             </div>
           )}
         </div>

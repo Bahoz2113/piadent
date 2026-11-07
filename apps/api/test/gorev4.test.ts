@@ -80,10 +80,11 @@ afterAll(async () => { await app.close(); rmSync(dir, { recursive: true, force: 
 describe("belge kataloğu ve şablon", () => {
   it("PİA-DENT kataloğu DEMO/incelenmemiş; sentetik onaylı şablonlar var; finans belge göremez", async () => {
     const types = (await dentist.get("/document-types").expect(200)).body.items;
-    expect(types.length).toBe(20); // 17 + 3 klinik çıktı türü (ADR-085)
+    expect(types.length).toBe(42); // ADR-104: PİA-DENT standart katalog (39 tür + 3 klinik çıktı)
     expect(types.every((t: { reviewStatus: string }) => t.reviewStatus === "demo_unreviewed")).toBe(true);
     const withTpl = types.filter((t: { approvedTemplates: unknown[] }) => t.approvedTemplates.length > 0);
-    expect(withTpl.map((t: { code: string }) => t.code).sort()).toEqual(["ENDO-ONAM", "EPIKRIZ", "GENEL-ONAM", "HASTA-FOYU", "RECETE"]);
+    // ADR-104 (07.11.2026 kabul değişikliği): her türde onaylı DEMO şablon var — listeden seçilen belge kendiliğinden dolar.
+    expect(withTpl.length).toBe(types.length);
     expect(withTpl.every((t: { approvedTemplates: { isDemo: boolean }[] }) => t.approvedTemplates[0]!.isDemo)).toBe(true);
     expect((await fin.get("/document-types")).status).toBe(403);
   });
@@ -112,7 +113,7 @@ describe("AT-14 belge üretimi, kanıt ve şablon sürümü", () => {
     patientId = await newPatient("Asude");
     v1 = (await approvedVersion("ENDO-ONAM")).versionId!;
     const pv = (await sec.post(`/template-versions/${v1}/preview`, { patientId }).expect(200)).body;
-    expect(pv.content).toMatch(/SENTETİK DEMO BELGESİ/);
+    expect(pv.content).toMatch(/PİA-DENT ÖRNEK METİN \(DEMO\)/);
     expect(pv.content).toMatch(/Asude Belge/);
     expect(pv.isDemo).toBe(true);
     const d = (await sec.post("/documents", { patientId, templateVersionId: v1 }).expect(201)).body;

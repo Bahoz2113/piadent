@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { CalendarPlus, History, Lock, NotebookPen, Pencil, FileText, Wallet, Stethoscope, MessageSquare, LayoutList, FlaskConical, FileDown } from "lucide-react";
+import { CalendarPlus, History, Lock, NotebookPen, Pencil, FileText, Wallet, Stethoscope, MessageSquare, LayoutList, FlaskConical, FileDown, ScanLine } from "lucide-react";
 import { formatTRY, GENDER_LABELS, GENDERS, NATIONAL_ID_LABELS, limitPhoneInput } from "@viadent/contracts";
 import { api, ApiFailure, download } from "@/lib/api";
 import { auditActionLabel, auditFieldLabel, auditValueLabel, formatPhone } from "@viadent/contracts";
@@ -19,6 +19,7 @@ import { TreatmentTab } from "@/components/treatment/treatment-tab";
 import { ToothSummaryCard } from "@/components/treatment/tooth-summary";
 import { AccountTab } from "@/components/finance/account-tab";
 import { DocumentsTab } from "@/components/documents/documents-tab";
+import { ImagingTab } from "@/components/patient/imaging-tab";
 import { CommunicationTab } from "@/components/communication/communication-tab";
 import { FollowUpsCard } from "@/components/care/follow-ups";
 import { PatientLabTab } from "@/components/operations/lab";
@@ -40,6 +41,7 @@ const TABS = [
   { id: "tedavi", label: "Tedavi", icon: Stethoscope },
   { id: "finans", label: "Finans", icon: Wallet },
   { id: "saglik", label: "Sağlık", icon: NotebookPen },
+  { id: "goruntuleme", label: "Görüntülemeler", icon: ScanLine },
   { id: "belgeler", label: "Belgeler", icon: FileText },
   { id: "iletisim", label: "İletişim", icon: MessageSquare },
   { id: "lab", label: "Laboratuvar", icon: FlaskConical },
@@ -200,6 +202,7 @@ function PatientInner() {
         ))}
         {tab === "gecmis" && <Timeline patientId={p.id} resources={res.data} />}
         {tab === "tedavi" && <div className="stack" style={{ gap: 16 }}><TreatmentTab patientId={p.id} onChanged={() => { void tasks.reload(); }} /><FollowUpsCard patientId={p.id} /></div>}
+        {tab === "goruntuleme" && <ImagingTab patientId={p.id} patientName={p.fullName} />}
         {tab === "belgeler" && <DocumentsTab patientId={p.id} patientName={p.fullName} />}
         {tab === "iletisim" && <CommunicationTab patientId={p.id} />}
         {tab === "lab" && (can("lab.read") || can("stock.read") ? (
