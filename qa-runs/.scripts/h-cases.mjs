@@ -174,7 +174,8 @@ const DCM = Buffer.concat([Buffer.alloc(128), Buffer.from("DICM"), Buffer.from("
   ok((await q("select count(*)::int as n from template_versions"))[0].n === n1, "ikinci açılış yazmaz", c);
   ok((await q("select count(*)::int as n from audit_events where action = 'document_catalog.install'"))[0].n >= 1, "denetim olayı", c);
   ok((await q("select count(*)::int as n from template_versions", [], B.admin.tenantId))[0].n === bBefore, "B kiracısı değişmedi", c);
-  const pv = await api(A.sec, "POST", `/template-versions/${gone[0].approvedTemplates[0].versionId}/preview`, { patientId: await newPatient("Kat") });
+  const vid = gone[0]?.approvedTemplates?.[0]?.versionId;
+  const pv = vid ? await api(A.sec, "POST", `/template-versions/${vid}/preview`, { patientId: await newPatient("Kat") }) : { status: "şablon yok", body: {} };
   ok(pv.status === 200 && /^PİA-DENT ÖRNEK METİN \(DEMO\)/.test(pv.body.content), `yeni şablon önizlenir ${pv.status}`, c);
   rec("H10", c);
 }

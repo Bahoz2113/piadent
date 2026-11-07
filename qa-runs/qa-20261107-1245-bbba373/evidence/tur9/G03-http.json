@@ -1,0 +1,20 @@
+{
+ "checks": [
+  {
+   "check": "gizli kartlar online-odeme,prim",
+   "pass": true
+  },
+  {
+   "check": "sekme raporları",
+   "pass": true
+  },
+  {
+   "check": "satır alınan/iade/net/yöntem",
+   "pass": true
+  },
+  {
+   "check": "satır toplamı = toplam",
+   "pass": true
+  }
+ ]
+}

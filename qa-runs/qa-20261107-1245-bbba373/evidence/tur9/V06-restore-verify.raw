@@ -1,0 +1,27 @@
+
+> viadent@0.1.0 db:restore-verify /home/claude/viadent
+> pnpm --filter @viadent/db run restore-verify .backups/viadent-viadent-2026-11-07T11-58-10-236Z --keep --target viadent_qa_restore_tur9
+
+
+> @viadent/db@ restore-verify /home/claude/viadent/packages/db
+> tsx src/backup-cli.ts restore-verify .backups/viadent-viadent-2026-11-07T11-58-10-236Z --keep --target viadent_qa_restore_tur9
+
+{
+  "ok": true,
+  "target": "viadent_qa_restore_tur9",
+  "kept": true,
+  "differences": [],
+  "timingsMs": {
+    "decrypt": 193,
+    "restore": 1168,
+    "verify": 94,
+    "total": 1455
+  },
+  "backupAgeMinutes": 0,
+  "files": {
+    "referenced": 5,
+    "present": 5,
+    "missing": 0,
+    "digest": "af5ca96097e7f32abd2e21ef30903bd578dcb0f803aee97009319dc420b22d9d"
+  }
+}

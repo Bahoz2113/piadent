@@ -1,0 +1,139 @@
+{
+ "checks": [
+  {
+   "check": "planlı randevu 409",
+   "pass": true
+  },
+  {
+   "check": "malzeme boş liste → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme miktar 0 → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme negatif → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme 4 ondalık → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme 31 kalem → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme geçersiz kimlik → 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter 403",
+   "pass": true
+  },
+  {
+   "check": "eksi stok 409, hiçbir satır yazılmadı",
+   "pass": true
+  },
+  {
+   "check": "idempotent",
+   "pass": true
+  },
+  {
+   "check": "hasta+randevu bağlı",
+   "pass": true
+  },
+  {
+   "check": "snapshot 100,00 / fiyatsız null",
+   "pass": true
+  },
+  {
+   "check": "gider 150.00, fiyatsız 1, asistan bedel görmez",
+   "pass": true
+  },
+  {
+   "check": "ters kayıt 201; finans bedel 0.00, katkı 0.00",
+   "pass": true
+  },
+  {
+   "check": "gider API 0.00 = DB 0.00",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı 404",
+   "pass": true
+  },
+  {
+   "check": "stok bakiyesi API 10.000 = DB 10.000",
+   "pass": true
+  }
+ ],
+ "materials": {
+  "appointmentId": "04ac879e-bebb-4584-a276-d9a07f2d7ac4",
+  "status": "checked_in",
+  "editable": false,
+  "items": [
+   {
+    "id": "31164975-2825-45f8-ae69-26f8a042752d",
+    "itemId": "1013c940-325e-4dbe-b52b-4ebac4ff83b6",
+    "code": "QA-Eciwzo",
+    "name": "‹name:16›",
+    "unit": "kutu",
+    "quantity": "1.500",
+    "unitCost": "100.00",
+    "lineCost": "150.00",
+    "lotNo": null,
+    "source": "manual",
+    "procedure": null,
+    "at": "2026-11-07T11:54:41.669Z",
+    "by": "‹by:7›",
+    "reversal": false,
+    "reversed": true,
+    "reason": "Randevuda ek malzeme · QA ek sarf — ğüş"
+   },
+   {
+    "id": "2bc0d3d3-b849-44ce-9d9c-91935b57130c",
+    "itemId": "2aec256c-00b1-43f7-97a1-688ed1253148",
+    "code": "QA-Gciwzo",
+    "name": "‹name:18›",
+    "unit": "paket",
+    "quantity": "2.000",
+    "unitCost": null,
+    "lineCost": null,
+    "lotNo": null,
+    "source": "manual",
+    "procedure": null,
+    "at": "2026-11-07T11:54:41.669Z",
+    "by": "‹by:7›",
+    "reversal": false,
+    "reversed": false,
+    "reason": "Randevuda ek malzeme · QA ek sarf — ğüş"
+   },
+   {
+    "id": "28664321-cfea-402a-ae88-451a4c7f2a3c",
+    "itemId": "1013c940-325e-4dbe-b52b-4ebac4ff83b6",
+    "code": "QA-Eciwzo",
+    "name": "‹name:16›",
+    "unit": "kutu",
+    "quantity": "-1.500",
+    "unitCost": "100.00",
+    "lineCost": "-150.00",
+    "lotNo": null,
+    "source": "manual",
+    "procedure": null,
+    "at": "2026-11-07T11:54:41.702Z",
+    "by": "‹by:7›",
+    "reversal": true,
+    "reversed": false,
+    "reason": "Ters kayıt: QA ters kayıt"
+   }
+  ],
+  "totals": {
+   "materialCost": "0.00",
+   "unknownCostLines": 1
+  },
+  "revenue": "0.00",
+  "contribution": "0.00"
+ }
+}

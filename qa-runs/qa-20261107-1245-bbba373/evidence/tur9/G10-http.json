@@ -1,0 +1,16 @@
+{
+ "checks": [
+  {
+   "check": "başlangıç listesi 15",
+   "pass": true
+  },
+  {
+   "check": "dolu aralık çıkarıldı",
+   "pass": true
+  },
+  {
+   "check": "B kliniği A hekimi 422",
+   "pass": true
+  }
+ ]
+}
