@@ -411,3 +411,9 @@ Dış erişimli demo için en az parçalı yol seçildi: Vercel'de tek Next.js p
 4. Sağlık verisi: yalnız `patient.health.read` rolleri (yönetici, hekim, asistan) görür ve yükler; sekreter/finans sekmeyi kilitli görür.
 5. DICOM (.dcm) saklanır ve indirilir (imza baytı "DICM" taramada doğrulanır); tarayıcıda önizleme yok. JPEG/PNG/WEBP görüntü, PDF çerçevede önizlenir. Sınır 20 MB; **canlı demo (Vercel) istek gövdesi ~4,5 MB ile sınırlıdır** — büyük dosyalar kalıcı sunucu kurulumunda yüklenir.
 6. Takvim (tarih alanı): başlıkta ay ve yıl seçimi (doğum tarihi gibi uzak yıllara tek adımda).
+
+## ADR-106 — Başlangıç görünümü "Mavi" palet; cinsiyet üç seçenek (07.11.2026, ürün sahibi kararı)
+**Karar:**
+1. Kullanıcı sisteme **açık şema + Mavi palet** ile başlar (ürün sahibinin örnek ekranları): birincil #1d4ed8 (kraliyet mavisi), menü #1e3a8a, zemin #eef2f7 (serin gri-mavi), kart beyaz, metin #0f172a, ikincil metin #475569; başarı #166534, hata #b91c1c. Koyu/loş şema için ayrı açık tonlar. WCAG AA tüm palet × şema bileşimlerinde testle denetlenir.
+2. Kullanıcı Hesabım / Görünüm'den değiştirebilir; seçimi saklanır. Daha önce elle seçim yapmış hesaplar kendi seçimini korur ("Varsayılana dön" yeni paleti verir). Yeşil palet seçenek olarak kalır ve özgün açık yüzeylerini korur. Logo değişmez (ADR-082).
+3. Cinsiyet yalnız **Kadın / Erkek / Belirtmek istemiyorum**; "Diğer" ve "Seçilmedi" kaldırıldı (girilmemiş kayıt boş kalabilir). Migration `0039`: varsa "diğer" kayıtları "belirtmek istemiyorum"a çevirir (canlıda 0), kısıt üç değere daralır.

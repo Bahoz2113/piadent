@@ -4,7 +4,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ACCENTS, ACCENT_DEFS, SCALE_PERCENT, SCHEMES } from "@viadent/contracts";
+import { ACCENTS, ACCENT_DEFS, DEFAULT_APPEARANCE, SCALE_PERCENT, SCHEMES } from "@viadent/contracts";
 
 const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
 function block(selector: string): Record<string, string> {
@@ -71,9 +71,21 @@ describe("vurgu paletleri × şema", () => {
       expect(d["brand-primary"]).toBe(def.dark.primary); expect(d["brand-deep"]).toBe(def.dark.deep); expect(d["on-primary"]).toBe("#0f1613");
     });
   }
-  it("varsayılan palet (yeşil, açık) :root ile aynı — görünüm ayarı yokken değişiklik yok", () => {
-    expect(root["brand-primary"]).toBe(ACCENT_DEFS.yesil.light.primary);
-    expect(root["brand-accent"]).toBe(ACCENT_DEFS.yesil.light.accent);
+  it("varsayılan palet (ADR-106: mavi, açık) :root ile aynı — görünüm ayarı yokken değişiklik yok", () => {
+    expect(root["brand-primary"]).toBe(ACCENT_DEFS.mavi.light.primary);
+    expect(root["brand-accent"]).toBe(ACCENT_DEFS.mavi.light.accent);
+    expect(root["brand-deep"]).toBe(ACCENT_DEFS.mavi.light.deep);
+    expect(DEFAULT_APPEARANCE).toEqual({ scheme: "light", accent: "mavi", scale: 3 });
+    // açık şema temel kontrastları (yeni serin zemin)
+    expect(ratio(root.text!, root.bg!)).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(root["text-secondary"]!, root.bg!)).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(root["text-secondary"]!, root.surface!)).toBeGreaterThanOrEqual(4.5);
+    for (const k of ["success", "warning", "error", "info"]) expect(ratio(root[k]!, root[`${k}-bg`]!), `${k} rozeti`).toBeGreaterThanOrEqual(4.5);
+  });
+  it("yeşil palet özgün açık yüzeylerini korur", () => {
+    const y = block('html[data-accent="yesil"]');
+    expect(y.bg).toBe("#f4f7f4"); expect(y.text).toBe("#172b27");
+    expect(ratio(y["text-secondary"]!, y.bg!)).toBeGreaterThanOrEqual(4.5);
   });
 });
 

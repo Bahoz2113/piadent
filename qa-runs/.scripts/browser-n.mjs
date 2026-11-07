@@ -118,7 +118,7 @@ for (const profile of ["masaustu", "mobil"]) {
     await shot(page, `${profile}-N06-koyu-bugun`);
     await page.goto(`${BASE}/hesabim`); await page.getByRole("button", { name: "Varsayılana dön" }).click(); await page.getByText("Kaydedildi (tüm cihazlarınızda)").waitFor();
     const a3 = await attrs(page);
-    const ok = a1.scheme === "dark" && a1.accent === "lacivert" && a1.scale === "4" && a1.root === "17px" && serious.length === 0 && a2.scheme === "dark" && a2.accent === "lacivert" && a3.accent === "yesil" && a3.root === "16px" && ov <= 0;
+    const ok = a1.scheme === "dark" && a1.accent === "lacivert" && a1.scale === "4" && a1.root === "17px" && serious.length === 0 && a2.scheme === "dark" && a2.accent === "lacivert" && a3.accent === "mavi" && a3.scheme === "light" && a3.root === "16px" && ov <= 0;
     rec(profile, "N06", ok ? "PASS" : "FAIL", `uygulandı ${JSON.stringify(a1)}; axe ciddi/kritik [${serious}]; yenilemede ${a2.scheme}/${a2.accent}; varsayılan ${a3.accent}/${a3.root}; taşma ${ov}`, `evidence/${TUR}/${profile}-N06-koyu-panel.jpg`);
     await ctx.close();
   } catch (e) { rec(profile, "N06", "FAIL", `istisna: ${e.message.split("\n")[0]}`); }

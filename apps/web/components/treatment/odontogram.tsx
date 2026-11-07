@@ -124,7 +124,7 @@ function OcclusalView({ tooth, v, w, selectedSurfaces, selected, onSurface, uid 
           );
         })}
       </g>
-      <path d={outline} fill="none" stroke={selected ? "#0F5C4D" : v.crown ? "#9C7A22" : C.outline} strokeWidth={selected ? 1.8 : 1.1}
+      <path d={outline} fill="none" stroke={selected ? "var(--brand-primary)" : v.crown ? "#9C7A22" : C.outline} strokeWidth={selected ? 1.8 : 1.1}
         strokeDasharray={v.missing ? "2 2" : undefined} />
       {v.implant && <circle cx="20" cy="20" r="3.2" fill={C.implant} stroke="#4A5660" strokeWidth="0.8" />}
     </svg>

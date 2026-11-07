@@ -8,7 +8,7 @@ export const SCHEMES = ["system", "light", "dim", "dark"] as const;
 export type Scheme = (typeof SCHEMES)[number];
 export const SCHEME_LABELS: Record<Scheme, string> = { system: "Cihaz ayarı", light: "Açık", dim: "Loş", dark: "Koyu" };
 
-export const ACCENTS = ["yesil", "deniz", "lacivert", "mor", "bordo", "kahve", "antrasit"] as const;
+export const ACCENTS = ["mavi", "yesil", "deniz", "lacivert", "mor", "bordo", "kahve", "antrasit"] as const;
 export type Accent = (typeof ACCENTS)[number];
 
 export interface AccentTokens { primary: string; primaryHover: string; deep: string; tint: string; accent: string; accentSurface: string }
@@ -16,7 +16,10 @@ export interface AccentDef { label: string; light: AccentTokens; dark: AccentTok
 
 /** Açık şema: primary beyaz üstünde ≥4.5:1. Koyu şema: primary koyu yüzey (#121a18 civarı) üstünde ≥4.5:1 (daha açık ton). */
 export const ACCENT_DEFS: Record<Accent, AccentDef> = {
-  yesil:    { label: "Yeşil (varsayılan)", light: { primary: "#0f5c4d", primaryHover: "#0c4c40", deep: "#123c34", tint: "#e3efeb", accent: "#c66b3d", accentSurface: "#f5e4da" },
+  // 07.11.2026 ürün sahibi kararı (ADR-106): başlangıç paleti — kraliyet mavisi birincil, serin gri-mavi zemin, beyaz kartlar, lacivert metin.
+  mavi:     { label: "Mavi (varsayılan)",   light: { primary: "#1d4ed8", primaryHover: "#1e40af", deep: "#1e3a8a", tint: "#e2e9fb", accent: "#b45309", accentSurface: "#fdf0dc" },
+                                            dark:  { primary: "#8fb1ff", primaryHover: "#a9c3ff", deep: "#15224a", tint: "#1c2a52", accent: "#f0b45b", accentSurface: "#3a2a12" } },
+  yesil:    { label: "Yeşil", light: { primary: "#0f5c4d", primaryHover: "#0c4c40", deep: "#123c34", tint: "#e3efeb", accent: "#c66b3d", accentSurface: "#f5e4da" },
                                             dark:  { primary: "#6fcfb6", primaryHover: "#8ad9c4", deep: "#0d2b25", tint: "#163b33", accent: "#e8956a", accentSurface: "#3a2418" } },
   deniz:    { label: "Deniz",               light: { primary: "#0b5d6b", primaryHover: "#094c57", deep: "#0f3c45", tint: "#e0eff1", accent: "#c2642a", accentSurface: "#f6e3d6" },
                                             dark:  { primary: "#67c7d6", primaryHover: "#86d3df", deep: "#0a2a30", tint: "#133a41", accent: "#e9955f", accentSurface: "#3b2416" } },
@@ -38,12 +41,13 @@ export type Scale = (typeof SCALES)[number];
 export const SCALE_PERCENT: Record<Scale, number> = { 1: 87.5, 2: 93.75, 3: 100, 4: 106.25, 5: 112.5 };
 
 export const Appearance = z.object({
-  scheme: z.enum(SCHEMES).default("system"),
-  accent: z.enum(ACCENTS).default("yesil"),
+  scheme: z.enum(SCHEMES).default("light"),
+  accent: z.enum(ACCENTS).default("mavi"),
   scale: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).default(3),
 }).strict();
 export type Appearance = z.infer<typeof Appearance>;
-export const DEFAULT_APPEARANCE: Appearance = { scheme: "system", accent: "yesil", scale: 3 };
+/** Başlangıç görünümü (ADR-106): açık şema + mavi palet. Kullanıcı Hesabım > Görünüm bölümünden değiştirir; seçimi saklanır. */
+export const DEFAULT_APPEARANCE: Appearance = { scheme: "light", accent: "mavi", scale: 3 };
 
 /** Bilinmeyen/bozuk değer varsayılana düşer (localStorage veya eski kayıt). */
 export function normalizeAppearance(v: unknown): Appearance {

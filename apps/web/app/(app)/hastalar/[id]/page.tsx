@@ -179,7 +179,7 @@ function PatientInner() {
                 <h2 style={{ marginBottom: 12 }}>Kimlik ve iletişim</h2>
                 <dl className="kv">
                   <dt>Doğum tarihi</dt><dd>{fmtDate(p.birthDate)}</dd>
-                  <dt>Cinsiyet</dt><dd>{p.gender ? GENDER_LABELS[p.gender] : "Belirtilmedi"}</dd>
+                  <dt>Cinsiyet</dt><dd>{p.gender ? GENDER_LABELS[p.gender] : "Girilmedi"}</dd>
                   <dt>Kimlik belgesi</dt><dd>{p.nationalIdType ? <>{NATIONAL_ID_LABELS[p.nationalIdType]}: {revealed ?? p.nationalId}
                     {can("patient.identity.unmask") && !revealed && <button className="btn btn-sm btn-ghost" style={{ marginLeft: 6 }} onClick={() => void reveal()}>Göster</button>}</> : "Belirtilmedi"}</dd>
                   <dt>E-posta</dt><dd>{p.email ?? "Belirtilmedi"}</dd>
@@ -344,7 +344,7 @@ function EditPatient({ p, practitioners, onClose, onSaved }: { p: Patient; pract
           <TextField label="Soyad" required value={f.lastName} onChange={set("lastName")} error={err?.fieldErrors.lastName} />
           <DateField label="Doğum tarihi" value={f.birthDate} onChange={set("birthDate")} error={err?.fieldErrors.birthDate} />
           <SelectField label="Cinsiyet" value={f.gender} onChange={set("gender")}>
-            <option value="">Seçilmedi</option>{GENDERS.map((g) => <option key={g} value={g}>{GENDER_LABELS[g]}</option>)}
+            <option value="" disabled hidden>Seçin</option>{GENDERS.map((g) => <option key={g} value={g}>{GENDER_LABELS[g]}</option>)}
           </SelectField>
           <TextField label="Telefon" type="tel" inputMode="tel" value={f.phone} onChange={(e) => setF((x) => ({ ...x, phone: limitPhoneInput(e.target.value) }))} error={err?.fieldErrors.phone} placeholder={p.phoneMasked ? p.phone ?? "" : "0555 123 45 67"} hint="0 ile 11, 0 olmadan 10 hane; yurt dışı + ile." />
           <TextField label="E-posta" type="email" value={f.email} onChange={set("email")} error={err?.fieldErrors.email} />

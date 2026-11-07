@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Kliniğin akışı, tek yerde.",
   robots: { index: false, follow: false },
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#123C34" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#1E3A8A" };
 
 // Nonce'lu CSP için her sayfa istek anında üretilir (statik ön üretim nonce taşıyamaz).
 export const dynamic = "force-dynamic";

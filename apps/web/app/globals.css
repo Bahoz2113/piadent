@@ -1,31 +1,32 @@
 /* PİA-DENT tasarım sistemi — tokenlar Plan §04'ten. Özgün düzen; rakip yerleşimi taklit edilmez. */
 :root {
-  --brand-primary: #0f5c4d;
-  --brand-primary-hover: #0c4c40;
-  --brand-deep: #123c34;
-  --brand-accent: #c66b3d;
-  --accent-surface: #f5e4da;
-  --bg: #f4f7f4;
+  /* ADR-106: başlangıç paleti "mavi" (açık şema). Diğer paletler html[data-accent] katmanıyla. */
+  --brand-primary: #1d4ed8;
+  --brand-primary-hover: #1e40af;
+  --brand-deep: #1e3a8a;
+  --brand-accent: #b45309;
+  --accent-surface: #fdf0dc;
+  --bg: #eef2f7;
   --surface: #ffffff;
-  --surface-muted: #f8faf8;
-  --text: #172b27;
-  --text-secondary: #4f625d;
-  --border: #d8e3dd;
-  --border-strong: #b9c9c1;
+  --surface-muted: #f6f8fb;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --border: #d9e1ea;
+  --border-strong: #b6c2d1;
   --focus: #5b4bc4;
-  --success: #176b46;
-  --success-bg: #e3f2ea;
+  --success: #166534;
+  --success-bg: #e3f4e9;
   --warning: #7b4b00;
   --warning-bg: #fbefd9;
-  --error: #b42318;
-  --error-bg: #fbe7e5;
-  --info: #24527a;
-  --info-bg: #e5eef6;
-  --primary-tint: #e3efeb;
-  --error-border: #efc2bd; --error-text: #7a1a12;
+  --error: #b91c1c;
+  --error-bg: #fce8e8;
+  --info: #1e4f99;
+  --info-bg: #e6eefb;
+  --primary-tint: #e2e9fb;
+  --error-border: #f1c4c4; --error-text: #7f1414;
   --warning-border: #ecd3a5; --warning-text: #5c3800;
-  --info-border: #c4d6e6; --info-text: #1b3f5e;
-  --success-border: #b8dcc8; --success-text: #0f4c31;
+  --info-border: #c3d4f0; --info-text: #173c75;
+  --success-border: #b7dfc5; --success-text: #0f5530;
   --on-primary: #ffffff;
   --nav-text: rgba(255, 255, 255, 0.86); --nav-text-strong: #ffffff; --nav-hover: rgba(255, 255, 255, 0.08); --nav-chip: rgba(255, 255, 255, 0.12);
 
@@ -33,8 +34,8 @@
   --radius-sm: 10px;
   --radius: 12px;
   --radius-lg: 14px;
-  --shadow: 0 1px 2px rgba(18, 60, 52, 0.06), 0 1px 1px rgba(18, 60, 52, 0.04);
-  --shadow-lg: 0 12px 32px rgba(18, 60, 52, 0.16);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.16);
   --font: "Segoe UI", system-ui, -apple-system, Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   --nav-w: 244px;
   --top-h: 60px;
@@ -490,7 +491,11 @@ tr.drill:hover td { background: var(--primary-tint); }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
 
 /* ---------------------------------------------------------------- görünüm katmanları (ADR-082) — vurgu × şema; değerler @viadent/contracts ACCENT_DEFS ile aynı (test: appearance-css.test.ts) */
-html[data-accent="yesil"] { --brand-primary: #0f5c4d; --brand-primary-hover: #0c4c40; --brand-deep: #123c34; --primary-tint: #e3efeb; --brand-accent: #c66b3d; --accent-surface: #f5e4da; }
+html[data-accent="mavi"] { --brand-primary: #1d4ed8; --brand-primary-hover: #1e40af; --brand-deep: #1e3a8a; --primary-tint: #e2e9fb; --brand-accent: #b45309; --accent-surface: #fdf0dc; }
+html[data-accent="mavi"][data-scheme="dim"], html[data-accent="mavi"][data-scheme="dark"] { --brand-primary: #8fb1ff; --brand-primary-hover: #a9c3ff; --brand-deep: #15224a; --primary-tint: #1c2a52; --brand-accent: #f0b45b; --accent-surface: #3a2a12; --on-primary: #0f1613; }
+html[data-accent="yesil"] { --brand-primary: #0f5c4d; --brand-primary-hover: #0c4c40; --brand-deep: #123c34; --primary-tint: #e3efeb; --brand-accent: #c66b3d; --accent-surface: #f5e4da;
+  /* Yeşil paletin özgün açık şema yüzeyleri (koyu/loş şema katmanı sonra gelir ve bunları ezer). */
+  --bg: #f4f7f4; --surface-muted: #f8faf8; --text: #172b27; --text-secondary: #4f625d; --border: #d8e3dd; --border-strong: #b9c9c1; }
 html[data-accent="yesil"][data-scheme="dim"], html[data-accent="yesil"][data-scheme="dark"] { --brand-primary: #6fcfb6; --brand-primary-hover: #8ad9c4; --brand-deep: #0d2b25; --primary-tint: #163b33; --brand-accent: #e8956a; --accent-surface: #3a2418; --on-primary: #0f1613; }
 html[data-accent="deniz"] { --brand-primary: #0b5d6b; --brand-primary-hover: #094c57; --brand-deep: #0f3c45; --primary-tint: #e0eff1; --brand-accent: #c2642a; --accent-surface: #f6e3d6; }
 html[data-accent="deniz"][data-scheme="dim"], html[data-accent="deniz"][data-scheme="dark"] { --brand-primary: #67c7d6; --brand-primary-hover: #86d3df; --brand-deep: #0a2a30; --primary-tint: #133a41; --brand-accent: #e9955f; --accent-surface: #3b2416; --on-primary: #0f1613; }
