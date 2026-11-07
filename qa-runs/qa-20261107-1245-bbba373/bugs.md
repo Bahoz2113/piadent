@@ -17,3 +17,15 @@
 
 ## Tester betiği uyarlamaları (ADR-106 kabul değişikliği)
 - browser-n.mjs N06: "Varsayılana dön" sonrası beklenen `yesil` → `mavi` + `light` (ürün sahibi kararı; aynı vakanın diğer beklentileri değişmedi).
+- Tur 3 (cb21a24): h-cases.mjs H09 içindeki "DB 'other' reddi" sondası hata alan transaction'ı geri almadan bağlantıyı havuza bıraktı (25P02); betik H09'da durdu, h-summary yazılmadı (ortam/test betiği arızası, ürün kusuru değil). Düzeltme: ayrı bağlantı + rollback. Tam tur tur4 olarak yeniden koşuldu.
+- Tur 4 (cb21a24): iki tester beklentisi düzeltildi, ürün kusuru yok. (1) n-cases N06 HTTP: sekreterin varsayılan görünümü `yesil` bekleniyordu → ADR-106 ile `mavi` + `light` (kabul değişikliği). (2) h-cases H09: oturum yanıtının görünümü boş döndürdüğü varsayılmıştı; API görünümü varsayılanla doldurup döner (önceki sürümden beri böyle) → kontrol "oturumda açık+mavi, DB'de saklı değer yok" olarak doğru davranışa çevrildi. Tam tur tur5 olarak yeniden koşuldu.
+
+## Tur 5 (cb21a24) — 68 + H09
+- Tester vakaları hepsi PASS (H01–H05, H09 dahil); E2E 118 geçti / 10 bilinçli atlama / 0 hata; web 113/113; contracts 21/21; V06 EŞLEŞTİ.
+- R01: 413/414 — 1 hata → R01 FAIL.
+
+### QA-402 — appointment-past-procedure testi saate bağlı olarak seed randevusuyla çakışıyor (S3, FIX_READY, FLAKY)
+- Vaka: R01 (`apps/api/test/appointment-past-procedure.test.ts` "tolerans içinde (şimdiden birkaç dakika önce) ve ileri saat kabul edilir"). Kanıt: evidence/tur5/R01-api.log satır 13–28. Tur 1–4'te aynı test geçti (aralıklı → FLAKY).
+- Gözlenen: test 13:53'te koştu; seed'in ilk hekimine "şimdi − 5 dk" başlangıçlı 15 dk randevu açıyor (≈13:49–14:04). Seed aynı hekime bugün 14:00'te randevu koyuyor → 409 (çakışma), beklenen 201.
+- Kök neden: test kendi kaynağını kullanmıyor; seed'in ilk hekimi ve gün içi seed saatleri (09:00, 09:30, 10:00, 11:00, 14:00, 15:30) ile koşu saati çakışınca düşüyor. Ürün davranışı doğru (çakışma 409).
+- Beklenen: test kendine özel hekim (ve gerekiyorsa çalışma saati) oluşturarak saatten bağımsız olsun; beklentiler (201 / 422 / 409) değişmesin.
