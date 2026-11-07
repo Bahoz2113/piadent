@@ -7,3 +7,4 @@
 - Kimlik bilgileri `.demo-credentials`'tan ortam değişkeniyle; kayda/kanıta yazılmaz.
 - Son tur (tur 8) sürümü: `df0ea1d7da2b53527e53edf53b3da05d18f588ee` (bbba373 + ADR-106 cb21a24 + QA-401 fix1 844c180 + QA-402 fix2 df0ea1d), migration 0001–0039; 07.11.2026 14:49 (Europe/Istanbul).
 - Node v22.22.0, pnpm 10.28.0, Chromium (Playwright, /opt/pw-browsers/chromium).
+- Son tur (tur 11) sürümü: `f91df0dbf5bf7073d2be81be6014aba5ddc9cf07` (df0ea1d + ADR-104 eki 6fe082d uygulama içi katalog + QA-403 fix3 f91df0d), migration 0001–0039; çalışan süreç başlangıcı ve HEAD `evidence/tur11/stack-version.txt`; 07.11.2026 15:40 (Europe/Istanbul). Tur 9 ortam arızası (eski API süreci) nedeniyle sayılmadı; tur 10 QA-403 buldu.
