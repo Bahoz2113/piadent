@@ -1,4 +1,34 @@
 [
- { "id": "QA-401", "severity": "S3", "state": "VERIFIED", "title": "Odontogram erişilebilir adında bulgu tedavi işaretlerinin arkasında", "evidence": "evidence/tur1/R04-R05-e2e-temiz-seed.log", "retestEvidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log", "cases": ["R04", "R05"] },
- { "id": "QA-402", "severity": "S3", "state": "VERIFIED", "title": "appointment-past-procedure testi saate bağlı olarak seed randevusuyla çakışıyor (FLAKY)", "evidence": "evidence/tur5/R01-api.log", "retestEvidence": "evidence/tur8/R01-api.log", "cases": ["R01"] }
+  {
+    "id": "QA-401",
+    "severity": "S3",
+    "state": "VERIFIED",
+    "title": "Odontogram erişilebilir adında bulgu tedavi işaretlerinin arkasında",
+    "evidence": "evidence/tur1/R04-R05-e2e-temiz-seed.log",
+    "retestEvidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log",
+    "cases": [
+      "R04",
+      "R05"
+    ]
+  },
+  {
+    "id": "QA-402",
+    "severity": "S3",
+    "state": "VERIFIED",
+    "title": "appointment-past-procedure testi saate bağlı olarak seed randevusuyla çakışıyor (FLAKY)",
+    "evidence": "evidence/tur5/R01-api.log",
+    "retestEvidence": "evidence/tur8/R01-api.log",
+    "cases": [
+      "R01"
+    ]
+  },
+  {
+    "id": "QA-403",
+    "severity": "S3",
+    "status": "OPEN",
+    "owner": "geliştirme",
+    "rev": "6fe082d",
+    "title": "document_catalog.install denetim anahtarları (types/templates/replaced) Türkçe etiketsiz",
+    "evidence": "evidence/tur10/R03-web.log"
+  }
 ]

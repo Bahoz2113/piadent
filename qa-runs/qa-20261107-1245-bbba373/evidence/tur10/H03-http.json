@@ -1,0 +1,32 @@
+{
+ "checks": [
+  {
+   "check": "tür sayısı 42",
+   "pass": true
+  },
+  {
+   "check": "şablonsuz tür: yok",
+   "pass": true
+  },
+  {
+   "check": "önizleme 39/39",
+   "pass": true
+  },
+  {
+   "check": "DEMO işaretli 39",
+   "pass": true
+  },
+  {
+   "check": "yasak ifade: yok",
+   "pass": true
+  },
+  {
+   "check": "finans belge türleri 403",
+   "pass": true
+  },
+  {
+   "check": "diş çekimi onamı üretildi 201",
+   "pass": true
+  }
+ ]
+}

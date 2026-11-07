@@ -1,8 +1,8 @@
 {
- "runId": "qa-20261107-1245-bbba373-tur8",
- "revision": "df0ea1d7da2b53527e53edf53b3da05d18f588ee",
- "at": "2026-11-07T11:49:08.837Z",
- "round": 8,
+ "runId": "qa-20261107-1245-bbba373-tur10",
+ "revision": "6fe082d44f6067c90f1e43cbb00eda1ddd3f3384",
+ "at": "2026-11-07T12:24:03.046Z",
+ "round": 10,
  "environment": "environment.md",
  "inventory": "inventory.md",
  "inventoryComplete": true,
@@ -76,28 +76,29 @@
   "H06",
   "H07",
   "H08",
-  "H09"
+  "H09",
+  "H10"
  ],
  "profiles": [
   {
    "name": "http",
    "status": "PASS",
-   "evidence": "evidence/tur8/g-summary.json"
+   "evidence": "evidence/tur10/g-summary.json"
   },
   {
    "name": "chromium-desktop",
    "status": "PASS",
-   "evidence": "evidence/tur8/browser-f-summary.json"
+   "evidence": "evidence/tur10/browser-f-summary.json"
   },
   {
    "name": "chromium-mobile-emulation",
    "status": "PASS",
-   "evidence": "evidence/tur8/browser-f-summary.json"
+   "evidence": "evidence/tur10/browser-f-summary.json"
   },
   {
    "name": "cli",
    "status": "PASS",
-   "evidence": "evidence/tur8/V06-reconcile.txt"
+   "evidence": "evidence/tur10/V06-reconcile.txt"
   },
   {
    "name": "physical-mobile-device",
@@ -129,11 +130,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu · masaustu: B hasta sayfası sızıntı=false, arama satırı 0 · mobil: B hasta sayfası sızıntı=false, arama satırı 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/V01-http.json",
+   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu · masaustu: B hasta sayfası sızıntı=false, arama satırı 0 · mobil: B hasta sayfası sızıntı=false, arama satırı 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/V01-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-V01-b-tenant.jpg",
-    "evidence/tur8/mobil-V01-b-tenant.jpg"
+    "evidence/tur10/masaustu-V01-b-tenant.jpg",
+    "evidence/tur10/mobil-V01-b-tenant.jpg"
    ]
   },
   {
@@ -144,11 +145,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true · masaustu: diş 16 görünür=true, işlem metni=true, düzeltme izi=true · mobil: diş 16 görünür=true, işlem metni=true, düzeltme izi=true (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/V02-http.json",
+   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true · masaustu: diş 16 görünür=true, işlem metni=true, düzeltme izi=true · mobil: diş 16 görünür=true, işlem metni=true, düzeltme izi=true (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/V02-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-V02-tedavi.jpg",
-    "evidence/tur8/mobil-V02-tedavi.jpg"
+    "evidence/tur10/masaustu-V02-tedavi.jpg",
+    "evidence/tur10/mobil-V02-tedavi.jpg"
    ]
   },
   {
@@ -159,11 +160,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "eşzamanlı yanıtlar 201/409; 15:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT · masaustu: 01.02.2027 15:00 ajandada randevu bloğu 1 (metin eşleşmesi 2); API: 1 · mobil: 01.02.2027 15:00 ajandada randevu bloğu 1 (metin eşleşmesi 1); API: 1 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/V03-http.json",
+   "summary": "eşzamanlı yanıtlar 201/409; 09:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT · masaustu: 01.03.2027 09:00 ajandada randevu bloğu 1 (metin eşleşmesi 2); API: 1 · mobil: 01.03.2027 09:00 ajandada randevu bloğu 1 (metin eşleşmesi 1); API: 1 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/V03-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-V03-ajanda.jpg",
-    "evidence/tur8/mobil-V03-ajanda.jpg"
+    "evidence/tur10/masaustu-V03-ajanda.jpg",
+    "evidence/tur10/mobil-V03-ajanda.jpg"
    ]
   },
   {
@@ -174,11 +175,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201) · masaustu: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true · mobil: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/V04-http.json",
+   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201) · masaustu: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true · mobil: 300,00 geçişi 7, açık borç 2800.00 görünür=true, iade izi=true (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/V04-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-V04-finans.jpg",
-    "evidence/tur8/mobil-V04-finans.jpg"
+    "evidence/tur10/masaustu-V04-finans.jpg",
+    "evidence/tur10/mobil-V04-finans.jpg"
    ]
   },
   {
@@ -189,11 +190,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 0, finans: 0 · masaustu: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay) · mobil: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay) (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/V05-http.json",
+   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 0, finans: 0 · masaustu: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay) · mobil: hekim düzeltme izi=true; sekreter klinik bulgu olayı görüyor=false (API: 0 olay) (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/V05-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-V05-gecmis-sekreter.jpg",
-    "evidence/tur8/mobil-V05-gecmis-sekreter.jpg"
+    "evidence/tur10/masaustu-V05-gecmis-sekreter.jpg",
+    "evidence/tur10/mobil-V05-gecmis-sekreter.jpg"
    ]
   },
   {
@@ -202,10 +203,10 @@
    "profiles": [
     "cli"
    ],
-   "summary": "şifreli yedek → izole viadent_qa_restore_tur8; restore-verify ok=true, differences=[0]; dosya 5/5; bağımsız mutabakat (reconcile.sql) iki DB'de EŞLEŞTİ",
-   "evidence": "evidence/tur8/V06-reconcile.txt",
+   "summary": "şifreli yedek → izole viadent_qa_restore_tur10; restore-verify ok=true, differences=[0]; dosya 5/5; bağımsız mutabakat (reconcile.sql) iki DB'de EŞLEŞTİ",
+   "evidence": "evidence/tur10/V06-reconcile.txt",
    "extraEvidence": [
-    "evidence/tur8/V06-restore-verify.json"
+    "evidence/tur10/V06-restore-verify.json"
    ]
   },
   {
@@ -214,8 +215,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/P01-http.json",
+   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/P01-http.json",
    "extraEvidence": []
   },
   {
@@ -224,8 +225,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "28 deneme, 0 beklenmedik (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/P02-http.json",
+   "summary": "28 deneme, 0 beklenmedik (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/P02-http.json",
    "extraEvidence": []
   },
   {
@@ -234,8 +235,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "8 kontrol, 0 beklenmedik (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/P03-http.json",
+   "summary": "8 kontrol, 0 beklenmedik (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/P03-http.json",
    "extraEvidence": []
   },
   {
@@ -244,8 +245,8 @@
    "profiles": [
     "cli"
    ],
-   "summary": "vitest API 414/414 (gerçek PostgreSQL; geri-bildirim-0711b, adr-098-admin, geri-bildirim-0711, randevu-0711, messaging-0711 dahil)",
-   "evidence": "evidence/tur8/R01-api.log"
+   "summary": "vitest API 415/415 (gerçek PostgreSQL; geri-bildirim-0711b, adr-098-admin, geri-bildirim-0711, randevu-0711, messaging-0711 dahil)",
+   "evidence": "evidence/tur10/R01-api.log"
   },
   {
    "id": "R02",
@@ -254,16 +255,16 @@
     "cli"
    ],
    "summary": "contracts 21/21 (telefon hane kuralı dahil)",
-   "evidence": "evidence/tur8/R02-contracts.log"
+   "evidence": "evidence/tur10/R02-contracts.log"
   },
   {
    "id": "R03",
-   "status": "PASS",
+   "status": "FAIL",
    "profiles": [
     "cli"
    ],
-   "summary": "web birim 113/113",
-   "evidence": "evidence/tur8/R03-web.log"
+   "summary": "web birim ",
+   "evidence": "evidence/tur10/R03-web.log"
   },
   {
    "id": "R04",
@@ -273,7 +274,7 @@
     "chromium-mobile-emulation"
    ],
    "summary": "Playwright tam koşu temiz seed: 118 geçti + 10 bilinçli atlama, 0 hata, retries=0 (iki proje; geri-bildirim-0711, odontogram-0711, goruntuleme-0711 dahil)",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "R05",
@@ -282,7 +283,7 @@
     "chromium-mobile-emulation"
    ],
    "summary": "aynı koşu, telefon-360 projesi dahil",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "R06",
@@ -291,7 +292,7 @@
     "cli"
    ],
    "summary": "typecheck 5/5 Done; pnpm audit --prod: bilinen açık yok",
-   "evidence": "evidence/tur8/R06-typecheck-audit.log"
+   "evidence": "evidence/tur10/R06-typecheck-audit.log"
   },
   {
    "id": "R07",
@@ -300,7 +301,7 @@
     "cli"
    ],
    "summary": "82 kiracı tablosunun hepsi FORCE RLS, politikasız tablo yok; 0035–0036 tabloları (patient_health_notes, message_schedules, message_rules, message_rule_runs) FORCE RLS, uygulama rolünde DELETE yok; app rolü super/bypassrls/createrole=false",
-   "evidence": "evidence/tur8/R07-rls.txt"
+   "evidence": "evidence/tur10/R07-rls.txt"
   },
   {
    "id": "N01",
@@ -310,11 +311,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "TM ardışık 7,8,9,10,11; eşzamanlı 2 oturum 201/201 farklı no; replay aynı no; 422 numara tüketmedi=true; iade IM-2026-000002; yazdırma denetimi 1; asistan 403, B 404; değişmezlik=true · masaustu: listede TM-2026-000007; pencere no+uyarı=true; taşma 0 · mobil: listede TM-2026-000007; pencere no+uyarı=true; taşma 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/N01-http.json",
+   "summary": "TM ardışık 7,8,9,10,11; eşzamanlı 2 oturum 201/201 farklı no; replay aynı no; 422 numara tüketmedi=true; iade IM-2026-000002; yazdırma denetimi 1; asistan 403, B 404; değişmezlik=true · masaustu: listede TM-2026-000007; pencere no+uyarı=true; taşma 0 · mobil: listede TM-2026-000007; pencere no+uyarı=true; taşma 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/N01-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-N01-makbuz-pencere.jpg",
-    "evidence/tur8/mobil-N01-makbuz-pencere.jpg"
+    "evidence/tur10/masaustu-N01-makbuz-pencere.jpg",
+    "evidence/tur10/mobil-N01-makbuz-pencere.jpg"
    ]
   },
   {
@@ -325,11 +326,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "25 değer, beklenmedik 0; yuvarlama 0,60/0,10=true; Unicode ad korunur=true; roller sek 403/yön 201/B 404; sağlayıcısız gönder 409 numara=null; MOCK: issued MOCK2026C1C52AC64 → iptal cancelled · masaustu: liste: DENEME rozeti=true, iptal=true, taslak 'numara yok'=true; ayrıntıda 'resmî belge değil'=true, TASLAK ibaresi yok=true; sekreter düğmesi 0; taşma 0 · mobil: liste: DENEME rozeti=true, iptal=true, taslak 'numara yok'=true; ayrıntıda 'resmî belge değil'=true, TASLAK ibaresi yok=true; sekreter düğmesi 0; taşma 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/N02-http.json",
+   "summary": "25 değer, beklenmedik 0; yuvarlama 0,60/0,10=true; Unicode ad korunur=true; roller sek 403/yön 201/B 404; sağlayıcısız gönder 409 numara=null; MOCK: issued MOCK2026A3CDCE254 → iptal cancelled · masaustu: liste: DENEME rozeti=true, iptal=true, taslak 'numara yok'=true; ayrıntıda 'resmî belge değil'=true, TASLAK ibaresi yok=true; sekreter düğmesi 0; taşma 0 · mobil: liste: DENEME rozeti=true, iptal=true, taslak 'numara yok'=true; ayrıntıda 'resmî belge değil'=true, TASLAK ibaresi yok=true; sekreter düğmesi 0; taşma 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/N02-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-N02-fatura.jpg",
-    "evidence/tur8/mobil-N02-fatura.jpg"
+    "evidence/tur10/masaustu-N02-fatura.jpg",
+    "evidence/tur10/mobil-N02-fatura.jpg"
    ]
   },
   {
@@ -338,8 +339,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "ekran 11 satır = CSV 11; XLSX 21 (başlık+veri+8 toplam+dipnot); tahsilat/iade satırlarının hepsinde makbuz no (11/11); sekreter 403 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/N03-http.json",
+   "summary": "ekran 11 satır = CSV 11; XLSX 21 (başlık+veri+8 toplam+dipnot); tahsilat/iade satırlarının hepsinde makbuz no (11/11); sekreter 403 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/N03-http.json",
    "extraEvidence": []
   },
   {
@@ -350,11 +351,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "taslak 201, ikinci taslak 409; geçersiz şablon 422/422/422/422; yayın sekreter 403 hekim 200; yayınlanan düzenleme API 409 DB kilit=true; eski kayıt outdated=true; eski anahtar 422; yeni etiket Kalp pili var mı?; sekreter 403; B bağımsız · masaustu: Sağlık özeti kartı=true; eski anamnez paneli yok=true · mobil: Sağlık özeti kartı=true; eski anamnez paneli yok=true (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/N04-http.json",
+   "summary": "taslak 201, ikinci taslak 409; geçersiz şablon 422/422/422/422; yayın sekreter 403 hekim 200; yayınlanan düzenleme API 409 DB kilit=true; eski kayıt outdated=true; eski anahtar 422; yeni etiket Kalp pili var mı?; sekreter 403; B bağımsız · masaustu: Sağlık özeti kartı=true; eski anamnez paneli yok=true · mobil: Sağlık özeti kartı=true; eski anamnez paneli yok=true (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/N04-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-N04-anamnez.jpg",
-    "evidence/tur8/mobil-N04-anamnez.jpg"
+    "evidence/tur10/masaustu-N04-anamnez.jpg",
+    "evidence/tur10/mobil-N04-anamnez.jpg"
    ]
   },
   {
@@ -365,13 +366,13 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "3 tür hekim-only; sekreter önizleme 403; sekreter listede görmez=true, yönetici görür (ADR-098)=true; ayrıntı sek 404 yön 200; geçmiş sızıntısı=false; komşu: print 404/404 karar 404/404 iptal 404/404 dosya 422/422 (gerçek/yok), durum issued, kanıt +0; KVKK yönetici (sağlık yetkili) dışa aktarımında klinik belge=true (hekim dışa aktarım 403); onam raporunda klinik satır=false; hekim iptal 200 · masaustu: Belgeler'de epikriz görünür=false; Geçmiş'te belge olayı görünür=false · mobil: Belgeler'de epikriz görünür=false; Geçmiş'te belge olayı görünür=false (tur8, temiz seed, df0ea1d) · hazırlık kuralı klinik çıktı türüyle 422",
-   "evidence": "evidence/tur8/N05-http.json",
+   "summary": "3 tür hekim-only; sekreter önizleme 403; sekreter listede görmez=true, yönetici görür (ADR-098)=true; ayrıntı sek 404 yön 200; geçmiş sızıntısı=false; komşu: print 404/404 karar 404/404 iptal 404/404 dosya 422/422 (gerçek/yok), durum issued, kanıt +0; KVKK yönetici (sağlık yetkili) dışa aktarımında klinik belge=true (hekim dışa aktarım 403); onam raporunda klinik satır=false; hekim iptal 200 · masaustu: Belgeler'de epikriz görünür=false; Geçmiş'te belge olayı görünür=false · mobil: Belgeler'de epikriz görünür=false; Geçmiş'te belge olayı görünür=false (tur10, temiz seed, 6fe082d) · hazırlık kuralı klinik çıktı türüyle 422",
+   "evidence": "evidence/tur10/N05-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-N05-sekreter-gecmis.jpg",
-    "evidence/tur8/mobil-N05-sekreter-gecmis.jpg",
-    "evidence/tur8/N05-komsu.json",
-    "evidence/tur8/readiness-clinical-probe.json"
+    "evidence/tur10/masaustu-N05-sekreter-gecmis.jpg",
+    "evidence/tur10/mobil-N05-sekreter-gecmis.jpg",
+    "evidence/tur10/N05-komsu.json",
+    "evidence/tur10/readiness-clinical-probe.json"
    ]
   },
   {
@@ -382,11 +383,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "geçersiz 7 değer 422/422/422/422/422/422/422; geçerli 200; yeni oturumda gelir; sekreter etkilenmez; kimliksiz 401; CSRF başlıksız 403 · masaustu: uygulandı {\"scheme\":\"dark\",\"accent\":\"lacivert\",\"scale\":\"4\",\"root\":\"17px\"}; axe ciddi/kritik []; yenilemede dark/lacivert; varsayılan mavi/16px; taşma 0 · mobil: uygulandı {\"scheme\":\"dark\",\"accent\":\"lacivert\",\"scale\":\"4\",\"root\":\"17px\"}; axe ciddi/kritik []; yenilemede dark/lacivert; varsayılan mavi/16px; taşma 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/N06-http.json",
+   "summary": "geçersiz 7 değer 422/422/422/422/422/422/422; geçerli 200; yeni oturumda gelir; sekreter etkilenmez; kimliksiz 401; CSRF başlıksız 403 · masaustu: uygulandı {\"scheme\":\"dark\",\"accent\":\"lacivert\",\"scale\":\"4\",\"root\":\"17px\"}; axe ciddi/kritik []; yenilemede dark/lacivert; varsayılan mavi/16px; taşma 0 · mobil: uygulandı {\"scheme\":\"dark\",\"accent\":\"lacivert\",\"scale\":\"4\",\"root\":\"17px\"}; axe ciddi/kritik []; yenilemede dark/lacivert; varsayılan mavi/16px; taşma 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/N06-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-N06-koyu-panel.jpg",
-    "evidence/tur8/mobil-N06-koyu-panel.jpg"
+    "evidence/tur10/masaustu-N06-koyu-panel.jpg",
+    "evidence/tur10/mobil-N06-koyu-panel.jpg"
    ]
   },
   {
@@ -395,8 +396,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "sınır 0/169/2,5 → 422/422/422; hekim 403; eşik 2 sa: 1 sa geçmiş yükseltilmedi, 3 sa geçmiş → yönetici (rol korunur, kopya 1); yönetici görevi kendine yükseltilmedi (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/N07-http.json",
+   "summary": "sınır 0/169/2,5 → 422/422/422; hekim 403; eşik 2 sa: 1 sa geçmiş yükseltilmedi, 3 sa geçmiş → yönetici (rol korunur, kopya 1); yönetici görevi kendine yükseltilmedi (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/N07-http.json",
    "extraEvidence": []
   },
   {
@@ -405,8 +406,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "nakit-hareketleri: 24 satır, formül 0, para hücresi 21; borc-bakiye: 9 satır, formül 0, para hücresi 24; tedavi: 7 satır, formül 0, para hücresi 3; bilinmeyen biçim → CSV; sekreter 403 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/N08-http.json",
+   "summary": "nakit-hareketleri: 24 satır, formül 0, para hücresi 21; borc-bakiye: 9 satır, formül 0, para hücresi 24; tedavi: 7 satır, formül 0, para hücresi 3; bilinmeyen biçim → CSV; sekreter 403 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/N08-http.json",
    "extraEvidence": []
   },
   {
@@ -416,10 +417,10 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "masaustu: stok satırı display=table-row (beklenen table-row), etiket Kalem, Sayım açıldı=true; taşma stok 0 rapor 0; ham kod=false; Excel=true · mobil: stok satırı display=grid (beklenen grid), etiket Kalem, Sayım açıldı=true; taşma stok 0 rapor 0; ham kod=false; Excel=true (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/masaustu-N09-stok.jpg",
+   "summary": "masaustu: stok satırı display=table-row (beklenen table-row), etiket Kalem, Sayım açıldı=true; taşma stok 0 rapor 0; ham kod=false; Excel=true · mobil: stok satırı display=grid (beklenen grid), etiket Kalem, Sayım açıldı=true; taşma stok 0 rapor 0; ham kod=false; Excel=true (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/masaustu-N09-stok.jpg",
    "extraEvidence": [
-    "evidence/tur8/mobil-N09-stok.jpg"
+    "evidence/tur10/mobil-N09-stok.jpg"
    ]
   },
   {
@@ -428,8 +429,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "hekim 403, tekrar 422, 0 adet 422, sahte kalem 422, B 404; işlem: eldiven 4→3, kartuş 30→28 (lot seçili); düzeltme sarfı tekrarlamadı=true; yetersiz stok: işlem 201, {\"used\":1,\"shortages\":1}, görev 1 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/N10-http.json",
+   "summary": "hekim 403, tekrar 422, 0 adet 422, sahte kalem 422, B 404; işlem: eldiven 4→3, kartuş 30→28 (lot seçili); düzeltme sarfı tekrarlamadı=true; yetersiz stok: işlem 201, {\"used\":1,\"shortages\":1}, görev 1 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/N10-http.json",
    "extraEvidence": []
   },
   {
@@ -438,13 +439,13 @@
    "profiles": [
     "http"
    ],
-   "summary": "yönetici (sağlık yetkili, ADR-098) listede ve dışa aktarımda klinik dosyayı görür=true/true; geçmiş olay sekreter 0, yönetici 1, hekim 1; access_log dosya satırı 1; onam kanıtı gizli dosya kimliği sekreter=false, dışa aktarım=true; karantina görevi sekreter=false, yönetici=true, hekim=true; epikrize bağlı tarama sekreter 404/404 (tur8)",
-   "evidence": "evidence/tur8/file-sensitivity-probe.json",
+   "summary": "yönetici (sağlık yetkili, ADR-098) listede ve dışa aktarımda klinik dosyayı görür=true/true; geçmiş olay sekreter 0, yönetici 1, hekim 1; access_log dosya satırı 1; onam kanıtı gizli dosya kimliği sekreter=false, dışa aktarım=true; karantina görevi sekreter=false, yönetici=true, hekim=true; epikrize bağlı tarama sekreter 404/404 (tur10)",
+   "evidence": "evidence/tur10/file-sensitivity-probe.json",
    "extraEvidence": [
-    "evidence/tur8/file-trace-probe.json",
-    "evidence/tur8/evidence-file-probe.json",
-    "evidence/tur8/quarantine-task-probe.json",
-    "evidence/tur8/linked-file-probe.json"
+    "evidence/tur10/file-trace-probe.json",
+    "evidence/tur10/evidence-file-probe.json",
+    "evidence/tur10/quarantine-task-probe.json",
+    "evidence/tur10/linked-file-probe.json"
    ]
   },
   {
@@ -455,11 +456,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "16/16 kontrol: hepsi geçti · masaustu: geçmiş dilim 84 (düğme 0), tıklayınca form açıldı=false; tarih alanına 01.01.2026 → değer \"01.01.2026\", uyarı 1 · mobil: geçmiş dilim -1 (düğme 0), tıklayınca form açıldı=false; tarih alanına 01.01.2026 → değer \"01.01.2026\", uyarı 1 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F01-http.json",
+   "summary": "16/16 kontrol: hepsi geçti · masaustu: geçmiş dilim 98 (düğme 0), tıklayınca form açıldı=false; tarih alanına 01.01.2026 → değer \"01.01.2026\", uyarı 1 · mobil: geçmiş dilim -1 (düğme 0), tıklayınca form açıldı=false; tarih alanına 01.01.2026 → değer \"01.01.2026\", uyarı 1 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F01-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F01-ajanda.jpg",
-    "evidence/tur8/mobil-F01-ajanda.jpg"
+    "evidence/tur10/masaustu-F01-ajanda.jpg",
+    "evidence/tur10/mobil-F01-ajanda.jpg"
    ]
   },
   {
@@ -470,11 +471,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "4/4 kontrol (API); UI tarafı tarayıcı vakasında · masaustu: Geçmiş başlığında 'Sonuç bekliyor' 1, Yaklaşan'da 0, yaklaşan satır 1, Geldi düğmesi 1 · mobil: Geçmiş başlığında 'Sonuç bekliyor' 1, Yaklaşan'da 0, yaklaşan satır 1, Geldi düğmesi 1, Geldi sonrası rozet 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F02-http.json",
+   "summary": "4/4 kontrol (API); UI tarafı tarayıcı vakasında · masaustu: Geçmiş başlığında 'Sonuç bekliyor' 1, Yaklaşan'da 0, yaklaşan satır 1, Geldi düğmesi 1 · mobil: Geçmiş başlığında 'Sonuç bekliyor' 1, Yaklaşan'da 0, yaklaşan satır 1, Geldi düğmesi 1, Geldi sonrası rozet 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F02-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F02-kart.jpg",
-    "evidence/tur8/mobil-F02-kart.jpg"
+    "evidence/tur10/masaustu-F02-kart.jpg",
+    "evidence/tur10/mobil-F02-kart.jpg"
    ]
   },
   {
@@ -485,11 +486,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "26/26 kontrol: hepsi geçti · masaustu: listede maske false; kartta tam telefon true; giriş 0'lı 11 hane, 0'sız 10 hane, yurt dışı 17 rakam · mobil: listede maske false; kartta tam telefon true; giriş 0'lı 11 hane, 0'sız 10 hane, yurt dışı 17 rakam (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F03-http.json",
+   "summary": "26/26 kontrol: hepsi geçti · masaustu: listede maske false; kartta tam telefon true; giriş 0'lı 11 hane, 0'sız 10 hane, yurt dışı 17 rakam · mobil: listede maske false; kartta tam telefon true; giriş 0'lı 11 hane, 0'sız 10 hane, yurt dışı 17 rakam (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F03-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F03-telefon.jpg",
-    "evidence/tur8/mobil-F03-telefon.jpg"
+    "evidence/tur10/masaustu-F03-telefon.jpg",
+    "evidence/tur10/mobil-F03-telefon.jpg"
    ]
   },
   {
@@ -499,10 +500,10 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "masaustu: hücre tıklaması karta gitti true; sürükle-seç sayfada kaldı true; klavye Enter true · mobil: hücre tıklaması karta gitti true; sürükle-seç sayfada kaldı true; klavye Enter true (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/masaustu-F04-satir.jpg",
+   "summary": "masaustu: hücre tıklaması karta gitti true; sürükle-seç sayfada kaldı true; klavye Enter true · mobil: hücre tıklaması karta gitti true; sürükle-seç sayfada kaldı true; klavye Enter true (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/masaustu-F04-satir.jpg",
    "extraEvidence": [
-    "evidence/tur8/mobil-F04-satir.jpg"
+    "evidence/tur10/mobil-F04-satir.jpg"
    ]
   },
   {
@@ -513,13 +514,13 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "3/3 kontrol (API); UI işaretleri tarayıcı vakasında · masaustu: hekim: işlem yapılan diş(ler) 16, ayrıntı: Diş 16 · büyük azı Çekildi Yapılan işlemler CEK-01 Diş çekimi (basit) · 07.11.2026 · Dt. Elif Aras · masaustu: sekreter (sağlık yetkisi yok) kartta odontogram 0 · mobil: hekim: işlem yapılan diş(ler) 16, ayrıntı: Diş 16 · büyük azı Çekildi Yapılan işlemler CEK-01 Diş çekimi (basit) · 07.11.2026 · Dt. Elif Aras · mobil: sekreter (sağlık yetkisi yok) kartta odontogram 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F05-http.json",
+   "summary": "3/3 kontrol (API); UI işaretleri tarayıcı vakasında · masaustu: hekim: işlem yapılan diş(ler) 16, ayrıntı: Diş 16 · büyük azı Çekildi Yapılan işlemler CEK-01 Diş çekimi (basit) · 07.11.2026 · Dt. Elif Aras · masaustu: sekreter (sağlık yetkisi yok) kartta odontogram 0 · mobil: hekim: işlem yapılan diş(ler) 16, ayrıntı: Diş 16 · büyük azı Çekildi Yapılan işlemler CEK-01 Diş çekimi (basit) · 07.11.2026 · Dt. Elif Aras · mobil: sekreter (sağlık yetkisi yok) kartta odontogram 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F05-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F05-dis.jpg",
-    "evidence/tur8/masaustu-F05-sekreter.jpg",
-    "evidence/tur8/mobil-F05-dis.jpg",
-    "evidence/tur8/mobil-F05-sekreter.jpg"
+    "evidence/tur10/masaustu-F05-dis.jpg",
+    "evidence/tur10/masaustu-F05-sekreter.jpg",
+    "evidence/tur10/mobil-F05-dis.jpg",
+    "evidence/tur10/mobil-F05-sekreter.jpg"
    ]
   },
   {
@@ -530,13 +531,13 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "8/8 kontrol (API/DB); menü ve ekran tarayıcı vakasında · masaustu: menü [Panel, Hastalar, Randevular, Hekimler, Tedavi, Finans, Operasyon, Raporlar, Mesajlar, Yönetim], başlık \"Panel · PİA-DENT\", KPI randevu 9=9, tahsilat 3.580,00 ₺ / API 3580.00, açık 36.150,00 ₺ / API 36150.00, tablo satırı 30, taşma 0 · masaustu: sekreter Panel: para kartı 0, Aylık gelir grafiği 0 · mobil: menü [Panel, Hastalar, Randevular, Hekimler, Tedavi, Finans, Operasyon, Raporlar, Mesajlar, Yönetim], başlık \"Panel · PİA-DENT\", KPI randevu 9=9, tahsilat 3.580,00 ₺ / API 3580.00, açık 36.150,00 ₺ / API 36150.00, tablo satırı 30, taşma 0 · mobil: sekreter Panel: para kartı 0, Aylık gelir grafiği 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F06-http.json",
+   "summary": "8/8 kontrol (API/DB); menü ve ekran tarayıcı vakasında · masaustu: menü [Panel, Hastalar, Randevular, Hekimler, Tedavi, Finans, Operasyon, Raporlar, Mesajlar, Yönetim], başlık \"Panel · PİA-DENT\", KPI randevu 9=9, tahsilat 3.580,00 ₺ / API 3580.00, açık 36.150,00 ₺ / API 36150.00, tablo satırı 30, taşma 0 · masaustu: sekreter Panel: para kartı 0, Aylık gelir grafiği 0 · mobil: menü [Panel, Hastalar, Randevular, Hekimler, Tedavi, Finans, Operasyon, Raporlar, Mesajlar, Yönetim], başlık \"Panel · PİA-DENT\", KPI randevu 9=9, tahsilat 3.580,00 ₺ / API 3580.00, açık 36.150,00 ₺ / API 36150.00, tablo satırı 30, taşma 0 · mobil: sekreter Panel: para kartı 0, Aylık gelir grafiği 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F06-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F06-panel.jpg",
-    "evidence/tur8/masaustu-F06-sekreter.jpg",
-    "evidence/tur8/mobil-F06-panel.jpg",
-    "evidence/tur8/mobil-F06-sekreter.jpg"
+    "evidence/tur10/masaustu-F06-panel.jpg",
+    "evidence/tur10/masaustu-F06-sekreter.jpg",
+    "evidence/tur10/mobil-F06-panel.jpg",
+    "evidence/tur10/mobil-F06-sekreter.jpg"
    ]
   },
   {
@@ -547,11 +548,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "48 rapor çalıştırması, 0 hata; menü dönüşü/varsayılan aralık tarayıcı vakasında · masaustu: 13 rapor açıldı, hata 0; varsayılan aralık 30 gün; menüden dönüş kart sayısı 13 · mobil: 13 rapor açıldı, hata 0; varsayılan aralık 30 gün; menüden dönüş kart sayısı 13 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F07-http.json",
+   "summary": "48 rapor çalıştırması, 0 hata; menü dönüşü/varsayılan aralık tarayıcı vakasında · masaustu: 13 rapor açıldı, hata 0; varsayılan aralık 30 gün; menüden dönüş kart sayısı 13 · mobil: 13 rapor açıldı, hata 0; varsayılan aralık 30 gün; menüden dönüş kart sayısı 13 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F07-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F07-raporlar.jpg",
-    "evidence/tur8/mobil-F07-raporlar.jpg"
+    "evidence/tur10/masaustu-F07-raporlar.jpg",
+    "evidence/tur10/mobil-F07-raporlar.jpg"
    ]
   },
   {
@@ -562,11 +563,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "33/33 kontrol: hepsi geçti · masaustu: ekranda bu ay kalan 24.000,00 ₺ = API 24000.00; UI ile 1.000 ödeme sonrası API ödenen 7000.00; taşma 0 · mobil: ekranda bu ay kalan 23.000,00 ₺ = API 23000.00; UI ile 1.000 ödeme sonrası API ödenen atlandı; taşma 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F08-http.json",
+   "summary": "33/33 kontrol: hepsi geçti · masaustu: ekranda bu ay kalan 24.000,00 ₺ = API 24000.00; UI ile 1.000 ödeme sonrası API ödenen 7000.00; taşma 0 · mobil: ekranda bu ay kalan 23.000,00 ₺ = API 23000.00; UI ile 1.000 ödeme sonrası API ödenen atlandı; taşma 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F08-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F08-hekim.jpg",
-    "evidence/tur8/mobil-F08-hekim.jpg"
+    "evidence/tur10/masaustu-F08-hekim.jpg",
+    "evidence/tur10/mobil-F08-hekim.jpg"
    ]
   },
   {
@@ -577,11 +578,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "16/16 kontrol: hepsi geçti · masaustu: ekranda birim maliyet 100,00 ₺ = API 100.00; 'Fiyat tanımsız' 2; uyarı 1; Fiyat ekle penceresi açıldı; taşma 0 · mobil: ekranda birim maliyet 100,00 ₺ = API 100.00; 'Fiyat tanımsız' 2; uyarı 1; Fiyat ekle penceresi açıldı; taşma 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F09-http.json",
+   "summary": "16/16 kontrol: hepsi geçti · masaustu: ekranda birim maliyet 100,00 ₺ = API 100.00; 'Fiyat tanımsız' 2; uyarı 1; Fiyat ekle penceresi açıldı; taşma 0 · mobil: ekranda birim maliyet 100,00 ₺ = API 100.00; 'Fiyat tanımsız' 2; uyarı 1; Fiyat ekle penceresi açıldı; taşma 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F09-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F09-urunler.jpg",
-    "evidence/tur8/mobil-F09-urunler.jpg"
+    "evidence/tur10/masaustu-F09-urunler.jpg",
+    "evidence/tur10/mobil-F09-urunler.jpg"
    ]
   },
   {
@@ -592,11 +593,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "17/17 kontrol: hepsi geçti · masaustu: ekranda gider 0,00 ₺ = API 0.00; satır 3=3; UI ile ekleme sonrası satır 4 · mobil: ekranda gider 45,00 ₺ = API 45.00; satır 4=4; UI ile ekleme sonrası satır atlandı (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F10-http.json",
+   "summary": "17/17 kontrol: hepsi geçti · masaustu: ekranda gider 0,00 ₺ = API 0.00; satır 3=3; UI ile ekleme sonrası satır 4 · mobil: ekranda gider 45,00 ₺ = API 45.00; satır 4=4; UI ile ekleme sonrası satır atlandı (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F10-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F10-malzeme.jpg",
-    "evidence/tur8/mobil-F10-malzeme.jpg"
+    "evidence/tur10/masaustu-F10-malzeme.jpg",
+    "evidence/tur10/mobil-F10-malzeme.jpg"
    ]
   },
   {
@@ -606,10 +607,10 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "masaustu: 13/13 adım; başarısız: yok; yerel pencere 0 · mobil: 11/11 adım; başarısız: yok; yerel pencere 0 (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/masaustu-F11-kapatma.jpg",
+   "summary": "masaustu: 13/13 adım; başarısız: yok; yerel pencere 0 · mobil: 11/11 adım; başarısız: yok; yerel pencere 0 (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/masaustu-F11-kapatma.jpg",
    "extraEvidence": [
-    "evidence/tur8/mobil-F11-kapatma.jpg"
+    "evidence/tur10/mobil-F11-kapatma.jpg"
    ]
   },
   {
@@ -620,11 +621,11 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "8/8 kontrol: hepsi geçti · masaustu: tek işlem seçimi (eski iki alan 0); işlem seçenekleri 56; TEM-01 fiyatı 1.200,00 ₺ görünür=true; şerit: İşlem fiyatı 1.200,00 ₺ Mevcut açık borç 3.600,00 ₺ Avans 0,00 ₺ İşlem sonrası toplam borç 4.800,00 ₺ · mobil: tek işlem seçimi (eski iki alan 0); işlem seçenekleri 56; TEM-01 fiyatı 1.200,00 ₺ görünür=true; şerit: İşlem fiyatı 1.200,00 ₺ Mevcut açık borç 3.600,00 ₺ Avans 0,00 ₺ İşlem sonrası toplam borç 4.800,00 ₺ (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/F12-http.json",
+   "summary": "8/8 kontrol: hepsi geçti · masaustu: tek işlem seçimi (eski iki alan 0); işlem seçenekleri 56; TEM-01 fiyatı 1.200,00 ₺ görünür=true; şerit: İşlem fiyatı 1.200,00 ₺ Mevcut açık borç 3.600,00 ₺ Avans 0,00 ₺ İşlem sonrası toplam borç 4.800,00 ₺ · mobil: tek işlem seçimi (eski iki alan 0); işlem seçenekleri 56; TEM-01 fiyatı 1.200,00 ₺ görünür=true; şerit: İşlem fiyatı 1.200,00 ₺ Mevcut açık borç 3.600,00 ₺ Avans 0,00 ₺ İşlem sonrası toplam borç 4.800,00 ₺ (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/F12-http.json",
    "extraEvidence": [
-    "evidence/tur8/masaustu-F12-form.jpg",
-    "evidence/tur8/mobil-F12-form.jpg"
+    "evidence/tur10/masaustu-F12-form.jpg",
+    "evidence/tur10/mobil-F12-form.jpg"
    ]
   },
   {
@@ -633,8 +634,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "6/6 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G01-http.json",
+   "summary": "6/6 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G01-http.json",
    "extraEvidence": []
   },
   {
@@ -643,8 +644,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "5/5 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G02-http.json",
+   "summary": "5/5 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G02-http.json",
    "extraEvidence": []
   },
   {
@@ -653,8 +654,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "4/4 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G03-http.json",
+   "summary": "4/4 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G03-http.json",
    "extraEvidence": []
   },
   {
@@ -663,8 +664,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "13/13 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G04-http.json",
+   "summary": "13/13 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G04-http.json",
    "extraEvidence": []
   },
   {
@@ -673,8 +674,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "6/6 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G05-http.json",
+   "summary": "6/6 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G05-http.json",
    "extraEvidence": []
   },
   {
@@ -683,8 +684,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "6/6 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G06-http.json",
+   "summary": "6/6 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G06-http.json",
    "extraEvidence": []
   },
   {
@@ -693,8 +694,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "3/3 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G07-http.json",
+   "summary": "3/3 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G07-http.json",
    "extraEvidence": []
   },
   {
@@ -703,8 +704,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "6/6 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G08-http.json",
+   "summary": "6/6 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G08-http.json",
    "extraEvidence": []
   },
   {
@@ -713,8 +714,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "8/8 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G09-http.json",
+   "summary": "8/8 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G09-http.json",
    "extraEvidence": []
   },
   {
@@ -723,8 +724,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "3/3 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G10-http.json",
+   "summary": "3/3 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G10-http.json",
    "extraEvidence": []
   },
   {
@@ -733,8 +734,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "3/3 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G11-http.json",
+   "summary": "3/3 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G11-http.json",
    "extraEvidence": []
   },
   {
@@ -743,8 +744,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "10/10 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G12-http.json",
+   "summary": "10/10 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G12-http.json",
    "extraEvidence": []
   },
   {
@@ -753,8 +754,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "5/5 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G13-http.json",
+   "summary": "5/5 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G13-http.json",
    "extraEvidence": []
   },
   {
@@ -763,8 +764,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "11/11 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G14-http.json",
+   "summary": "11/11 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G14-http.json",
    "extraEvidence": []
   },
   {
@@ -773,8 +774,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "2/2 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/G15-http.json",
+   "summary": "2/2 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/G15-http.json",
    "extraEvidence": []
   },
   {
@@ -785,7 +786,7 @@
     "chromium-mobile-emulation"
    ],
    "summary": "geri-bildirim-0711 E2E: masaüstü geçti, telefon-360 geçti",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "B02",
@@ -795,7 +796,7 @@
     "chromium-mobile-emulation"
    ],
    "summary": "geri-bildirim-0711 E2E: masaüstü geçti, telefon-360 geçti",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "B03",
@@ -805,7 +806,7 @@
     "chromium-mobile-emulation"
    ],
    "summary": "geri-bildirim-0711 E2E: masaüstü geçti, telefon-360 geçti",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "B04",
@@ -815,7 +816,7 @@
     "chromium-mobile-emulation"
    ],
    "summary": "geri-bildirim-0711 E2E: masaüstü geçti, telefon-360 geçti",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "B05",
@@ -825,7 +826,7 @@
     "chromium-mobile-emulation"
    ],
    "summary": "geri-bildirim-0711 E2E: masaüstü geçti, telefon-360 geçti",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "B06",
@@ -834,7 +835,7 @@
     "chromium-desktop"
    ],
    "summary": "geri-bildirim-0711 E2E: masaüstü geçti (indirme yalnız masaüstünde sınanır; telefonda bilinçli atlama)",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "H01",
@@ -842,8 +843,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "9/9 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/H01-http.json",
+   "summary": "9/9 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/H01-http.json",
    "extraEvidence": []
   },
   {
@@ -853,8 +854,8 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "odontogram-0711.spec.ts E2E: masaüstü geçti, telefon-360 geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "summary": "odontogram-0711.spec.ts E2E: masaüstü geçti, telefon-360 geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "H03",
@@ -862,8 +863,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "7/7 kontrol (39 şablon önizlendi): hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/H03-http.json",
+   "summary": "7/7 kontrol (39 şablon önizlendi): hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/H03-http.json",
    "extraEvidence": []
   },
   {
@@ -872,8 +873,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "4/4 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/H04-http.json",
+   "summary": "4/4 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/H04-http.json",
    "extraEvidence": []
   },
   {
@@ -882,8 +883,8 @@
    "profiles": [
     "http"
    ],
-   "summary": "24/24 kontrol (doğrulama: gelecek tarih=422, tür–kategori uyuşmazlığı=422, geçersiz diş=422, tekrarlı diş=422, DICOM fotoğraf=422, DICOM belge taraması=422, türsüz meta=422, uzun not=422, 21 MB=422, desteklenmeyen tür=422): hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/H05-http.json",
+   "summary": "24/24 kontrol (doğrulama: gelecek tarih=422, tür–kategori uyuşmazlığı=422, geçersiz diş=422, tekrarlı diş=422, DICOM fotoğraf=422, DICOM belge taraması=422, türsüz meta=422, uzun not=422, 21 MB=422, desteklenmeyen tür=422): hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/H05-http.json",
    "extraEvidence": []
   },
   {
@@ -893,8 +894,8 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "goruntuleme-0711.spec.ts E2E: masaüstü geçti, telefon-360 geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "summary": "goruntuleme-0711.spec.ts E2E: masaüstü geçti, telefon-360 geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "H07",
@@ -903,8 +904,8 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "goruntuleme-0711.spec.ts E2E: masaüstü geçti, telefon-360 geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "summary": "goruntuleme-0711.spec.ts E2E: masaüstü geçti, telefon-360 geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "H08",
@@ -913,8 +914,8 @@
     "chromium-desktop",
     "chromium-mobile-emulation"
    ],
-   "summary": "odontogram-0711.spec.ts E2E: masaüstü geçti, telefon-360 geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/R04-R05-e2e-temiz-seed.log"
+   "summary": "odontogram-0711.spec.ts E2E: masaüstü geçti, telefon-360 geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/R04-R05-e2e-temiz-seed.log"
   },
   {
    "id": "H09",
@@ -922,8 +923,18 @@
    "profiles": [
     "http"
    ],
-   "summary": "11/11 kontrol: hepsi geçti (tur8, temiz seed, df0ea1d)",
-   "evidence": "evidence/tur8/H09-http.json",
+   "summary": "11/11 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/H09-http.json",
+   "extraEvidence": []
+  },
+  {
+   "id": "H10",
+   "status": "PASS",
+   "profiles": [
+    "http"
+   ],
+   "summary": "5/5 kontrol: hepsi geçti (tur10, temiz seed, 6fe082d)",
+   "evidence": "evidence/tur10/H10-http.json",
    "extraEvidence": []
   }
  ],
@@ -953,7 +964,7 @@
   }
  ],
  "notes": [
-  "tur8: revizyon df0ea1d temiz seed üzerinde tam sınandı (68 zorunlu vaka: önceki koşunun 60 vakası + H01, H03–H05 HTTP + H02, H06–H08 tarayıcı; HTTP, tarayıcı masaüstü + 360 px, V06, R01–R07).",
+  "tur10: revizyon 6fe082d temiz seed üzerinde tam sınandı (68 zorunlu vaka: önceki koşunun 60 vakası + H01, H03–H05 HTTP + H02, H06–H08 tarayıcı; HTTP, tarayıcı masaüstü + 360 px, V06, R01–R07).",
   "ADR-104 kabul değişikliği: her belge türünde onaylı DEMO şablon (plan.json notu). DICOM tarayıcı önizlemesi kapsam dışı (indir); Vercel ~4,5 MB istek gövdesi sınırı yerel ortamda sınanamaz.",
   "Kabul değişiklikleri (ürün sahibi kararları ADR-098/100/101/099) plan.json notlarında; etkilenen alt kontroller bugs.md 'Tester betiği düzeltmeleri' bölümünde gerekçesiyle.",
   "Netgsm gerçek gönderimi sınanmadı (kimlik bilgisi yok; ürün sahibi girer). Adaptör sözleşmesi yerel sahte sunucuyla (G13).",
