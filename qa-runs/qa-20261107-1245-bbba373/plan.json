@@ -70,7 +70,8 @@
     "H05",
     "H06",
     "H07",
-    "H08"
+    "H08",
+    "H09"
   ],
   "profiles": [
     {
@@ -174,7 +175,8 @@
     "H05": "Görüntülemeler API: tür/çekim tarihi/diş/not kaydı; tarama (PNG ve DICOM kullanılabilir, sahte DICOM reddedilir); yönetici açar ve erişim izi; sekreter liste/içerik/yükleme kapalı; finans kapalı; B kiracısı 404; 10 doğrulama 422; süt dişli fotoğraf 201 (ADR-105).",
     "H06": "Tarayıcı (masaüstü + 360): Görüntülemeler sekmesi → Yeni görüntüleme ekle (dosya, tür, geçersiz diş uyarısı, not) → tarama sonrası küçük resim → büyük görüntü, yakınlaştırma; sekreter sekmeyi kilitli görür; yatay taşma yok (goruntuleme-0711.spec).",
     "H07": "Tarayıcı (masaüstü + 360): Belge hazırla listesinde “onaylı şablon yok” seçeneği yok; diş çekimi onamı önizlemede hasta adıyla dolar (goruntuleme-0711.spec).",
-    "H08": "Tarayıcı (masaüstü + 360): tarih alanı takviminde yıl ve ay seçimi; doğum tarihi 14.03.1985 tek adımda (odontogram-0711.spec)."
+    "H08": "Tarayıcı (masaüstü + 360): tarih alanı takviminde yıl ve ay seçimi; doğum tarihi 14.03.1985 tek adımda (odontogram-0711.spec).",
+    "H09": "ADR-106: cinsiyet yalnız Kadın/Erkek/Belirtmek istemiyorum (API 'other' 422, DB kısıtı), başlangıç görünümü açık şema + mavi palet (seçim yapmamış kullanıcı); tarayıcıda varsayılan görünüm gorunum.spec (R04)."
   },
   "notes": [
     "Önceki koşunun (qa-20261102-1209-12fc6fd) tüm zorunlu vakaları regresyon olarak korunur; F01–F12 ürün sahibi geri bildirimi 04.11.2026'dan eklendi.",
@@ -183,6 +185,7 @@
     "Fiziksel cihaz, APK, iOS, VS Code: ürün kapsamı dışı (gerekli değil).",
     "07.11.2026 ürün sahibi geri bildirimi (19 madde + yöneticiye tüm yetki) için G01–G15 (HTTP) ve B01–B06 (tarayıcı, iki profil) eklendi; önceki 39 vaka korunur.",
     "Kabul değişikliği (ürün sahibi kararı, kayıtlı): ADR-098 yönetici sağlık içeriğini görür/yazar ve tahsilat/prim ödemesi yapar → önceki vakalarda 'yönetici görmez/yapamaz' alt kontrolleri sağlık/finans yetkisiz rolle (sekreter/finans) sınanır; yöneticinin görmesi olumlu kontrol olur. ADR-101 randevu verme tam sayfa → F11 kapatma uyarısı çekmece yerine sayfa 'Vazgeç' + yeni hasta çekmecesinde Esc ile sınanır. ADR-100 anamnez arayüzü kaldırıldı → N04 API düzeyinde kalır (veri ve uçlar duruyor).",
-    "07.11.2026 2. paket kabul değişikliği (ADR-104): her belge türünde onaylı DEMO şablon var — gorev4 testindeki \"yalnız 5 türde şablon\" ve \"SENTETİK DEMO BELGESİ\" beklentisi ürün sahibi isteğiyle 42 tür / \"PİA-DENT ÖRNEK METİN (DEMO)\" oldu. H01–H08 eklendi; önceki 60 vaka korunur."
+    "07.11.2026 2. paket kabul değişikliği (ADR-104): her belge türünde onaylı DEMO şablon var — gorev4 testindeki \"yalnız 5 türde şablon\" ve \"SENTETİK DEMO BELGESİ\" beklentisi ürün sahibi isteğiyle 42 tür / \"PİA-DENT ÖRNEK METİN (DEMO)\" oldu. H01–H08 eklendi; önceki 60 vaka korunur.",
+    "Tur 3 öncesi kapsam eklendi (ürün sahibi 13:08 ve 13:14 istekleri, ADR-106): H09. Kabul değişikliği: N06 'varsayılana dön' sonucu yeşil/cihaz ayarı yerine mavi/açık; gorunum.spec varsayılan beklentisi aynı şekilde. Önceki vakalar korunur."
   ]
 }

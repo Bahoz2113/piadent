@@ -1,0 +1,16 @@
+{
+ "checks": [
+  {
+   "check": "işlem sayısı 55",
+   "pass": true
+  },
+  {
+   "check": "fiyatlı 55",
+   "pass": true
+  },
+  {
+   "check": "fiyat biçimi",
+   "pass": true
+  }
+ ]
+}

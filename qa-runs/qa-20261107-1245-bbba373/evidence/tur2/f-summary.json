@@ -1,0 +1,122 @@
+{
+ "at": "2026-11-07T10:01:46.082Z",
+ "results": [
+  {
+   "id": "F01",
+   "status": "PASS",
+   "summary": "16/16 kontrol: hepsi geçti",
+   "at": "2026-11-07T10:01:44.349Z",
+   "evidence": "F01-http.json"
+  },
+  {
+   "id": "F02",
+   "status": "PASS",
+   "summary": "4/4 kontrol (API); UI tarafı tarayıcı vakasında",
+   "at": "2026-11-07T10:01:44.386Z",
+   "evidence": "F02-http.json"
+  },
+  {
+   "id": "F03",
+   "status": "PASS",
+   "summary": "26/26 kontrol: hepsi geçti",
+   "at": "2026-11-07T10:01:44.577Z",
+   "evidence": "F03-http.json"
+  },
+  {
+   "id": "F05",
+   "status": "PASS",
+   "summary": "3/3 kontrol (API); UI işaretleri tarayıcı vakasında",
+   "at": "2026-11-07T10:01:44.640Z",
+   "evidence": "F05-http.json"
+  },
+  {
+   "id": "F06",
+   "status": "PASS",
+   "summary": "8/8 kontrol (API/DB); menü ve ekran tarayıcı vakasında",
+   "at": "2026-11-07T10:01:44.718Z",
+   "evidence": "F06-http.json"
+  },
+  {
+   "id": "F07",
+   "status": "PASS",
+   "summary": "48 rapor çalıştırması, 0 hata; menü dönüşü/varsayılan aralık tarayıcı vakasında",
+   "at": "2026-11-07T10:01:45.222Z",
+   "evidence": "F07-http.json"
+  },
+  {
+   "id": "F08",
+   "status": "PASS",
+   "summary": "33/33 kontrol: hepsi geçti",
+   "at": "2026-11-07T10:01:45.521Z",
+   "evidence": "F08-http.json"
+  },
+  {
+   "id": "F09",
+   "status": "PASS",
+   "summary": "16/16 kontrol: hepsi geçti",
+   "at": "2026-11-07T10:01:45.799Z",
+   "evidence": "F09-http.json"
+  },
+  {
+   "id": "F10",
+   "status": "PASS",
+   "summary": "17/17 kontrol: hepsi geçti",
+   "at": "2026-11-07T10:01:45.994Z",
+   "evidence": "F10-http.json"
+  },
+  {
+   "id": "F12",
+   "status": "PASS",
+   "summary": "8/8 kontrol: hepsi geçti",
+   "at": "2026-11-07T10:01:46.082Z",
+   "evidence": "F12-http.json"
+  }
+ ],
+ "data": {
+  "run": "8hoes",
+  "F01": {
+   "patientId": "b4a9eba5-35b4-4058-bb1d-60ea4aaeea04"
+  },
+  "F02": {
+   "patientId": "70ea9cfa-defa-4dbc-bb7b-780d29708d6a",
+   "pastId": "43b26f45-4445-4d4b-90eb-a89897979da7",
+   "futureId": "192aa46f-9a4c-46d0-87f0-7bc29489814a"
+  },
+  "F03": {
+   "patientId": "ee12cdd3-726f-4c96-8b52-b0db13e13cfa",
+   "phoneLast": "5321112234"
+  },
+  "F05": {
+   "patientId": "a512c7f8-d5e8-46fe-833a-3bbaf11ea4fa",
+   "tooth": "16"
+  },
+  "F06": {
+   "date": "2026-11-07",
+   "today": {
+    "appointments": 7,
+    "waiting": 1,
+    "inTreatment": 0,
+    "completed": 1,
+    "noShow": 0,
+    "pastPending": 3,
+    "activePractitioners": 3
+   },
+   "money": {
+    "todayCollections": "2310.00",
+    "openReceivables": "20150.00"
+   }
+  },
+  "F08": {
+   "practitionerId": "0d82ff8d-b51b-4a51-95fb-62570abbd6e4"
+  },
+  "F10": {
+   "patientId": "1f9c64eb-99bd-4bd1-8bf2-8bf9b664403e",
+   "appointmentId": "87a1a347-35aa-4e3e-a3f3-9c4d6ebe3fb2",
+   "itemId": "3c88ccbe-8b4a-4b79-b460-77bb7afc67b9"
+  },
+  "F12": {
+   "patientId": "41dc534f-2ea4-486c-ac57-46850f3c10b1",
+   "plannedPrice": "1200.00"
+  }
+ }
+}

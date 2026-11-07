@@ -164,5 +164,18 @@ const DCM = Buffer.concat([Buffer.alloc(128), Buffer.from("DICM"), Buffer.from("
   rec("H05", c, ` (doğrulama: ${vr.join(", ")})`);
 }
 
+// H09 — ADR-106: cinsiyet üç seçenek; başlangıç görünümü açık + mavi (seçim yapmamış kullanıcı)
+{ const c = [];
+  for (const [g, want] of [["female", 201], ["male", 201], ["unspecified", 201], ["other", 422], ["diger", 422]]) {
+    const r = await api(A.sec, "POST", "/patients", { firstName: "Cins", lastName: `${g}${RUN}`, gender: g, acknowledgeDuplicates: true }); ok(r.status === want, `cinsiyet ${g} ${r.status}`, c);
+  }
+  const db = await q("select pg_get_constraintdef(oid) as d from pg_constraint where conname = 'patients_gender_check'"); ok(/'female'.*'male'.*'unspecified'/.test(db[0]?.d ?? "") && !/other/.test(db[0]?.d ?? ""), `DB kısıtı ${db[0]?.d}`, c);
+  let bad = false; try { await q("update patients set gender = 'other' where id = (select id from patients limit 1)"); } catch { bad = true; } ok(bad, "DB 'other' yazımını reddeder", c);
+  const fresh = (await q("select count(*)::int as n from patients where gender = 'other'"))[0].n; ok(fresh === 0, `'other' kayıt ${fresh}`, c);
+  const ap = await api(A.fin, "GET", "/me/appearance"); ok(ap.status === 200 && ap.body.scheme === "light" && ap.body.accent === "mavi" && ap.body.scale === 3, `başlangıç görünümü ${JSON.stringify(ap.body)}`, c);
+  const ses = (await (await fetch(`${BASE}/api/v1/session`, { headers: { cookie: A.fin.cookie } })).json()); ok(!ses.user.appearance || Object.keys(ses.user.appearance).length === 0, "seçim yapmamış kullanıcıda saklı görünüm yok (varsayılan istemcide)", c);
+  rec("H09", c);
+}
+
 writeFileSync(`${OUT}/h-summary.json`, JSON.stringify({ at: new Date().toISOString(), results }, null, 1));
 await pool.end();

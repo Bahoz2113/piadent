@@ -10,3 +10,10 @@
 - Kök neden: ADR-103 ile ad, `visualLabels` sırasıyla üretiliyor (eksik/çekildi → implant → … → kanal → … → dolgu → çürük → kırık). Etkin hastalık bulgusu (çürük, kırık) tedavi/restorasyon işaretlerinin arkasına düşüyor. Önceki sürümde bulgular her zaman ilk sıradaydı.
 - Beklenen: dişin güncel sorunu (eksik/çekildi, çürük, kırık) erişilebilir adda ve ipucu durum rozetlerinde tedavi işaretlerinden önce gelsin; tedavi işaretleri sonra. Bilgi kaybı yok, yalnız sıra.
 - Etki: düşük (görsel çizim doğru; ekran okuyucu ve ipucu okuma sırası). Test beklentisi gevşetilmez.
+
+## Tur 2 (844c180) — QA-401 yeniden sınama
+- Tam tur temiz seed: E2E 118 geçti / 10 bilinçli atlama / 0 hata (gorev2 iki projede geçti), API 414/414, web 108/108, tester vakaları hepsi PASS → QA-401 düzeltmesi doğrulandı (kanıt evidence/tur2/R04-R05-e2e-temiz-seed.log).
+- Tur 2 sonrası ürün sahibinden yeni istek (ADR-106: varsayılan Mavi palet, cinsiyet üç seçenek) → yeni revizyon; plan'a H09 eklendi; tam tur tur3 olarak bu revizyonda koşulur.
+
+## Tester betiği uyarlamaları (ADR-106 kabul değişikliği)
+- browser-n.mjs N06: "Varsayılana dön" sonrası beklenen `yesil` → `mavi` + `light` (ürün sahibi kararı; aynı vakanın diğer beklentileri değişmedi).
