@@ -15,9 +15,10 @@ export type LoginInput = z.infer<typeof LoginInput>;
 export const SwitchMembershipInput = z.object({ membershipId: uuid });
 
 // ---------------------------------------------------------------- hasta
-export const GENDERS = ["female", "male", "other", "unspecified"] as const;
+/** 07.11.2026 ürün sahibi kararı (ADR-106): yalnız Kadın, Erkek, Belirtmek istemiyorum (migration 0039). */
+export const GENDERS = ["female", "male", "unspecified"] as const;
 export const GENDER_LABELS: Record<(typeof GENDERS)[number], string> = {
-  female: "Kadın", male: "Erkek", other: "Diğer", unspecified: "Belirtilmedi",
+  female: "Kadın", male: "Erkek", unspecified: "Belirtmek istemiyorum",
 };
 export const NATIONAL_ID_TYPES = ["tckn", "passport", "other"] as const;
 export const NATIONAL_ID_LABELS: Record<(typeof NATIONAL_ID_TYPES)[number], string> = {

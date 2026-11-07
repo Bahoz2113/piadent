@@ -1,0 +1,24 @@
+{
+ "bad": [
+  422,
+  422,
+  422,
+  422,
+  422,
+  422,
+  422
+ ],
+ "good": 200,
+ "freshSession": {
+  "scheme": "dim",
+  "accent": "bordo",
+  "scale": 5
+ },
+ "secretaryUnaffected": {
+  "scheme": "light",
+  "accent": "mavi",
+  "scale": 3
+ },
+ "noAuth": 401,
+ "csrfMissingHeader": 403
+}

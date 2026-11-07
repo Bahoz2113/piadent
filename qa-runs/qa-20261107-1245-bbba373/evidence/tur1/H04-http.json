@@ -1,0 +1,20 @@
+{
+ "checks": [
+  {
+   "check": "tekrar uygulama değişiklik yok A {\"d\":42,\"t\":42,\"v\":42} B {\"d\":42,\"t\":42,\"v\":42}",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı tür 42",
+   "pass": true
+  },
+  {
+   "check": "onaylı yer tutucu 0",
+   "pass": true
+  },
+  {
+   "check": "B kiracısında her tür şablonlu",
+   "pass": true
+  }
+ ]
+}

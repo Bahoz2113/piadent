@@ -7,7 +7,7 @@ import { randomBytes } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
-import { normalizeSearch, zonedToUtc, localDate, addDays, normalizeDocumentText, clinicalOutputStarterBody, STANDARD_PROCEDURES } from "@viadent/contracts";
+import { normalizeSearch, zonedToUtc, localDate, addDays, normalizeDocumentText, clinicalOutputStarterBody, STANDARD_PROCEDURES, STANDARD_DOCUMENT_TYPES, standardTemplateBody } from "@viadent/contracts";
 import { createHash } from "node:crypto";
 import { encryptSecret, newWebhookSecret } from "./bridge.js";
 import { loadEnv, requireEnv } from "./env.js";
@@ -260,46 +260,22 @@ export async function seed(connectionString: string, opts: { password?: string; 
         }
         // Görev 4: PİA-DENT belge türü kataloğu (kendi sınıflandırmamız; Ek B başlıkları yalnız izlenebilirlikte eşlenir),
         // iki SENTETİK DEMO şablon (gerçek bilgilendirme/onam metni DEĞİL), PİA Hazır kuralları, iletişim izni ve kontrol.
-        const docTypes: [string, string, string, boolean, string | null][] = [
-          ["GENEL-ONAM", "Genel tedavi bilgilendirme ve onam", "consent", true, null],
-          ["CERRAHI-ONAM", "Cerrahi işlem bilgilendirme ve onam", "consent", true, null],
-          ["ENDO-ONAM", "Kanal tedavisi bilgilendirme ve onam", "consent", true, null],
-          ["RESTORATIF-ONAM", "Restoratif ve estetik işlem bilgilendirme ve onam", "consent", true, null],
-          ["PROTEZ-ONAM", "Protez işlemleri bilgilendirme ve onam", "consent", true, null],
-          ["IMPLANT-ONAM", "İmplant tedavisi bilgilendirme ve onam", "consent", true, null],
-          ["PERIO-ONAM", "Periodontal tedavi bilgilendirme ve onam", "consent", true, null],
-          ["ORTO-ONAM", "Ortodontik tedavi bilgilendirme ve onam", "consent", true, null],
-          ["PEDO-ONAM", "Çocuk hasta (veli/vasi) bilgilendirme ve onam", "consent", true, null],
-          ["TRAVMA-ONAM", "Acil / travma tedavisi bilgilendirme ve onam", "consent", true, null],
-          ["OZEL-ISLEM-ONAM", "İşleme özgü bilgilendirme ve onam (diğer)", "consent", true, null],
-          ["ISLEM-SONRASI", "İşlem sonrası bakım ve kullanım bilgilendirmesi", "information", false, null],
-          ["KVKK-AYDINLATMA", "Kişisel verilerin işlenmesine ilişkin aydınlatma", "privacy", false, null],
-          ["GORSEL-IZIN", "Görsel kayıt ve kullanım izni", "privacy", true, null],
-          ["HASTA-BILGI", "Hasta bilgi formu", "administrative", false, null],
-          ["ISTIRAHAT", "İstirahat / durum belgesi", "administrative", false, "dentist"],
-          ["SIGORTA-BILGI", "Özel sağlık sigortası bilgi formu", "insurance", false, null],
-          // Klinik çıktılar (ADR-085): hekim düzenler, sağlık verisi içerir; migration 0025 mevcut kiracılara da ekler
-          ["EPIKRIZ", "Epikriz / tedavi özeti", "clinical_output", false, "dentist"],
-          ["HASTA-FOYU", "Hasta bilgi föyü (klinik)", "clinical_output", false, "dentist"],
-          ["RECETE", "Reçete yazısı (e-reçete değildir)", "clinical_output", false, "dentist"],
-        ];
+        // ADR-104: PİA-DENT standart belge kataloğu (42 tür) — contracts/document-templates-standard.ts; migration 0037 mevcut kiracılara aynısını ekler.
         const typeIds: Record<string, string> = {};
-        for (const [code, name, cat, acc, issuer] of docTypes) {
+        for (const t of STANDARD_DOCUMENT_TYPES) {
           const r = await c.query("insert into document_types(tenant_id, code, name, category, requires_acceptance, issuer_role) values ($1,$2,$3,$4,$5,$6) returning id",
-            [tenantId, code, name, cat, acc, issuer]);
-          typeIds[code] = r.rows[0].id;
+            [tenantId, t.code, t.name, t.category, t.requiresAcceptance, t.issuerRole]);
+          typeIds[t.code] = r.rows[0].id;
         }
-        const demoBody = (title: string) => normalizeDocumentText(
-          `SENTETİK DEMO BELGESİ — klinik veya hukuki içerik değildir.\n\nBelge: ${title} (DEMO)\nHasta: {{hasta.ad_soyad}} (Dosya {{hasta.dosya_no}}, doğum tarihi {{hasta.dogum_tarihi}})\n` +
-          `Klinik: {{klinik.ad}} · Hekim: {{hekim.ad}} · Tarih: {{belge.tarih}}\n\nBağlı plan kalemleri:\n{{plan.kalemler}}\n\n` +
-          `Bu bölüm, kliniğin klinik ve hukuk danışmanlarınca onaylanmış gerçek metinle değiştirilmelidir. PİA-DENT bu metnin içeriğini üretmez ve hukuki uygunluk iddiası taşımaz.`);
-        for (const [code, title] of [["GENEL-ONAM", "Genel tedavi bilgilendirme ve onam"], ["ENDO-ONAM", "Kanal tedavisi bilgilendirme ve onam"]] as const) {
+        for (const t of STANDARD_DOCUMENT_TYPES) {
+          const raw = standardTemplateBody(t.code);
+          if (!raw || !t.templateName) continue;
           const tp = await c.query("insert into templates(tenant_id, document_type_id, name, created_by) values ($1,$2,$3,$4) returning id",
-            [tenantId, typeIds[code], `${title} — DEMO şablon`, creator]);
-          const body = demoBody(title);
+            [tenantId, typeIds[t.code], t.templateName, creator]);
+          const body = normalizeDocumentText(raw);
           await c.query(
             `insert into template_versions(tenant_id, template_id, version, status, body, body_hash, is_demo, change_note, created_by, approved_by, approved_at)
-             values ($1,$2,1,'approved',$3,$4,true,'Sentetik ilk sürüm',$5,$5, now())`,
+             values ($1,$2,1,'approved',$3,$4,true,'PİA-DENT standart DEMO şablonu (ADR-104)',$5,$5, now())`,
             [tenantId, tp.rows[0].id, body, createHash("sha256").update(body, "utf8").digest("hex"), creator]);
         }
         // Klinik çıktı DEMO şablonları: başlangıç gövdesi (alan yer tutucuları), klinik kendi metniyle yeni sürüm yayınlar.

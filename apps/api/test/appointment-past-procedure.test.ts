@@ -31,7 +31,9 @@ beforeAll(async () => {
   app = await startApp();
   [admin, sec, dentist, bAdmin] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aSecretary), login(app, EMAILS.aDentist), login(app, EMAILS.bAdmin)]);
   tenantA = admin.session.activeMembership.tenantId;
-  pracId = (await sec.get("/resources").expect(200)).body.practitioners[0].id;
+  // QA-402: kendi hekimi — seed hekiminin gün içi randevuları (ör. bugün 14:00) "şimdi"ye göre açılan randevuyla çakışmaz.
+  // Çalışma saati tanımsız (kısıt yok); "Zz" öneki ad sıralı /resources listesinde diğer dosyaların practitioners[0]'ını değiştirmez.
+  pracId = (await admin.post("/practitioners", { displayName: `Zz Dt. Geçmiş ${tag}` }).expect(201)).body.id;
   patientId = (await sec.post("/patients", { firstName: "Randevu", lastName: `Kural ${tag}`, birthDate: "1984-04-04" }).expect(201)).body.patient.id;
 });
 afterAll(async () => { await app.close(); });

@@ -299,7 +299,7 @@ try {
   const noAuth = (await fetch(`${BASE}/api/v1/me/appearance`)).status;
   const csrf = (await fetch(`${BASE}/api/v1/me/appearance`, { method: "PUT", headers: { "content-type": "application/json", cookie: dr.cookie }, body: JSON.stringify({ scheme: "dark", accent: "mor", scale: 3 }) })).status;
   await api(dr, "PUT", "/me/appearance", { scheme: "system", accent: "yesil", scale: 3 }); // temizlik
-  const ok = bad.every((s) => s === 422) && good.status === 200 && JSON.stringify(fresh.session.user.appearance) === '{"scheme":"dim","accent":"bordo","scale":5}' && secA.accent === "yesil" && noAuth === 401 && csrf === 403;
+  const ok = bad.every((s) => s === 422) && good.status === 200 && JSON.stringify(fresh.session.user.appearance) === '{"scheme":"dim","accent":"bordo","scale":5}' && secA.accent === "mavi" && secA.scheme === "light" && noAuth === 401 && csrf === 403;
   save("N06-http.json", { bad, good: good.status, freshSession: fresh.session.user.appearance, secretaryUnaffected: secA, noAuth, csrfMissingHeader: csrf });
   rec("N06", ok ? "PASS" : "FAIL", `geçersiz 7 değer ${bad.join("/")}; geçerli ${good.status}; yeni oturumda gelir; sekreter etkilenmez; kimliksiz ${noAuth}; CSRF başlıksız ${csrf}`, { evidence: "N06-http.json" });
 } catch (e) { rec("N06", "FAIL", `istisna: ${e.message}`); }

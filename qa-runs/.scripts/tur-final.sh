@@ -3,6 +3,10 @@
 set -u
 cd /home/claude/viadent
 RUN=$1; TUR=$2; OUT=$RUN/evidence/$TUR
+mkdir -p $OUT
+# Sürüm doğrulama (tur 9 dersi): çalışan API/web bu revizyondan derlenip yeniden başlatılır; başlama zamanı > HEAD commit zamanı
+bash /tmp/claude-0/restart.sh build > $OUT/stack-restart.log 2>&1
+{ echo "HEAD $(git rev-parse HEAD) commit $(git log -1 --format=%cI)"; for p in $(pgrep -f "tsx/dist/cli.mjs src/main.ts"); do echo "pid $p başladı $(ps -o lstart= -p $p)"; done; tail -2 $OUT/stack-restart.log; } > $OUT/stack-version.txt
 qa-runs/.scripts/round.sh $RUN $TUR || { echo ROUND_FAIL; exit 1; }
 set -a; . ./.env >/dev/null 2>&1; set +a
 # V06 — sakin DB üzerinde

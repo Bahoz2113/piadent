@@ -29,8 +29,8 @@ describe("renk kontrastı", () => {
     expect(ratio(token("brand-primary"), W)).toBeGreaterThanOrEqual(4.5);
     expect(ratio(token("brand-deep"), W)).toBeGreaterThanOrEqual(4.5);
   });
-  it("turuncu vurgu küçük beyaz metin için uygun değil (yalnız dekoratif kullanılır)", () => {
-    expect(ratio(token("brand-accent"), W)).toBeLessThan(4.5);
+  it("vurgu rengi yalnız dekoratif kullanılır (beyaz metin zemini yapılmaz)", () => {
+    // ADR-106: mavi paletin vurgusu (#b45309) beyazla 4.5:1'i geçse de kural değişmedi: vurgu zemini üstünde beyaz küçük metin yok.
     expect(css).not.toMatch(/background:\s*var\(--brand-accent\);[^}]*color:\s*#fff/);
   });
   it("odak rengi zemine karşı ≥ 3:1 (arayüz bileşeni)", () => {

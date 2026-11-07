@@ -1,29 +1,32 @@
 "use client";
 /**
- * PİA-DENT odontogramı — özgün vektör çizim. FDI numaralama; hastanın sağı ekranın solunda.
- * Her diş klavye ile seçilebilir bir düğmedir. Bilgi yalnız renkle verilmez: yüzey deseni,
- * kısa sembol ve erişilebilir ad birlikte kullanılır.
+ * PİA-DENT odontogramı (ADR-103) — özgün, anatomik diş çizimi. FDI numaralama; hastanın sağı ekranın solunda.
+ * Her dişte iki görünüm: yandan (taç + kök) ve çiğneme yüzü (5 yüzey). Gerçekleşen işlemler dişe kendiliğinden yansır
+ * (dolgu yüzeyde, kron taçta, kanal kökte, implant vida, çekilen diş soluk ve çarpılı). Dişin üstüne gelince / odaklanınca
+ * ipucunda o dişin işlem geçmişi; tıklayınca seçilir. Bilgi yalnız renkle verilmez: erişilebilir ad + ipucu metni + kısa sembol.
  */
-import { FINDING_LABELS, FINDING_SYMBOL, isAnterior, type FindingType, type Surface } from "@viadent/contracts";
+import { useEffect, useId, useState, type ReactElement, type ReactNode } from "react";
+import { toothKind, TOOTH_KIND_LABELS, isAnterior, type Surface } from "@viadent/contracts";
+import { fmtDate } from "@/lib/format";
+import { buccalShape, OCCLUSAL, occlusalRegions, type Region } from "./tooth-shapes";
+import { toothStates, visualLabels, type ToothRecord, type ToothState, type ToothVisual } from "./tooth-model";
 
-export interface ToothState {
-  findings: { type: FindingType; surfaces: string[] }[];
-  planned: number;     // planlanan (tamamlanmamış) kalem sayısı
-  done: number;        // gerçekleşen işlem sayısı
-  diagnoses: number;   // aktif tanı
-}
+export { toothStates };
+export type { ToothState };
 
 const UPPER_PERM = ["18", "17", "16", "15", "14", "13", "12", "11", "21", "22", "23", "24", "25", "26", "27", "28"];
 const LOWER_PERM = ["48", "47", "46", "45", "44", "43", "42", "41", "31", "32", "33", "34", "35", "36", "37", "38"];
 const UPPER_PRIM = ["55", "54", "53", "52", "51", "61", "62", "63", "64", "65"];
 const LOWER_PRIM = ["85", "84", "83", "82", "81", "71", "72", "73", "74", "75"];
 
-const FILL: Partial<Record<FindingType, string>> = {
-  caries: "url(#vd-caries)", filling: "#7FA9C9", crown: "#E3C26F", root_canal: "#B78BC9", implant: "#9BB3AA", bridge_pontic: "#E3C26F", fracture: "url(#vd-fracture)",
+export const C = {
+  enamel: "#FBF8F1", dentin: "#EFE2C6", outline: "#8C9A93", rootOutline: "#B4A88E",
+  filling: "#4F86C0", crown: "#E0B84F", canal: "#8E44AD", implant: "#7C8B98", veneer: "#F1C98E", sealant: "#2E9B66", inlay: "#C99A2E",
+  caries: "#B42318", selected: "#5B4BC4", missing: "#B42318",
 };
 
 /** Ekrandaki 5 bölgeyi diş yüzeyine çevirir (üst çenede vestibül üstte, alt çenede altta; meziyal orta hatta doğru). */
-function regionSurface(tooth: string, region: "top" | "bottom" | "left" | "right" | "center"): Surface {
+export function regionSurface(tooth: string, region: Region): Surface {
   const q = Number(tooth[0]);
   const quad = q > 4 ? q - 4 : q;
   const upper = quad <= 2;
@@ -35,65 +38,147 @@ function regionSurface(tooth: string, region: "top" | "bottom" | "left" | "right
   return leftHalf ? "M" : "D";
 }
 
-function ToothSvg({ tooth, state, selected, selectedSurfaces, onSurface }: {
-  tooth: string; state?: ToothState; selected: boolean; selectedSurfaces: string[]; onSurface?: (s: Surface) => void;
-}) {
-  const missing = state?.findings.some((f) => f.type === "missing");
-  const wholeType = state?.findings.find((f) => f.surfaces.length === 0 && f.type !== "missing")?.type;
-  const fillFor = (s: Surface) => {
-    if (selectedSurfaces.includes(s)) return "#5B4BC4";
-    const f = state?.findings.find((x) => x.surfaces.includes(s));
-    if (f) return FILL[f.type] ?? "#C9D3CE";
-    if (wholeType) return FILL[wholeType] ?? "#C9D3CE";
-    return "#FFFFFF";
+const isUpper = (t: string) => { const q = Number(t[0]); return q === 1 || q === 2 || q === 5 || q === 6; };
+const mesialOnRight = (t: string) => { const q = Number(t[0]); return q === 1 || q === 4 || q === 5 || q === 8; };
+
+/** Yandan görünüm: kök(ler) + taç; işlemler katman olarak. */
+function BuccalView({ tooth, v, w, h, uid }: { tooth: string; v: ToothVisual; w: number; h: number; uid: string }) {
+  const kind = toothKind(tooth);
+  const shape = buccalShape(tooth, kind);
+  const lower = !isUpper(tooth);
+  const clip = `${uid}-crown`;
+  const mR = mesialOnRight(tooth);
+  const has = (s: string) => v.filled.includes(s);
+  const car = (s: string) => v.caries.includes(s);
+  // Taç üstünde yüzey yamaları (üst çene yönünde): O/I oklüzal kenar, M/D yan, B orta. L yandan görünmez (çiğneme yüzünde).
+  const patch = (s: string): ReactElement | null => {
+    if (s === "O" || s === "I") return <rect x="0" y="63" width="40" height="13" />;
+    if (s === "B") return <ellipse cx="20" cy="54" rx="6.5" ry="6" />;
+    if (s === "M") return mR ? <rect x="27" y="44" width="13" height="32" /> : <rect x="0" y="44" width="13" height="32" />;
+    if (s === "D") return mR ? <rect x="0" y="44" width="13" height="32" /> : <rect x="27" y="44" width="13" height="32" />;
+    return null;
   };
-  const regions: { r: "top" | "bottom" | "left" | "right" | "center"; d: string }[] = [
-    { r: "top", d: "M2 2 L38 2 L27 13 L13 13 Z" },
-    { r: "right", d: "M38 2 L38 38 L27 27 L27 13 Z" },
-    { r: "bottom", d: "M38 38 L2 38 L13 27 L27 27 Z" },
-    { r: "left", d: "M2 38 L2 2 L13 13 L13 27 Z" },
-    { r: "center", d: "M13 13 L27 13 L27 27 L13 27 Z" },
-  ];
+  const surfaces = ["O", "I", "M", "D", "B"];
   return (
-    <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden focusable="false">
-      {regions.map(({ r, d }) => {
-        const s = regionSurface(tooth, r);
-        return (
-          <path key={r} d={d} fill={fillFor(s)} stroke={selected ? "#0F5C4D" : "#8DA39A"} strokeWidth={selected ? 1.6 : 1}
-            onClick={onSurface ? (e) => { e.stopPropagation(); onSurface(s); } : undefined} style={onSurface ? { cursor: "pointer" } : undefined}>
-            <title>{s}</title>
-          </path>
-        );
-      })}
-      {missing && <path d="M4 4 L36 36 M36 4 L4 36" stroke="#B42318" strokeWidth="3" strokeLinecap="round" />}
+    <svg viewBox="0 0 40 76" width={w} height={h} aria-hidden focusable="false" className="tooth-buccal">
+      <defs><clipPath id={clip}><path d={shape.crown} /></clipPath></defs>
+      <g transform={lower ? "translate(0 76) scale(1 -1)" : undefined} opacity={v.missing ? 0.28 : 1}>
+        {!v.implant && !v.pontic && shape.roots.map((d, i) => (
+          <path key={i} d={d} fill="url(#vd-dentin)" stroke={C.rootOutline} strokeWidth="0.9" strokeDasharray={v.missing ? "2 2" : undefined} />
+        ))}
+        {v.implant && (
+          <g>
+            <path d="M15 42 L15.5 12 Q20 6 24.5 12 L25 42 Z" fill={C.implant} stroke="#5B6872" strokeWidth="0.8" />
+            {[16, 21, 26, 31, 36].map((y) => <path key={y} d={`M14.6 ${y} L25.4 ${y - 2.5}`} stroke="#4A5660" strokeWidth="1.1" />)}
+          </g>
+        )}
+        {v.rootCanal && !v.implant && shape.canals.map((d, i) => <path key={i} d={d} fill="none" stroke={C.canal} strokeWidth="2.3" strokeLinecap="round" />)}
+        {v.post && !v.implant && <path d="M20 44 L20 30" stroke="#5E6B74" strokeWidth="2.6" strokeLinecap="round" />}
+        <path d={shape.crown} fill={v.crown ? "url(#vd-crown)" : "url(#vd-enamel)"} stroke={v.crown ? "#9C7A22" : C.outline} strokeWidth={v.crown ? 1.2 : 0.9}
+          strokeDasharray={v.missing ? "2 2" : undefined} />
+        {!v.crown && !v.missing && <path d="M14 46 Q13 56 15 66" stroke="#FFFFFF" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.9" />}
+        <g clipPath={`url(#${clip})`}>
+          {v.veneer && <rect x="0" y="40" width="40" height="36" fill={C.veneer} opacity="0.75" />}
+          {v.fillWhole && <rect x="0" y="40" width="40" height="36" fill={C.filling} opacity="0.85" />}
+          {!v.fillWhole && <g fill={C.filling}>{surfaces.filter(has).map((s) => <g key={s}>{patch(s)}</g>)}</g>}
+          {v.cariesWhole && <rect x="0" y="40" width="40" height="36" fill="url(#vd-caries)" />}
+          {!v.cariesWhole && <g fill="url(#vd-caries)">{surfaces.filter(car).map((s) => <g key={s}>{patch(s)}</g>)}</g>}
+          {v.inlay && <rect x="10" y="63" width="20" height="13" fill={C.inlay} />}
+          {v.sealant && <rect x="8" y="67" width="24" height="9" fill={C.sealant} opacity="0.85" />}
+          {v.fracture && <path d="M12 46 L18 55 L14 60 L22 70" stroke="#7B4B00" strokeWidth="1.6" fill="none" />}
+        </g>
+      </g>
+      {v.missing && <path d="M8 18 L32 64 M32 18 L8 64" stroke={C.missing} strokeWidth="2.6" strokeLinecap="round" />}
     </svg>
   );
 }
 
-/** Klinik haritadan diş başına durum (bulgu, tanı, planlı ve gerçekleşen işlem sayısı). Özet ve Tedavi sekmesi ortak kullanır. */
-export function toothStates(chart: {
-  findings: { tooth: string; surfaces: string[]; type: FindingType; status: string }[];
-  diagnoses: { location: { tooth?: string | null }; status: string }[];
-  planned: { location: { tooth?: string | null }; quantity: number; performedQty: number }[];
-  performed: { location: { tooth?: string | null }; status: string }[];
-} | null | undefined): Record<string, ToothState> {
-  const out: Record<string, ToothState> = {};
-  const get = (t: string) => (out[t] ??= { findings: [], planned: 0, done: 0, diagnoses: 0 });
-  for (const f of chart?.findings ?? []) if (f.status === "current") get(f.tooth).findings.push({ type: f.type, surfaces: f.surfaces });
-  for (const d of chart?.diagnoses ?? []) if (d.status === "active" && d.location.tooth) get(d.location.tooth).diagnoses++;
-  for (const p of chart?.planned ?? []) if (p.location.tooth && p.performedQty < p.quantity) get(p.location.tooth).planned++;
-  for (const p of chart?.performed ?? []) if (p.status === "completed" && p.location.tooth) get(p.location.tooth).done++;
-  return out;
+/** Çiğneme yüzü: diş türüne göre hat, 5 yüzey (seçilebilir). */
+function OcclusalView({ tooth, v, w, selectedSurfaces, selected, onSurface, uid }: {
+  tooth: string; v: ToothVisual; w: number; selectedSurfaces: string[]; selected: boolean; onSurface?: (s: Surface) => void; uid: string;
+}) {
+  const kind = toothKind(tooth);
+  const { outline, box } = OCCLUSAL[kind];
+  const clip = `${uid}-occ`;
+  const fillFor = (s: Surface) => {
+    if (selectedSurfaces.includes(s)) return C.selected;
+    if (v.crown) return C.crown;
+    if (v.fillWhole || v.filled.includes(s)) return C.filling;
+    if (v.cariesWhole || v.caries.includes(s)) return "url(#vd-caries)";
+    if ((s === "O" || s === "I") && v.inlay) return C.inlay;
+    if ((s === "O" || s === "I") && v.sealant) return C.sealant;
+    if (s === "B" && v.veneer) return C.veneer;
+    return C.enamel;
+  };
+  return (
+    <svg viewBox="0 0 40 40" width={w} height={w} aria-hidden focusable="false" className="tooth-occlusal" opacity={v.missing ? 0.3 : 1}>
+      <defs><clipPath id={clip}><path d={outline} /></clipPath></defs>
+      <g clipPath={`url(#${clip})`}>
+        {occlusalRegions(box).map(({ r, d }) => {
+          const s = regionSurface(tooth, r);
+          return (
+            <path key={r} d={d} data-surface={s} fill={fillFor(s)} stroke={C.outline} strokeWidth="0.7"
+              onClick={onSurface ? (e) => { e.stopPropagation(); onSurface(s); } : undefined} style={onSurface ? { cursor: "pointer" } : undefined}>
+              <title>{s}</title>
+            </path>
+          );
+        })}
+      </g>
+      <path d={outline} fill="none" stroke={selected ? "var(--brand-primary)" : v.crown ? "#9C7A22" : C.outline} strokeWidth={selected ? 1.8 : 1.1}
+        strokeDasharray={v.missing ? "2 2" : undefined} />
+      {v.implant && <circle cx="20" cy="20" r="3.2" fill={C.implant} stroke="#4A5660" strokeWidth="0.8" />}
+    </svg>
+  );
 }
 
-export function Odontogram({ dentition, states, selected, selectedSurfaces = [], onSelect, onSurface }: {
+const RECORD_KIND: Record<ToothRecord["kind"], string> = { done: "Yapılan işlemler", planned: "Planlanan", finding: "Mevcut durum", diagnosis: "Tanı" };
+
+/** Diş ipucu / ayrıntı içeriği — özet kartının seçili diş paneli de kullanır. */
+export function ToothRecords({ state, limit }: { state?: ToothState; limit?: number }) {
+  if (!state || state.records.length === 0) return <p className="small muted">Bu dişe ait kayıt yok.</p>;
+  const groups = (["done", "planned", "finding", "diagnosis"] as const).map((k) => [k, state.records.filter((r) => r.kind === k)] as const).filter(([, l]) => l.length);
+  return (
+    <div className="tooth-records">
+      {groups.map(([k, list]) => (
+        <div key={k}>
+          <h4 className="small muted">{RECORD_KIND[k]}</h4>
+          <ul>
+            {list.slice(0, limit ?? list.length).map((r, i) => (
+              <li key={i} className="small">
+                {r.code && <strong>{r.code} </strong>}{r.label}{r.surfaces.length ? ` (${r.surfaces.join("")})` : ""}
+                {r.at && <span className="muted"> · {fmtDate(r.at)}</span>}{r.by && <span className="muted"> · {r.by}</span>}
+              </li>
+            ))}
+            {limit && list.length > limit && <li className="small muted">+{list.length - limit} kayıt daha — dişe tıklayın</li>}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function toothTitle(t: string) { return `Diş ${t} · ${TOOTH_KIND_LABELS[toothKind(t)]}`; }
+
+export function Odontogram({ dentition, states, selected, selectedSurfaces = [], onSelect, onSurface, compact }: {
   dentition: "permanent" | "primary" | "mixed";
   states: Record<string, ToothState>;
   selected: string | null;
   selectedSurfaces?: string[];
   onSelect: (tooth: string) => void;
   onSurface?: (tooth: string, s: Surface) => void;
+  compact?: boolean;
 }) {
+  const uid = useId().replace(/:/g, "");
+  const tipId = `${uid}-tip`;
+  const [hover, setHover] = useState<{ tooth: string; x: number; y: number; below: boolean } | null>(null);
+  useEffect(() => {
+    if (!hover) return;
+    const hide = () => setHover(null);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+    return () => { window.removeEventListener("scroll", hide, true); window.removeEventListener("resize", hide); };
+  }, [hover]);
+
   const rows: string[][] =
     dentition === "permanent" ? [UPPER_PERM, LOWER_PERM]
     : dentition === "primary" ? [UPPER_PRIM, LOWER_PRIM]
@@ -102,61 +187,106 @@ export function Odontogram({ dentition, states, selected, selectedSurfaces = [],
   const label = (t: string) => {
     const s = states[t];
     const parts = [`Diş ${t}`];
-    if (s?.findings.length) parts.push(s.findings.map((f) => `${FINDING_LABELS[f.type]}${f.surfaces.length ? ` (${f.surfaces.join("")})` : ""}`).join(", "));
+    if (s) parts.push(...visualLabels(s.visual));
     if (s?.diagnoses) parts.push(`${s.diagnoses} aktif tanı`);
     if (s?.planned) parts.push(`${s.planned} planlı işlem`);
     if (s?.done) parts.push(`${s.done} gerçekleşen işlem`);
     return parts.join("; ");
   };
 
+  const show = (t: string, el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const below = isUpper(t);
+    const x = Math.min(Math.max(r.left + r.width / 2, 160), window.innerWidth - 160);
+    setHover({ tooth: t, x, y: below ? r.bottom + 6 : r.top - 6, below });
+  };
+
+  const hs = hover ? states[hover.tooth] : undefined;
   return (
-    <div className="odonto-wrap">
+    <div className={`odonto-wrap ${compact ? "is-compact" : ""}`}>
       <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
         <defs>
-          <pattern id="vd-caries" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="5" height="5" fill="#F3C9C4" /><line x1="0" y1="0" x2="0" y2="5" stroke="#B42318" strokeWidth="2" />
-          </pattern>
-          <pattern id="vd-fracture" width="6" height="6" patternUnits="userSpaceOnUse">
-            <rect width="6" height="6" fill="#FBEFD9" /><path d="M0 6 L6 0" stroke="#7B4B00" strokeWidth="1.2" />
+          <linearGradient id="vd-enamel" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#EFE6D3" /><stop offset="0.35" stopColor="#FFFFFF" /><stop offset="0.75" stopColor="#FAF5EA" /><stop offset="1" stopColor="#E6DCC6" />
+          </linearGradient>
+          <linearGradient id="vd-dentin" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#E2CFA4" /><stop offset="0.45" stopColor="#F4E8CD" /><stop offset="1" stopColor="#DCC79A" />
+          </linearGradient>
+          <linearGradient id="vd-crown" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#F2D57E" /><stop offset="0.5" stopColor="#E0B84F" /><stop offset="1" stopColor="#C99A2E" />
+          </linearGradient>
+          <pattern id="vd-caries" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="4" height="4" fill="#F6CFCA" /><line x1="0" y1="0" x2="0" y2="4" stroke={C.caries} strokeWidth="2" />
           </pattern>
         </defs>
       </svg>
       <div className="odonto" role="group" aria-label="Odontogram">
-        {rows.map((row, ri) => (
-          <div key={ri} className={`odonto-row ${row.length === 10 ? "primary" : ""} ${ri === rows.length / 2 - 1 ? "arch-gap" : ""}`}>
-            {row.map((t, i) => {
-              const s = states[t];
-              const symbols = [
-                ...(s?.findings ?? []).filter((f) => f.type !== "missing").map((f) => FINDING_SYMBOL[f.type]),
-                ...(s?.diagnoses ? ["Tn"] : []),
-                ...(s?.planned ? ["P"] : []),
-                ...(s?.done ? ["✓"] : []),
-              ];
-              const top = ri < rows.length / 2;
-              return (
-                <button key={t} type="button" className={`tooth ${selected === t ? "is-selected" : ""} ${i === row.length / 2 ? "midline" : ""} ${s?.done ? "has-done" : s?.planned ? "has-planned" : ""}`}
-                  aria-pressed={selected === t} aria-label={label(t)} onClick={() => onSelect(t)}>
-                  {top && <span className="tooth-no">{t}</span>}
-                  <ToothSvg tooth={t} state={s} selected={selected === t} selectedSurfaces={selected === t ? selectedSurfaces : []}
-                    onSurface={onSurface && selected === t ? (sf) => onSurface(t, sf) : undefined} />
-                  {!top && <span className="tooth-no">{t}</span>}
-                  <span className="tooth-marks" aria-hidden>{[...new Set(symbols)].slice(0, 3).join(" ") || " "}</span>
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        {rows.map((row, ri) => {
+          const top = ri < rows.length / 2;
+          const prim = row.length === 10;
+          const bw = prim ? 30 : 38, bh = prim ? 56 : 72, ow = prim ? 26 : 34;
+          return (
+            <div key={ri} className={`odonto-row ${prim ? "primary" : ""} ${ri === rows.length / 2 - 1 ? "arch-gap" : ""}`}>
+              {row.map((t, i) => {
+                const s = states[t];
+                const v = s?.visual ?? EMPTY;
+                const sel = selected === t;
+                const marks = [...(s?.diagnoses ? ["Tn"] : []), ...(s?.planned ? ["P"] : [])];
+                const state = visualLabels(v).join(", ");
+                const buccal = <BuccalView tooth={t} v={v} w={bw} h={bh} uid={`${uid}-${t}`} />;
+                const occ = <OcclusalView tooth={t} v={v} w={ow} uid={`${uid}-${t}`} selected={sel} selectedSurfaces={sel ? selectedSurfaces : []}
+                  onSurface={onSurface && sel ? (sf) => onSurface(t, sf) : undefined} />;
+                return (
+                  <button key={t} type="button" data-tooth={t} data-state={state || undefined}
+                    className={`tooth ${sel ? "is-selected" : ""} ${i === row.length / 2 ? "midline" : ""} ${s?.done ? "has-done" : s?.planned ? "has-planned" : ""} ${v.missing ? "is-missing" : ""}`}
+                    aria-pressed={sel} aria-label={label(t)} aria-describedby={hover?.tooth === t ? tipId : undefined}
+                    onClick={() => onSelect(t)}
+                    onMouseEnter={(e) => show(t, e.currentTarget)} onMouseLeave={() => setHover(null)}
+                    onFocus={(e) => show(t, e.currentTarget)} onBlur={() => setHover(null)}>
+                    {top ? <><span className="tooth-no">{t}</span>{buccal}{occ}</> : <>{occ}{buccal}<span className="tooth-no">{t}</span></>}
+                    <span className="tooth-marks" aria-hidden>{marks.join(" ") || " "}</span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
-      <ul className="odonto-legend" aria-label="Açıklama">
-        <li><span className="sw" style={{ background: "repeating-linear-gradient(45deg,#F3C9C4,#F3C9C4 3px,#B42318 3px,#B42318 4px)" }} />Ç Çürük</li>
-        <li><span className="sw" style={{ background: "#7FA9C9" }} />D Dolgu</li>
-        <li><span className="sw" style={{ background: "#E3C26F" }} />K Kron</li>
-        <li><span className="sw" style={{ background: "#B78BC9" }} />KT Kanal tedavili</li>
-        <li><span className="sw x" />× Eksik</li>
-        <li><strong>Tn</strong> Tanı</li><li><strong>P</strong> Planlı</li><li><strong>✓</strong> Gerçekleşti</li>
-        <li><span className="sw sw-done" />İşlem yapılan diş</li><li><span className="sw sw-planned" />Planlı işlem bekleyen diş</li>
-        <li><span className="sw" style={{ background: "#5B4BC4" }} />Seçili yüzey</li>
-      </ul>
+      {hover && (
+        <div id={tipId} role="tooltip" className={`tooth-tip ${hover.below ? "below" : "above"}`} style={{ left: hover.x, top: hover.y }}>
+          <strong>{toothTitle(hover.tooth)}</strong>
+          {hs && visualLabels(hs.visual).length > 0 && <div className="tooth-tip-state">{visualLabels(hs.visual).map((x) => <span key={x} className="badge badge-neutral">{x}</span>)}</div>}
+          <ToothRecords state={hs} limit={4} />
+        </div>
+      )}
+      {!compact && <Legend />}
     </div>
+  );
+}
+
+const EMPTY: ToothVisual = {
+  missing: false, extracted: false, implant: false, crown: false, rootCanal: false, post: false, veneer: false, sealant: false, inlay: false,
+  pontic: false, fracture: false, filled: [], fillWhole: false, caries: [], cariesWhole: false,
+};
+
+function Mini({ children }: { children: ReactNode }) {
+  return <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>{children}</svg>;
+}
+function Legend() {
+  return (
+    <ul className="odonto-legend" aria-label="Açıklama">
+      <li><Mini><rect x="2" y="2" width="12" height="12" rx="3" fill={C.filling} /></Mini>Dolgu</li>
+      <li><Mini><rect x="2" y="2" width="12" height="12" rx="3" fill={C.crown} stroke="#9C7A22" /></Mini>Kron</li>
+      <li><Mini><path d="M8 1 L8 15" stroke={C.canal} strokeWidth="3" strokeLinecap="round" /></Mini>Kanal tedavisi</li>
+      <li><Mini><rect x="5" y="1" width="6" height="14" rx="2" fill={C.implant} /><path d="M4 5 L12 4 M4 9 L12 8 M4 13 L12 12" stroke="#4A5660" /></Mini>İmplant</li>
+      <li><Mini><rect x="2" y="2" width="12" height="12" rx="3" fill={C.veneer} /></Mini>Laminate</li>
+      <li><Mini><rect x="2" y="2" width="12" height="12" rx="3" fill={C.sealant} /></Mini>Fissür örtücü</li>
+      <li><Mini><rect x="2" y="2" width="12" height="12" rx="3" fill="url(#vd-caries)" stroke={C.caries} /></Mini>Çürük</li>
+      <li><Mini><rect x="2" y="2" width="12" height="12" rx="3" fill={C.enamel} stroke={C.outline} strokeDasharray="2 2" opacity="0.6" /><path d="M3 3 L13 13 M13 3 L3 13" stroke={C.missing} strokeWidth="2" /></Mini>Çekildi / eksik</li>
+      <li><span className="sw sw-done" />İşlem yapılan diş</li>
+      <li><span className="sw sw-planned" />Planlı işlem bekleyen (P)</li>
+      <li><strong>Tn</strong> Aktif tanı</li>
+      <li><span className="sw" style={{ background: C.selected }} />Seçili yüzey</li>
+    </ul>
   );
 }

@@ -1,0 +1,34 @@
+{
+ "checks": [
+  {
+   "check": "saati geçmiş planlı randevu kurulumu → 201 ",
+   "pass": true
+  },
+  {
+   "check": "saati geçmiş randevu durumu planlı kalır (otomatik değişmez)",
+   "pass": true
+  },
+  {
+   "check": "bitişi geçmişte (UI 'Sonuç bekliyor' koşulu)",
+   "pass": true
+  },
+  {
+   "check": "gelecek randevu ayrı (yaklaşan)",
+   "pass": true
+  }
+ ],
+ "list": [
+  {
+   "id": "03976520-a805-474c-b336-c58a72ad100c",
+   "status": "planned",
+   "startsAt": "2026-11-12T14:45:00.000Z",
+   "endsAt": "2026-11-12T15:15:00.000Z"
+  },
+  {
+   "id": "2ec20dfa-28b2-4db3-b1f5-f4cd9a5adff8",
+   "status": "planned",
+   "startsAt": "2026-11-07T04:10:00.000Z",
+   "endsAt": "2026-11-07T04:40:00.000Z"
+  }
+ ]
+}

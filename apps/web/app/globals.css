@@ -1,31 +1,32 @@
 /* PİA-DENT tasarım sistemi — tokenlar Plan §04'ten. Özgün düzen; rakip yerleşimi taklit edilmez. */
 :root {
-  --brand-primary: #0f5c4d;
-  --brand-primary-hover: #0c4c40;
-  --brand-deep: #123c34;
-  --brand-accent: #c66b3d;
-  --accent-surface: #f5e4da;
-  --bg: #f4f7f4;
+  /* ADR-106: başlangıç paleti "mavi" (açık şema). Diğer paletler html[data-accent] katmanıyla. */
+  --brand-primary: #1d4ed8;
+  --brand-primary-hover: #1e40af;
+  --brand-deep: #1e3a8a;
+  --brand-accent: #b45309;
+  --accent-surface: #fdf0dc;
+  --bg: #eef2f7;
   --surface: #ffffff;
-  --surface-muted: #f8faf8;
-  --text: #172b27;
-  --text-secondary: #4f625d;
-  --border: #d8e3dd;
-  --border-strong: #b9c9c1;
+  --surface-muted: #f6f8fb;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --border: #d9e1ea;
+  --border-strong: #b6c2d1;
   --focus: #5b4bc4;
-  --success: #176b46;
-  --success-bg: #e3f2ea;
+  --success: #166534;
+  --success-bg: #e3f4e9;
   --warning: #7b4b00;
   --warning-bg: #fbefd9;
-  --error: #b42318;
-  --error-bg: #fbe7e5;
-  --info: #24527a;
-  --info-bg: #e5eef6;
-  --primary-tint: #e3efeb;
-  --error-border: #efc2bd; --error-text: #7a1a12;
+  --error: #b91c1c;
+  --error-bg: #fce8e8;
+  --info: #1e4f99;
+  --info-bg: #e6eefb;
+  --primary-tint: #e2e9fb;
+  --error-border: #f1c4c4; --error-text: #7f1414;
   --warning-border: #ecd3a5; --warning-text: #5c3800;
-  --info-border: #c4d6e6; --info-text: #1b3f5e;
-  --success-border: #b8dcc8; --success-text: #0f4c31;
+  --info-border: #c3d4f0; --info-text: #173c75;
+  --success-border: #b7dfc5; --success-text: #0f5530;
   --on-primary: #ffffff;
   --nav-text: rgba(255, 255, 255, 0.86); --nav-text-strong: #ffffff; --nav-hover: rgba(255, 255, 255, 0.08); --nav-chip: rgba(255, 255, 255, 0.12);
 
@@ -33,8 +34,8 @@
   --radius-sm: 10px;
   --radius: 12px;
   --radius-lg: 14px;
-  --shadow: 0 1px 2px rgba(18, 60, 52, 0.06), 0 1px 1px rgba(18, 60, 52, 0.04);
-  --shadow-lg: 0 12px 32px rgba(18, 60, 52, 0.16);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.16);
   --font: "Segoe UI", system-ui, -apple-system, Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   --nav-w: 244px;
   --top-h: 60px;
@@ -364,23 +365,40 @@ table.table { width: 100%; border-collapse: collapse; }
 
 /* Görev 2: odontogram */
 .odonto-wrap { overflow-x: auto; position: relative; padding-bottom: 4px; }
-.odonto { display: flex; flex-direction: column; gap: 4px; min-width: 760px; }
-.odonto-row { display: flex; justify-content: center; gap: 2px; }
-.odonto-row.arch-gap { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 2px dashed var(--border); }
-.tooth { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 2px; border: 1px solid transparent; border-radius: 8px; background: none; cursor: pointer; min-width: 44px; }
+.odonto { display: flex; flex-direction: column; gap: 2px; min-width: 700px; }
+.odonto-row { display: flex; justify-content: center; gap: 1px; align-items: flex-end; }
+.odonto-row:not(.arch-gap) ~ .odonto-row, .odonto-row.arch-gap ~ .odonto-row { align-items: flex-start; }
+.odonto-row.arch-gap { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 2px dashed var(--border); }
+/* ADR-103: anatomik diş — yandan görünüm (taç+kök) + çiğneme yüzü; işlem yapılan diş hafif yeşil zemin, planlı kesikli kenar. */
+.tooth { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 1px 2px; border: 1px solid transparent; border-radius: 10px; background: none; cursor: pointer; min-width: 40px; transition: background .12s, transform .12s; }
+.odonto-row.primary .tooth { min-width: 34px; }
 .tooth:hover { background: var(--primary-tint); }
+.tooth:hover .tooth-buccal { transform: translateY(-1px); }
+.tooth svg { display: block; overflow: visible; }
+.tooth .tooth-buccal { transition: transform .12s; filter: drop-shadow(0 1px 0.5px rgba(40, 60, 50, .18)); }
 .tooth.is-selected { border-color: var(--brand-primary); background: var(--primary-tint); }
-.tooth.midline { margin-left: 14px; }
-/* İşlem yapılan dişler belirgin (madde 4): yeşil zemin + kenar; planlı bekleyen kesikli kenar. Bilgi yalnız renkle değil, ✓ / P işareti ve erişilebilir adla da verilir. */
-.tooth.has-done { background: var(--success-bg); border-color: var(--success); }
+.tooth.midline { margin-left: 12px; }
+/* İşlem yapılan dişler belirgin (madde 4): yeşil zemin + kenar; planlı bekleyen kesikli kenar. Bilgi yalnız renkle değil, işaret, ipucu ve erişilebilir adla da verilir. */
+.tooth.has-done { background: color-mix(in srgb, var(--success-bg) 70%, transparent); border-color: color-mix(in srgb, var(--success) 55%, transparent); }
 .tooth.has-planned { border: 1px dashed var(--info); }
 .tooth.has-done.is-selected, .tooth.has-planned.is-selected { border-color: var(--brand-primary); border-style: solid; }
-.tooth-no { font-size: 0.75rem; font-weight: 650; color: var(--text-secondary); }
+.tooth-no { font-size: 0.75rem; font-weight: 650; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .tooth.is-selected .tooth-no { color: var(--brand-primary); }
-.tooth-marks { font-size: 0.6562rem; font-weight: 700; color: var(--text); min-height: 14px; letter-spacing: 0.02em; }
+.tooth.is-missing .tooth-no { text-decoration: line-through; text-decoration-color: #B42318; }
+.tooth-marks { font-size: 0.6562rem; font-weight: 700; color: var(--info); min-height: 12px; letter-spacing: 0.02em; }
+.odonto-wrap.is-compact .tooth-marks { display: none; }
+.tooth-tip { position: fixed; z-index: 80; transform: translateX(-50%); max-width: 300px; min-width: 220px; padding: 10px 12px; border-radius: 10px; background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: 0 10px 28px rgba(16, 32, 26, .18); pointer-events: none; font-size: .8125rem; }
+.tooth-tip.above { transform: translate(-50%, -100%); }
+.tooth-tip strong { display: block; margin-bottom: 4px; }
+.tooth-tip-state { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.tooth-records { display: grid; gap: 6px; }
+.tooth-records h4 { margin: 0 0 2px; font-size: .75rem; text-transform: none; }
+.tooth-records ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.tooth-detail .tooth-records { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .odonto-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; padding: 12px 0 0; margin: 0; font-size: 0.7812rem; color: var(--text-secondary); }
 .odonto-legend li { display: inline-flex; align-items: center; gap: 6px; }
 .odonto-legend .sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #8DA39A; display: inline-block; }
+.odonto-legend svg { flex: none; }
 .tooth-detail { margin-top: var(--s4); padding: var(--s4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
 .tooth-detail h3 { margin: 0 0 var(--s2); font-size: 1rem; }
 .odonto-legend .sw.sw-done { background: var(--success-bg); border-color: var(--success); }
@@ -457,6 +475,9 @@ tr.drill:hover td { background: var(--primary-tint); }
 .date-pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 60; width: 296px; max-width: calc(100vw - 32px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: var(--s3); }
 .date-pop-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s2); }
 .date-pop-head .btn-icon { min-height: 36px; width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.date-pop-title { display: flex; gap: 6px; align-items: center; }
+.date-pop-select { min-height: 36px; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-weight: 650; cursor: pointer; }
+.date-pop-select:focus-visible { outline: 2px solid var(--focus, var(--brand-primary)); outline-offset: 1px; }
 .date-grid-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .date-dow { text-align: center; font-size: 0.75rem; color: var(--text-secondary); padding: 4px 0; font-weight: 600; }
 .date-day { min-height: 36px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; font: inherit; font-size: 0.875rem; cursor: pointer; }
@@ -470,7 +491,11 @@ tr.drill:hover td { background: var(--primary-tint); }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
 
 /* ---------------------------------------------------------------- görünüm katmanları (ADR-082) — vurgu × şema; değerler @viadent/contracts ACCENT_DEFS ile aynı (test: appearance-css.test.ts) */
-html[data-accent="yesil"] { --brand-primary: #0f5c4d; --brand-primary-hover: #0c4c40; --brand-deep: #123c34; --primary-tint: #e3efeb; --brand-accent: #c66b3d; --accent-surface: #f5e4da; }
+html[data-accent="mavi"] { --brand-primary: #1d4ed8; --brand-primary-hover: #1e40af; --brand-deep: #1e3a8a; --primary-tint: #e2e9fb; --brand-accent: #b45309; --accent-surface: #fdf0dc; }
+html[data-accent="mavi"][data-scheme="dim"], html[data-accent="mavi"][data-scheme="dark"] { --brand-primary: #8fb1ff; --brand-primary-hover: #a9c3ff; --brand-deep: #15224a; --primary-tint: #1c2a52; --brand-accent: #f0b45b; --accent-surface: #3a2a12; --on-primary: #0f1613; }
+html[data-accent="yesil"] { --brand-primary: #0f5c4d; --brand-primary-hover: #0c4c40; --brand-deep: #123c34; --primary-tint: #e3efeb; --brand-accent: #c66b3d; --accent-surface: #f5e4da;
+  /* Yeşil paletin özgün açık şema yüzeyleri (koyu/loş şema katmanı sonra gelir ve bunları ezer). */
+  --bg: #f4f7f4; --surface-muted: #f8faf8; --text: #172b27; --text-secondary: #4f625d; --border: #d8e3dd; --border-strong: #b9c9c1; }
 html[data-accent="yesil"][data-scheme="dim"], html[data-accent="yesil"][data-scheme="dark"] { --brand-primary: #6fcfb6; --brand-primary-hover: #8ad9c4; --brand-deep: #0d2b25; --primary-tint: #163b33; --brand-accent: #e8956a; --accent-surface: #3a2418; --on-primary: #0f1613; }
 html[data-accent="deniz"] { --brand-primary: #0b5d6b; --brand-primary-hover: #094c57; --brand-deep: #0f3c45; --primary-tint: #e0eff1; --brand-accent: #c2642a; --accent-surface: #f6e3d6; }
 html[data-accent="deniz"][data-scheme="dim"], html[data-accent="deniz"][data-scheme="dark"] { --brand-primary: #67c7d6; --brand-primary-hover: #86d3df; --brand-deep: #0a2a30; --primary-tint: #133a41; --brand-accent: #e9955f; --accent-surface: #3b2416; --on-primary: #0f1613; }
@@ -583,3 +608,19 @@ a.kpi:hover { border-color: var(--border-strong); }
 .material-lines { display: grid; gap: var(--s2); }
 .material-line { display: grid; grid-template-columns: minmax(0, 1fr) 110px auto; gap: var(--s2); align-items: end; }
 @media (max-width: 640px) { .material-line { grid-template-columns: minmax(0, 1fr) 90px auto; } }
+
+/* ADR-105: Görüntülemeler */
+.drawer.drawer-wide { width: min(980px, 100vw); }
+.imaging-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; }
+.imaging-card { display: flex; flex-direction: column; width: 100%; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; cursor: pointer; text-align: left; font: inherit; color: inherit; transition: border-color .12s, box-shadow .12s; }
+.imaging-card:hover:not(:disabled) { border-color: var(--brand-primary); box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,.08)); }
+.imaging-card:disabled { cursor: default; opacity: .8; }
+.imaging-thumb { display: flex; align-items: center; justify-content: center; aspect-ratio: 4 / 3; background: #10161A; color: #C9D3CE; overflow: hidden; }
+.imaging-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.imaging-dicom { font-weight: 700; letter-spacing: .08em; font-size: .8125rem; border: 1px solid currentColor; border-radius: 6px; padding: 4px 8px; }
+.imaging-meta { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px 10px; min-width: 0; }
+.imaging-meta strong { font-size: .875rem; overflow-wrap: anywhere; }
+.imaging-stage { background: #0E1316; border-radius: var(--radius); min-height: 240px; max-height: 70vh; overflow: auto; display: flex; align-items: flex-start; justify-content: safe center; padding: 8px; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+.imaging-stage img { flex: none; }
+.imaging-stage img { display: block; height: auto; }
+.imaging-pdf { width: 100%; height: 65vh; border: 0; background: #fff; border-radius: 6px; }

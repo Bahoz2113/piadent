@@ -1,0 +1,48 @@
+{
+ "checks": [
+  {
+   "check": "cinsiyet female 201",
+   "pass": true
+  },
+  {
+   "check": "cinsiyet male 201",
+   "pass": true
+  },
+  {
+   "check": "cinsiyet unspecified 201",
+   "pass": true
+  },
+  {
+   "check": "cinsiyet other 422",
+   "pass": true
+  },
+  {
+   "check": "cinsiyet diger 422",
+   "pass": true
+  },
+  {
+   "check": "DB kısıtı CHECK ((gender = ANY (ARRAY['female'::text, 'male'::text, 'unspecified'::text])))",
+   "pass": true
+  },
+  {
+   "check": "DB 'other' yazımını reddeder",
+   "pass": true
+  },
+  {
+   "check": "'other' kayıt 0",
+   "pass": true
+  },
+  {
+   "check": "başlangıç görünümü {\"scheme\":\"light\",\"accent\":\"mavi\",\"scale\":3}",
+   "pass": true
+  },
+  {
+   "check": "oturumda başlangıç görünümü {\"scheme\":\"light\",\"accent\":\"mavi\",\"scale\":3}",
+   "pass": true
+  },
+  {
+   "check": "seçim yapmamış kullanıcıda saklı görünüm yok ({})",
+   "pass": true
+  }
+ ]
+}

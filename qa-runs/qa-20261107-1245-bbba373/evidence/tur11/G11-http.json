@@ -1,0 +1,16 @@
+{
+ "checks": [
+  {
+   "check": "kısmi ödeme tekil (aynı anahtar)",
+   "pass": true
+  },
+  {
+   "check": "randevuya bağlı",
+   "pass": true
+  },
+  {
+   "check": "toplam ödeme / avans / kalan",
+   "pass": true
+  }
+ ]
+}

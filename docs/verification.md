@@ -303,3 +303,12 @@ Playwright ekran görüntüleriyle (1366 px ve 360 px) Giriş, Bugün, Hastalar,
 - Playwright tam koşu (iki proje, retries=0): **100 geçti + 10 bilinçli atlama, 0 hata** (`e2e/geri-bildirim-0411.spec.ts` dahil). İlk deneme bir testte tarayıcı kurulum zaman aşımıyla düştü (ortam); temiz seed'de tekrarlandı.
 - Tester HTTP + tarayıcı vakaları F01–F12 (masaüstü 1366 + 360 px) ve önceki 27 vaka: hepsi PASS. RLS 78/78 FORCE; V06 yedek/geri yükleme `differences=[]`, mutabakat EŞLEŞTİ.
 - Kanıt: `qa-runs/qa-20261104-1549-65201a2/release.md`, `results.json`, `evidence/tur2/`. Çalıştırılmayan: fiziksel cihaz, canlı ortam.
+
+## Geri bildirim 07.11.2026 — CEZERİ qa-20261107-0145-b910f90 (ADR-098…102)
+- Sürüm `1a6ba06` (b910f90 + QA-301 düzeltmesi), temiz seed, yerel test ortamı, yalnız DENEME sağlayıcılar (Netgsm adaptörü yerel sahte sunucuyla).
+- API (vitest, gerçek PostgreSQL): 43 dosya, **408/408** — yeni: `adr-098-admin.test.ts`, `geri-bildirim-0711.test.ts`, `randevu-0711.test.ts`, `messaging-0711.test.ts`.
+- contracts **17/17**; web birim **97/97** (`qa-301-past-day.test.ts` dahil); typecheck 5/5; `pnpm audit --prod` açık yok.
+- Playwright tam koşu (iki proje, retries=0): **110 geçti + 10 bilinçli atlama, 0 hata** (`e2e/geri-bildirim-0711.spec.ts` dahil).
+- Tester vakaları: 60 zorunlu vaka (önceki 39 + G01–G15 + B01–B06) PASS; RLS FORCE (0035–0036 tabloları dahil); V06 yedek/geri yükleme EŞLEŞTİ. Bulgu QA-301 (S3, geçmiş gün uyarısı) düzeltildi ve VERIFIED. Kapı: **TESLİME ADAY**.
+- Kanıt: `qa-runs/qa-20261107-0145-b910f90/release.md`, `results.json`, `evidence/tur4/`. Çalıştırılmayan: fiziksel cihaz, gerçek Netgsm gönderimi, canlıda girişli tıklama (parola bu ortamda yok).
+- Canlı (07.11.2026): 0035–0036 Supabase'e uygulandı, `origin/main` @ `2fa1cb9`; oturumsuz duman testi geçti (deployment.md §11b).

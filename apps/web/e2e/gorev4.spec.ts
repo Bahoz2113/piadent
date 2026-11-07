@@ -36,7 +36,7 @@ test("sekreter: DEMO belge önizle → üret → yüz yüze kabul; dosya yükle 
   const planSelect = d.getByLabel("Bağlı tedavi planı (isteğe bağlı)");
   if (await planSelect.isVisible()) await planSelect.selectOption({ index: 1 });
   await d.getByRole("button", { name: "Önizle" }).click();
-  await expect(d.getByText(/SENTETİK DEMO BELGESİ/)).toBeVisible();
+  await expect(d.getByText(/PİA-DENT ÖRNEK METİN \(DEMO\)/)).toBeVisible();
   await expect(d.getByText("Bu şablon SENTETİK DEMO içeriktir", { exact: false })).toBeVisible();
   await d.getByRole("button", { name: "Belgeyi üret" }).click();
   const doc = page.getByRole("dialog").filter({ hasText: "Kanıt olayları" });

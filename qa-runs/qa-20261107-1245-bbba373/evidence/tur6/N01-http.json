@@ -1,0 +1,32 @@
+{
+ "nos": [
+  "TM-2026-000007",
+  "TM-2026-000008",
+  "TM-2026-000009",
+  "TM-2026-000010",
+  "TM-2026-000011"
+ ],
+ "seqs": [
+  7,
+  8,
+  9,
+  10,
+  11
+ ],
+ "concurrent": [
+  201,
+  201
+ ],
+ "replay": "true",
+ "badStatus": 422,
+ "refundNo": "IM-2026-000002",
+ "refundRef": "TM-2026-000007",
+ "notice": "Bu belge tahsilat/iade makbuzudur; fatura veya e-Arşiv belgesi yerine geçmez.",
+ "print": 200,
+ "audit": [
+  "receipt.print"
+ ],
+ "asst403": 403,
+ "b404": 404,
+ "immut": "receipt_immutable"
+}

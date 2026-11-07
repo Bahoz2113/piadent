@@ -97,7 +97,7 @@ export function NewPatientDrawer({ onClose, onCreated, initialName }: { onClose:
           <TextField label="Soyad" required value={f.lastName} onChange={set("lastName")} error={errors.lastName} autoComplete="off" />
           <DateField label="Doğum tarihi" max={todayIn(tz)} value={f.birthDate} onChange={set("birthDate")} error={errors.birthDate} hint="Bilinmiyorsa boş bırakın." />
           <SelectField label="Cinsiyet" value={f.gender} onChange={set("gender")}>
-            <option value="">Seçilmedi</option>
+            <option value="" disabled hidden>Seçin</option>
             {GENDERS.map((g) => <option key={g} value={g}>{GENDER_LABELS[g]}</option>)}
           </SelectField>
           <TextField label="Telefon" type="tel" inputMode="tel" value={f.phone} onChange={(e) => setF((x) => ({ ...x, phone: limitPhoneInput(e.target.value) }))} error={errors.phone}

@@ -1,0 +1,47 @@
+{
+ "at": "2026-11-07T12:11:13.205Z",
+ "results": [
+  {
+   "id": "H01",
+   "status": "PASS",
+   "summary": "9/9 kontrol: hepsi geçti",
+   "at": "2026-11-07T12:11:10.198Z",
+   "evidence": "H01-http.json"
+  },
+  {
+   "id": "H03",
+   "status": "PASS",
+   "summary": "7/7 kontrol (39 şablon önizlendi): hepsi geçti",
+   "at": "2026-11-07T12:11:10.557Z",
+   "evidence": "H03-http.json"
+  },
+  {
+   "id": "H04",
+   "status": "PASS",
+   "summary": "4/4 kontrol: hepsi geçti",
+   "at": "2026-11-07T12:11:10.644Z",
+   "evidence": "H04-http.json"
+  },
+  {
+   "id": "H05",
+   "status": "PASS",
+   "summary": "24/24 kontrol (doğrulama: gelecek tarih=422, tür–kategori uyuşmazlığı=422, geçersiz diş=422, tekrarlı diş=422, DICOM fotoğraf=422, DICOM belge taraması=422, türsüz meta=422, uzun not=422, 21 MB=422, desteklenmeyen tür=422): hepsi geçti",
+   "at": "2026-11-07T12:11:12.967Z",
+   "evidence": "H05-http.json"
+  },
+  {
+   "id": "H10",
+   "status": "PASS",
+   "summary": "5/5 kontrol: hepsi geçti",
+   "at": "2026-11-07T12:11:13.121Z",
+   "evidence": "H10-http.json"
+  },
+  {
+   "id": "H09",
+   "status": "PASS",
+   "summary": "11/11 kontrol: hepsi geçti",
+   "at": "2026-11-07T12:11:13.204Z",
+   "evidence": "H09-http.json"
+  }
+ ]
+}

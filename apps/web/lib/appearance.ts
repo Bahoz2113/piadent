@@ -33,8 +33,8 @@ export function saveLocalAppearance(a: Appearance) {
 export function appearanceBootScript(): string {
   const deep = JSON.stringify(Object.fromEntries(Object.entries(ACCENT_DEFS).map(([k, v]) => [k, { l: v.light.deep, d: v.dark.deep }])));
   return `(function(){try{var a=JSON.parse(localStorage.getItem(${JSON.stringify(APPEARANCE_KEY)})||"{}")||{};` +
-    `var s=a.scheme||"system";if(s==="system"){s=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}` +
-    `var ok={light:1,dim:1,dark:1};if(!ok[s])s="light";var D=${deep};var ac=D[a.accent]?a.accent:"yesil";var sc=[1,2,3,4,5].indexOf(a.scale)>=0?a.scale:3;` +
+    `var s=a.scheme||"light";if(s==="system"){s=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}` +
+    `var ok={light:1,dim:1,dark:1};if(!ok[s])s="light";var D=${deep};var ac=D[a.accent]?a.accent:"mavi";var sc=[1,2,3,4,5].indexOf(a.scale)>=0?a.scale:3;` +
     `var h=document.documentElement;h.dataset.scheme=s;h.dataset.accent=ac;h.dataset.scale=String(sc);h.style.colorScheme=s==="light"?"light":"dark";` +
     `var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",s==="light"?D[ac].l:D[ac].d);}catch(e){}})();`;
 }

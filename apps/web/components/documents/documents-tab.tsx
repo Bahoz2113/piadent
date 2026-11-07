@@ -4,7 +4,7 @@ import { printHeaderHtml } from "@/components/brand";
 import { Download, FilePlus2, FileText, Printer, RotateCcw, ShieldAlert, Trash2, Upload } from "lucide-react";
 import {
   ACCEPTANCE_METHODS, ACCEPTANCE_METHOD_LABELS, DOCUMENT_CATEGORY_LABELS, DOCUMENT_STATUS_LABELS, EVIDENCE_LABELS, FILE_CATEGORIES, FILE_CATEGORY_LABELS,
-  FILE_MAX_BYTES, FILE_SENSITIVITY, FILE_STATUS_LABELS, FILE_TYPES, PLAN_STATUS_LABELS, type DocumentCategory, type FileCategory,
+  FILE_MAX_BYTES, FILE_SENSITIVITY, FILE_STATUS_LABELS, DOCUMENT_FILE_TYPES, PLAN_STATUS_LABELS, type DocumentCategory, type FileCategory,
 } from "@viadent/contracts";
 import { api, ApiFailure, getPageContext } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -241,7 +241,7 @@ function DocumentDrawer({ docId, patientId, onClose, onChanged }: { docId: strin
 }
 
 // ------------------------------------------------------------------ dosyalar
-async function putContent(fileId: string, file: File): Promise<{ status: string; message?: string }> {
+export async function putContent(fileId: string, file: File): Promise<{ status: string; message?: string }> {
   const res = await fetch(`/api/v1/files/${fileId}/content`, {
     method: "PUT", credentials: "same-origin", body: file,
     headers: { "content-type": "application/octet-stream", "x-viadent-request": "1", ...(getPageContext() ? { "x-viadent-context": getPageContext() } : {}) },
@@ -268,7 +268,7 @@ function FilesCard({ patientId }: { patientId: string }) {
 
   async function upload(file: File, existingId?: string) {
     setMsg(null);
-    if (!(FILE_TYPES as readonly string[]).includes(file.type)) { setMsg({ kind: "error", text: "Desteklenen türler: JPEG, PNG, WEBP, PDF." }); return; }
+    if (!(DOCUMENT_FILE_TYPES as readonly string[]).includes(file.type)) { setMsg({ kind: "error", text: "Desteklenen türler: JPEG, PNG, WEBP, PDF." }); return; }
     if (file.size > FILE_MAX_BYTES) { setMsg({ kind: "error", text: "Dosya en fazla 20 MB olabilir." }); return; }
     let id = existingId;
     try {
@@ -298,8 +298,8 @@ function FilesCard({ patientId }: { patientId: string }) {
               {categories.map((c) => <option key={c} value={c}>{FILE_CATEGORY_LABELS[c]}</option>)}
             </SelectField>
             <button className="btn btn-sm btn-primary" onClick={() => inputRef.current?.click()}><Upload size={15} aria-hidden />Dosya yükle</button>
-            <input ref={inputRef} type="file" hidden accept={FILE_TYPES.join(",")} aria-label="Yüklenecek dosya" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
-            <input ref={retryRef} type="file" hidden accept={FILE_TYPES.join(",")} aria-label="Yeniden yüklenecek dosya" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && retryId) void upload(f, retryId); }} />
+            <input ref={inputRef} type="file" hidden accept={DOCUMENT_FILE_TYPES.join(",")} aria-label="Yüklenecek dosya" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f); }} />
+            <input ref={retryRef} type="file" hidden accept={DOCUMENT_FILE_TYPES.join(",")} aria-label="Yeniden yüklenecek dosya" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f && retryId) void upload(f, retryId); }} />
           </div>
         )}
       </div>
@@ -331,7 +331,7 @@ function FilesCard({ patientId }: { patientId: string }) {
   );
 }
 
-function DeleteDrawer({ file, onClose, onDone }: { file: FileRow; onClose: () => void; onDone: () => void }) {
+export function DeleteDrawer({ file, onClose, onDone }: { file: { id: string; name: string }; onClose: () => void; onDone: () => void }) {
   const [reason, setReason] = useState("");
   const [err, setErr] = useState<ApiFailure | null>(null);
   return (

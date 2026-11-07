@@ -14,6 +14,7 @@ import { Alert, ContactBadge, Drawer, EmptyState, ErrorState, Loading, SelectFie
 import { NewPatientDrawer } from "@/components/patient-form";
 import { isPastPending, PastPendingBadge } from "@/components/appointment-status";
 import { AppointmentMaterialsCard } from "@/components/appointment-materials";
+import { PerformOnTooth } from "@/components/appointment/perform-on-tooth";
 import { NewAppointmentPage } from "@/components/appointment/new-appointment-page";
 
 const DAY_START = 8 * 60;
@@ -296,6 +297,9 @@ function AppointmentDetail({ appt, onClose, onChanged, onConflict }: { appt: App
         {can("account.read") && <PatientBalance patientId={appt.patientId} plannedPrice={appt.status === "completed" ? null : appt.plannedPrice ?? null} />}
         <Link href={`/hastalar/${appt.patientId}`} className="btn btn-sm" style={{ alignSelf: "flex-start" }}>Hasta kartını aç</Link>
         {["planned", "confirmed"].includes(appt.status) && <ReadinessPanel appointmentId={appt.id} />}
+        {["checked_in", "in_progress", "completed"].includes(appt.status) && (
+          <PerformOnTooth appointmentId={appt.id} patientId={appt.patientId} procedureId={appt.procedureId} />
+        )}
         {can("stock.read") && ["checked_in", "in_progress", "completed"].includes(appt.status) && <AppointmentMaterialsCard appointmentId={appt.id} />}
         {can("appointment.write") && (
           <>

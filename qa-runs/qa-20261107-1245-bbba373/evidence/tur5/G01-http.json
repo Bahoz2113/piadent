@@ -1,0 +1,28 @@
+{
+ "checks": [
+  {
+   "check": "yönetici chart 200",
+   "pass": true
+  },
+  {
+   "check": "yönetici clinical-notes 200",
+   "pass": true
+  },
+  {
+   "check": "yönetici health-notes 200",
+   "pass": true
+  },
+  {
+   "check": "yönetici klinik not yazar 201",
+   "pass": true
+  },
+  {
+   "check": "yönetici tahsilat 201",
+   "pass": true
+  },
+  {
+   "check": "sağlık görüntüleme izi (3)",
+   "pass": true
+  }
+ ]
+}

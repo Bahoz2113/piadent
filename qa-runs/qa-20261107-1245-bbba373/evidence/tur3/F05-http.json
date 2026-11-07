@@ -1,0 +1,19 @@
+{
+ "checks": [
+  {
+   "check": "hekim 16 numaralı dişe işlem → 201",
+   "pass": true
+  },
+  {
+   "check": "chart: yalnız 16 tamamlanmış",
+   "pass": true
+  },
+  {
+   "check": "sekreter chart → 403",
+   "pass": true
+  }
+ ],
+ "performedTeeth": [
+  "16"
+ ]
+}

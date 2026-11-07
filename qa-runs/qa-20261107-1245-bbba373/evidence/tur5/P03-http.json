@@ -1,0 +1,50 @@
+{
+ "case": "P03",
+ "run": "mw6a7cl3",
+ "rows": [
+  {
+   "label": "yanlış parola",
+   "status": 401,
+   "code": "INVALID_CREDENTIALS",
+   "ok": true
+  },
+  {
+   "label": "oturumsuz istek",
+   "status": 401,
+   "ok": true
+  },
+  {
+   "label": "CSRF başlığı yok (mutasyon)",
+   "status": 403,
+   "ok": true
+  },
+  {
+   "label": "bağlam başlığı yok",
+   "status": 200,
+   "ok": true
+  },
+  {
+   "label": "sekreter → finans özeti",
+   "status": 403,
+   "code": "FORBIDDEN",
+   "ok": true
+  },
+  {
+   "label": "sekreter → anamnez (sağlık verisi)",
+   "status": 403,
+   "ok": true
+  },
+  {
+   "label": "finans → odontogram bulgu yazma",
+   "status": 403,
+   "ok": true
+  },
+  {
+   "label": "çıkış sonrası oturum",
+   "logout": 200,
+   "status": 401,
+   "ok": true
+  }
+ ],
+ "verdict": "PASS"
+}

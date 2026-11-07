@@ -80,3 +80,55 @@ export const FINDING_LABELS: Record<FindingType, string> = {
 export const FINDING_SYMBOL: Record<FindingType, string> = {
   caries: "Ç", filling: "D", crown: "K", root_canal: "KT", missing: "×", implant: "İ", bridge_pontic: "KG", fracture: "F", other: "•",
 };
+
+/**
+ * Odontogramda gerçekleşen işlemin dişe yansıması (ADR-103). Önce PİA-DENT standart kodu (procedures-standard.ts), kliniğin
+ * kendi işlemleri için ad anahtar kelimesi. Görsel işarettir; klinik kayıt yerine geçmez. Eşleşmeyen işlem yalnız dişin
+ * işlem geçmişinde görünür.
+ */
+export const TOOTH_EFFECTS = ["filling", "extraction", "root_canal", "crown", "implant", "veneer", "sealant", "inlay", "post"] as const;
+export type ToothEffect = (typeof TOOTH_EFFECTS)[number];
+export const TOOTH_EFFECT_LABELS: Record<ToothEffect, string> = {
+  filling: "Dolgu", extraction: "Çekildi", root_canal: "Kanal tedavisi", crown: "Kron", implant: "İmplant",
+  veneer: "Laminate / veneer", sealant: "Fissür örtücü", inlay: "İnley / onley", post: "Post / kor",
+};
+
+const EFFECT_BY_CODE: Record<string, ToothEffect[]> = {
+  "DOL-01": ["filling"], "DOL-02": ["filling"], "DOL-03": ["filling"], "DOL-04": ["filling"], "DOL-05": ["filling"], "PED-01": ["filling"],
+  "INL-01": ["inlay"],
+  "KAN-01": ["root_canal"], "KAN-02": ["root_canal"], "KAN-03": ["root_canal"], "KAN-04": ["root_canal"], "PED-02": ["root_canal"],
+  "CEK-01": ["extraction"], "CEK-02": ["extraction"], "CEK-03": ["extraction"],
+  "IMP-01": ["implant"], "IMP-02": ["implant", "crown"],
+  "KRN-01": ["crown"], "KRN-02": ["crown"], "KRN-03": ["crown"],
+  "LAM-01": ["veneer"], "PST-01": ["post"], "FSR-01": ["sealant"],
+};
+/** Standart listede dişe iz bırakmayan kodlar (röntgen, anestezi, kuafaj, greft…): ad eşlemesine düşmez. */
+const NO_EFFECT_CODES = new Set(["RAD-01", "ANS-01", "KAN-05", "CER-01", "IMP-03", "PED-03"]);
+
+export function procedureToothEffects(code: string | null | undefined, name: string | null | undefined): ToothEffect[] {
+  const c = (code ?? "").trim().toUpperCase();
+  if (EFFECT_BY_CODE[c]) return EFFECT_BY_CODE[c]!;
+  if (NO_EFFECT_CODES.has(c)) return [];
+  const n = (name ?? "").toLocaleLowerCase("tr-TR");
+  if (/çekim|çekildi|ekstraksiyon/.test(n)) return ["extraction"];
+  if (/implant/.test(n)) return /kron|kuron|üstü/.test(n) ? ["implant", "crown"] : ["implant"];
+  if (/kanal/.test(n)) return ["root_canal"];
+  if (/inley|onley|inlay|onlay/.test(n)) return ["inlay"];
+  if (/laminat|veneer|lamina/.test(n)) return ["veneer"];
+  if (/fissür/.test(n)) return ["sealant"];
+  if (/kron|kuron|köprü/.test(n)) return ["crown"];
+  if (/\bpost\b|\bkor\b/.test(n)) return ["post"];
+  if (/dolgu|restorasyon/.test(n)) return ["filling"];
+  return [];
+}
+
+/** Diş türü (FDI ikinci hane): çizim şekli için. */
+export type ToothKind = "central" | "lateral" | "canine" | "premolar" | "molar";
+export function toothKind(tooth: string): ToothKind {
+  const n = Number(tooth[1]);
+  if (isPrimary(tooth)) return n === 1 ? "central" : n === 2 ? "lateral" : n === 3 ? "canine" : "molar";
+  return n === 1 ? "central" : n === 2 ? "lateral" : n === 3 ? "canine" : n <= 5 ? "premolar" : "molar";
+}
+export const TOOTH_KIND_LABELS: Record<ToothKind, string> = {
+  central: "orta kesici", lateral: "yan kesici", canine: "köpek dişi", premolar: "küçük azı", molar: "büyük azı",
+};

@@ -22,7 +22,8 @@ test("görünüm: lacivert + koyu + ölçek 4 → anında, yenilemede ve yeni ot
   await login(page, "asistan@demo-yesil.test");
   await page.goto("/bugun");
   const before = await attrs(page);
-  expect(before.accent).toBe("yesil"); expect(before.scale).toBe("3"); expect(before.root).toBe("16px");
+  // ADR-106: başlangıç görünümü açık şema + mavi palet
+  expect(before).toMatchObject({ scheme: "light", accent: "mavi", scale: "3", root: "16px", primary: "#1d4ed8" });
 
   await page.getByRole("button", { name: "Görünüm" }).click();
   const d = page.getByRole("dialog", { name: "Görünüm" });
@@ -59,7 +60,6 @@ test("görünüm: lacivert + koyu + ölçek 4 → anında, yenilemede ve yeni ot
   await other.getByRole("button", { name: "Varsayılana dön" }).click();
   await expect(other.getByText("Kaydedildi (tüm cihazlarınızda)")).toBeVisible();
   const back = await attrs(other);
-  expect(back).toMatchObject({ accent: "yesil", scale: "3", root: "16px" });
-  expect(["light", "dark"]).toContain(back.scheme); // "Cihaz ayarı" → tarayıcı tercihine çözülür
+  expect(back).toMatchObject({ scheme: "light", accent: "mavi", scale: "3", root: "16px" });
   await ctx.close();
 });

@@ -1,0 +1,28 @@
+{
+ "checks": [
+  {
+   "check": "rapor",
+   "pass": true
+  },
+  {
+   "check": "rapor günü boş saat yok",
+   "pass": true
+  },
+  {
+   "check": "resmî tatil hekim kapsamında 422",
+   "pass": true
+  },
+  {
+   "check": "izin klinik kapsamında 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter 403",
+   "pass": true
+  },
+  {
+   "check": "liste türü Türkçe",
+   "pass": true
+  }
+ ]
+}

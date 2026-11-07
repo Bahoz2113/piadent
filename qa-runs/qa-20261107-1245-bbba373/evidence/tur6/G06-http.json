@@ -1,0 +1,28 @@
+{
+ "checks": [
+  {
+   "check": "satır 228",
+   "pass": true
+  },
+  {
+   "check": "işlem Türkçe",
+   "pass": true
+  },
+  {
+   "check": "kayıt türü Türkçe",
+   "pass": true
+  },
+  {
+   "check": "alan adları Türkçe",
+   "pass": true
+  },
+  {
+   "check": "Türkçe arama",
+   "pass": true
+  },
+  {
+   "check": "başlık + seçim süzgeci",
+   "pass": true
+  }
+ ]
+}

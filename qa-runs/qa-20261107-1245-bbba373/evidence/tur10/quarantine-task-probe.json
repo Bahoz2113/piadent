@@ -1,0 +1,18 @@
+{
+ "upload": 200,
+ "fileStatus": "quarantined",
+ "secretaryTasksStatus": 200,
+ "secretarySeesFileId": false,
+ "secretaryTask": [],
+ "adminSeesFileId": true,
+ "adminTask": [
+  {
+   "kind": "file_quarantined",
+   "sensitivity": "clinical",
+   "assigneeRole": "dentist",
+   "hasPatient": true
+  }
+ ],
+ "adminFileDetail": 200,
+ "dentistSeesFileId": true
+}
