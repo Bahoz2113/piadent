@@ -1,0 +1,56 @@
+{
+ "checks": [
+  {
+   "check": "gider Kira",
+   "pass": true
+  },
+  {
+   "check": "gider Aidat",
+   "pass": true
+  },
+  {
+   "check": "gider Fatura (elektrik/su/internet)",
+   "pass": true
+  },
+  {
+   "check": "gider Personel",
+   "pass": true
+  },
+  {
+   "check": "Kira",
+   "pass": true
+  },
+  {
+   "check": "Aidat ayrı",
+   "pass": true
+  },
+  {
+   "check": "Faturalar",
+   "pass": true
+  },
+  {
+   "check": "Personel → Maaşlar",
+   "pass": true
+  },
+  {
+   "check": "kullanım 4 × 12,50 = 50,00 Malzemeler'de",
+   "pass": true
+  },
+  {
+   "check": "özet başlıkları",
+   "pass": true
+  },
+  {
+   "check": "özet toplamı = başlıklar",
+   "pass": true
+  },
+  {
+   "check": "özet kira = detay toplamı",
+   "pass": true
+  },
+  {
+   "check": "özet malzeme = detay toplamı",
+   "pass": true
+  }
+ ]
+}

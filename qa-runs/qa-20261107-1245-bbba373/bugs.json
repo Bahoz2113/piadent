@@ -25,11 +25,13 @@
   {
     "id": "QA-403",
     "severity": "S3",
-    "status": "FIX_READY",
-    "owner": "geliştirme",
-    "rev": "6fe082d",
+    "state": "VERIFIED",
     "title": "document_catalog.install denetim anahtarları (types/templates/replaced) Türkçe etiketsiz",
     "evidence": "evidence/tur10/R03-web.log",
+    "retestEvidence": "evidence/tur11/R03-web.log",
+    "cases": [
+      "R03"
+    ],
     "fixRev": "f91df0d"
   }
 ]
