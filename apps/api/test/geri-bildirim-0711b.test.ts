@@ -106,6 +106,36 @@ describe("ADR-104 belge şablonları", () => {
   });
 });
 
+describe("ADR-104 uygulama içi katalog tamamlama (canlı demo yolu)", () => {
+  it("eksik tür / şablonsuz tür / yer tutucu metin ilk GET /document-types'ta tamamlanır; ikinci çağrı yazmaz; denetim bir kez", async () => {
+    const author = (await ownerQuery<{ user_id: string }>(tenantA, "select user_id from memberships where role = 'clinic_admin' order by created_at limit 1"))[0]!.user_id;
+    // eksik tür: hiç kullanılmamış DOLGU-ONAM türünü şablonlarıyla kaldır (sahip rolü, yalnız test)
+    await ownerQuery(tenantA, `delete from template_versions where template_id in (select t.id from templates t join document_types d on d.id = t.document_type_id where d.code = 'BEYAZLATMA-ONAM')`);
+    await ownerQuery(tenantA, `delete from templates where document_type_id in (select id from document_types where code = 'BEYAZLATMA-ONAM')`);
+    await ownerQuery(tenantA, `delete from document_types where code = 'BEYAZLATMA-ONAM'`);
+    // şablonsuz tür
+    await ownerQuery(tenantA, `update template_versions v set status = 'retired' from templates t, document_types d where v.template_id = t.id and t.document_type_id = d.id and d.code = 'FRENEKTOMI-ONAM' and v.status = 'approved'`);
+    // yer tutucu metin
+    const kist = (await ownerQuery<{ id: string }>(tenantA, "select id from document_types where code = 'KIST-ONAM'"))[0]!.id;
+    await ownerQuery(tenantA, `update template_versions v set status = 'retired' from templates t where v.template_id = t.id and t.document_type_id = $1 and v.status = 'approved'`, [kist]);
+    const old = "SENTETİK DEMO BELGESİ — eski yer tutucu {{hasta.ad_soyad}}\n";
+    const tp = (await ownerQuery<{ id: string }>(tenantA, "insert into templates(tenant_id, document_type_id, name, created_by) values (app.tenant_id(), $1, 'Yer tutucu (test)', $2) returning id", [kist, author]))[0]!.id;
+    await ownerQuery(tenantA, `insert into template_versions(tenant_id, template_id, version, status, body, body_hash, is_demo, created_by, approved_by, approved_at)
+      values (app.tenant_id(), $1, 1, 'approved', $2, encode(sha256(convert_to($2, 'UTF8')), 'hex'), true, $3, $3, now())`, [tp, old, author]);
+
+    const t1 = (await sec.get("/document-types").expect(200)).body.items as { code: string; approvedTemplates: { versionId: string }[] }[];
+    expect(t1.map((t) => t.code)).toContain("BEYAZLATMA-ONAM");
+    expect(t1.filter((t) => t.approvedTemplates.length === 0).map((t) => t.code)).toEqual([]);
+    const ph = await ownerQuery<{ version: number; status: string }>(tenantA, "select version, status from template_versions where template_id = $1 order by version", [tp]);
+    expect(ph.map((x) => [x.version, x.status])).toEqual([[1, "retired"], [2, "approved"]]);
+    const n1 = (await ownerQuery<{ n: number }>(tenantA, "select count(*)::int as n from template_versions"))[0]!.n;
+    await sec.get("/document-types").expect(200);
+    expect((await ownerQuery<{ n: number }>(tenantA, "select count(*)::int as n from template_versions"))[0]!.n).toBe(n1);
+    const aud = await ownerQuery<{ c: string }>(tenantA, "select changes::text as c from audit_events where action = 'document_catalog.install' order by id desc limit 1");
+    expect(aud[0]!.c).toMatch(/"types": \{[^}]*"to": 1/);
+  });
+});
+
 describe("ADR-105 görüntülemeler", () => {
   it("panoramik + DICOM: tür, çekim tarihi, diş, not kaydedilir; tarama sonrası açılır; sekreter göremez", async () => {
     const p = (await sec.post("/patients", { firstName: "Film", lastName: "Hasta", acknowledgeDuplicates: true }).expect(201)).body.patient.id;

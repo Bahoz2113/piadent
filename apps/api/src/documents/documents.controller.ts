@@ -9,6 +9,7 @@ import { Db } from "../infra/db.service.js";
 import { AppError, Errors, parse } from "../infra/errors.js";
 import { has, type RequestContext } from "../infra/context.js";
 import { audit, enqueue, nonClinicalFileSql, visibleFileIdSql } from "../audit/audit.js";
+import { ensureStandardDocuments } from "./standard-catalog.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
 const hash = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
@@ -29,6 +30,7 @@ export class DocumentsController {
   @Require("document.read")
   types(@Ctx() ctx: RequestContext) {
     return this.db.tx(ctx, async (c) => {
+      await ensureStandardDocuments(c, ctx); // ADR-104: katalog/şablon eksikse kendiliğinden tamamlanır (kurulu kiracıda yalnız sayım)
       const t = await c.query(
         `select dt.id, dt.code, dt.name, dt.category, dt.requires_acceptance, dt.issuer_role, dt.review_status, dt.active,
                 (select json_agg(json_build_object('templateId', tp.id, 'templateName', tp.name, 'versionId', tv.id, 'version', tv.version, 'isDemo', tv.is_demo) order by tp.name)

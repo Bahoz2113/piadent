@@ -127,6 +127,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "template_version.create": "Şablon sürümü oluşturuldu",
   "template_version.approve": "Şablon sürümü onaylandı",
   "template_version.retire": "Şablon sürümü yürürlükten kaldırıldı",
+  "document_catalog.install": "Standart belge kataloğu tamamlandı",
   "file.upload": "Dosya yüklendi",
   "file.delete": "Dosya silindi",
 
