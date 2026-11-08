@@ -1,0 +1,47 @@
+{
+ "at": "2026-11-08T22:23:43.569Z",
+ "results": [
+  {
+   "id": "K01",
+   "status": "FAIL",
+   "summary": "20/21 kontrol: sekreter listeler",
+   "at": "2026-11-08T22:23:42.622Z",
+   "evidence": "K01-http.json"
+  },
+  {
+   "id": "K02",
+   "status": "PASS",
+   "summary": "35/35 kontrol: hepsi geçti",
+   "at": "2026-11-08T22:23:42.760Z",
+   "evidence": "K02-http.json"
+  },
+  {
+   "id": "K03",
+   "status": "PASS",
+   "summary": "26/26 kontrol: hepsi geçti",
+   "at": "2026-11-08T22:23:42.970Z",
+   "evidence": "K03-http.json"
+  },
+  {
+   "id": "K04",
+   "status": "PASS",
+   "summary": "6/6 kontrol: hepsi geçti",
+   "at": "2026-11-08T22:23:43.040Z",
+   "evidence": "K04-http.json"
+  },
+  {
+   "id": "K05",
+   "status": "PASS",
+   "summary": "19/19 kontrol: hepsi geçti",
+   "at": "2026-11-08T22:23:43.294Z",
+   "evidence": "K05-http.json"
+  },
+  {
+   "id": "K06",
+   "status": "PASS",
+   "summary": "5/5 kontrol: hepsi geçti",
+   "at": "2026-11-08T22:23:43.569Z",
+   "evidence": "K06-http.json"
+  }
+ ]
+}

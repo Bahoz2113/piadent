@@ -1,0 +1,24 @@
+{
+ "checks": [
+  {
+   "check": "test kart numarası hiçbir yerde yok: pos_intents=0,payments=0,audit_events=0,idempotency_keys=0,outbox_events=0,pos_settlements=0",
+   "pass": true
+  },
+  {
+   "check": "card_last4 hep 4 rakam",
+   "pass": true
+  },
+  {
+   "check": "API kart özetini yalnız maskeli döner",
+   "pass": true
+  },
+  {
+   "check": "POS audit eylemleri 10 Türkçe etiketli",
+   "pass": true
+  },
+  {
+   "check": "dışa aktarım 200 pos_terminals=11,pos_intents=18,pos_settlements=2",
+   "pass": true
+  }
+ ]
+}

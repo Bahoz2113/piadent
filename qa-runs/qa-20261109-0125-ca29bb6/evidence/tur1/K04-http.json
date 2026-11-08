@@ -1,0 +1,28 @@
+{
+ "checks": [
+  {
+   "check": "3 eşzamanlı → 201/409/409",
+   "pass": true
+  },
+  {
+   "check": "tek niyet yazıldı",
+   "pass": true
+  },
+  {
+   "check": "eşzamanlı iki onay → 200/409",
+   "pass": true
+  },
+  {
+   "check": "tek tahsilat",
+   "pass": true
+  },
+  {
+   "check": "aynı anahtar eşzamanlı → 201/201/201, 1 kimlik",
+   "pass": true
+  },
+  {
+   "check": "tek niyet, tek tahsilat",
+   "pass": true
+  }
+ ]
+}

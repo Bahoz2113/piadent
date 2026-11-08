@@ -1,0 +1,88 @@
+{
+ "checks": [
+  {
+   "check": "yönetici Unicode adla tanımlar 201",
+   "pass": true
+  },
+  {
+   "check": "finans tanımlar 201",
+   "pass": true
+  },
+  {
+   "check": "sekreter tanımlayamaz 403",
+   "pass": true
+  },
+  {
+   "check": "asistan tanımlayamaz 403",
+   "pass": true
+  },
+  {
+   "check": "hekim tanımlayamaz 403",
+   "pass": true
+  },
+  {
+   "check": "nakit kasaya bağlanmaz 422",
+   "pass": true
+  },
+  {
+   "check": "yinelenen ad 422",
+   "pass": true
+  },
+  {
+   "check": "terminal no özel karakter → 422",
+   "pass": true
+  },
+  {
+   "check": "bilinmeyen sürücü → 422",
+   "pass": true
+  },
+  {
+   "check": "boş ad → 422",
+   "pass": true
+  },
+  {
+   "check": "kasa kimliği bozuk → 422",
+   "pass": true
+  },
+  {
+   "check": "sürücü değişmez 409",
+   "pass": true
+  },
+  {
+   "check": "pasifleştirme 200",
+   "pass": true
+  },
+  {
+   "check": "pasif terminale çekim 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter listeler",
+   "pass": false
+  },
+  {
+   "check": "finans listeler",
+   "pass": true
+  },
+  {
+   "check": "hekim göremez",
+   "pass": true
+  },
+  {
+   "check": "asistan göremez",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı görmez",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı güncelleyemez (404)",
+   "pass": true
+  },
+  {
+   "check": "audit pos_terminal.update,pos_terminal.create",
+   "pass": true
+  }
+ ]
+}

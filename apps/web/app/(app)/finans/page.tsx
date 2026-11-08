@@ -11,7 +11,6 @@ import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, useToast, DateField } from "@/components/ui";
 import { parseMoneyInput } from "@/components/finance/money-input";
-import { PosDayPanel } from "@/components/finance/pos";
 
 const TABS = [
   { id: "ozet", label: "Günlük özet", perm: "finance.read" },
@@ -19,8 +18,6 @@ const TABS = [
   { id: "kasa", label: "Kasa ve banka", perm: "finance.read" },
   { id: "gider", label: "Giderler", perm: "finance.read" },
   { id: "prim", label: "Hekim primi", perm: "finance.read" },
-  // ADR-109: POS işlemleri ve gün sonu — vezne (sekreter) de kapatır; klinik geneli gelir raporu açmaz.
-  { id: "pos", label: "POS ve gün sonu", perm: "payment.write" },
   { id: "ayar", label: "Ayarlar", perm: "finance.settings" },
 ] as const;
 
@@ -32,7 +29,7 @@ export default function FinancePage() {
   const [from, setFrom] = useState(today);
   const [to, setTo] = useState(today);
   const toast = useToast();
-  if (!tabs.length) {
+  if (!can("finance.read")) {
     return (
       <>
         <div className="page-head"><div><h1>Finans</h1></div></div>
@@ -45,7 +42,7 @@ export default function FinancePage() {
   return (
     <>
       <div className="page-head">
-        <div><h1>Finans · PİA Net</h1><p>{can("finance.read") ? "İşlem tutarı, tahsilat, iade ve gider ayrı hesaplanır. " : "POS işlemleri ve gün sonu. "}Gün sınırı klinik saatine göre ({tz}). Para birimi: TRY.</p></div>
+        <div><h1>Finans · PİA Net</h1><p>İşlem tutarı, tahsilat, iade ve gider ayrı hesaplanır. Gün sınırı klinik saatine göre ({tz}). Para birimi: TRY.</p></div>
       </div>
       <div className="subtabs" role="tablist" aria-label="Finans bölümleri">
         {tabs.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} className={`btn btn-sm ${tab === t.id ? "btn-primary" : ""}`} onClick={() => setTab(t.id)}>{t.label}</button>)}
@@ -69,7 +66,6 @@ export default function FinancePage() {
         {tab === "gider" && <Expenses from={from} to={to} notify={toast.show} />}
         {tab === "prim" && <Commissions from={from} to={to} />}
         {tab === "ayar" && <Settings notify={toast.show} />}
-        {tab === "pos" && <PosDayPanel notify={(m) => toast.show("success", m)} />}
       </div>
       {toast.node}
     </>

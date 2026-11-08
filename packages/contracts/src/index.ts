@@ -21,6 +21,5 @@ export * from "./password";
 export * from "./audit";
 export * from "./appearance";
 export * from "./invoices";
-export * from "./pos";
 export * from "./procedures-standard";
 export * from "./document-templates-standard";

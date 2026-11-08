@@ -11,7 +11,6 @@ import { DECISION_LABELS, PLAN_STATUS_LABELS } from "./treatment";
 import { IMPORT_KIND_LABELS } from "./pilot";
 import { INVOICE_DOC_TYPE_LABELS, INVOICE_STATUS_LABELS } from "./invoices";
 import { ROLE_LABELS } from "./permissions";
-import { POS_DRIVER_LABELS, POS_INTENT_STATUS_LABELS, POS_MODE_LABELS } from "./pos";
 import { formatTRY, isMoney } from "./money";
 
 /**
@@ -132,13 +131,6 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "file.upload": "Dosya yüklendi",
   "file.delete": "Dosya silindi",
 
-  // POS (ADR-109)
-  "pos_terminal.create": "POS terminali tanımlandı", "pos_terminal.update": "POS terminali güncellendi",
-  "pos_intent.create": "POS ödeme niyeti oluşturuldu", "pos_intent.send": "Tutar POS cihazına gönderildi",
-  "pos_intent.approve": "POS çekimi onaylandı", "pos_intent.decline": "POS çekimi reddedildi", "pos_intent.cancel": "POS ödeme niyeti iptal edildi",
-  "pos_intent.unknown": "POS sonucu bilinmiyor (cihaz yanıt vermedi)", "pos_intent.resolve": "POS sonucu elle çözüldü",
-  "pos_settlement.close": "POS gün sonu kapatıldı",
-
   // Laboratuvar, stok ve cari
   "lab_order.create": "Laboratuvar iş emri oluşturuldu",
   "purchase_order.create": "Malzeme siparişi oluşturuldu", "purchase_order.send": "Malzeme siparişi tedarikçiye gönderildi",
@@ -242,7 +234,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
   purpose: "Amaç", channel: "Kanal", due_date: "Vade", sha256: "Dosya özeti (SHA-256)", file_sha256: "Dosya özeti (SHA-256)",
-  procedure_ids: "Planlanan işlemler", installments: "Taksit", auth_code: "Onay kodu", card_last4: "Kart son 4 hane", terminal: "POS terminali", driver: "POS sürücüsü", mode: "Eşleştirme", intent_no: "POS işlem no", slip_count: "Fiş adedi", terminal_ref: "Terminal no", slip_total: "Fiş toplamı", system_count: "Sistem adedi", system_total: "Sistem toplamı", business_date: "Gün", failure_reason: "Sonuç açıklaması", impression_type: "Ölçü türü", impression_taken_on: "Ölçü tarihi", material: "İstenen malzeme",
+  procedure_ids: "Planlanan işlemler", impression_type: "Ölçü türü", impression_taken_on: "Ölçü tarihi", material: "İstenen malzeme",
   expected_date: "Beklenen teslim", received_lines: "Teslim alınan kalemler", bill_id: "Cari fatura", types: "Eklenen belge türü", templates: "Eklenen şablon", replaced: "Yenilenen yer tutucu metin",
   // Laboratuvar, stok, cari
   supplier_id: "Tedarikçi", work_type: "İş türü", order_no: "İş emri no", stage: "Aşama", teeth: "Dişler", shade: "Renk",
@@ -267,7 +259,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   payment: "Tahsilat", refund: "İade", receipt: "Makbuz", receivable: "Alacak", allocation: "Ödeme dağıtımı", invoice: "Fatura taslağı",
   expense: "Gider", cash_account: "Kasa / banka", commission_rule_version: "Prim kuralı", commission_payout: "Prim ödemesi", salary_payment: "Maaş ödemesi",
   online_payment_request: "Online ödeme isteği", supplier: "Tedarikçi", supplier_entry: "Cari hareket", supplier_price: "Tedarikçi fiyatı",
-  stock_item: "Stok kalemi", stock_movement: "Stok hareketi", lab_order: "Laboratuvar iş emri", purchase_order: "Malzeme siparişi", pos_terminal: "POS terminali", pos_intent: "POS ödeme niyeti", pos_settlement: "POS gün sonu", lab_cost: "Laboratuvar maliyeti",
+  stock_item: "Stok kalemi", stock_movement: "Stok hareketi", lab_order: "Laboratuvar iş emri", purchase_order: "Malzeme siparişi", lab_cost: "Laboratuvar maliyeti",
   template: "Şablon", template_version: "Şablon sürümü", document_type: "Belge türü", patient_document: "Hasta belgesi", readiness_rule: "Hazırlık kuralı",
   file: "Dosya", message: "Mesaj", task: "Görev", membership: "Ekip üyeliği", invitation: "Davet", tenant: "Klinik", report: "Rapor",
   integration_connection: "Entegrasyon bağlantısı", integration_job: "Entegrasyon işi", import_batch: "Veri aktarımı",
@@ -288,9 +280,9 @@ export function auditFieldLabel(field: string): string {
   return field.replace(/_/g, " ");
 }
 
-const MONEY_FIELDS = new Set(["slip_total", "system_total", "amount", "unit_price", "unit_cost", "discount", "grand_total", "monthly_salary"]);
+const MONEY_FIELDS = new Set(["amount", "unit_price", "unit_cost", "discount", "grand_total", "monthly_salary"]);
 const DATETIME_FIELDS = new Set(["starts_at", "expires_at"]);
-const DATE_FIELDS = new Set(["business_date", "birth_date", "due_date", "valid_from", "target_date"]);
+const DATE_FIELDS = new Set(["birth_date", "due_date", "valid_from", "target_date"]);
 const HASH_FIELDS = new Set(["body_hash", "content_hash", "sha256", "file_sha256"]);
 const ID_FIELDS = new Set(["corrects_id", "corrects_note_id", "reverses_id"]);
 
@@ -302,7 +294,7 @@ const GENERIC_STATUS: Record<string, string> = {
   granted: "İzin verildi", withdrawn: "İzin geri çekildi",
 };
 const STATUS_BY_ENTITY: Record<string, Record<string, string>> = {
-  appointment: APPOINTMENT_STATUS_LABELS, treatment_plan: PLAN_STATUS_LABELS, plan_version: PLAN_STATUS_LABELS, lab_order: LAB_STATUS_LABELS, purchase_order: PURCHASE_STATUS_LABELS, pos_intent: POS_INTENT_STATUS_LABELS,
+  appointment: APPOINTMENT_STATUS_LABELS, treatment_plan: PLAN_STATUS_LABELS, plan_version: PLAN_STATUS_LABELS, lab_order: LAB_STATUS_LABELS, purchase_order: PURCHASE_STATUS_LABELS,
   patient_document: DOCUMENT_STATUS_LABELS, file: FILE_STATUS_LABELS, follow_up: FOLLOW_UP_STATUS_LABELS, online_payment_request: ONLINE_PAYMENT_STATUS_LABELS,
   message: MESSAGE_STATUS_LABELS, integration_job: TRANSPORT_LABELS, invoice: INVOICE_STATUS_LABELS,
 };
@@ -318,7 +310,7 @@ const APPROVAL_LABELS: Record<string, string> = { pending: "Onay bekliyor", appr
 const SCOPE_LABELS: Record<string, string> = { clinic: "Tüm klinik", practitioner: "Hekim", chair: "Ünite" };
 const ENUM_BY_FIELD: Record<string, Record<string, string>> = {
   method: PAYMENT_METHOD_LABELS, source: SOURCE_LABELS, kind: KIND_LABELS, gender: GENDER_LABELS, contact_outcome: CONTACT_OUTCOME_LABELS,
-  relation: RELATION_LABELS, decision: DECISION_LABELS, basis: COMMISSION_BASIS_LABELS, pay_model: PAY_MODEL_LABELS, stage: LAB_COST_STAGE_LABELS, impression_type: LAB_IMPRESSION_LABELS, driver: POS_DRIVER_LABELS, mode: POS_MODE_LABELS, material: LAB_MATERIAL_LABELS, role: ROLE_LABELS,
+  relation: RELATION_LABELS, decision: DECISION_LABELS, basis: COMMISSION_BASIS_LABELS, pay_model: PAY_MODEL_LABELS, stage: LAB_COST_STAGE_LABELS, impression_type: LAB_IMPRESSION_LABELS, material: LAB_MATERIAL_LABELS, role: ROLE_LABELS,
   purpose: COMM_PURPOSE_LABELS, channel: COMM_CHANNEL_LABELS, request_status: DOCUMENT_STATUS_LABELS, transport_status: TRANSPORT_LABELS,
   approval: APPROVAL_LABELS, operation: OPERATION_LABELS, scope: SCOPE_LABELS, category: FILE_CATEGORY_LABELS, field: { national_id: "Kimlik no" },
 };

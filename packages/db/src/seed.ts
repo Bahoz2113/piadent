@@ -227,12 +227,6 @@ export async function seed(connectionString: string, opts: { password?: string; 
           `insert into cash_accounts(tenant_id, name, kind) values ($1,'Ana kasa (sentetik)','cash'), ($1,'Banka hesabı (sentetik)','bank'),
              ($1,'POS — manuel kayıt (sentetik)','pos_manual') returning id, kind`, [tenantId]);
         const cashId = cash.rows.find((r) => r.kind === "cash")!.id;
-        // ADR-109: POS terminalleri — bağımsız banka POS'u (elle eşleştirme) ve tutar gönderen DENEME cihazı. Gerçek cihaz yok.
-        const posAcct = cash.rows.find((r) => r.kind === "pos_manual")!.id;
-        await c.query(
-          `insert into pos_terminals(tenant_id, name, driver, cash_account_id, branch_id, bank_name, terminal_ref) values
-             ($1,'Banka POS — ön büro (sentetik)','manual',$2,$3,'Sentetik Banka','T-0001'), ($1,'DENEME cihazı — tutar gönderir','mock',$2,$3,null,'DENEME-01')`,
-          [tenantId, posAcct, branchId]);
         const rule = await c.query(
           `insert into commission_rule_versions(tenant_id, rate, valid_from, note, created_by) values ($1, 10, '2026-01-01', 'DEMO: tahsilat bazlı %10 (sentetik)', $2) returning id`,
           [tenantId, creator]);

@@ -1,4 +1,15 @@
 [
- {"id": "QA-701", "severity": "S3", "state": "OPEN", "title": "PATCH /pos/terminals/:id gövdede verilmeyen banka adını ve terminal no'yu sessizce siler (aktiflik ise korunur); banka adı değişikliği denetime düşmez",
-  "evidence": "evidence/tur1/K01-http.json", "retestEvidence": null, "cases": ["K01"], "fixRev": null}
+ {
+  "id": "QA-701",
+  "severity": "S3",
+  "state": "DROPPED",
+  "title": "PATCH /pos/terminals/:id gövdede verilmeyen banka adını ve terminal no'yu sessizce siler (aktiflik ise korunur); banka adı değişikliği denetime düşmez",
+  "evidence": "evidence/tur1/K01-http.json",
+  "retestEvidence": null,
+  "cases": [
+   "K01"
+  ],
+  "fixRev": null,
+  "note": "Kapsam (ADR-109) ürün sahibi kararıyla iptal edildi; kod geri alındı."
+ }
 ]

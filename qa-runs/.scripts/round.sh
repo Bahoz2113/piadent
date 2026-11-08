@@ -16,8 +16,6 @@ WORKER_URL="$WORKER_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/
 WORKER_URL="$WORKER_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/tsx qa-runs/.scripts/h-cases.mjs > $OUT/h.log 2>&1
 WORKER_URL="$WORKER_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/tsx qa-runs/.scripts/i-cases.mjs > $OUT/i.log 2>&1
 WORKER_URL="$WORKER_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/tsx qa-runs/.scripts/j-cases.mjs > $OUT/j.log 2>&1
-# ADR-109 POS (qa-20261109-0125 ve sonrası); eski koşularda k-summary.json okunmaz
-ADMIN_URL="$ADMIN_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/tsx qa-runs/.scripts/k-cases.mjs > $OUT/k.log 2>&1
 cd apps/web
 for s in browser-cases browser-n browser-f; do cp ../../qa-runs/.scripts/$s.mjs ./.qa-$s.mjs; done
 W=../../$OUT

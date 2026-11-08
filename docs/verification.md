@@ -15,6 +15,9 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
+## CEZERİ teslim testi (09.11.2026, sürüm ca29bb6) — İPTAL
+ADR-109 POS Faz 0 koşusu `qa-runs/qa-20261109-0125-ca29bb6/` tur 1 sırasında ürün sahibi kararıyla durduruldu; teslim kararı yok. Kod geri alındı; ürün ağacı `db5c4ff` ile aynı (aşağıdaki TESLİME ADAY kaydı geçerli). Geri alma sonrası yerel doğrulama bu oturumda (tip denetimi + API/web birim testleri) aşağıda değil, commit mesajında.
+
 ## CEZERİ teslim testi (09.11.2026, sürüm db5c4ff) — ADR-107 + ADR-108 Laboratuvar
 Koşu klasörü `qa-runs/qa-20261109-0040-9a6382e/` (plan.json kilitli 86 zorunlu vaka: önceki 79 + J01–J07; bugs.md QA-601; fix1.md + dönüş; release.md; evidence/tur1–tur2). Karar: `gate.cjs … db5c4ff → TESLİME ADAY`. Son tur (2, temiz seed, gece penceresi): 86/86 PASS; API **438/438**; contracts 21; web 127; E2E **130 geçti**, 0 hata; V06 EŞLEŞTİ; R07 (purchase_* FORCE RLS, tablo düzeyinde yazma yok, sütun düzeyinde yalnız received_qty). Canlıda oturumsuz duman testi (`deployment.md` §11d).
 

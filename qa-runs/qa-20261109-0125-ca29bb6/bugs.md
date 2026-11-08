@@ -1,6 +1,6 @@
 # Bulgular — qa-20261109-0125-ca29bb6 (ADR-109 POS Faz 0, ca29bb6)
 
-## QA-701 — S3 — Terminal güncellemesi verilmeyen alanları sessizce siler
+## QA-701 — S3 — Terminal güncellemesi verilmeyen alanları sessizce siler — DÜŞTÜ (ADR-109 iptal, 09.11.2026 01:24)
 - **Vaka:** K01 (tur 1, temiz seed, revizyon ca29bb6). İlk başarısızlık kanıtı: `evidence/tur1/K01-http.json` (kontrol "sekreter listeler"), DB durumu `evidence/tur1/QA-701-db.txt`.
 - **Adımlar:** yönetici `POST /pos/terminals` {name, driver: manual, cashAccountId, bankName: "Sentetik Bankası", terminalRef: "TID 0042"} → 201. Ardından `PATCH /pos/terminals/:id` {name, driver, cashAccountId, active: false} (yalnız pasifleştirme).
 - **Beklenen:** PATCH yalnız gönderilen alanları değiştirir (aynı uçta `active` verilmediğinde eski değer korunuyor); banka adı ve terminal no korunur; her değişen alan denetimde.

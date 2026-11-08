@@ -35,7 +35,6 @@ import { CareController } from "./documents/care.controller.js";
 import { BridgeController } from "./bridge/bridge.controller.js";
 import { SuppliersController } from "./operations/suppliers.controller.js";
 import { PurchaseController } from "./operations/purchase.controller.js";
-import { PosController } from "./finance/pos.controller.js";
 import { LabController } from "./operations/lab.controller.js";
 import { StockController } from "./operations/stock.controller.js";
 import { ReportsController } from "./reports/reports.controller.js";
@@ -52,7 +51,7 @@ export class AppModule {
   static forConfig(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, AnamnesisTemplatesController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, ReceiptsController, InvoicesController, FinanceController, PosController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, PurchaseController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, AppearanceController, SecurityController, DashboardController, PractitionersController, MaterialsController, HealthNotesController, MessagingController],
+      controllers: [OpsController, AuthController, PatientsController, RelationsController, SchedulingController, ResourcesController, ClinicalController, AnamnesisController, AnamnesisTemplatesController, TasksController, TeamController, InvitationsController, CatalogController, PlansController, ChartController, AccountController, ReceiptsController, InvoicesController, FinanceController, DocumentsController, FilesController, CareController, BridgeController, SuppliersController, PurchaseController, LabController, StockController, ReportsController, ImportController, ExportController, MfaController, AppearanceController, SecurityController, DashboardController, PractitionersController, MaterialsController, HealthNotesController, MessagingController],
       providers: [
         { provide: CONFIG, useValue: config },
         Db,
