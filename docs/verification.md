@@ -15,6 +15,9 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
+## CEZERİ teslim testi (08.11.2026, sürüm f3e5d5e) — ADR-107 (çoklu işlem/tanı, Ünite, Panel, İş akışı)
+Koşu klasörü `qa-runs/qa-20261108-1900-959f7ef/` (plan.json kilitli 79 zorunlu vaka: önceki 70 + I01–I09; results.json; bugs.md QA-501…503; fix1–2.md + dönüşleri; release.md; evidence/tur1…tur3 maskeli). Karar: `node qa/cezeri/gate.cjs … f3e5d5e → TESLİME ADAY` (çıkış 0). Son tur (3, temiz seed, çalışan süreç `evidence/tur3/stack-version.txt`): 79/79 PASS, 0 FLAKY/NOT_RUN; API **425/425**; contracts 21; web 122; typecheck; audit 0; **E2E 124 geçti + 10 atlama, 0 hata**; V06 EŞLEŞTİ; R07 (appointment_procedures FORCE RLS, uygulama rolünde UPDATE/DELETE yok). Canlıda koşulmadı (canlıya alma bekliyor).
+
 ## CEZERİ teslim testi (07.11.2026, sürüm f91df0d) — 07.11 geri bildirimi 2. paket (ADR-103…106)
 Koşu klasörü `qa-runs/qa-20261107-1245-bbba373/` (plan.json kilitli 70 zorunlu vaka: önceki 60 + H01–H10; results.json; bugs.md QA-401…403; fix1–3.md; release.md; evidence/tur1…tur11 maskeli). Karar: `node qa/cezeri/gate.cjs … f91df0d → TESLİME ADAY` (çıkış 0). Son tur (11, temiz seed, çalışan süreç sürümü `evidence/tur11/stack-version.txt`): 70/70 PASS, 0 FLAKY/NOT_RUN; API **415/415**; contracts 21; web 113; typecheck 5/5; audit 0; **E2E 118 geçti + 10 atlama, 0 hata**; V06 yedek → izole geri yükleme mutabakatı EŞLEŞTİ. Tur 9 sayılmadı (test ortamı arızası: eski API süreci). Bulgular QA-401…403 hepsi VERIFIED. Canlıda yalnız oturumsuz duman testi (`deployment.md` §11c).
 
