@@ -1,0 +1,201 @@
+{
+ "at": "2026-11-08T16:57:52.148Z",
+ "results": [
+  {
+   "profile": "masaustu",
+   "id": "F06",
+   "status": "PASS",
+   "summary": "menü [Panel, İş akışı, Hastalar, Randevular, Hekimler, Tedavi, Finans, Operasyon, Raporlar, Mesajlar, Yönetim], başlık \"Panel · PİA-DENT\", KPI randevu 9=9, tahsilat 3.580,00 ₺ / API 3580.00, açık 36.150,00 ₺ / API 36150.00, tablo satırı 30, taşma 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F06-panel.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F01",
+   "status": "PASS",
+   "summary": "geçmiş dilim 184 (düğme 0), tıklayınca form açıldı=false; tarih alanına 01.01.2026 → değer \"01.01.2026\", uyarı 1",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F01-ajanda.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F02",
+   "status": "PASS",
+   "summary": "Geçmiş başlığında 'Sonuç bekliyor' 1, Yaklaşan'da 0, yaklaşan satır 1, Geldi düğmesi 1",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F02-kart.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F05",
+   "status": "PASS",
+   "summary": "hekim: işlem yapılan diş(ler) 16, ayrıntı: Diş 16 · büyük azı Çekildi Yapılan işlemler CEK-01 Diş çekimi (basit) · 08.11.2026 · Dt. Elif Aras",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F05-dis.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F07",
+   "status": "PASS",
+   "summary": "13 rapor açıldı, hata 0; varsayılan aralık 30 gün; menüden dönüş kart sayısı 13",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F07-raporlar.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F09",
+   "status": "PASS",
+   "summary": "ekranda birim maliyet 100,00 ₺ = API 100.00; 'Fiyat tanımsız' 2; uyarı 1; Fiyat ekle penceresi açıldı; taşma 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F09-urunler.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F10",
+   "status": "PASS",
+   "summary": "ekranda gider 0,00 ₺ = API 0.00; satır 3=3; UI ile ekleme sonrası satır 4",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F10-malzeme.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F11",
+   "status": "PASS",
+   "summary": "13/13 adım; başarısız: yok; yerel pencere 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F11-kapatma.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F12",
+   "status": "PASS",
+   "summary": "tek işlem seçimi (eski iki alan 0); işlem seçenekleri 56; TEM-01 fiyatı 1.200,00 ₺ görünür=true; şerit: İşlem fiyatı 1.200,00 ₺ Mevcut açık borç 3.600,00 ₺ Avans 0,00 ₺ İşlem sonrası toplam borç 4.800,00 ₺",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F12-form.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F03",
+   "status": "PASS",
+   "summary": "listede maske false; kartta tam telefon true; giriş 0'lı 11 hane, 0'sız 10 hane, yurt dışı 17 rakam",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F03-telefon.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F04",
+   "status": "PASS",
+   "summary": "hücre tıklaması karta gitti true; sürükle-seç sayfada kaldı true; klavye Enter true",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F04-satir.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F05",
+   "status": "PASS",
+   "summary": "sekreter (sağlık yetkisi yok) kartta odontogram 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F05-sekreter.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F06",
+   "status": "PASS",
+   "summary": "sekreter Panel: para kartı 0, Aylık gelir grafiği 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F06-sekreter.png"
+  },
+  {
+   "profile": "masaustu",
+   "id": "F08",
+   "status": "PASS",
+   "summary": "ekranda bu ay kalan 24.000,00 ₺ = API 24000.00; UI ile 1.000 ödeme sonrası API ödenen 7000.00; taşma 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/masaustu-F08-hekim.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F06",
+   "status": "PASS",
+   "summary": "menü [Panel, İş akışı, Hastalar, Randevular, Hekimler, Tedavi, Finans, Operasyon, Raporlar, Mesajlar, Yönetim], başlık \"Panel · PİA-DENT\", KPI randevu 9=9, tahsilat 3.580,00 ₺ / API 3580.00, açık 36.150,00 ₺ / API 36150.00, tablo satırı 30, taşma 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F06-panel.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F01",
+   "status": "PASS",
+   "summary": "geçmiş dilim -1 (düğme 0), tıklayınca form açıldı=false; tarih alanına 01.01.2026 → değer \"01.01.2026\", uyarı 1",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F01-ajanda.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F02",
+   "status": "PASS",
+   "summary": "Geçmiş başlığında 'Sonuç bekliyor' 1, Yaklaşan'da 0, yaklaşan satır 1, Geldi düğmesi 1, Geldi sonrası rozet 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F02-kart.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F05",
+   "status": "PASS",
+   "summary": "hekim: işlem yapılan diş(ler) 16, ayrıntı: Diş 16 · büyük azı Çekildi Yapılan işlemler CEK-01 Diş çekimi (basit) · 08.11.2026 · Dt. Elif Aras",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F05-dis.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F07",
+   "status": "PASS",
+   "summary": "13 rapor açıldı, hata 0; varsayılan aralık 30 gün; menüden dönüş kart sayısı 13",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F07-raporlar.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F09",
+   "status": "PASS",
+   "summary": "ekranda birim maliyet 100,00 ₺ = API 100.00; 'Fiyat tanımsız' 2; uyarı 1; Fiyat ekle penceresi açıldı; taşma 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F09-urunler.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F10",
+   "status": "PASS",
+   "summary": "ekranda gider 45,00 ₺ = API 45.00; satır 4=4; UI ile ekleme sonrası satır atlandı",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F10-malzeme.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F11",
+   "status": "PASS",
+   "summary": "11/11 adım; başarısız: yok; yerel pencere 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F11-kapatma.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F12",
+   "status": "PASS",
+   "summary": "tek işlem seçimi (eski iki alan 0); işlem seçenekleri 56; TEM-01 fiyatı 1.200,00 ₺ görünür=true; şerit: İşlem fiyatı 1.200,00 ₺ Mevcut açık borç 3.600,00 ₺ Avans 0,00 ₺ İşlem sonrası toplam borç 4.800,00 ₺",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F12-form.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F03",
+   "status": "PASS",
+   "summary": "listede maske false; kartta tam telefon true; giriş 0'lı 11 hane, 0'sız 10 hane, yurt dışı 17 rakam",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F03-telefon.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F04",
+   "status": "PASS",
+   "summary": "hücre tıklaması karta gitti true; sürükle-seç sayfada kaldı true; klavye Enter true",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F04-satir.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F05",
+   "status": "PASS",
+   "summary": "sekreter (sağlık yetkisi yok) kartta odontogram 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F05-sekreter.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F06",
+   "status": "PASS",
+   "summary": "sekreter Panel: para kartı 0, Aylık gelir grafiği 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F06-sekreter.png"
+  },
+  {
+   "profile": "mobil",
+   "id": "F08",
+   "status": "PASS",
+   "summary": "ekranda bu ay kalan 23.000,00 ₺ = API 23000.00; UI ile 1.000 ödeme sonrası API ödenen atlandı; taşma 0",
+   "evidence": "../../qa-runs/qa-20261108-1900-959f7ef/evidence/tur3/mobil-F08-hekim.png"
+  }
+ ]
+}

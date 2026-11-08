@@ -1,0 +1,100 @@
+{
+ "checks": [
+  {
+   "check": "asistan panoramik 201",
+   "pass": true
+  },
+  {
+   "check": "içerik gönderildi",
+   "pass": true
+  },
+  {
+   "check": "DICOM 201",
+   "pass": true
+  },
+  {
+   "check": "tarama panoramik=available DICOM=available sahte DICOM=rejected",
+   "pass": true
+  },
+  {
+   "check": "meta {\"k\":\"panoramic\",\"t\":\"2026-11-04\",\"d\":[\"16\",\"26\"]}",
+   "pass": true
+  },
+  {
+   "check": "yönetici açar 200",
+   "pass": true
+  },
+  {
+   "check": "açılış erişim izinde",
+   "pass": true
+  },
+  {
+   "check": "sekreter listesi 0",
+   "pass": true
+  },
+  {
+   "check": "sekreter içerik 404",
+   "pass": true
+  },
+  {
+   "check": "sekreter yükleme 403",
+   "pass": true
+  },
+  {
+   "check": "finans 403",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı 404",
+   "pass": true
+  },
+  {
+   "check": "gelecek tarih 422",
+   "pass": true
+  },
+  {
+   "check": "tür–kategori uyuşmazlığı 422",
+   "pass": true
+  },
+  {
+   "check": "geçersiz diş 422",
+   "pass": true
+  },
+  {
+   "check": "tekrarlı diş 422",
+   "pass": true
+  },
+  {
+   "check": "DICOM fotoğraf 422",
+   "pass": true
+  },
+  {
+   "check": "DICOM belge taraması 422",
+   "pass": true
+  },
+  {
+   "check": "türsüz meta 422",
+   "pass": true
+  },
+  {
+   "check": "uzun not 422",
+   "pass": true
+  },
+  {
+   "check": "21 MB 422",
+   "pass": true
+  },
+  {
+   "check": "desteklenmeyen tür 422",
+   "pass": true
+  },
+  {
+   "check": "süt dişli fotoğraf 201",
+   "pass": true
+  },
+  {
+   "check": "kolonlar imaging_kind,imaging_note,taken_on,teeth",
+   "pass": true
+  }
+ ]
+}

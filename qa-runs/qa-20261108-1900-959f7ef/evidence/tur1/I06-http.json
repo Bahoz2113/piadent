@@ -1,0 +1,24 @@
+{
+ "checks": [
+  {
+   "check": "A üniteleri Ünite A,Ünite B,Ünite C",
+   "pass": true
+  },
+  {
+   "check": "B üniteleri Ünite A,Ünite B",
+   "pass": true
+  },
+  {
+   "check": "ünite çakışması 409 ünite",
+   "pass": true
+  },
+  {
+   "check": "bilinmeyen ünite: Ünite bulunamadı veya pasif.",
+   "pass": true
+  },
+  {
+   "check": "tekrar çalıştırma: Cerrahi oda,Ünite A,Ünite B,Ünite C",
+   "pass": true
+  }
+ ]
+}

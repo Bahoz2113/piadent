@@ -44,11 +44,11 @@ describe("AT-03 aynı hekim/koltuğa eşzamanlı randevu", () => {
     expect(rows[0].n).toBe(1);
   });
 
-  it("farklı hekim aynı koltuğa aynı anda alınamaz (koltuk çakışması)", async () => {
+  it("farklı hekim aynı koltuğa aynı anda alınamaz (ünite çakışması)", async () => {
     await sec.post("/appointments", appt({ startTime: "15:00" })).expect(201);
     const r = await sec.post("/appointments", appt({ startTime: "15:10", practitionerId: res.practitioners[1]!.id, patientId: patients[2]!.id }));
     expect(r.status).toBe(409);
-    expect(r.body.details.resource).toBe("koltuk");
+    expect(r.body.details.resource).toBe("ünite");
   });
 
   it("[başlangıç, bitiş) — bitişi aynı anda olan randevular çakışmaz", async () => {

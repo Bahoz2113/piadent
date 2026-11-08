@@ -45,7 +45,7 @@ const D = { width: 1366, height: 900 };
   await page.getByRole("heading", { name: "Ekip" }).waitFor();
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${out}/g1-yonetim-ekip.png`, fullPage: true });
-  await page.getByRole("tab", { name: "Hekim ve koltuklar" }).click();
+  await page.getByRole("tab", { name: "Hekim ve üniteler" }).click();
   await page.getByText("Hekimler ve çalışma saatleri").waitFor();
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${out}/g1-yonetim-kaynak.png`, fullPage: true });

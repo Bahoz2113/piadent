@@ -14,7 +14,7 @@ import { SecurityPanel } from "@/components/admin/security";
 
 const TABS = [
   { id: "ekip", label: "Ekip ve davet", perm: "team.manage" },
-  { id: "kaynaklar", label: "Hekim ve koltuklar", perm: "schedule.manage" },
+  { id: "kaynaklar", label: "Hekim ve üniteler", perm: "schedule.manage" },
   { id: "turler", label: "İşlem türleri", perm: "treatment.read" },
   { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
   { id: "belge", label: "Belge şablonları", perm: "template.manage" },
@@ -27,7 +27,7 @@ const TABS = [
  * 07.11.2026 taşınan sekmeler (eski bağlantılar çalışsın): Kapatmalar → Hekimler (izin / rapor / resmî tatil),
  * Ürün ve fiyat listesi → Operasyon → Tedarikçi, Anamnez şablonu → kaldırıldı (sağlık özeti hasta kartında).
  */
-const MOVED: Record<string, string> = { kapatma: "/hekimler", urunler: "/operasyon?sekme=tedarikci", anamnez: "/yonetim" };
+const MOVED: Record<string, string> = { kapatma: "/hekimler", urunler: "/laboratuvar?sekme=tedarikci", anamnez: "/yonetim" };
 
 export default function AdminPage() {
   const { can, session } = useSession();

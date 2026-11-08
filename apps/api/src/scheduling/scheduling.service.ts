@@ -10,14 +10,27 @@ import { audit, enqueue } from "../audit/audit.js";
 
 const APPT_COLS = `a.id, a.appointment_type_id, a.patient_id, a.practitioner_id, a.chair_id, a.starts_at, a.ends_at, a.status, a.contact_outcome,
   a.reason, a.note, a.cancel_reason, a.checked_in_at, a.completed_at, a.version, a.procedure_id,
-  pc.code as procedure_code, pc.name as procedure_name, pp.price as planned_price`;
-/** Planlanan işlem ve randevu günündeki tarife fiyatı (lookupPrice ile aynı öncelik: hekime özel > klinik; en yeni geçerli sürüm). $TZ yer tutucusu sorguya göre değiştirilir. */
-const procJoin = (tzParam: string) => `left join procedures pc on pc.id = a.procedure_id
-  left join lateral (
-    select ti.price::text as price from tariff_items ti join tariff_versions tv on tv.id = ti.tariff_version_id
-     where ti.procedure_id = a.procedure_id and tv.status = 'published' and tv.valid_from <= (a.starts_at at time zone ${tzParam})::date
-       and (tv.practitioner_id = a.practitioner_id or tv.practitioner_id is null)
-     order by (tv.practitioner_id is not null) desc, tv.valid_from desc, tv.published_at desc limit 1) pp on a.procedure_id is not null`;
+  apx.procs as planned_procedures, apx.planned_total as planned_price`;
+/**
+ * Planlanan işlemler (ADR-107: birden fazla, sıralı) ve randevu günündeki tarife fiyatları (lookupPrice ile aynı öncelik: hekime özel > klinik;
+ * en yeni geçerli sürüm). Toplam yalnız her işlemin fiyatı varsa döner (eksik fiyatla yanlış toplam gösterilmez). Liste tablosu yoksa
+ * (eski kayıt) `appointments.procedure_id` tek işlem olarak okunur.
+ */
+const procJoin = (tzParam: string) => `left join lateral (
+  select json_agg(json_build_object('id', x.pid, 'code', pc.code, 'name', pc.name, 'price', pp.price) order by x.pos) as procs,
+         case when bool_and(pp.price is not null) then sum(pp.price::numeric)::text end as planned_total
+    from (select ap.procedure_id as pid, ap.position as pos from appointment_procedures ap where ap.appointment_id = a.id
+          union all
+          select a.procedure_id, 1 where a.procedure_id is not null and not exists (select 1 from appointment_procedures ap2 where ap2.appointment_id = a.id)) x
+    join procedures pc on pc.id = x.pid
+    left join lateral (
+      select ti.price::text as price from tariff_items ti join tariff_versions tv on tv.id = ti.tariff_version_id
+       where ti.procedure_id = x.pid and tv.status = 'published' and tv.valid_from <= (a.starts_at at time zone ${tzParam})::date
+         and (tv.practitioner_id = a.practitioner_id or tv.practitioner_id is null)
+       order by (tv.practitioner_id is not null) desc, tv.valid_from desc, tv.published_at desc limit 1) pp on true
+  ) apx on true`;
+
+type PlannedProc = { id: string; code: string; name: string; price: string | null };
 
 function presentAppointment(r: Record<string, any>) {
   return {
@@ -40,9 +53,12 @@ function presentAppointment(r: Record<string, any>) {
     checkedInAt: r.checked_in_at,
     completedAt: r.completed_at,
     version: r.version,
+    /** İlk planlanan işlem (geriye uyumluluk). */
     procedureId: r.procedure_id ?? null,
-    procedureLabel: r.procedure_code ? `${r.procedure_code} · ${r.procedure_name}` : null,
-    /** Tarifeden bilgi amaçlı fiyat (TL, metin); tarife yoksa null. */
+    /** ADR-107: planlanan işlemler sırasıyla; her birinin tarife fiyatı (yoksa null). Boş liste = işlem henüz belirlenmedi (hekim muayenede). */
+    procedures: ((r.planned_procedures ?? []) as PlannedProc[]).map((p) => ({ id: p.id, code: p.code, name: p.name, label: `${p.code} · ${p.name}`, price: p.price ?? null })),
+    procedureLabel: (r.planned_procedures as PlannedProc[] | null)?.length ? (r.planned_procedures as PlannedProc[]).map((p) => `${p.code} · ${p.name}`).join(", ") : null,
+    /** Tarifeden bilgi amaçlı toplam fiyat (TL, metin); işlemlerden birinin fiyatı yoksa ya da işlem yoksa null. */
     plannedPrice: r.planned_price ?? null,
   };
 }
@@ -120,21 +136,27 @@ export class SchedulingService {
       if (!prac.rowCount) throw Errors.validation({ practitionerId: "Hekim bulunamadı veya pasif." });
       if (input.chairId) {
         const chair = await c.query("select 1 from chairs where id = $1 and active", [input.chairId]);
-        if (!chair.rowCount) throw Errors.validation({ chairId: "Koltuk bulunamadı veya pasif." });
+        if (!chair.rowCount) throw Errors.validation({ chairId: "Ünite bulunamadı veya pasif." });
       }
       let reason = input.reason ?? null;
-      let procedureId = input.procedureId ?? null;
+      // ADR-107: işlemler isteğe bağlı ve birden fazla olabilir; `procedureIds` verilmişse `procedureId` yok sayılır.
+      let procedureIds: string[] = input.procedureIds ?? (input.procedureId ? [input.procedureId] : []);
       if (input.appointmentTypeId) {
         const ty = await c.query("select name, procedure_id from appointment_types where id = $1 and active", [input.appointmentTypeId]);
         if (!ty.rowCount) throw Errors.validation({ appointmentTypeId: "İşlem türü bulunamadı." });
         reason = reason ?? ty.rows[0].name;
-        procedureId = procedureId ?? ty.rows[0].procedure_id ?? null;
+        if (!procedureIds.length && ty.rows[0].procedure_id) procedureIds = [ty.rows[0].procedure_id];
       }
-      if (procedureId) {
-        const pr = await c.query("select name from procedures where id = $1 and active", [procedureId]);
-        if (!pr.rowCount) throw Errors.validation({ procedureId: "İşlem bulunamadı veya pasif." });
-        reason = reason ?? pr.rows[0].name;
+      if (procedureIds.length) {
+        const pr = await c.query("select id, name from procedures where id = any($1::uuid[]) and active", [procedureIds]);
+        if (pr.rowCount !== procedureIds.length) throw Errors.validation({ [input.procedureIds ? "procedureIds" : "procedureId"]: "İşlem bulunamadı veya pasif." });
+        const names = new Map(pr.rows.map((x) => [x.id as string, x.name as string]));
+        if (!reason) {
+          const joined = procedureIds.map((id) => names.get(id)!).join(", ");
+          reason = joined.length <= 120 ? joined : `${joined.slice(0, 117)}…`;
+        }
       }
+      const procedureId = procedureIds[0] ?? null;
       // Kapatma: aşılamaz (T06).
       const closed = await c.query(
         `select reason, scope from closures
@@ -144,7 +166,7 @@ export class SchedulingService {
         [startsAt, endsAt, input.practitionerId, input.chairId ?? null],
       );
       if (closed.rowCount) {
-        const label = { clinic: "Klinik", practitioner: "Hekim", chair: "Koltuk" }[closed.rows[0].scope as "clinic"];
+        const label = { clinic: "Klinik", practitioner: "Hekim", chair: "Ünite" }[closed.rows[0].scope as "clinic"];
         throw new AppError(422, "RESOURCE_CLOSED", `${label} bu aralıkta kapalı: ${closed.rows[0].reason}`, undefined, { scope: closed.rows[0].scope });
       }
       // Çalışma saati: tanımlıysa dışı uyarıdır; bilinçli onayla kaydedilebilir ve iz bırakır (T05).
@@ -159,6 +181,9 @@ export class SchedulingService {
         [ctx.tenantId, prac.rows[0].branch_id, input.patientId, input.practitionerId, input.chairId ?? null, input.appointmentTypeId ?? null,
          startsAt, endsAt, reason, input.note ?? null, ctx.userId, procedureId],
       );
+      for (const [i, pid] of procedureIds.entries()) {
+        await c.query("insert into appointment_procedures(tenant_id, appointment_id, procedure_id, position) values ($1,$2,$3,$4)", [ctx.tenantId, r.rows[0].id, pid, i + 1]);
+      }
       const a = await this.loadOne(c, ctx, r.rows[0].id);
       await audit(c, ctx, {
         action: "appointment.create", entityType: "appointment", entityId: a.id, patientId: a.patient_id,
@@ -166,6 +191,7 @@ export class SchedulingService {
           starts_at: { from: null, to: a.starts_at }, practitioner_id: { from: null, to: a.practitioner_id }, chair_id: { from: null, to: a.chair_id },
           ...(outside ? { outside_working_hours: { from: null, to: true } } : {}),
           ...(procedureId ? { procedure_id: { from: null, to: procedureId } } : {}),
+          ...(procedureIds.length > 1 ? { procedure_ids: { from: null, to: procedureIds } } : {}),
           ...(past ? { backdated: { from: null, to: true }, backdate_reason: { from: null, to: input.backdateReason } } : {}),
         },
       });

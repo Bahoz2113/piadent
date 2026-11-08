@@ -1,0 +1,36 @@
+{
+ "checks": [
+  {
+   "check": "diş 16 tanı 201",
+   "pass": true
+  },
+  {
+   "check": "diş 26 tanı 201",
+   "pass": true
+  },
+  {
+   "check": "diş 36 tanı 201",
+   "pass": true
+  },
+  {
+   "check": "genel tanı 201",
+   "pass": true
+  },
+  {
+   "check": "ziyaretin tanıları 4",
+   "pass": true
+  },
+  {
+   "check": "sekreter tanı → 403",
+   "pass": true
+  },
+  {
+   "check": "sekreter tanı içeriği görmez (403)",
+   "pass": true
+  },
+  {
+   "check": "başka hastanın ziyareti → 422",
+   "pass": true
+  }
+ ]
+}

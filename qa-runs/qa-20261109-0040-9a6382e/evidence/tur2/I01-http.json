@@ -1,0 +1,20 @@
+{
+ "checks": [
+  {
+   "check": "işlemsiz randevu 201 ",
+   "pass": true
+  },
+  {
+   "check": "boş işlem listesi []",
+   "pass": true
+  },
+  {
+   "check": "procedureIds: [] 201",
+   "pass": true
+  },
+  {
+   "check": "liste satırı yok",
+   "pass": true
+  }
+ ]
+}

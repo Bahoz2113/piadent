@@ -22,7 +22,7 @@ A=$(psql "$M" -At -f qa-runs/.scripts/reconcile.sql); Bq=$(psql "$R" -At -f qa-r
 { echo "## viadent"; echo "$A"; echo "## viadent_qa_restore_${TUR}"; echo "$Bq"; [ "$A" = "$Bq" ] && echo EŞLEŞTİ || echo FARKLI; } >> $OUT/V06-reconcile.txt
 psql "$U" -q -c "drop database if exists viadent_qa_restore_${TUR}" >/dev/null 2>&1
 # R07
-psql "$MIGRATION_DATABASE_URL" -At -f qa-runs/.scripts/rls-0711.sql > $OUT/R07-rls.txt 2>&1
+psql "$MIGRATION_DATABASE_URL" -At -f qa-runs/.scripts/rls-0911.sql > $OUT/R07-rls.txt 2>&1
 # R01–R03, R06
 (cd apps/api && npx vitest run) > $OUT/R01-api.log 2>&1
 (cd packages/contracts && npx vitest run) > $OUT/R02-contracts.log 2>&1

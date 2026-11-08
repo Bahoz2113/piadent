@@ -10,7 +10,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
 }
 const noOverflow = async (page: Page) => {
   const vw = page.viewportSize()!.width;
@@ -53,7 +53,7 @@ test("laboratuvar: sekreter iş emri açar → gönderir → teslim alır; hekim
 
   const dent = await (browser as Browser).newPage({ viewport: page.viewportSize()! });
   await login(dent, "elif.aras@demo-yesil.test");
-  await dent.goto("/operasyon");
+  await dent.goto("/laboratuvar"); // 08.11.2026 (ADR-108): iş emirleri Laboratuvar menüsünde
   await dent.getByRole("button", { name: "Kabul bekliyor", exact: true }).click();
   await dent.locator("tr", { hasText: work }).getByRole("button", { name: "Aç", exact: true }).click();
   const od = dent.getByRole("dialog").filter({ hasText: work });

@@ -14,6 +14,7 @@ import { Alert, ContactBadge, Drawer, EmptyState, ErrorState, Loading, SelectFie
 import { NewPatientDrawer } from "@/components/patient-form";
 import { isPastPending, PastPendingBadge } from "@/components/appointment-status";
 import { AppointmentMaterialsCard } from "@/components/appointment-materials";
+import { VisitDiagnoses } from "@/components/appointment/visit-diagnoses";
 import { PerformOnTooth } from "@/components/appointment/perform-on-tooth";
 import { NewAppointmentPage } from "@/components/appointment/new-appointment-page";
 
@@ -206,7 +207,7 @@ function AgendaInner() {
                   </div>
                 );
               })}
-              {cols.length === 0 && <EmptyState title="Tanımlı kaynak yok">Yönetim &gt; Hekim ve koltuklar bölümünden tanımlayın.</EmptyState>}
+              {cols.length === 0 && <EmptyState title="Tanımlı kaynak yok">Yönetim &gt; Hekim ve üniteler bölümünden tanımlayın.</EmptyState>}
             </div>
             {/* Telefon: gün listesi (Plan §04) */}
             <div className="mobile-only day-list">
@@ -288,9 +289,12 @@ function AppointmentDetail({ appt, onClose, onChanged, onConflict }: { appt: App
           <dt>Durum</dt><dd>{isPastPending(appt) ? <><PastPendingBadge /> <span className="muted small">({APPOINTMENT_STATUS_LABELS[appt.status]})</span></> : <StatusBadge status={appt.status} />}</dd>
           <dt>İletişim sonucu</dt><dd><ContactBadge outcome={appt.contactOutcome} /></dd>
           <dt>Hekim</dt><dd>{appt.practitionerName}</dd>
-          <dt>Koltuk</dt><dd>{appt.chairName ?? "Belirtilmedi"}</dd>
+          <dt>Ünite</dt><dd>{appt.chairName ?? "Belirtilmedi"}</dd>
           <dt>İşlem / neden</dt><dd>{appt.reason ?? "Belirtilmedi"}</dd>
-          <dt>Planlanan işlem</dt><dd>{appt.procedureLabel ?? "Seçilmedi"}{appt.plannedPrice ? <span className="muted"> · tarife {formatTRY(appt.plannedPrice)}</span> : appt.procedureLabel ? <span className="muted"> · tarifede fiyat yok</span> : null}</dd>
+          <dt>Planlanan işlemler</dt><dd>{appt.procedures?.length
+            ? <>{appt.procedures.map((p) => <div key={p.id}>{p.label}{p.price ? <span className="muted"> · tarife {formatTRY(p.price)}</span> : <span className="muted"> · tarifede fiyat yok</span>}</div>)}
+                {appt.procedures.length > 1 && <div><strong>Toplam: {appt.plannedPrice ? formatTRY(appt.plannedPrice) : "bir işlemin fiyatı tanımsız"}</strong></div>}</>
+            : appt.procedureLabel ?? "Henüz belirlenmedi (hekim muayenede girer)"}</dd>
           <dt>Not</dt><dd>{appt.note ?? "Belirtilmedi"}</dd>
           {appt.cancelReason && <><dt>İptal nedeni</dt><dd>{appt.cancelReason}</dd></>}
         </dl>
@@ -298,7 +302,10 @@ function AppointmentDetail({ appt, onClose, onChanged, onConflict }: { appt: App
         <Link href={`/hastalar/${appt.patientId}`} className="btn btn-sm" style={{ alignSelf: "flex-start" }}>Hasta kartını aç</Link>
         {["planned", "confirmed"].includes(appt.status) && <ReadinessPanel appointmentId={appt.id} />}
         {["checked_in", "in_progress", "completed"].includes(appt.status) && (
-          <PerformOnTooth appointmentId={appt.id} patientId={appt.patientId} procedureId={appt.procedureId} />
+          <>
+            <VisitDiagnoses appointmentId={appt.id} patientId={appt.patientId} />
+            <PerformOnTooth appointmentId={appt.id} patientId={appt.patientId} procedureId={appt.procedureId} plannedIds={appt.procedures?.map((p) => p.id)} />
+          </>
         )}
         {can("stock.read") && ["checked_in", "in_progress", "completed"].includes(appt.status) && <AppointmentMaterialsCard appointmentId={appt.id} />}
         {can("appointment.write") && (

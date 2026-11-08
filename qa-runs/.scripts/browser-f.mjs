@@ -20,7 +20,7 @@ async function session(profile, email) {
   await page.goto(`${BASE}/giris`);
   await page.getByLabel("E-posta").fill(email); await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await page.getByRole("heading", { name: "Panel", level: 1 }).waitFor({ timeout: 20000 });
+  await page.getByRole("heading", { name: "Bugünün randevuları", level: 2 }).waitFor({ timeout: 20000 });
   return { ctx, page };
 }
 const apiGet = async (page, path) => page.evaluate(async (p) => (await fetch(`/api/v1${p}`, { headers: { "x-viadent-request": "1" } })).json(), path);
@@ -240,7 +240,7 @@ for (const profile of ["masaustu", "mobil"]) {
     await page.getByRole("button", { name: "Randevu ver" }).first().click();
     await page.getByRole("heading", { name: "Randevu ver", level: 1 }).waitFor();
     const d = page.locator("main");
-    const sel = d.getByRole("combobox", { name: "İşlem", exact: true });
+    const sel = d.getByRole("combobox", { name: "İşlemler (isteğe bağlı)" });
     // Tester düzeltmesi (tur7): işlem listesi sayfa açıldıktan sonra yüklenir; sayım yüklenmeyi beklemeden yapılıyordu (yarış). Ölçüt aynı (> 50).
     await sel.locator("option").nth(50).waitFor({ state: "attached", timeout: 8000 }).catch(() => {});
     const opts = await sel.locator("option").allInnerTexts();

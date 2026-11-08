@@ -1,0 +1,36 @@
+{
+ "checks": [
+  {
+   "check": "sekreter yazamaz",
+   "pass": true
+  },
+  {
+   "check": "hekim yazar",
+   "pass": true
+  },
+  {
+   "check": "sekreter yalnız işaret",
+   "pass": true
+  },
+  {
+   "check": "finans yalnız işaret",
+   "pass": true
+  },
+  {
+   "check": "asistan okur",
+   "pass": true
+  },
+  {
+   "check": "denetimde içerik yok",
+   "pass": true
+  },
+  {
+   "check": "sekreter geçmişinde yok",
+   "pass": true
+  },
+  {
+   "check": "sağlık yetkisiz dışa aktarım içerik yok (403)",
+   "pass": true
+  }
+ ]
+}

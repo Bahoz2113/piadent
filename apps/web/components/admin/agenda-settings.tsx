@@ -164,10 +164,10 @@ function ClosureDrawer({ res, onClose, onSaved }: { res: { practitioners: { id: 
           <SelectField label="Kapsam" value={f.scope} onChange={set("scope")}>
             <option value="clinic">Tüm klinik</option>
             <option value="practitioner">Hekim</option>
-            <option value="chair">Koltuk</option>
+            <option value="chair">Ünite</option>
           </SelectField>
           {f.scope === "practitioner" && <SelectField label="Hekim" value={f.practitionerId} onChange={set("practitionerId")} error={err?.fieldErrors.practitionerId}>{res.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</SelectField>}
-          {f.scope === "chair" && <SelectField label="Koltuk" value={f.chairId} onChange={set("chairId")} error={err?.fieldErrors.chairId}>{res.chairs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</SelectField>}
+          {f.scope === "chair" && <SelectField label="Ünite" value={f.chairId} onChange={set("chairId")} error={err?.fieldErrors.chairId}>{res.chairs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</SelectField>}
           <div className="form-grid">
             <DateField label="Başlangıç tarihi" required value={f.startDate} onChange={set("startDate")} />
             <TextField label="Başlangıç saati" type="time" required value={f.startTime} onChange={set("startTime")} hint="Tam gün için 00:00" />

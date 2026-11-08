@@ -58,7 +58,7 @@ export class ChartController {
       );
       return {
         findings: f.rows.map((x) => ({ id: x.id, tooth: x.tooth, surfaces: x.surfaces, type: x.finding_type, note: x.note, status: x.status, at: x.created_at, by: x.by })),
-        diagnoses: d.rows.map((x) => ({ id: x.id, location: presentLoc(x), code: x.code, description: x.description, status: x.status, statusReason: x.status_reason, at: x.created_at, by: x.by })),
+        diagnoses: d.rows.map((x) => ({ id: x.id, location: presentLoc(x), code: x.code, description: x.description, status: x.status, statusReason: x.status_reason, at: x.created_at, by: x.by, appointmentId: x.appointment_id ?? null })),
         planned: pi.rows.map((x) => ({ id: x.id, code: x.procedure_code, name: x.procedure_name, location: presentLoc(x), quantity: x.quantity, performedQty: x.performed_qty, versionStatus: x.version_status })),
         performed: pp.rows.map((x) => ({ id: x.id, code: x.procedure_code, name: x.procedure_name, location: presentLoc(x), quantity: x.quantity, amount: x.amount,
           priceBasis: x.price_basis, status: x.status, statusReason: x.status_reason, at: x.completed_at, planItemId: x.plan_item_id, correctsId: x.corrects_id,

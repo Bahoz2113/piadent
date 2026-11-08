@@ -3,7 +3,7 @@
 **Ekip ve davet.** Kullanıcıları rolle davet edin; erişim kaldırınca anında düşer. Parola sıfırlama geçici parola verir (bir kez görünür), doğrulayıcı sıfırlama gerekçe ister.
 ![Ekip](img/40-yonetim-ekip.jpg)
 
-**Hekim ve koltuklar / İşlem türleri / Kapatmalar / Katalog ve tarife.** Tarife sürümlüdür; eski planlar eski fiyatla kalır.
+**Hekim ve üniteler / İşlem türleri / Kapatmalar / Katalog ve tarife.** Tarife sürümlüdür; eski planlar eski fiyatla kalır.
 ![Katalog](img/42-yonetim-katalog.jpg)
 
 **Veri aktarımı.** Sıra: hasta kartları → geçmiş randevular → geçmiş işlemler → açılış bakiyeleri. Dosyayı seçin, **Sütun eşlemesi**'nde tanınmayan başlıkları elle eşleyin, Ön kontrol (hiçbir şey yazılmaz) → hatalı satırları CSV indirip düzeltin → "N satırı aktar" → gerekirse gerekçeyle geri al. Aynı dosya tekrar yeni kayıt açmaz.

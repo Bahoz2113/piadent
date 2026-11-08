@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Clock, UserPlus } from "lucide-react";
 import {
-  PAYMENT_METHODS, PAYMENT_METHOD_LABELS, addMoney, formatPhone, formatTRY, fromMinor, isMoney, toMinor, type PaymentMethod,
+  APPOINTMENT_MAX_PROCEDURES, PAYMENT_METHODS, PAYMENT_METHOD_LABELS, addMoney, formatPhone, formatTRY, fromMinor, isMoney, toMinor, type PaymentMethod,
 } from "@viadent/contracts";
 import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -23,7 +23,8 @@ const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${St
 
 /**
  * Randevu ver — tam sayfa (07.11.2026 ürün sahibi geri bildirimi):
- * hasta → sağlık uyarısı → tek "işlem" seçimi (fiyatıyla; ayrı işlem türü yok) → hekim ve gün → uygun boş saatlerin tamamı → ödeme planı (en altta).
+ * hasta → sağlık uyarısı → işlemler (08.11.2026, ADR-107: İSTEĞE BAĞLI ve birden fazla; sekreter hekim muayenesinden önce işlemi/tanıyı
+ * bilmeyebilir, hekim randevu ayrıntısında tanı ve yapılan işlemleri girer) → hekim ve gün → uygun boş saatlerin tamamı → ödeme planı (en altta).
  * Ödeme: "Ödeme alınmadı" / "Kısmi ödeme" / "Tamamı". Kısmi ve tam ödeme GERÇEK tahsilattır (avans; randevuya bağlı) — borç yalnız işlem
  * gerçekleşince oluşur. Randevu ve ödeme ayrı kayıttır: ödeme başarısız olursa randevu kalır ve bu açıkça söylenir.
  */
@@ -34,7 +35,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
   const [q, setQ] = useState("");
   const [newPatient, setNewPatient] = useState(false);
   const [initialF] = useState(() => ({
-    date: prefill.date < today ? today : prefill.date, startTime: prefill.time ?? "", durationMinutes: "30", procedureId: "",
+    date: prefill.date < today ? today : prefill.date, startTime: prefill.time ?? "", durationMinutes: "30", procedureIds: [] as string[],
     practitionerId: prefill.practitionerId ?? resources.practitioners[0]?.id ?? "", chairId: prefill.chairId ?? "", reason: "", note: "",
   }));
   const [f, setF] = useState(initialF);
@@ -53,8 +54,20 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
   const health = useHealthNotes(patient?.id ?? null);
   const procs = useData<{ items: Proc[] }>("/procedures");
   const procedures = procs.data?.items ?? [];
-  const proc = procedures.find((p) => p.id === f.procedureId);
-  const price = useData<{ price: string | null }>(f.procedureId && f.practitionerId ? `/price?procedureId=${f.procedureId}&practitionerId=${f.practitionerId}&date=${f.date}` : null);
+  const chosen = f.procedureIds.map((id) => procedures.find((p) => p.id === id)).filter((p): p is Proc => !!p);
+  // Hekime/güne göre tarife fiyatı (hekime özel > klinik); okunamazsa katalog fiyatı. Toplam yalnız her işlemin fiyatı varsa gösterilir.
+  const [tariff, setTariff] = useState<Record<string, string | null>>({});
+  const idsKey = f.procedureIds.join(",");
+  useEffect(() => {
+    let off = false;
+    if (!f.procedureIds.length || !f.practitionerId) { setTariff({}); return; }
+    void Promise.all(f.procedureIds.map((id) => api<{ price: string | null }>(`/price?procedureId=${id}&practitionerId=${f.practitionerId}&date=${f.date}`)
+      .then((r) => [id, r.price] as const).catch(() => [id, null] as const)))
+      .then((e) => { if (!off) setTariff(Object.fromEntries(e)); });
+    return () => { off = true; };
+  }, [idsKey, f.practitionerId, f.date]); // eslint-disable-line react-hooks/exhaustive-deps
+  const priceLoading = f.procedureIds.some((id) => !(id in tariff));
+  const priceOf = (p: Proc): string | null => tariff[p.id] ?? p.price ?? null;
   const account = useData<{ totals: { openDebt: string; advance: string } }>(patient && can("account.read") ? `/patients/${patient.id}/account` : null);
   const avail = useData<Availability>(f.practitionerId && f.date && !pastDay ? `/availability?practitionerId=${f.practitionerId}&date=${f.date}&minutes=${f.durationMinutes}${f.chairId ? `&chairId=${f.chairId}` : ""}` : null);
   const canPay = can("payment.write") && can("account.read");
@@ -67,11 +80,11 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
   const [manualTime, setManualTime] = useState(false);
   useEffect(() => { if (f.startTime && avail.data && !avail.data.slots.includes(f.startTime) && !manualTime) setF((x) => ({ ...x, startTime: "" })); }, [avail.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const effectivePrice = price.data?.price ?? proc?.price ?? null;
+  const effectivePrice = chosen.length && chosen.every((p) => priceOf(p)) ? addMoney(...chosen.map((p) => priceOf(p)!)) : null;
   const payAmount = pay.mode === "full" ? (effectivePrice ?? "") : pay.mode === "partial" ? pay.amount.replace(",", ".") : "";
   const durations = useMemo(() => Array.from(new Set([15, 20, 30, 45, 60, 90, 120, Number(f.durationMinutes)])).sort((a, b) => a - b), [f.durationMinutes]);
   const dirty = !created && ((patient?.id ?? null) !== (pre.data?.id ?? null) || q.trim() !== "" || pay.mode !== "none"
-    || (Object.keys(initialF) as (keyof typeof initialF)[]).some((k) => f[k] !== initialF[k]));
+    || (Object.keys(initialF) as (keyof typeof initialF)[]).some((k) => JSON.stringify(f[k]) !== JSON.stringify(initialF[k])));
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => { e.preventDefault(); };
@@ -80,9 +93,11 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
   }, [dirty]);
 
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { setF({ ...f, [k]: e.target.value }); setErr(null); };
-  function pickProcedure(id: string) {
-    const p = procedures.find((x) => x.id === id);
-    setF({ ...f, procedureId: id, durationMinutes: p?.defaultMinutes ? String(p.defaultMinutes) : f.durationMinutes });
+  /** İşlem listesi değişince süre, işlemlerin varsayılan sürelerinin toplamına ayarlanır (en çok 12 saat); kullanıcı sonra değiştirebilir. */
+  function setProcedures(ids: string[]) {
+    const mins = ids.reduce((sum, id) => sum + (procedures.find((x) => x.id === id)?.defaultMinutes ?? 0), 0);
+    setF({ ...f, procedureIds: ids, durationMinutes: mins > 0 ? String(Math.min(mins, 720)) : f.durationMinutes });
+    setErr(null);
   }
   async function cancel() {
     if (dirty && !(await confirmDialog({ title: "Kaydedilmemiş değişiklikler", message: "Girdiğiniz randevu bilgileri kaybolacak. Sayfadan çıkılsın mı?", confirmLabel: "Çık", cancelLabel: "Forma dön", danger: true }))) return;
@@ -92,14 +107,14 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
   function payError(): string | null {
     if (pay.mode === "none") return null;
     if (!pay.cashAccountId) return "Kasa / banka seçin.";
-    if (!payAmount || !isMoney(payAmount) || toMinor(payAmount) <= 0n) return pay.mode === "full" ? "Tam ödeme için işlemin fiyatı tanımlı olmalı." : "Geçerli bir tutar girin (ör. 500,00).";
+    if (!payAmount || !isMoney(payAmount) || toMinor(payAmount) <= 0n) return pay.mode === "full" ? "Tam ödeme için işlem seçilmeli ve seçilen her işlemin fiyatı tanımlı olmalı." : "Geçerli bir tutar girin (ör. 500,00).";
     if (pay.mode === "partial" && effectivePrice && toMinor(payAmount) >= toMinor(effectivePrice)) return "Kısmi ödeme işlem fiyatından az olmalı; tamamı için “Tamamı”nı seçin.";
     return null;
   }
 
   async function takePayment(appointmentId: string, patientId: string) {
     await api("/payments", { idempotencyKey: payKey.current, body: { patientId, amount: payAmount, method: pay.method, cashAccountId: pay.cashAccountId, appointmentId, allocations: [],
-      note: `Randevu ödemesi${proc ? ` · ${proc.name}` : ""}${pay.mode === "partial" ? " (kısmi)" : ""}` } });
+      note: `Randevu ödemesi${chosen.length ? ` · ${chosen.map((p) => p.name).join(", ")}` : ""}${pay.mode === "partial" ? " (kısmi)" : ""}`.slice(0, 300) } });
   }
 
   async function save(allowOutsideHours = false) {
@@ -109,7 +124,6 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
       return;
     }
     if (!patient) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Önce hasta seçin.", field_errors: { patientId: "Hasta seçin" } })); return; }
-    if (!f.procedureId) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "İşlem seçin.", field_errors: { procedureId: "İşlem seçin" } })); return; }
     if (!f.startTime) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Uygun saatlerden birini seçin.", field_errors: { startTime: "Saat seçin" } })); return; }
     const pe = payError();
     if (pe) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: pe, field_errors: { payment: pe } })); return; }
@@ -118,7 +132,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
       let a = created;
       if (!a) {
         const r = await api<{ id: string }>("/appointments", { body: {
-          patientId: patient.id, practitionerId: f.practitionerId, chairId: f.chairId || undefined, procedureId: f.procedureId,
+          patientId: patient.id, practitionerId: f.practitionerId, chairId: f.chairId || undefined, procedureIds: f.procedureIds.length ? f.procedureIds : undefined,
           date: f.date, startTime: f.startTime, durationMinutes: Number(f.durationMinutes), reason: f.reason || undefined, note: f.note || undefined,
           allowOutsideHours: allowOutsideHours || undefined,
         } });
@@ -184,14 +198,33 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
         <section className="card card-pad stack" aria-labelledby="ra-islem">
           <h2 id="ra-islem">2 · İşlem, hekim ve gün</h2>
           <div className="form-grid">
-            <SelectField label="İşlem" required className="full" value={f.procedureId} onChange={(e) => pickProcedure(e.target.value)} error={err?.fieldErrors.procedureId}
-              hint={!f.procedureId ? "Süre işlemin varsayılan süresine ayarlanır." : price.loading ? "Fiyat okunuyor…" : effectivePrice ? `Fiyat: ${formatTRY(effectivePrice)}` : "Bu işlem için yayında fiyat yok."}>
-              <option value="">Seçin</option>
-              {cats.map((cat) => (
-                <optgroup key={cat} label={cat}>
-                  {procedures.filter((p) => (p.category ?? "Diğer") === cat).map((p) => <option key={p.id} value={p.id}>{p.name} · {p.price ? formatTRY(p.price) : "fiyat tanımsız"}</option>)}
-                </optgroup>))}
-            </SelectField>
+            <div className="full stack" style={{ gap: 8 }}>
+              <SelectField label="İşlemler (isteğe bağlı)" value="" disabled={f.procedureIds.length >= APPOINTMENT_MAX_PROCEDURES}
+                onChange={(e) => { if (e.target.value) setProcedures([...f.procedureIds, e.target.value]); }} error={err?.fieldErrors.procedureIds ?? err?.fieldErrors.procedureId}
+                hint={f.procedureIds.length >= APPOINTMENT_MAX_PROCEDURES ? `En çok ${APPOINTMENT_MAX_PROCEDURES} işlem.` : "Birden fazla işlem eklenebilir; süre işlemlerin toplam süresine ayarlanır. Bilinmiyorsa boş bırakın — hekim muayenede tanı ve işlemi girer."}>
+                <option value="">{f.procedureIds.length ? "Başka işlem ekle…" : "İşlem ekle…"}</option>
+                {cats.map((cat) => (
+                  <optgroup key={cat} label={cat}>
+                    {procedures.filter((p) => (p.category ?? "Diğer") === cat && !f.procedureIds.includes(p.id)).map((p) => <option key={p.id} value={p.id}>{p.name} · {p.price ? formatTRY(p.price) : "fiyat tanımsız"}</option>)}
+                  </optgroup>))}
+              </SelectField>
+              {chosen.length === 0
+                ? <p className="small muted" role="status">İşlem seçilmedi — randevu işlemsiz kaydedilebilir.</p>
+                : (
+                  <ul className="chosen-list" aria-label="Seçilen işlemler">
+                    {chosen.map((p, i) => (
+                      <li key={p.id}>
+                        <span className="muted small">{i + 1}.</span>
+                        <span className="grow">{p.name}</span>
+                        <span className="small">{priceLoading && !(p.id in tariff) ? "…" : priceOf(p) ? formatTRY(priceOf(p)!) : <span className="muted">fiyat tanımsız</span>}</span>
+                        <button type="button" className="btn btn-sm" aria-label={`${p.name} işlemini kaldır`} onClick={() => setProcedures(f.procedureIds.filter((x) => x !== p.id))}>Kaldır</button>
+                      </li>))}
+                    {chosen.length > 1 && (
+                      <li className="chosen-total"><span className="grow"><strong>Toplam</strong></span>
+                        <strong>{priceLoading ? "…" : effectivePrice ? formatTRY(effectivePrice) : <span className="muted small">bir işlemin fiyatı tanımsız</span>}</strong></li>)}
+                  </ul>
+                )}
+            </div>
             <SelectField label="Hekim" required value={f.practitionerId} onChange={set("practitionerId")} error={err?.fieldErrors.practitionerId}>
               {resources.practitioners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </SelectField>
@@ -199,7 +232,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
             <SelectField label="Süre" value={f.durationMinutes} onChange={set("durationMinutes")} error={err?.fieldErrors.durationMinutes}>
               {durations.map((m) => <option key={m} value={m}>{m} dakika</option>)}
             </SelectField>
-            <SelectField label="Koltuk" value={f.chairId} onChange={set("chairId")} error={err?.fieldErrors.chairId}>
+            <SelectField label="Ünite" value={f.chairId} onChange={set("chairId")} error={err?.fieldErrors.chairId}>
               <option value="">Seçilmedi</option>
               {resources.chairs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </SelectField>
@@ -230,7 +263,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
         <section className="card card-pad stack" aria-labelledby="ra-not">
           <h2 id="ra-not">4 · Açıklama</h2>
           <div className="form-grid">
-            <TextField label="Açıklama" className="full" value={f.reason} onChange={set("reason")} placeholder="Boşsa işlem adı kullanılır" />
+            <TextField label="Açıklama" className="full" value={f.reason} onChange={set("reason")} placeholder="Boşsa işlem adları kullanılır (ör. kontrol, şikâyet)" />
             <TextAreaField label="Not" className="full" value={f.note} onChange={set("note")} rows={2} hint="Klinik bilgi yazmayın; idari not içindir." />
           </div>
         </section>
@@ -239,7 +272,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
           <h2 id="ra-odeme">5 · Ödeme planı</h2>
           {patient && can("account.read") && (
             <div className="money-strip" aria-live="polite">
-              <span><span className="muted small">İşlem fiyatı</span><strong>{effectivePrice ? formatTRY(effectivePrice) : "—"}</strong></span>
+              <span><span className="muted small">{chosen.length > 1 ? "İşlemlerin toplam fiyatı" : "İşlem fiyatı"}</span><strong>{effectivePrice ? formatTRY(effectivePrice) : "—"}</strong></span>
               {account.data && <>
                 <span><span className="muted small">Mevcut açık borç</span><strong>{formatTRY(account.data.totals.openDebt)}</strong></span>
                 <span><span className="muted small">Avans</span><strong>{formatTRY(account.data.totals.advance)}</strong></span>

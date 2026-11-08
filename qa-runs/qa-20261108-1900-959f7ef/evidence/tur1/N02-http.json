@@ -1,0 +1,203 @@
+{
+ "matrix": [
+  {
+   "label": "VKN 9 hane",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "VKN 11 hane",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "VKN harf",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "kurum VKN yok",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "kurum e-Arşiv",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "şahıs e-Fatura",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "belge türü bilinmeyen",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "KDV %18",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "KDV metin",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "adet 0",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "adet 1000",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "adet 1,5",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "birim 0",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "birim negatif",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "birim 3 ondalık",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "birim sayı tipi",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "satır yok",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "51 satır",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "açıklama 1 karakter",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "alıcı adı boş",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "fazla alan",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "başka hastanın alacağı",
+   "want": 422,
+   "got": 422,
+   "code": "VALIDATION_FAILED"
+  },
+  {
+   "label": "geçerli şahıs (Unicode ad)",
+   "want": 201,
+   "got": 201,
+   "total": "366.66",
+   "vat": "33.33"
+  },
+  {
+   "label": "geçerli kurum",
+   "want": 201,
+   "got": 201,
+   "total": "366.66",
+   "vat": "33.33"
+  },
+  {
+   "label": "KDV yuvarlama 3×0,15 %20",
+   "want": 201,
+   "got": 201,
+   "total": "0.60",
+   "vat": "0.10"
+  }
+ ],
+ "unexpected": [],
+ "round": {
+  "label": "KDV yuvarlama 3×0,15 %20",
+  "want": 201,
+  "got": 201,
+  "total": "0.60",
+  "vat": "0.10"
+ },
+ "roundOk": true,
+ "nameRoundtrip": true,
+ "roles": {
+  "secPost": 403,
+  "admPost": 201,
+  "secGet": 200,
+  "bGet": 404
+ },
+ "noProv": {
+  "status": 409,
+  "code": "E_INVOICE_PROVIDER_UNAVAILABLE"
+ },
+ "afterNoProv": {
+  "status": "draft",
+  "invoiceNo": null
+ },
+ "mockConn": 201,
+ "submit": {
+  "status": 200,
+  "mock": true
+ },
+ "pendingCancel": 409,
+ "issued": {
+  "status": "issued",
+  "invoiceNo": "MOCK202684B0D6B24",
+  "providerRef": "mock_einvoice_submit_b0d31eaa46284b0d6b24"
+ },
+ "relock": 409,
+ "cancelReq": {
+  "id": "0e95a7e5-5d7e-4042-8f16-11a9e9ef528b",
+  "status": "issued",
+  "cancelRequested": true,
+  "jobId": "cedefd1f-8d36-4fc1-81ab-1dc2eb5bedc7"
+ },
+ "cancelled": {
+  "status": "cancelled",
+  "invoiceNo": "MOCK202684B0D6B24"
+ }
+}

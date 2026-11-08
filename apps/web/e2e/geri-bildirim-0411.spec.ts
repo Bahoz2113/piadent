@@ -15,7 +15,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
 }
 async function noHorizontalOverflow(page: Page) {
   const vw = page.viewportSize()!.width;
@@ -40,6 +40,16 @@ test("Panel: menü adları, sayaçlar, grafikler ve tablo görünümü; sekreter
   await chart.getByRole("button", { name: "Tablo" }).click();
   await expect(chart.getByRole("table")).toBeVisible();
   await expect(chart.getByRole("columnheader", { name: "Dönem" })).toBeVisible();
+  // 08.11.2026: Panel başlığı klinik adı; günün randevuları en üstte; PİA Akış ayrı "İş akışı" sekmesinde.
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "PİA Akış" })).toHaveCount(0);
+  await noHorizontalOverflow(page);
+  // QA-502: telefonda İş akışı bağlantısı çekmecede; menü kapalıysa önce açılır (geri-bildirim-0811.spec.ts ile aynı yöntem).
+  const menu = page.getByRole("button", { name: "Menüyü aç" });
+  if (await menu.isVisible()) await menu.click();
+  await nav(page).getByRole("link", { name: "İş akışı" }).click();
+  await expect(page).toHaveURL(/\/is-akisi/);
   await expect(page.getByRole("heading", { name: "PİA Akış" })).toBeVisible();
   await noHorizontalOverflow(page);
 

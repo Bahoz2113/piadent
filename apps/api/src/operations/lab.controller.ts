@@ -35,13 +35,15 @@ export class LabController {
       supplierId: o.supplier_id, supplier: o.supplier, workType: o.work_type, teeth: o.teeth, shade: o.shade, instructions: o.instructions,
       targetDate: o.target_date, status: o.status, revisionCount: o.revision_count, sentAt: o.sent_at, receivedAt: o.received_at, acceptedAt: o.accepted_at,
       cancelReason: o.cancel_reason, appointmentId: o.appointment_id, appointmentAt: o.appointment_at, planItemId: o.plan_item_id, version: o.row_version,
+      // ADR-108: hastadan alınan ölçü ve istenen malzeme
+      impressionType: o.impression_type ?? null, impressionTakenOn: o.impression_taken_on ?? null, material: o.material ?? null,
       createdAt: o.created_at, overdue: OPEN.includes(o.status) && !!o.target_date && o.target_date < today,
       ...(withCost ? { cost: o.cost } : {}),
     };
   }
 
   private baseSelect = `
-    select lo.*, lo.target_date::text as target_date, p.first_name || ' ' || p.last_name as patient, pr.display_name as practitioner, s.name as supplier,
+    select lo.*, lo.target_date::text as target_date, lo.impression_taken_on::text as impression_taken_on, p.first_name || ' ' || p.last_name as patient, pr.display_name as practitioner, s.name as supplier,
            a.starts_at as appointment_at, coalesce((select sum(amount) from lab_costs lc where lc.lab_order_id = lo.id), 0)::numeric(14,2)::text as cost
       from lab_orders lo join patients p on p.id = lo.patient_id join practitioners pr on pr.id = lo.practitioner_id join suppliers s on s.id = lo.supplier_id
       left join appointments a on a.id = lo.appointment_id`;
@@ -104,6 +106,7 @@ export class LabController {
     return this.db.tx(ctx, async (c) => {
       const o = (await c.query(
         `select lo.order_no, lo.work_type, lo.teeth, lo.shade, lo.instructions, lo.target_date::text, lo.status, lo.revision_count,
+                lo.impression_type, lo.impression_taken_on::text, lo.material,
                 p.first_name, p.last_name, pr.display_name as practitioner, s.name as supplier, t.name as clinic
            from lab_orders lo join patients p on p.id = lo.patient_id join practitioners pr on pr.id = lo.practitioner_id
            join suppliers s on s.id = lo.supplier_id join tenants t on t.id = lo.tenant_id where lo.id = $1`, [oid])).rows[0];
@@ -111,6 +114,7 @@ export class LabController {
       await audit(c, ctx, { action: "lab_order.work_sheet", entityType: "lab_order", entityId: oid });
       return { clinic: o.clinic, supplier: o.supplier, orderNo: o.order_no, patientRef: `${initials(o.first_name, o.last_name)} · İş emri ${o.order_no}`,
         practitioner: o.practitioner, workType: o.work_type, teeth: o.teeth, shade: o.shade, instructions: o.instructions, targetDate: o.target_date,
+        impressionType: o.impression_type, impressionTakenOn: o.impression_taken_on, material: o.material,
         revision: o.revision_count, notice: "Bu föy yalnız iş için gerekli teknik bilgiyi içerir; hasta kimliği, iletişim ve sağlık bilgisi paylaşılmaz." };
     });
   }
@@ -134,19 +138,27 @@ export class LabController {
         if (!pi.rowCount) throw Errors.validation({ planItemId: "Plan kalemi bu hastaya ait değil." });
       }
       if (i.appointmentId) await this.checkAppointment(c, i.appointmentId, i.patientId);
+      this.checkImpressionDate(i.impressionTakenOn, ctx);
       const no = (await c.query(
         `insert into tenant_counters(tenant_id, name, value) values ($1,'lab_order_no',1)
          on conflict (tenant_id, name) do update set value = tenant_counters.value + 1 returning value`, [ctx.tenantId])).rows[0].value;
       const r = await c.query(
-        `insert into lab_orders(tenant_id, order_no, patient_id, practitioner_id, supplier_id, plan_item_id, appointment_id, work_type, teeth, shade, instructions, target_date, created_by)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning id`,
+        `insert into lab_orders(tenant_id, order_no, patient_id, practitioner_id, supplier_id, plan_item_id, appointment_id, work_type, teeth, shade, instructions, target_date, created_by,
+                                impression_type, impression_taken_on, material)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning id`,
         [ctx.tenantId, no, i.patientId, practitionerId, i.supplierId, i.planItemId ?? null, i.appointmentId ?? null, i.workType, i.teeth, i.shade ?? null,
-         i.instructions ?? null, i.targetDate ?? null, ctx.userId]);
+         i.instructions ?? null, i.targetDate ?? null, ctx.userId, i.impressionType ?? null, i.impressionTakenOn ?? null, i.material ?? null]);
       await this.event(c, ctx, r.rows[0].id, "created", null, "draft", null);
       await audit(c, ctx, { action: "lab_order.create", entityType: "lab_order", entityId: r.rows[0].id, patientId: i.patientId,
-        changes: { order_no: { from: null, to: no }, supplier_id: { from: null, to: i.supplierId }, work_type: { from: null, to: i.workType } } });
+        changes: { order_no: { from: null, to: no }, supplier_id: { from: null, to: i.supplierId }, work_type: { from: null, to: i.workType },
+          ...(i.impressionType ? { impression_type: { from: null, to: i.impressionType } } : {}), ...(i.material ? { material: { from: null, to: i.material } } : {}) } });
       return { id: r.rows[0].id, orderNo: no };
     });
+  }
+
+  /** Ölçü tarihi ileri olamaz (klinik saat dilimi). */
+  private checkImpressionDate(d: string | null | undefined, ctx: RequestContext) {
+    if (d && d > localDate(new Date(), ctx.timezone)) throw Errors.validation({ impressionTakenOn: "Ölçü tarihi ileri bir tarih olamaz." });
   }
 
   private async checkAppointment(c: C, appointmentId: string, patientId: string) {
@@ -165,7 +177,7 @@ export class LabController {
   update(@Ctx() ctx: RequestContext, @Param("id", id) oid: string, @Body() body: unknown) {
     const i = parse(LabOrderUpdate, body);
     return this.db.tx(ctx, async (c) => {
-      const o = (await c.query("select *, target_date::text as target_date from lab_orders where id = $1 for update", [oid])).rows[0];
+      const o = (await c.query("select *, target_date::text as target_date, impression_taken_on::text as impression_taken_on from lab_orders where id = $1 for update", [oid])).rows[0];
       if (!o) throw Errors.notFound("İş emri");
       if (o.row_version !== i.expectedVersion) throw Errors.versionConflict();
       if (["accepted", "cancelled"].includes(o.status)) throw new AppError(409, "LAB_CLOSED", "Kapanmış iş emri düzenlenemez.");
@@ -175,18 +187,26 @@ export class LabController {
       }
       // Gönderilmiş işte teknik tanım (iş, diş, renk, talimat) değişmez: laboratuvar eski föyle çalışıyor olabilir → not veya revizyon.
       const techChange = (i.workType && i.workType !== o.work_type) || (i.teeth && JSON.stringify(i.teeth) !== JSON.stringify(o.teeth))
-        || (i.shade !== undefined && (i.shade ?? null) !== o.shade) || (i.instructions !== undefined && (i.instructions ?? null) !== o.instructions);
+        || (i.shade !== undefined && (i.shade ?? null) !== o.shade) || (i.instructions !== undefined && (i.instructions ?? null) !== o.instructions)
+        || (i.impressionType !== undefined && (i.impressionType ?? null) !== o.impression_type) || (i.impressionTakenOn !== undefined && (i.impressionTakenOn ?? null) !== o.impression_taken_on)
+        || (i.material !== undefined && (i.material ?? null) !== o.material);
       if (techChange && o.status !== "draft") throw new AppError(409, "LAB_SPEC_LOCKED", "Laboratuvara gönderilmiş işin teknik tanımı değiştirilemez; not ekleyin veya teslimden sonra revizyon isteyin.");
       if (i.appointmentId) await this.checkAppointment(c, i.appointmentId, o.patient_id);
+      this.checkImpressionDate(i.impressionTakenOn, ctx);
       const next = {
         supplier_id: i.supplierId ?? o.supplier_id, work_type: i.workType ?? o.work_type, teeth: i.teeth ?? o.teeth,
         shade: i.shade !== undefined ? i.shade ?? null : o.shade, instructions: i.instructions !== undefined ? i.instructions ?? null : o.instructions,
         target_date: i.targetDate ?? o.target_date, appointment_id: i.appointmentId !== undefined ? i.appointmentId : o.appointment_id,
+        impression_type: i.impressionType !== undefined ? i.impressionType ?? null : o.impression_type,
+        impression_taken_on: i.impressionTakenOn !== undefined ? i.impressionTakenOn ?? null : o.impression_taken_on,
+        material: i.material !== undefined ? i.material ?? null : o.material,
       };
+      if (next.impression_taken_on && !next.impression_type) throw Errors.validation({ impressionType: "Ölçü tarihi için ölçü türü seçin." });
       await c.query(
         `update lab_orders set supplier_id = $2, work_type = $3, teeth = $4, shade = $5, instructions = $6, target_date = $7, appointment_id = $8,
-                row_version = row_version + 1 where id = $1`,
-        [oid, next.supplier_id, next.work_type, next.teeth, next.shade, next.instructions, next.target_date, next.appointment_id]);
+                impression_type = $9, impression_taken_on = $10, material = $11, row_version = row_version + 1 where id = $1`,
+        [oid, next.supplier_id, next.work_type, next.teeth, next.shade, next.instructions, next.target_date, next.appointment_id,
+         next.impression_type, next.impression_taken_on, next.material]);
       if (next.target_date !== o.target_date) await this.event(c, ctx, oid, "target_changed", null, null, `Hedef teslim: ${trDate(o.target_date)} → ${trDate(next.target_date)}`);
       else await this.event(c, ctx, oid, "updated", null, null, null);
       await audit(c, ctx, { action: "lab_order.update", entityType: "lab_order", entityId: oid, patientId: o.patient_id,

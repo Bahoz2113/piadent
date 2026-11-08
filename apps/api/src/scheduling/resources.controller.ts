@@ -142,7 +142,7 @@ export class ResourcesController {
     const input = parse(ChairUpsert, body);
     return this.db.tx(ctx, async (c) => {
       const cur = await c.query("select name, active from chairs where id = $1 for update", [cid]);
-      if (!cur.rowCount) throw Errors.notFound("Koltuk");
+      if (!cur.rowCount) throw Errors.notFound("Ünite");
       const active = input.active ?? cur.rows[0].active;
       await c.query("update chairs set name = $2, active = $3 where id = $1", [cid, input.name, active]);
       await audit(c, ctx, { action: "chair.update", entityType: "chair", entityId: cid,
@@ -211,7 +211,7 @@ export class ResourcesController {
     return this.db.tx(ctx, async (c) => {
       await c.query(LOCK, [ctx.tenantId]);
       if (input.practitionerId && !(await c.query("select 1 from practitioners where id = $1", [input.practitionerId])).rowCount) throw Errors.validation({ practitionerId: "Hekim bulunamadı." });
-      if (input.chairId && !(await c.query("select 1 from chairs where id = $1", [input.chairId])).rowCount) throw Errors.validation({ chairId: "Koltuk bulunamadı." });
+      if (input.chairId && !(await c.query("select 1 from chairs where id = $1", [input.chairId])).rowCount) throw Errors.validation({ chairId: "Ünite bulunamadı." });
       const r = await c.query(
         `insert into closures(tenant_id, scope, practitioner_id, chair_id, starts_at, ends_at, reason, created_by, kind)
          values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,

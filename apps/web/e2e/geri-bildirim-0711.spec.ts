@@ -15,7 +15,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
 }
 async function noHorizontalOverflow(page: Page) {
   const vw = page.viewportSize()!.width;
@@ -24,7 +24,8 @@ async function noHorizontalOverflow(page: Page) {
 
 test("Panel ve Hekimler sadeleşti; hekim kartında izin / rapor / resmî tatil", async ({ page }) => {
   await login(page, "yonetici@demo-yesil.test");
-  await expect(page.getByRole("heading", { name: "Günün randevuları" })).toHaveCount(0);
+  // 08.11.2026 geri bildirimi bu kararı değiştirdi: Panel en üstte bugünün randevularını gösterir (geri-bildirim-0811.spec.ts).
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
   await page.goto("/hekimler");
   const table = page.locator("table").first();
   await expect(table.getByRole("columnheader", { name: "Hekim" })).toBeVisible();
@@ -79,7 +80,7 @@ test("Yönetim: İşlem türleri fiyatlı; Kapatmalar ve Anamnez şablonu yok; �
   await expect(page.getByRole("columnheader", { name: "Fiyat" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Kompozit dolgu (tek yüz)" })).toBeVisible();
   await page.goto("/yonetim?sekme=urunler"); // eski bağlantı taşınan sekmeye gider
-  await expect(page).toHaveURL(/\/operasyon\?sekme=tedarikci/);
+  await expect(page).toHaveURL(/\/laboratuvar\?sekme=tedarikci/); // 08.11.2026: Tedarikçiler Laboratuvar menüsünde
   await expect(page.getByRole("heading", { name: "Ürün ve fiyat listesi" })).toBeVisible();
   await page.goto("/yonetim?sekme=kopru");
   await expect(page.getByRole("heading", { name: "Netgsm SMS" })).toBeVisible();
@@ -104,10 +105,11 @@ test("Randevu ver tam sayfa: tek işlem seçimi, sağlık uyarısı, uygun saatl
   await np.getByRole("button", { name: "Hastayı kaydet" }).click();
   const warn = page.getByRole("alert").filter({ hasText: "Sağlık uyarısı" }).or(page.locator(".alert", { hasText: "Sağlık uyarısı" }));
   await expect(warn.first()).toContainText("Kan sulandırıcı (sentetik)");
-  const islem = page.getByRole("combobox", { name: "İşlem", exact: true });
+  const islem = page.getByRole("combobox", { name: "İşlemler (isteğe bağlı)" });
   const opt = await islem.locator("option", { hasText: "Kompozit dolgu (tek yüz)" }).first().getAttribute("value");
   await islem.selectOption(opt!);
-  await expect(page.getByText(/Fiyat: .*₺|Fiyat: ₺/)).toBeVisible();
+  // 08.11.2026 (ADR-107): seçilen işlemler listede fiyatlarıyla görünür
+  await expect(page.getByRole("list", { name: "Seçilen işlemler" })).toContainText("₺");
   // QA-301: elle yazılan geçmiş gün → alan uyarır, saat listelenmez, kaydet sunucuya gitmeden engeller.
   const gun = page.getByPlaceholder("gg.aa.yyyy").first();
   await gun.fill("01.01.2026");

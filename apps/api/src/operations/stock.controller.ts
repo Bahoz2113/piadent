@@ -121,17 +121,8 @@ export class StockController {
     return it as { id: string; name: string; track_lots: boolean; active: boolean };
   }
 
-  async insertMovement(c: C, ctx: RequestContext, m: { itemId: string; lotId?: string | null; kind: string; quantity: string; unitCost?: string | null;
-    supplierId?: string | null; patientId?: string | null; performedProcedureId?: string | null; appointmentId?: string | null; reason?: string | null; at: Date; reversesId?: string | null }) {
-    const r = await c.query(
-      `insert into stock_movements(tenant_id, item_id, lot_id, kind, quantity, unit_cost, supplier_id, patient_id, performed_procedure_id, appointment_id, reason, occurred_at, reverses_id, created_by)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning id, quantity::text`,
-      [ctx.tenantId, m.itemId, m.lotId ?? null, m.kind, m.quantity, m.unitCost ?? null, m.supplierId ?? null, m.patientId ?? null, m.performedProcedureId ?? null,
-       m.appointmentId ?? null, m.reason ?? null, m.at, m.reversesId ?? null, ctx.userId]);
-    await audit(c, ctx, { action: `stock.${m.reversesId ? "reverse" : m.kind}`, entityType: "stock_movement", entityId: r.rows[0].id, patientId: m.patientId ?? null,
-      changes: { item_id: { from: null, to: m.itemId }, quantity: { from: null, to: r.rows[0].quantity }, ...(m.lotId ? { lot_id: { from: null, to: m.lotId } } : {}) } });
-    await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "stock.movement" });
-    return r.rows[0].id as string;
+  insertMovement(c: C, ctx: RequestContext, m: MovementInput) {
+    return insertStockMovement(c, ctx, m);
   }
 
   @Post("stock/receipts")
@@ -144,24 +135,9 @@ export class StockController {
     if (i.createBill && (!i.supplierId || !i.unitCost)) throw Errors.validation({ unitCost: "Cari borç için tedarikçi ve birim maliyet gerekli." });
     return this.db.tx(ctx, async (c) => {
       const out = await idempotent(c, ctx, "stock.receipt", k, i, async () => {
-        const it = await this.item(c, i.itemId);
-        if (!it.active) throw Errors.validation({ itemId: "Kalem pasif." });
-        if (i.supplierId) await activeSupplier(c, i.supplierId);
-        let lotId: string | null = null;
-        if (it.track_lots) {
-          if (!i.lotNo) throw Errors.validation({ lotNo: "Bu kalem lot takiplidir; lot numarası girin." });
-          const ex = (await c.query("select id, expiry_date::text as expiry from stock_lots where item_id = $1 and lot_no = $2", [i.itemId, i.lotNo])).rows[0];
-          if (ex) {
-            if (i.expiryDate && ex.expiry && ex.expiry !== i.expiryDate) throw new AppError(409, "LOT_EXPIRY_MISMATCH", `Bu lot daha önce ${ex.expiry} son kullanma tarihiyle kaydedilmiş.`);
-            if (i.expiryDate && !ex.expiry) await c.query("update stock_lots set expiry_date = $2 where id = $1", [ex.id, i.expiryDate]);
-            lotId = ex.id;
-          } else {
-            lotId = (await c.query("insert into stock_lots(tenant_id, item_id, lot_no, expiry_date) values ($1,$2,$3,$4) returning id",
-              [ctx.tenantId, i.itemId, i.lotNo, i.expiryDate ?? null])).rows[0].id;
-          }
-        } else if (i.lotNo) throw Errors.validation({ lotNo: "Bu kalem lot takipli değil." });
-        const mid = await this.insertMovement(c, ctx, { itemId: i.itemId, lotId, kind: "receipt", quantity: i.quantity, unitCost: i.unitCost ?? null,
-          supplierId: i.supplierId ?? null, at });
+        const { movementId: mid, lotId, itemName } = await receiveStock(c, ctx, { itemId: i.itemId, quantity: i.quantity, lotNo: i.lotNo, expiryDate: i.expiryDate,
+          unitCost: i.unitCost ?? null, supplierId: i.supplierId ?? null, at });
+        const it = { name: itemName };
         let billId: string | null = null;
         if (i.createBill) {
           const amount = (await c.query("select round($1::numeric * $2::numeric, 2)::text as v", [i.quantity, i.unitCost])).rows[0].v;
@@ -261,4 +237,45 @@ export class StockController {
       return { id: rid };
     });
   }
+}
+export type MovementInput = { itemId: string; lotId?: string | null; kind: string; quantity: string; unitCost?: string | null;
+  supplierId?: string | null; patientId?: string | null; performedProcedureId?: string | null; appointmentId?: string | null; reason?: string | null; at: Date; reversesId?: string | null };
+
+/** Stok hareketi + denetim + PİA Akış yenileme (tek transaction). Stok girişi, sipariş teslimi ve kullanım ortak kullanır. */
+export async function insertStockMovement(c: C, ctx: RequestContext, m: MovementInput) {
+  const r = await c.query(
+    `insert into stock_movements(tenant_id, item_id, lot_id, kind, quantity, unit_cost, supplier_id, patient_id, performed_procedure_id, appointment_id, reason, occurred_at, reverses_id, created_by)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning id, quantity::text`,
+    [ctx.tenantId, m.itemId, m.lotId ?? null, m.kind, m.quantity, m.unitCost ?? null, m.supplierId ?? null, m.patientId ?? null, m.performedProcedureId ?? null,
+     m.appointmentId ?? null, m.reason ?? null, m.at, m.reversesId ?? null, ctx.userId]);
+  await audit(c, ctx, { action: `stock.${m.reversesId ? "reverse" : m.kind}`, entityType: "stock_movement", entityId: r.rows[0].id, patientId: m.patientId ?? null,
+    changes: { item_id: { from: null, to: m.itemId }, quantity: { from: null, to: r.rows[0].quantity }, ...(m.lotId ? { lot_id: { from: null, to: m.lotId } } : {}) } });
+  await enqueue(c, ctx.tenantId, "via_akis.refresh", { reason: "stock.movement" });
+  return r.rows[0].id as string;
+}
+
+/**
+ * Stok girişi çekirdeği (lot / son kullanma kuralları + giriş hareketi). Doğrudan stok girişi ve malzeme siparişi teslimi (ADR-108) aynı yolu kullanır.
+ */
+export async function receiveStock(c: C, ctx: RequestContext, i: { itemId: string; quantity: string; lotNo?: string; expiryDate?: string; unitCost: string | null;
+  supplierId: string | null; at: Date; reason?: string | null }) {
+  const it = (await c.query("select id, name, track_lots, active from stock_items where id = $1", [i.itemId])).rows[0] as { id: string; name: string; track_lots: boolean; active: boolean } | undefined;
+  if (!it) throw Errors.validation({ itemId: "Stok kalemi bulunamadı." });
+  if (!it.active) throw Errors.validation({ itemId: "Kalem pasif." });
+  if (i.supplierId) await activeSupplier(c, i.supplierId);
+  let lotId: string | null = null;
+  if (it.track_lots) {
+    if (!i.lotNo) throw Errors.validation({ lotNo: "Bu kalem lot takiplidir; lot numarası girin." });
+    const ex = (await c.query("select id, expiry_date::text as expiry from stock_lots where item_id = $1 and lot_no = $2", [i.itemId, i.lotNo])).rows[0];
+    if (ex) {
+      if (i.expiryDate && ex.expiry && ex.expiry !== i.expiryDate) throw new AppError(409, "LOT_EXPIRY_MISMATCH", `Bu lot daha önce ${ex.expiry} son kullanma tarihiyle kaydedilmiş.`);
+      if (i.expiryDate && !ex.expiry) await c.query("update stock_lots set expiry_date = $2 where id = $1", [ex.id, i.expiryDate]);
+      lotId = ex.id;
+    } else {
+      lotId = (await c.query("insert into stock_lots(tenant_id, item_id, lot_no, expiry_date) values ($1,$2,$3,$4) returning id",
+        [ctx.tenantId, i.itemId, i.lotNo, i.expiryDate ?? null])).rows[0].id;
+    }
+  } else if (i.lotNo) throw Errors.validation({ lotNo: "Bu kalem lot takipli değil." });
+  const movementId = await insertStockMovement(c, ctx, { itemId: i.itemId, lotId, kind: "receipt", quantity: i.quantity, unitCost: i.unitCost, supplierId: i.supplierId, at: i.at, reason: i.reason ?? null });
+  return { movementId, lotId, itemName: it.name };
 }

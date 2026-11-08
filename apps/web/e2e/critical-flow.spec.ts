@@ -8,7 +8,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
 }
 
 /** Mobil emülasyonda tarayıcı taşan sayfayı uzaklaştırır; bu yüzden düzen genişliği proje görünüm alanıyla karşılaştırılır. */
@@ -47,7 +47,7 @@ test("sekreter: hasta oluştur → randevu ver → çakışma reddi → PİA İz
   const offset = 20 + (Number(stamp) % 300) * 2 + (mobile ? 1 : 0); // her koşuda farklı gün
   const day = new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
   const pickProc = async () => {
-    const sel = ap.getByRole("combobox", { name: "İşlem", exact: true });
+    const sel = ap.getByRole("combobox", { name: "İşlemler (isteğe bağlı)" });
     await sel.selectOption((await sel.locator("option", { hasText: "Kontrol muayenesi" }).first().getAttribute("value"))!);
   };
   const manualTime = async (t: string) => { await ap.getByText("Listede olmayan bir saat gir").click(); await ap.getByRole("textbox", { name: "Saat", exact: true }).fill(t); };
@@ -106,6 +106,9 @@ test("ajanda ve Bugün ekranları klavye ile kullanılabilir, taşma yok", async
   await expect(page.getByRole("heading", { name: "Randevular", level: 1 })).toBeVisible();
   await noHorizontalOverflow(page);
   await page.goto("/bugun");
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
+  await noHorizontalOverflow(page);
+  await page.goto("/is-akisi");
   await expect(page.getByRole("heading", { name: "PİA Akış" })).toBeVisible();
   await noHorizontalOverflow(page);
 });

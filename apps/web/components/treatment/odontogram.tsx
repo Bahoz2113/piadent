@@ -159,10 +159,12 @@ export function ToothRecords({ state, limit }: { state?: ToothState; limit?: num
 
 export function toothTitle(t: string) { return `Diş ${t} · ${TOOTH_KIND_LABELS[toothKind(t)]}`; }
 
-export function Odontogram({ dentition, states, selected, selectedSurfaces = [], onSelect, onSurface, compact }: {
+export function Odontogram({ dentition, states, selected, multiSelected, selectedSurfaces = [], onSelect, onSurface, compact }: {
   dentition: "permanent" | "primary" | "mixed";
   states: Record<string, ToothState>;
   selected: string | null;
+  /** ADR-107: birden fazla diş seçimi (ör. aynı tanıyı birkaç dişe kaydetmek); yüzey seçimi yalnız `selected` dişte. */
+  multiSelected?: string[];
   selectedSurfaces?: string[];
   onSelect: (tooth: string) => void;
   onSurface?: (tooth: string, s: Surface) => void;
@@ -230,12 +232,12 @@ export function Odontogram({ dentition, states, selected, selectedSurfaces = [],
               {row.map((t, i) => {
                 const s = states[t];
                 const v = s?.visual ?? EMPTY;
-                const sel = selected === t;
+                const sel = selected === t || !!multiSelected?.includes(t);
                 const marks = [...(s?.diagnoses ? ["Tn"] : []), ...(s?.planned ? ["P"] : [])];
                 const state = visualLabels(v).join(", ");
                 const buccal = <BuccalView tooth={t} v={v} w={bw} h={bh} uid={`${uid}-${t}`} />;
-                const occ = <OcclusalView tooth={t} v={v} w={ow} uid={`${uid}-${t}`} selected={sel} selectedSurfaces={sel ? selectedSurfaces : []}
-                  onSurface={onSurface && sel ? (sf) => onSurface(t, sf) : undefined} />;
+                const occ = <OcclusalView tooth={t} v={v} w={ow} uid={`${uid}-${t}`} selected={sel} selectedSurfaces={selected === t ? selectedSurfaces : []}
+                  onSurface={onSurface && selected === t ? (sf) => onSurface(t, sf) : undefined} />;
                 return (
                   <button key={t} type="button" data-tooth={t} data-state={state || undefined}
                     className={`tooth ${sel ? "is-selected" : ""} ${i === row.length / 2 ? "midline" : ""} ${s?.done ? "has-done" : s?.planned ? "has-planned" : ""} ${v.missing ? "is-missing" : ""}`}

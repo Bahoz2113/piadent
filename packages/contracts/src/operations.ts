@@ -64,6 +64,28 @@ export const LAB_ACTION_LABELS: Record<LabAction, string> = {
   revision: "Revizyona gönder", cancel: "İptal et",
 };
 const teeth = z.array(z.string().refine((t) => ALL_TEETH.has(t), "Geçersiz diş numarası (FDI)")).max(32).default([]);
+/**
+ * ADR-108 (08.11.2026): laboratuvar işinde hastadan alınan ölçü ve istenen malzeme yapılandırılmış alan. Ölçü tarihi ölçü türü olmadan girilmez;
+ * ileri tarih API'de reddedilir (klinik saat dilimi).
+ */
+export const LAB_IMPRESSION_TYPES = ["digital_scan", "silicone", "alginate", "plaster_model", "bite_record", "none"] as const;
+export type LabImpressionType = (typeof LAB_IMPRESSION_TYPES)[number];
+export const LAB_IMPRESSION_LABELS: Record<LabImpressionType, string> = {
+  digital_scan: "Dijital tarama (ağız içi)", silicone: "Silikon ölçü", alginate: "Aljinat ölçü", plaster_model: "Alçı model",
+  bite_record: "Kapanış kaydı", none: "Ölçü gerekmiyor",
+};
+export const LAB_MATERIALS = ["zirconia", "emax", "pfm", "metal", "pmma", "composite", "acrylic", "cocr", "titanium", "other"] as const;
+export type LabMaterial = (typeof LAB_MATERIALS)[number];
+export const LAB_MATERIAL_LABELS: Record<LabMaterial, string> = {
+  zirconia: "Zirkonyum", emax: "E.max (lityum disilikat)", pfm: "Metal destekli porselen", metal: "Tam metal", pmma: "PMMA (geçici)",
+  composite: "Kompozit", acrylic: "Akrilik", cocr: "Krom-kobalt (iskelet)", titanium: "Titanyum", other: "Diğer (talimatta)",
+};
+const labImpression = {
+  impressionType: z.enum(LAB_IMPRESSION_TYPES).optional(),
+  impressionTakenOn: isoDate.optional(),
+  material: z.enum(LAB_MATERIALS).optional(),
+};
+const impressionDateNeedsType = (v: { impressionType?: string | null; impressionTakenOn?: string | null }) => !v.impressionTakenOn || !!v.impressionType;
 export const LabOrderCreate = z.object({
   patientId: uuid,
   practitionerId: uuid.optional(),
@@ -75,7 +97,8 @@ export const LabOrderCreate = z.object({
   targetDate: isoDate.optional(),
   planItemId: uuid.optional(),
   appointmentId: uuid.optional(),
-});
+  ...labImpression,
+}).refine(impressionDateNeedsType, { message: "Ölçü tarihi için ölçü türü seçin", path: ["impressionType"] });
 export const LabOrderUpdate = z.object({
   expectedVersion: z.number().int().positive(),
   supplierId: uuid.optional(),
@@ -85,6 +108,9 @@ export const LabOrderUpdate = z.object({
   instructions: optText(1000),
   targetDate: isoDate.optional(),
   appointmentId: uuid.nullable().optional(),
+  impressionType: z.enum(LAB_IMPRESSION_TYPES).nullable().optional(),
+  impressionTakenOn: isoDate.nullable().optional(),
+  material: z.enum(LAB_MATERIALS).nullable().optional(),
 });
 export const LabTransition = z.object({
   action: z.enum(LAB_ACTIONS),
@@ -145,3 +171,34 @@ export const AppointmentMaterials = z.object({
 export const StockWaste = z.object({ itemId: uuid, lotId: uuid.optional(), quantity: positiveQty, kind: z.enum(["waste", "return"]).default("waste"), reason });
 /** Sayım: sayılan miktar girilir; fark sistem tarafından düzeltme hareketi olarak yazılır (miktar ezilmez). */
 export const StockCount = z.object({ itemId: uuid, lotId: uuid.optional(), countedQuantity: nonNegQty, reason });
+
+// ------------------------------------------------------------------ malzeme siparişi (ADR-108)
+export const PURCHASE_STATUSES = ["draft", "sent", "partial", "received", "cancelled"] as const;
+export type PurchaseStatus = (typeof PURCHASE_STATUSES)[number];
+export const PURCHASE_STATUS_LABELS: Record<PurchaseStatus, string> = {
+  draft: "Taslak", sent: "Tedarikçiye gönderildi", partial: "Kısmen teslim alındı", received: "Teslim alındı", cancelled: "İptal",
+};
+export const PURCHASE_MAX_LINES = 50;
+export const PurchaseOrderCreate = z.object({
+  supplierId: uuid,
+  expectedDate: isoDate.optional(),
+  note: optText(500),
+  lines: z.array(z.object({ itemId: uuid, quantity: positiveQty, unitPrice: positiveMoney.optional() }))
+    .min(1, "En az bir kalem ekleyin").max(PURCHASE_MAX_LINES, `En çok ${PURCHASE_MAX_LINES} kalem`)
+    .refine((a) => new Set(a.map((l) => l.itemId)).size === a.length, "Aynı kalem iki kez eklenemez; miktarı artırın"),
+});
+export const PurchaseOrderTransition = z.object({
+  action: z.enum(["send", "cancel"]),
+  expectedVersion: z.number().int().positive(),
+  reason: optText(300),
+  expectedDate: isoDate.optional(),
+}).refine((v) => v.action !== "cancel" || (v.reason ?? "").length >= 3, { message: "İptal gerekçesi gerekli (en az 3 karakter)", path: ["reason"] });
+export const PurchaseReceive = z.object({
+  expectedVersion: z.number().int().positive(),
+  lines: z.array(z.object({ lineId: uuid, quantity: positiveQty, lotNo: optText(60), expiryDate: isoDate.optional() }))
+    .min(1, "Teslim alınan en az bir kalem girin").max(PURCHASE_MAX_LINES)
+    .refine((a) => new Set(a.map((l) => l.lineId)).size === a.length, "Aynı satır iki kez girilemez"),
+  /** Tedarikçi cari borcu (fatura) aynı transaction'da: teslim alınan miktar × sipariş birim fiyatı; her satırın fiyatı olmalı. */
+  createBill: z.boolean().default(false),
+  documentNo: optText(60),
+});

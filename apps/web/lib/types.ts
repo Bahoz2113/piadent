@@ -10,6 +10,8 @@ export interface Appt {
   chairId: string | null; chairName: string | null; startsAt: string; endsAt: string; status: AppointmentStatus;
   appointmentTypeId?: string | null; contactOutcome: "not_contacted" | "informed" | "unreachable"; reason: string | null; note: string | null; cancelReason?: string | null; version: number;
   procedureId?: string | null; procedureLabel?: string | null; plannedPrice?: string | null;
+  /** ADR-107: planlanan işlemler (boş = hekim muayenede belirler). */
+  procedures?: { id: string; code: string; name: string; label: string; price: string | null }[];
 }
 export interface Resources {
   practitioners: { id: string; name: string }[];
