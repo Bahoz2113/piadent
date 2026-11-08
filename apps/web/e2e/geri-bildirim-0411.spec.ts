@@ -45,6 +45,9 @@ test("Panel: menü adları, sayaçlar, grafikler ve tablo görünümü; sekreter
   await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "PİA Akış" })).toHaveCount(0);
   await noHorizontalOverflow(page);
+  // QA-502: telefonda İş akışı bağlantısı çekmecede; menü kapalıysa önce açılır (geri-bildirim-0811.spec.ts ile aynı yöntem).
+  const menu = page.getByRole("button", { name: "Menüyü aç" });
+  if (await menu.isVisible()) await menu.click();
   await nav(page).getByRole("link", { name: "İş akışı" }).click();
   await expect(page).toHaveURL(/\/is-akisi/);
   await expect(page.getByRole("heading", { name: "PİA Akış" })).toBeVisible();

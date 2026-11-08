@@ -293,7 +293,7 @@ table.table { width: 100%; border-collapse: collapse; }
 .today-main { display: flex; flex-direction: column; min-width: 0; }
 .today-main > * { overflow-wrap: anywhere; }
 .today-patient { font-weight: 600; color: var(--text); }
-.today-row.is-cancelled .today-main { text-decoration: line-through; opacity: .7; }
+.today-row.is-cancelled .today-main { text-decoration: line-through; }
 @media (max-width: 560px) { .today-row { grid-template-columns: 64px minmax(0, 1fr); } .today-status { grid-column: 2; } .today-time { flex-direction: column; } }
 /* ADR-107: randevuda seçilen işlemler (birden fazla, isteğe bağlı) */
 .chosen-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); }
