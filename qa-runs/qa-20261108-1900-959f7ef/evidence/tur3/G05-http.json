@@ -1,0 +1,28 @@
+{
+ "checks": [
+  {
+   "check": "alım + fatura",
+   "pass": true
+  },
+  {
+   "check": "ödeme",
+   "pass": true
+  },
+  {
+   "check": "özet satır {\"i\":1,\"b\":\"2000.00\",\"p\":\"750.00\",\"r\":\"1250.00\"}",
+   "pass": true
+  },
+  {
+   "check": "özet toplamları",
+   "pass": true
+  },
+  {
+   "check": "ürün satırı",
+   "pass": true
+  },
+  {
+   "check": "kalan",
+   "pass": true
+  }
+ ]
+}

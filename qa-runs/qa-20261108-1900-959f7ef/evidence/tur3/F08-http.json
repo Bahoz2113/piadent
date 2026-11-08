@@ -1,0 +1,167 @@
+{
+ "checks": [
+  {
+   "check": "sekreter listede, ücret alanı null",
+   "pass": true
+  },
+  {
+   "check": "sekreter ücret ayrıntısı 403",
+   "pass": true
+  },
+  {
+   "check": "ücret dün → 422",
+   "pass": true
+  },
+  {
+   "check": "ücret maaşsız maaş → 422",
+   "pass": true
+  },
+  {
+   "check": "ücret primde maaş → 422",
+   "pass": true
+  },
+  {
+   "check": "ücret tutar 0 → 422",
+   "pass": true
+  },
+  {
+   "check": "ücret tutar -1 → 422",
+   "pass": true
+  },
+  {
+   "check": "ücret tutar 0,001 → 422",
+   "pass": true
+  },
+  {
+   "check": "ücret tutar 1e15 → 422",
+   "pass": true
+  },
+  {
+   "check": "ücret geçersiz model → 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter model yazamaz",
+   "pass": true
+  },
+  {
+   "check": "hekim model yazamaz",
+   "pass": true
+  },
+  {
+   "check": "asistan model yazamaz",
+   "pass": true
+  },
+  {
+   "check": "finans sabit maaş → 201",
+   "pass": true
+  },
+  {
+   "check": "aynı gün 409",
+   "pass": true
+  },
+  {
+   "check": "denetim kaydı",
+   "pass": true
+  },
+  {
+   "check": "sabit maaşta prim tahakkuku yok",
+   "pass": true
+  },
+  {
+   "check": "hakedişi aşan 409",
+   "pass": true
+  },
+  {
+   "check": "gelecek ay 422",
+   "pass": true
+  },
+  {
+   "check": "dönem 2026-13 422",
+   "pass": true
+  },
+  {
+   "check": "tutar 0 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter ödeyemez 403",
+   "pass": true
+  },
+  {
+   "check": "sekreter ödeyemez 403 (commission.payout yok)",
+   "pass": true
+  },
+  {
+   "check": "idempotent tekrar aynı kayıt",
+   "pass": true
+  },
+  {
+   "check": "tek kasa hareketi −20.000",
+   "pass": true
+  },
+  {
+   "check": "eşzamanlı 2×6.000 → 201,409",
+   "pass": true
+  },
+  {
+   "check": "ters kayıt 201",
+   "pass": true
+  },
+  {
+   "check": "ikinci ters kayıt 409",
+   "pass": true
+  },
+  {
+   "check": "ay: hakediş 30000.00, ödenen 6000.00, kalan 24000.00",
+   "pass": true
+  },
+  {
+   "check": "DB net ödenen 6000.00",
+   "pass": true
+  },
+  {
+   "check": "nakit raporu Maaş ödemesi satırları",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı 404",
+   "pass": true
+  },
+  {
+   "check": "B yöneticisi A hekimine ödeme yapamaz (422)",
+   "pass": true
+  }
+ ],
+ "compensation": {
+  "current": {
+   "payModel": "salary",
+   "monthlySalary": "30000.00",
+   "validFrom": "2026-11-08"
+  },
+  "months": [
+   {
+    "month": "2026-10",
+    "salaryDue": "0.00",
+    "salaryPaid": "0.00",
+    "salaryRemaining": "0.00",
+    "commissionAccrued": "0.00",
+    "commissionPaid": "0.00"
+   },
+   {
+    "month": "2026-11",
+    "salaryDue": "30000.00",
+    "salaryPaid": "6000.00",
+    "salaryRemaining": "24000.00",
+    "commissionAccrued": "0.00",
+    "commissionPaid": "0.00"
+   }
+  ],
+  "totals": {
+   "commissionAccrued": "0.00",
+   "commissionPaid": "0.00",
+   "commissionPayable": "0.00",
+   "salaryOutstanding": "24000.00"
+  }
+ }
+}

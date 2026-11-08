@@ -27,7 +27,7 @@
  {
   "id": "QA-503",
   "severity": "S3",
-  "state": "FIX_READY",
+  "state": "VERIFIED",
   "title": "geri-bildirim-0811 E2E: sayfa geneli 'Hekim' seçicisi yarış (FLAKY)",
   "evidence": "evidence/tur2/R04-R05-e2e-temiz-seed.log",
   "cases": [
@@ -35,6 +35,7 @@
    "R05",
    "I08"
   ],
-  "fixRev": "f3e5d5e"
+  "fixRev": "f3e5d5e",
+  "retestEvidence": "evidence/tur3/R04-R05-e2e-temiz-seed.log"
  }
 ]

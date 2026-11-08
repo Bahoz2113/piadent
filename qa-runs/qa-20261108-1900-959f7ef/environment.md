@@ -6,3 +6,4 @@
 - Dış servisler: SMS yalnız DENEME; e-belge/ödeme DENEME; gerçek mesaj/ödeme yok.
 - Kimlik bilgileri `.demo-credentials`'tan ortam değişkeniyle; kayda/kanıta yazılmaz.
 - Node v22.22.0, pnpm 10.28.0, Chromium (Playwright, /opt/pw-browsers/chromium).
+- Son tur (tur 3) sürümü: `f3e5d5e5a66a29ee6f1eaa17a0c7e75f11c9dc40` (959f7ef + QA-501/502 fix1 6d31dbd + QA-503 fix2 f3e5d5e), migration 0001–0040; çalışan süreç ve HEAD `evidence/tur3/stack-version.txt`; 08.11.2026 19:5x (Europe/Istanbul).
