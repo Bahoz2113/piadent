@@ -1,0 +1,13 @@
+tenant_tables_without_force_rls|0
+tenant_tables_total|86
+tables_without_policy|
+app_role_delete_grants|auth_throttle,invoice_lines,mfa_recovery_codes,plan_items,procedure_consumables,tariff_items,work_schedules
+app_role_update_on_append_only|
+app_role_flags super/bypassrls/createrole|false/false/false
+new_tables_force_rls|anamnesis_templates=true,invoice_lines=true,invoices=true,practitioner_compensation_versions=true,procedure_consumables=true,receipt_counters=true,receipts=true,salary_payments=true,supplier_prices=true
+new_tables_0711_force_rls|message_rule_runs=true,message_rules=true,message_schedules=true,patient_health_notes=true
+app_role_delete_grants_0711|
+new_tables_0811_force_rls|appointment_procedures=true
+app_role_write_grants_0811|
+new_tables_0911_force_rls|purchase_order_lines=true,purchase_orders=true,purchase_receipts=true
+app_role_write_grants_0911|

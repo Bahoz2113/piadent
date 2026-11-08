@@ -1,0 +1,109 @@
+{
+ "case": "V05",
+ "run": "mw8ccggl",
+ "secretaryCorrect": {
+  "status": 403,
+  "code": "FORBIDDEN"
+ },
+ "dentistCorrect": {
+  "status": 200,
+  "newId": "bdbb216e-29f9-401c-ab57-503445011530"
+ },
+ "old": {
+  "id": "fcce77b6-7c90-4c54-970a-be47dfb09c1d",
+  "code": "DOL-01",
+  "name": "‹name:24›",
+  "location": {
+   "kind": "tooth",
+   "tooth": "16",
+   "surfaces": [
+    "O",
+    "M"
+   ],
+   "quadrant": null,
+   "arch": null
+  },
+  "quantity": 1,
+  "amount": "1800.00",
+  "priceBasis": "tariff",
+  "status": "corrected",
+  "statusReason": "yüzey düzeltmesi",
+  "at": "2026-11-08T21:25:11.499Z",
+  "planItemId": null,
+  "correctsId": null,
+  "note": null,
+  "practitioner": "Dt. Elif Aras",
+  "visitAt": "2026-12-18T09:00:00.000Z",
+  "imported": false
+ },
+ "new": {
+  "id": "bdbb216e-29f9-401c-ab57-503445011530",
+  "code": "DOL-01",
+  "name": "‹name:24›",
+  "location": {
+   "kind": "tooth",
+   "tooth": "16",
+   "surfaces": [
+    "O"
+   ],
+   "quadrant": null,
+   "arch": null
+  },
+  "quantity": 1,
+  "amount": "1800.00",
+  "priceBasis": "tariff",
+  "status": "completed",
+  "statusReason": null,
+  "at": "2026-11-08T21:25:11.701Z",
+  "planItemId": null,
+  "correctsId": "fcce77b6-7c90-4c54-970a-be47dfb09c1d",
+  "note": null,
+  "practitioner": "Dt. Elif Aras",
+  "visitAt": "2026-12-18T09:00:00.000Z",
+  "imported": false
+ },
+ "historyEvents": [
+  {
+   "action": "procedure.correct",
+   "entityId": "bdbb216e-29f9-401c-ab57-503445011530",
+   "changes": {
+    "amount": {
+     "to": "1800.00",
+     "from": null
+    },
+    "procedure": {
+     "to": "DOL-01",
+     "from": null
+    },
+    "corrects_id": {
+     "to": "fcce77b6-7c90-4c54-970a-be47dfb09c1d",
+     "from": null
+    }
+   },
+   "at": "2026-11-08T21:25:11.701Z",
+   "actor": "‹actorName:13›"
+  },
+  {
+   "action": "procedure.complete",
+   "entityId": "fcce77b6-7c90-4c54-970a-be47dfb09c1d",
+   "changes": {
+    "amount": {
+     "to": "1800.00",
+     "from": null
+    },
+    "procedure": {
+     "to": "DOL-01",
+     "from": null
+    }
+   },
+   "at": "2026-11-08T21:25:11.499Z",
+   "actor": "‹actorName:13›"
+  }
+ ],
+ "historyCountBefore": 13,
+ "historyCountAfter": 16,
+ "secretaryHistoryStatus": 200,
+ "secretaryClinicalEventsVisible": [],
+ "financeClinicalEventsVisible": 0,
+ "verdict": "PASS"
+}

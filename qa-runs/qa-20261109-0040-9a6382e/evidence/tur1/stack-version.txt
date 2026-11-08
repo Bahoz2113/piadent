@@ -1,0 +1,5 @@
+HEAD ad5ac6c0e69d8b8fd7e41c8929475c0a0d5e7998 commit 2026-11-09T00:24:19+03:00
+pid 869 başladı Mon Nov  9 00:24:24 2026
+pid 875 başladı Mon Nov  9 00:24:24 2026
+EADDRINUSE: 0
+api 200 web 200

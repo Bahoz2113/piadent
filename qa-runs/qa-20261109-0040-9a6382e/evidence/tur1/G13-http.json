@@ -1,0 +1,24 @@
+{
+ "checks": [
+  {
+   "check": "kabul + jobid",
+   "pass": true
+  },
+  {
+   "check": "uç + Basic yetki",
+   "pass": true
+  },
+  {
+   "check": "gövde biçimi",
+   "pass": true
+  },
+  {
+   "check": "ret kodu Türkçe",
+   "pass": true
+  },
+  {
+   "check": "teslim raporu",
+   "pass": true
+  }
+ ]
+}
