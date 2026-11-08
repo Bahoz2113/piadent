@@ -121,11 +121,14 @@ describe("ADR-073: PİA Akış eşikleri klinik ayarı", () => {
     expect((await bAdmin.get("/security/akis").expect(200)).body.settings.overdueCheckinMinutes).toBe(10); // Mavi etkilenmez
     // bugün 20 dk ve 40 dk önce başlamış planlı randevu (doğrudan DB; çalışma saati kuralından bağımsız)
     const pid = (await ownerQuery(tenantA, "select id from patients where external_ref = $1", [`${run}-P1`]))[0]!.id;
-    // Saat-bağımsızlık: son 45 dk penceresinde seed randevusu olmayan bir hekim seçilir (çakışma kısıtı: appointments_practitioner_no_overlap).
+    // QA-601 saat-bağımsızlık: referans an = klinik saat diliminde bugünün 12:00'si (gece yarısı sonrası 40 dk önce dünü göstermesin).
+    const now = new Date((await ownerQuery(tenantA,
+      "select (((now() at time zone t.timezone)::date + time '12:00') at time zone t.timezone) as ref from tenants t where t.id = $1", [tenantA]))[0]!.ref as string | Date);
+    // Referans anın son 45 dk penceresinde seed randevusu olmayan bir hekim seçilir (çakışma kısıtı: appointments_practitioner_no_overlap).
     const prac = (await ownerQuery(tenantA, `select p.id, p.branch_id from practitioners p where p.active
       and not exists (select 1 from appointments a where a.practitioner_id = p.id and a.status not in ('cancelled','no_show')
-                        and a.starts_at < now() + interval '5 minutes' and a.ends_at > now() - interval '45 minutes') order by p.display_name limit 1`))[0]!;
-    const now = new Date();
+                        and a.starts_at < $1::timestamptz + interval '5 minutes' and a.ends_at > $1::timestamptz - interval '45 minutes') order by p.display_name limit 1`,
+      [now.toISOString()]))[0]!;
     const mk = async (minsAgo: number) => (await ownerQuery(tenantA,
       `insert into appointments(tenant_id, branch_id, patient_id, practitioner_id, starts_at, ends_at, status, created_by)
        values ($1,$2,$3,$4,$5,$6,'planned',(select id from users where email = $7)) returning id`,
