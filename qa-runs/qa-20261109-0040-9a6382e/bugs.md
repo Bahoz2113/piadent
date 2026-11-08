@@ -8,3 +8,6 @@
 ## Tester betiği düzeltmeleri (ürün kodu değil)
 - round.sh: j-cases.mjs (J01–J04). tur-final.sh: R07 rls-0911.sql (önceki + purchase_* tabloları). results-0911.cjs: J05–J07 laboratuvar-0811.spec.ts başlıklarından.
 - j-cases q(): hata sonrası rollback (25P02 dersi).
+
+## Tur 2 (db5c4ff, temiz seed) — 86/86 PASS → TESLİME ADAY
+- QA-601 VERIFIED (gorev13 gece penceresinde geçti; API 438/438). R07 düzeltilmiş sorguyla PASS (purchase_* FORCE RLS; tablo düzeyinde yazma yetkisi yok; sütun düzeyinde yalnız purchase_order_lines.received_qty). E2E 130 geçti / 0 hata; web 127; contracts 21; V06 EŞLEŞTİ.
