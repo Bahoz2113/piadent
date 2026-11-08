@@ -1,3 +1,13 @@
 [
- {"id":"QA-601","severity":"S3","state":"OPEN","title":"gorev13 PİA Akış eşik testi gece yarısı penceresinde düşüyor (saat bağımlı test, FLAKY)","evidence":"evidence/tur1/R01-api.log","cases":["R01"]}
+ {
+  "id": "QA-601",
+  "severity": "S3",
+  "state": "FIX_READY",
+  "title": "gorev13 PİA Akış eşik testi gece yarısı penceresinde düşüyor (saat bağımlı test, FLAKY)",
+  "evidence": "evidence/tur1/R01-api.log",
+  "cases": [
+   "R01"
+  ],
+  "fixRev": "db5c4ff"
+ }
 ]
