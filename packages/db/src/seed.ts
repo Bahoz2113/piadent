@@ -341,6 +341,9 @@ export async function seed(connectionString: string, opts: { password?: string; 
           return r.rows[0].id as string;
         };
         await order(0, labA, "Zirkonyum kron", ["16"], "sent", addDays(today6, -1), { sent: new Date(now.getTime() - 5 * 86400000) });
+        // ADR-108: örnek ölçü ve istenen malzeme (ilk iş emri)
+        await c.query("update lab_orders set impression_type = 'digital_scan', impression_taken_on = $2, material = 'zirconia' where tenant_id = $1 and work_type = 'Zirkonyum kron'",
+          [tenantId, addDays(today6, -6)]);
         const recvId = await order(1, labB, "Gece plağı (sentetik)", [], "received", addDays(today6, 1),
           { sent: new Date(now.getTime() - 5 * 86400000), received: now });
         await order(2, labA, "Geçici kron", ["21", "22"], "draft", null);
@@ -380,6 +383,18 @@ export async function seed(connectionString: string, opts: { password?: string; 
           await c.query(
             `insert into supplier_prices(tenant_id, supplier_id, stock_item_id, unit_price, valid_from, supplier_code, note, created_by)
              values ($1,$2,$3,$4,$5,$6,'Sentetik demo fiyatı',$7)`, [tenantId, med, itemId, price, addDays(today6, -30), code, creator]);
+        }
+        // ADR-108: sentetik malzeme siparişi — tedarikçiye gönderilmiş, 3 gün sonra teslim bekleniyor (eldiven en az seviyenin altında).
+        {
+          const poNo = (await c.query(
+            `insert into tenant_counters(tenant_id, name, value) values ($1,'purchase_order_no',1)
+             on conflict (tenant_id, name) do update set value = tenant_counters.value + 1 returning value::int`, [tenantId])).rows[0].value;
+          const po = (await c.query(
+            `insert into purchase_orders(tenant_id, order_no, supplier_id, status, expected_date, note, sent_at, created_by, created_at)
+             values ($1,$2,$3,'sent',$4,'Sentetik demo siparişi', now() - interval '1 day',$5, now() - interval '1 day') returning id`,
+            [tenantId, poNo, med, addDays(today6, 3), creator])).rows[0].id;
+          await c.query("insert into purchase_order_lines(tenant_id, order_id, position, stock_item_id, quantity, unit_price) values ($1,$2,1,$3,10,120.00), ($1,$2,2,$4,50,45.00)",
+            [tenantId, po, eld, ans]);
         }
         const bankId = cash.rows.find((r) => r.kind === "bank")!.id;
         const sp = await c.query(

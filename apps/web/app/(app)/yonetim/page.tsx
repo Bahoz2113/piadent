@@ -27,7 +27,7 @@ const TABS = [
  * 07.11.2026 taşınan sekmeler (eski bağlantılar çalışsın): Kapatmalar → Hekimler (izin / rapor / resmî tatil),
  * Ürün ve fiyat listesi → Operasyon → Tedarikçi, Anamnez şablonu → kaldırıldı (sağlık özeti hasta kartında).
  */
-const MOVED: Record<string, string> = { kapatma: "/hekimler", urunler: "/operasyon?sekme=tedarikci", anamnez: "/yonetim" };
+const MOVED: Record<string, string> = { kapatma: "/hekimler", urunler: "/laboratuvar?sekme=tedarikci", anamnez: "/yonetim" };
 
 export default function AdminPage() {
   const { can, session } = useSession();

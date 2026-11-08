@@ -14,7 +14,7 @@ import { fmtDateTime, fmtLongDay, todayIn } from "@/lib/format";
 import type { Appt, Task } from "@/lib/types";
 import { ContactBadge, EmptyState, ErrorState, Loading, useToast } from "@/components/ui";
 
-const KIND_ICON: Record<string, typeof Clock3> = { overdue_checkin: Clock3, contact_pending: PhoneCall, missing_contact: UserRoundX, closure_conflict: Ban, anamnesis_review: Stethoscope, plan_unscheduled: CalendarClock, plan_decision_pending: ClipboardCheck, follow_up: CalendarClock, readiness_missing: ClipboardCheck, file_quarantined: Ban };
+const KIND_ICON: Record<string, typeof Clock3> = { overdue_checkin: Clock3, contact_pending: PhoneCall, missing_contact: UserRoundX, closure_conflict: Ban, anamnesis_review: Stethoscope, plan_unscheduled: CalendarClock, plan_decision_pending: ClipboardCheck, follow_up: CalendarClock, readiness_missing: ClipboardCheck, file_quarantined: Ban, purchase_overdue: Clock3 };
 const ROLE_LABEL: Record<string, string> = { secretary: "Sekreterya", dentist: "Hekim", assistant: "Asistan", finance: "Finans", clinic_admin: "Yönetici" };
 
 const FLOW_LIMIT = 8;
@@ -135,8 +135,9 @@ export default function WorkflowPage() {
                   {t.kind === "follow_up" && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=iletisim`}>İletişim tercihini gör</Link>}
                   {t.kind === "readiness_missing" && t.patientId && <Link className="btn btn-sm btn-primary" href={`/hastalar/${t.patientId}?sekme=belgeler`}>Belgeleri aç</Link>}
                   {(t.kind === "integration_dead" || t.kind === "integration_approval") && can("integration.read") && <Link className="btn btn-sm btn-primary" href="/yonetim?sekme=kopru">{t.kind === "integration_approval" ? "Onay ekranını aç" : "PİA Köprü'de incele"}</Link>}
-                  {(t.kind === "lab_overdue" || t.kind === "lab_review" || t.kind === "lab_not_ready") && t.sourceId && can("lab.read") && <Link className="btn btn-sm btn-primary" href={`/operasyon?is=${t.sourceId}`}>İş emrini aç</Link>}
+                  {(t.kind === "lab_overdue" || t.kind === "lab_review" || t.kind === "lab_not_ready") && t.sourceId && can("lab.read") && <Link className="btn btn-sm btn-primary" href={`/laboratuvar?is=${t.sourceId}`}>İş emrini aç</Link>}
                   {(t.kind === "stock_low" || t.kind === "lot_expiring" || t.kind === "stock_shortage") && can("stock.read") && <Link className="btn btn-sm btn-primary" href="/operasyon?sekme=stok">Stoğa git</Link>}
+                  {t.kind === "purchase_overdue" && can("stock.read") && <Link className="btn btn-sm btn-primary" href="/laboratuvar?sekme=siparisler">Siparişlere git</Link>}
                   {t.kind === "file_quarantined" && t.patientId && <Link className="btn btn-sm" href={`/hastalar/${t.patientId}?sekme=belgeler`}>Dosyalara git</Link>}
                 </div>
               </li>

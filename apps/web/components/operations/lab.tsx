@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { printHeaderHtml } from "@/components/brand";
 import { FlaskConical, Plus, Printer } from "lucide-react";
-import { LAB_ACTION_LABELS, LAB_COST_STAGE_LABELS, LAB_STATUS_LABELS, LAB_TRANSITIONS, formatTRY, type LabAction, type LabStatus } from "@viadent/contracts";
+import { LAB_ACTION_LABELS, LAB_COST_STAGE_LABELS, LAB_IMPRESSION_LABELS, LAB_IMPRESSION_TYPES, LAB_MATERIAL_LABELS, LAB_MATERIALS, LAB_STATUS_LABELS, LAB_TRANSITIONS, formatTRY, type LabAction, type LabImpressionType, type LabMaterial, type LabStatus } from "@viadent/contracts";
 import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useData } from "@/lib/use-data";
@@ -15,6 +15,8 @@ export interface LabOrder {
   workType: string; teeth: string[]; shade: string | null; instructions: string | null; targetDate: string | null; status: LabStatus; revisionCount: number;
   sentAt: string | null; receivedAt: string | null; acceptedAt: string | null; cancelReason: string | null; appointmentId: string | null; appointmentAt: string | null;
   version: number; createdAt: string; overdue: boolean; cost?: string;
+  /** ADR-108 */
+  impressionType: LabImpressionType | null; impressionTakenOn: string | null; material: LabMaterial | null;
 }
 interface LabDetail extends LabOrder {
   events: { id: string; kind: string; from: string | null; to: string | null; note: string | null; at: string; by: string }[];
@@ -41,7 +43,8 @@ export function LabOrdersTable({ items, onOpen, showPatient = true }: { items: L
           <tr key={o.id}>
             <td>{o.orderNo}</td>
             {showPatient && <td>{o.patient}</td>}
-            <td><strong>{o.workType}</strong>{o.teeth.length > 0 && <div className="small muted">Diş {o.teeth.join(", ")}{o.shade ? ` · renk ${o.shade}` : ""}</div>}</td>
+            <td><strong>{o.workType}</strong>{o.teeth.length > 0 && <div className="small muted">Diş {o.teeth.join(", ")}{o.shade ? ` · renk ${o.shade}` : ""}</div>}
+              {(o.material || o.impressionType) && <div className="small muted">{[o.material ? LAB_MATERIAL_LABELS[o.material] : null, o.impressionType && o.impressionType !== "none" ? `${LAB_IMPRESSION_LABELS[o.impressionType]}${o.impressionTakenOn ? ` ${fmtDate(o.impressionTakenOn)}` : ""}` : null].filter(Boolean).join(" · ")}</div>}</td>
             <td>{o.supplier}</td>
             <td><LabBadge o={o} />{o.revisionCount > 0 && <div className="small muted">{o.revisionCount}. revizyon</div>}</td>
             <td>{o.targetDate ? fmtDate(o.targetDate) : "—"}{o.appointmentAt && <div className="small muted">Randevu {fmtDateTime(o.appointmentAt)}</div>}</td>
@@ -87,6 +90,8 @@ function printSheet(sheet: Record<string, unknown>) {
   pre.style.cssText = "white-space:pre-wrap;font:14px/1.6 system-ui;margin:32px";
   pre.textContent = [`LABORATUVAR İŞ FÖYÜ · ${String(sheet.clinic)}`, "", `Laboratuvar: ${String(sheet.supplier)}`, `Hasta / iş: ${String(sheet.patientRef)}`,
     `Hekim: ${String(sheet.practitioner)}`, `İş: ${String(sheet.workType)}`, `Dişler: ${(sheet.teeth as string[]).join(", ") || "—"}`, `Renk: ${String(sheet.shade ?? "—")}`,
+    `Ölçü: ${sheet.impressionType ? LAB_IMPRESSION_LABELS[sheet.impressionType as LabImpressionType] : "—"}${sheet.impressionTakenOn ? ` · ${fmtDate(String(sheet.impressionTakenOn))}` : ""}`,
+    `Malzeme: ${sheet.material ? LAB_MATERIAL_LABELS[sheet.material as LabMaterial] : "—"}`,
     `Hedef teslim: ${sheet.targetDate ? fmtDate(String(sheet.targetDate)) : "—"}`, `Revizyon: ${String(sheet.revision)}`, "", `Talimat: ${String(sheet.instructions ?? "—")}`, "",
     String(sheet.notice)].join("\n");
   w.document.body.appendChild(pre);
@@ -95,12 +100,21 @@ function printSheet(sheet: Record<string, unknown>) {
 
 function parseTeeth(s: string) { return s.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean); }
 
-export function NewLabOrderDrawer({ patientId, onClose, onSaved }: { patientId: string; onClose: () => void; onSaved: (no: number, id: string) => void }) {
+/**
+ * Yeni laboratuvar iş emri. Hasta kartından açılırsa hasta bellidir; Laboratuvar menüsünden açılırsa önce hasta aranır (ADR-108).
+ * Hastadan alınan ölçü (tür + tarih) ve istenen malzeme yapılandırılmış alanlardır; föyde laboratuvara gider.
+ */
+export function NewLabOrderDrawer({ patientId: fixedPatientId, onClose, onSaved }: { patientId?: string; onClose: () => void; onSaved: (no: number, id: string) => void }) {
   const { tz, can } = useSession();
+  const [picked, setPicked] = useState<{ id: string; fullName: string; fileNo: number } | null>(null);
+  const [q, setQ] = useState("");
+  const search = useData<{ items: { id: string; fullName: string; fileNo: number }[] }>(!fixedPatientId && !picked && q.trim().length >= 2 ? `/patients?q=${encodeURIComponent(q.trim())}&limit=8` : null);
+  const patientId = fixedPatientId ?? picked?.id ?? "";
   const labs = useData<{ items: { id: string; name: string; active: boolean }[] }>("/suppliers?kind=lab");
   const res = useData<{ practitioners: { id: string; name: string }[] }>("/resources");
-  const appts = useData<{ items: { id: string; startsAt: string; status: string; practitionerName?: string }[] }>(`/patients/${patientId}/appointments`);
-  const [f, setF] = useState({ supplierId: "", practitionerId: "", workType: "", teeth: "", shade: "", instructions: "", targetDate: "", appointmentId: "" });
+  const appts = useData<{ items: { id: string; startsAt: string; status: string; practitionerName?: string }[] }>(patientId ? `/patients/${patientId}/appointments` : null);
+  const [f, setF] = useState({ supplierId: "", practitionerId: "", workType: "", teeth: "", shade: "", instructions: "", targetDate: "", appointmentId: "",
+    impressionType: "" as LabImpressionType | "", impressionTakenOn: "", material: "" as LabMaterial | "" });
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState(false);
   const upcoming = (appts.data?.items ?? []).filter((a) => ["planned", "confirmed"].includes(a.status) && a.startsAt >= new Date().toISOString());
@@ -108,16 +122,32 @@ export function NewLabOrderDrawer({ patientId, onClose, onSaved }: { patientId: 
     setBusy(true); setErr(null);
     try {
       const r = await api<{ id: string; orderNo: number }>("/lab-orders", { body: { patientId, supplierId: f.supplierId, practitionerId: f.practitionerId || undefined,
-        workType: f.workType, teeth: parseTeeth(f.teeth), shade: f.shade, instructions: f.instructions, targetDate: f.targetDate || undefined, appointmentId: f.appointmentId || undefined } });
+        workType: f.workType, teeth: parseTeeth(f.teeth), shade: f.shade, instructions: f.instructions, targetDate: f.targetDate || undefined, appointmentId: f.appointmentId || undefined,
+        impressionType: f.impressionType || undefined, impressionTakenOn: f.impressionTakenOn || undefined, material: f.material || undefined } });
       onSaved(r.orderNo, r.id);
     } catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
   return (
     <Drawer title="Yeni laboratuvar iş emri" subtitle="Taslak açılır; laboratuvara gönderim ayrı adımdır." onClose={onClose} dirty={!!f.workType}
-      footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy || !f.supplierId || f.workType.trim().length < 2} onClick={() => void save()}>Taslak oluştur</button></>}>
+      footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy || !patientId || !f.supplierId || f.workType.trim().length < 2} onClick={() => void save()}>Taslak oluştur</button></>}>
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}
-        {labs.data && labs.data.items.filter((l) => l.active).length === 0 && <Alert kind="warning">Tanımlı laboratuvar yok. {can("supplier.manage") ? "Operasyon → Tedarikçiler'den ekleyin." : "Yöneticiden laboratuvar tanımlamasını isteyin."}</Alert>}
+        {!fixedPatientId && (picked ? (
+          <div className="alert alert-success" role="status"><div style={{ flex: 1 }}><strong>{picked.fullName}</strong> <span className="small">· Dosya #{picked.fileNo}</span></div>
+            <button type="button" className="btn btn-sm" onClick={() => { setPicked(null); setF({ ...f, appointmentId: "" }); }}>Değiştir</button></div>
+        ) : (
+          <div className="field">
+            <label htmlFor="lab-q">Hasta <span aria-hidden className="req">*</span></label>
+            <input id="lab-q" className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ad, telefon veya dosya no" autoComplete="off" />
+            {search.data && (
+              <div className="picker-results" role="listbox" aria-label="Hasta sonuçları">
+                {search.data.items.map((p) => <button type="button" key={p.id} role="option" aria-selected={false} onClick={() => setPicked(p)}><strong>{p.fullName}</strong> <span className="muted small">· #{p.fileNo}</span></button>)}
+                {search.data.items.length === 0 && <div className="card-pad muted small">Eşleşen hasta yok.</div>}
+              </div>
+            )}
+          </div>
+        ))}
+        {labs.data && labs.data.items.filter((l) => l.active).length === 0 && <Alert kind="warning">Tanımlı laboratuvar yok. {can("supplier.manage") ? "Laboratuvar → Tedarikçiler'den ekleyin." : "Yöneticiden laboratuvar tanımlamasını isteyin."}</Alert>}
         <SelectField label="Laboratuvar" required value={f.supplierId} onChange={(e) => setF({ ...f, supplierId: e.target.value })} error={err?.fieldErrors.supplierId}>
           <option value="">Seçin</option>{labs.data?.items.filter((l) => l.active).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
         </SelectField>
@@ -131,6 +161,18 @@ export function NewLabOrderDrawer({ patientId, onClose, onSaved }: { patientId: 
           <TextField label="Renk" placeholder="A2" value={f.shade} onChange={(e) => setF({ ...f, shade: e.target.value })} />
           <DateField label="Hedef teslim" min={todayIn(tz)} value={f.targetDate} onChange={(e) => setF({ ...f, targetDate: e.target.value })} error={err?.fieldErrors.targetDate} />
         </div>
+        <fieldset className="stack" style={{ gap: 8, border: 0, padding: 0, margin: 0 }}>
+          <legend className="small"><strong>Ölçü ve malzeme</strong> <span className="muted">— hastadan alınan ölçü, laboratuvardan istenen malzeme</span></legend>
+          <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+            <SelectField label="Ölçü türü" value={f.impressionType} onChange={(e) => setF({ ...f, impressionType: e.target.value as LabImpressionType | "", impressionTakenOn: e.target.value ? f.impressionTakenOn : "" })} error={err?.fieldErrors.impressionType}>
+              <option value="">Seçilmedi</option>{LAB_IMPRESSION_TYPES.map((t) => <option key={t} value={t}>{LAB_IMPRESSION_LABELS[t]}</option>)}
+            </SelectField>
+            <DateField label="Ölçü tarihi" max={todayIn(tz)} disabled={!f.impressionType || f.impressionType === "none"} value={f.impressionTakenOn} onChange={(e) => setF({ ...f, impressionTakenOn: e.target.value })} error={err?.fieldErrors.impressionTakenOn} />
+            <SelectField label="İstenen malzeme" value={f.material} onChange={(e) => setF({ ...f, material: e.target.value as LabMaterial | "" })} error={err?.fieldErrors.material}>
+              <option value="">Seçilmedi</option>{LAB_MATERIALS.map((m) => <option key={m} value={m}>{LAB_MATERIAL_LABELS[m]}</option>)}
+            </SelectField>
+          </div>
+        </fieldset>
         <TextAreaField label="Teknik talimat (laboratuvara gider)" rows={3} value={f.instructions} onChange={(e) => setF({ ...f, instructions: e.target.value })}
           hint="Yalnız teknik bilgi yazın; tanı, sağlık öyküsü veya iletişim bilgisi yazmayın." />
         <SelectField label="Prova / teslim randevusu (isteğe bağlı)" value={f.appointmentId} onChange={(e) => setF({ ...f, appointmentId: e.target.value })}
@@ -172,6 +214,8 @@ export function LabOrderDrawer({ id, onClose, onChanged }: { id: string; onClose
         <dl className="kv">
           <dt>Hekim</dt><dd>{o.practitioner}</dd>
           <dt>Dişler</dt><dd>{o.teeth.length ? o.teeth.join(", ") : "—"}{o.shade ? ` · renk ${o.shade}` : ""}</dd>
+          <dt>Ölçü</dt><dd>{o.impressionType ? LAB_IMPRESSION_LABELS[o.impressionType] : "—"}{o.impressionTakenOn ? ` · ${fmtDate(o.impressionTakenOn)}` : ""}</dd>
+          <dt>İstenen malzeme</dt><dd>{o.material ? LAB_MATERIAL_LABELS[o.material] : "—"}</dd>
           <dt>Hedef teslim</dt><dd>{o.targetDate ? fmtDate(o.targetDate) : "—"}{o.overdue && <span className="badge badge-danger" style={{ marginLeft: 6 }}>Gecikmiş</span>}</dd>
           <dt>Randevu</dt><dd>{o.appointmentAt ? fmtDateTime(o.appointmentAt, tz) : "—"}</dd>
           {o.instructions && <><dt>Talimat</dt><dd>{o.instructions}</dd></>}
@@ -204,6 +248,8 @@ export function LabOrderDrawer({ id, onClose, onChanged }: { id: string; onClose
             <dl className="kv">
               <dt>Laboratuvar</dt><dd>{String(sheet.supplier)}</dd><dt>Hasta / iş</dt><dd>{String(sheet.patientRef)}</dd><dt>Hekim</dt><dd>{String(sheet.practitioner)}</dd>
               <dt>İş</dt><dd>{String(sheet.workType)}</dd><dt>Dişler</dt><dd>{(sheet.teeth as string[]).join(", ") || "—"}</dd><dt>Renk</dt><dd>{String(sheet.shade ?? "—")}</dd>
+              <dt>Ölçü</dt><dd>{sheet.impressionType ? LAB_IMPRESSION_LABELS[sheet.impressionType as LabImpressionType] : "—"}{sheet.impressionTakenOn ? ` · ${fmtDate(String(sheet.impressionTakenOn))}` : ""}</dd>
+              <dt>Malzeme</dt><dd>{sheet.material ? LAB_MATERIAL_LABELS[sheet.material as LabMaterial] : "—"}</dd>
               <dt>Hedef teslim</dt><dd>{sheet.targetDate ? fmtDate(String(sheet.targetDate)) : "—"}</dd><dt>Talimat</dt><dd>{String(sheet.instructions ?? "—")}</dd>
             </dl>
             <p className="small muted">{String(sheet.notice)}</p>

@@ -230,7 +230,7 @@ function ReportsInner() {
                       <thead><tr>{res.columns.map((c) => <th key={c.key} className={["money", "int", "qty", "percent"].includes(c.type) ? "money" : undefined}>{c.label}</th>)}</tr></thead>
                       <tbody>{res.rows.map((r, i) => {
                         const d = r._drill;
-                        const link = d?.labOrderId ? `/operasyon?is=${d.labOrderId}` : d?.patientId && !d.report ? `/hastalar/${d.patientId}${d.tab && TAB_FOR[d.tab] ? `?sekme=${TAB_FOR[d.tab]}` : ""}` : null;
+                        const link = d?.labOrderId ? `/laboratuvar?is=${d.labOrderId}` : d?.patientId && !d.report ? `/hastalar/${d.patientId}${d.tab && TAB_FOR[d.tab] ? `?sekme=${TAB_FOR[d.tab]}` : ""}` : null;
                         return (
                           <tr key={i} className={d ? "drill" : undefined} onClick={d?.report ? () => open(d.report!, d.params ?? {}, true) : undefined}
                             tabIndex={d?.report ? 0 : undefined} onKeyDown={d?.report ? (e) => { if (e.key === "Enter") open(d.report!, d.params ?? {}, true); } : undefined}>

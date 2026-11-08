@@ -37,7 +37,7 @@ const CLINIC_TABLES: [string, string[]][] = [
   ["anamnesis_templates", []], ["procedure_consumables", []], ["receipts", []], ["invoices", []], ["invoice_lines", []],
   ["practitioner_compensation_versions", []], ["salary_payments", []], ["supplier_prices", []], ["patient_health_notes", []],
   ["message_rules", []], ["message_schedules", []], ["message_rule_runs", []],
-  ["appointment_procedures", []],
+  ["appointment_procedures", []], ["purchase_orders", []], ["purchase_order_lines", []], ["purchase_receipts", []],
   ["audit_events", []],
 ];
 /** Sağlık içeriği taşıyan tablolar (hasta dışa aktarımında ayrıca sağlık yetkisi ister). */

@@ -20,7 +20,7 @@ export async function activeSupplier(c: C, supplierId: string, kind?: "lab") {
 }
 
 export async function createBill(c: C, ctx: RequestContext, b: { supplierId: string; amount: string; description: string; documentNo?: string | null;
-  source: "manual" | "lab_cost" | "stock_receipt"; sourceId?: string | null; at: Date }) {
+  source: "manual" | "lab_cost" | "stock_receipt" | "purchase_receipt"; sourceId?: string | null; at: Date }) {
   const r = await c.query(
     `insert into supplier_entries(tenant_id, supplier_id, kind, amount, description, document_no, source, source_id, occurred_at, created_by)
      values ($1,$2,'bill',$3,$4,$5,$6,$7,$8,$9) returning id`,

@@ -68,4 +68,6 @@ test("finans: finans, operasyon", async ({ page }) => {
   await login(page, "finans@demo-yesil.test");
   await page.goto("/finans"); await page.waitForLoadState("networkidle"); await scan(page, "finans");
   await page.goto("/operasyon"); await page.waitForLoadState("networkidle"); await scan(page, "operasyon");
+  await page.goto("/laboratuvar"); await page.waitForLoadState("networkidle"); await scan(page, "laboratuvar");
+  await page.getByRole("tab", { name: "Malzeme siparişleri" }).click(); await page.waitForLoadState("networkidle"); await scan(page, "malzeme siparişleri");
 });

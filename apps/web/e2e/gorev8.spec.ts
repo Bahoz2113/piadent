@@ -31,7 +31,7 @@ test("CSP: unsafe-inline yok, nonce istek başına değişir, gezinmede ihlal yo
   await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
   await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
-  for (const path of ["/hastalar", "/ajanda", "/finans", "/raporlar", "/operasyon", "/yonetim", "/hesabim"]) {
+  for (const path of ["/hastalar", "/ajanda", "/finans", "/raporlar", "/operasyon", "/laboratuvar", "/yonetim", "/hesabim"]) {
     await page.goto(path);
     await expect(page.locator("h1").first()).toBeVisible();
   }

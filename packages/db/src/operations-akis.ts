@@ -1,5 +1,5 @@
 /**
- * Görev 6 PİA Akış kuralları: laboratuvar gecikmesi / teslim kararı / randevu hazırlığı, stok en az seviye ve SKT.
+ * Görev 6 PİA Akış kuralları: laboratuvar gecikmesi / teslim kararı / randevu hazırlığı, stok en az seviye ve SKT; geciken malzeme siparişi (ADR-108).
  * Görev başlıkları hasta adı içermez; kaynak çözülünce görev otomatik kapanır.
  */
 import type pg from "pg";
@@ -97,6 +97,23 @@ export async function refreshGorev6(c: pg.PoolClient, tenantId: string, tz: stri
        from stock_lots l
       where t.tenant_id = $1 and t.kind = 'lot_expiring' and t.status in ${OPEN} and l.id = t.source_id
         and (select coalesce(sum(m.quantity), 0) from stock_movements m where m.lot_id = l.id) <= 0`, [tenantId]);
+
+  // 6) ADR-108: geciken malzeme siparişi — gönderilmiş/kısmi sipariş beklenen teslim tarihini geçti.
+  created += await run(
+    `insert into tasks(tenant_id, kind, source_type, source_id, dedupe_key, title, reason, next_step, assignee_role, due_at)
+     select po.tenant_id, 'purchase_overdue', 'purchase_order', po.id, 'purchase_overdue:' || po.id, 'Geciken malzeme siparişi',
+            'Sipariş ' || po.order_no || ' (' || s.name || ') beklenen teslim ' || to_char(po.expected_date, 'DD.MM.YYYY') || ' geçti.',
+            'Tedarikçiyi arayın; gelen malzemeyi Laboratuvar → Malzeme siparişleri bölümünden teslim alın.',
+            'assistant', (po.expected_date::timestamp at time zone $3)
+       from purchase_orders po join suppliers s on s.id = po.supplier_id
+      where po.tenant_id = $1 and po.status in ('sent','partial') and po.expected_date < ${today}
+     on conflict (tenant_id, dedupe_key) where status in ${OPEN} do nothing`, [tenantId, now, tz]);
+  closed += await run(
+    `update tasks t set status = 'done', closed_at = now(), updated_at = now(),
+            closed_reason = case when po.status in ('sent','partial') then 'Beklenen teslim tarihi güncellendi' else 'Sipariş durumu: ' || po.status end
+       from purchase_orders po
+      where t.tenant_id = $1 and t.kind = 'purchase_overdue' and t.status in ${OPEN} and po.id = t.source_id
+        and (po.status not in ('sent','partial') or po.expected_date >= ${today})`, [tenantId, now, tz]);
 
   return { created, closed };
 }

@@ -80,7 +80,7 @@ test("Yönetim: İşlem türleri fiyatlı; Kapatmalar ve Anamnez şablonu yok; �
   await expect(page.getByRole("columnheader", { name: "Fiyat" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Kompozit dolgu (tek yüz)" })).toBeVisible();
   await page.goto("/yonetim?sekme=urunler"); // eski bağlantı taşınan sekmeye gider
-  await expect(page).toHaveURL(/\/operasyon\?sekme=tedarikci/);
+  await expect(page).toHaveURL(/\/laboratuvar\?sekme=tedarikci/); // 08.11.2026: Tedarikçiler Laboratuvar menüsünde
   await expect(page.getByRole("heading", { name: "Ürün ve fiyat listesi" })).toBeVisible();
   await page.goto("/yonetim?sekme=kopru");
   await expect(page.getByRole("heading", { name: "Netgsm SMS" })).toBeVisible();

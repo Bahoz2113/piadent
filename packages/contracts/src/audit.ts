@@ -5,7 +5,7 @@ import {
   FOLLOW_UP_STATUS_LABELS, MESSAGE_STATUS_LABELS, type CommChannel, type CommPurpose,
 } from "./documents";
 import { INTEGRATION_KIND_LABELS, ONLINE_PAYMENT_STATUS_LABELS, OPERATION_LABELS, TRANSPORT_LABELS } from "./integrations";
-import { LAB_COST_STAGE_LABELS, LAB_STATUS_LABELS, SUPPLIER_KIND_LABELS } from "./operations";
+import { LAB_COST_STAGE_LABELS, LAB_IMPRESSION_LABELS, LAB_MATERIAL_LABELS, LAB_STATUS_LABELS, PURCHASE_STATUS_LABELS, SUPPLIER_KIND_LABELS } from "./operations";
 import { PAY_MODEL_LABELS } from "./practitioners";
 import { DECISION_LABELS, PLAN_STATUS_LABELS } from "./treatment";
 import { IMPORT_KIND_LABELS } from "./pilot";
@@ -133,6 +133,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
 
   // Laboratuvar, stok ve cari
   "lab_order.create": "Laboratuvar iş emri oluşturuldu",
+  "purchase_order.create": "Malzeme siparişi oluşturuldu", "purchase_order.send": "Malzeme siparişi tedarikçiye gönderildi",
+  "purchase_order.cancel": "Malzeme siparişi iptal edildi", "purchase_order.receive": "Malzeme siparişi teslim alındı",
   "lab_order.update": "Laboratuvar iş emri güncellendi",
   "lab_order.note": "Laboratuvar iş emrine not eklendi",
   "lab_order.work_sheet": "Laboratuvar iş fişi üretildi",
@@ -232,7 +234,8 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
   purpose: "Amaç", channel: "Kanal", due_date: "Vade", sha256: "Dosya özeti (SHA-256)", file_sha256: "Dosya özeti (SHA-256)",
-  procedure_ids: "Planlanan işlemler", types: "Eklenen belge türü", templates: "Eklenen şablon", replaced: "Yenilenen yer tutucu metin",
+  procedure_ids: "Planlanan işlemler", impression_type: "Ölçü türü", impression_taken_on: "Ölçü tarihi", material: "İstenen malzeme",
+  expected_date: "Beklenen teslim", received_lines: "Teslim alınan kalemler", bill_id: "Cari fatura", types: "Eklenen belge türü", templates: "Eklenen şablon", replaced: "Yenilenen yer tutucu metin",
   // Laboratuvar, stok, cari
   supplier_id: "Tedarikçi", work_type: "İş türü", order_no: "İş emri no", stage: "Aşama", teeth: "Dişler", shade: "Renk",
   instructions: "Talimatlar", target_date: "Hedef tarih", appointment_id: "Randevu", item_id: "Stok kalemi", quantity: "Miktar",
@@ -256,7 +259,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   payment: "Tahsilat", refund: "İade", receipt: "Makbuz", receivable: "Alacak", allocation: "Ödeme dağıtımı", invoice: "Fatura taslağı",
   expense: "Gider", cash_account: "Kasa / banka", commission_rule_version: "Prim kuralı", commission_payout: "Prim ödemesi", salary_payment: "Maaş ödemesi",
   online_payment_request: "Online ödeme isteği", supplier: "Tedarikçi", supplier_entry: "Cari hareket", supplier_price: "Tedarikçi fiyatı",
-  stock_item: "Stok kalemi", stock_movement: "Stok hareketi", lab_order: "Laboratuvar iş emri", lab_cost: "Laboratuvar maliyeti",
+  stock_item: "Stok kalemi", stock_movement: "Stok hareketi", lab_order: "Laboratuvar iş emri", purchase_order: "Malzeme siparişi", lab_cost: "Laboratuvar maliyeti",
   template: "Şablon", template_version: "Şablon sürümü", document_type: "Belge türü", patient_document: "Hasta belgesi", readiness_rule: "Hazırlık kuralı",
   file: "Dosya", message: "Mesaj", task: "Görev", membership: "Ekip üyeliği", invitation: "Davet", tenant: "Klinik", report: "Rapor",
   integration_connection: "Entegrasyon bağlantısı", integration_job: "Entegrasyon işi", import_batch: "Veri aktarımı",
@@ -291,13 +294,13 @@ const GENERIC_STATUS: Record<string, string> = {
   granted: "İzin verildi", withdrawn: "İzin geri çekildi",
 };
 const STATUS_BY_ENTITY: Record<string, Record<string, string>> = {
-  appointment: APPOINTMENT_STATUS_LABELS, treatment_plan: PLAN_STATUS_LABELS, plan_version: PLAN_STATUS_LABELS, lab_order: LAB_STATUS_LABELS,
+  appointment: APPOINTMENT_STATUS_LABELS, treatment_plan: PLAN_STATUS_LABELS, plan_version: PLAN_STATUS_LABELS, lab_order: LAB_STATUS_LABELS, purchase_order: PURCHASE_STATUS_LABELS,
   patient_document: DOCUMENT_STATUS_LABELS, file: FILE_STATUS_LABELS, follow_up: FOLLOW_UP_STATUS_LABELS, online_payment_request: ONLINE_PAYMENT_STATUS_LABELS,
   message: MESSAGE_STATUS_LABELS, integration_job: TRANSPORT_LABELS, invoice: INVOICE_STATUS_LABELS,
 };
 const SOURCE_LABELS: Record<string, string> = {
   performed_procedure: "Gerçekleşen işlemden", manual: "Elle", provider_webhook: "Sağlayıcı bildirimi", lab_cost: "Laboratuvar maliyeti",
-  stock_receipt: "Stok girişi", ...COMM_SOURCE_LABELS,
+  stock_receipt: "Stok girişi", purchase_receipt: "Malzeme siparişi teslimi", ...COMM_SOURCE_LABELS,
 };
 const KIND_LABELS: Record<string, string> = {
   ...SUPPLIER_KIND_LABELS, ...CASH_ACCOUNT_KIND_LABELS, ...INTEGRATION_KIND_LABELS, ...IMPORT_KIND_LABELS,
@@ -307,7 +310,7 @@ const APPROVAL_LABELS: Record<string, string> = { pending: "Onay bekliyor", appr
 const SCOPE_LABELS: Record<string, string> = { clinic: "Tüm klinik", practitioner: "Hekim", chair: "Ünite" };
 const ENUM_BY_FIELD: Record<string, Record<string, string>> = {
   method: PAYMENT_METHOD_LABELS, source: SOURCE_LABELS, kind: KIND_LABELS, gender: GENDER_LABELS, contact_outcome: CONTACT_OUTCOME_LABELS,
-  relation: RELATION_LABELS, decision: DECISION_LABELS, basis: COMMISSION_BASIS_LABELS, pay_model: PAY_MODEL_LABELS, stage: LAB_COST_STAGE_LABELS, role: ROLE_LABELS,
+  relation: RELATION_LABELS, decision: DECISION_LABELS, basis: COMMISSION_BASIS_LABELS, pay_model: PAY_MODEL_LABELS, stage: LAB_COST_STAGE_LABELS, impression_type: LAB_IMPRESSION_LABELS, material: LAB_MATERIAL_LABELS, role: ROLE_LABELS,
   purpose: COMM_PURPOSE_LABELS, channel: COMM_CHANNEL_LABELS, request_status: DOCUMENT_STATUS_LABELS, transport_status: TRANSPORT_LABELS,
   approval: APPROVAL_LABELS, operation: OPERATION_LABELS, scope: SCOPE_LABELS, category: FILE_CATEGORY_LABELS, field: { national_id: "Kimlik no" },
 };
