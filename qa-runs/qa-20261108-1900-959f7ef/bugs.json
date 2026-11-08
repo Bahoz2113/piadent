@@ -2,24 +2,38 @@
  {
   "id": "QA-501",
   "severity": "S2",
-  "state": "FIX_READY",
+  "state": "VERIFIED",
   "title": "Panel bugünün randevuları: koyu/lacivert görünümde renk kontrastı (axe color-contrast)",
   "evidence": "evidence/tur1/browser-n.log",
   "cases": [
    "N06"
   ],
-  "fixRev": "6d31dbd"
+  "fixRev": "6d31dbd",
+  "retestEvidence": "evidence/tur2/browser-n.log"
  },
  {
   "id": "QA-502",
   "severity": "S3",
-  "state": "FIX_READY",
+  "state": "VERIFIED",
   "title": "geri-bildirim-0411 E2E telefon-360'ta İş akışı bağlantısına menü açmadan tıklıyor",
   "evidence": "evidence/tur1/R04-R05-e2e-temiz-seed.log",
   "cases": [
    "R04",
    "R05"
   ],
-  "fixRev": "6d31dbd"
+  "fixRev": "6d31dbd",
+  "retestEvidence": "evidence/tur2/R04-R05-e2e-temiz-seed.log"
+ },
+ {
+  "id": "QA-503",
+  "severity": "S3",
+  "state": "OPEN",
+  "title": "geri-bildirim-0811 E2E: sayfa geneli 'Hekim' seçicisi yarış (FLAKY)",
+  "evidence": "evidence/tur2/R04-R05-e2e-temiz-seed.log",
+  "cases": [
+   "R04",
+   "R05",
+   "I08"
+  ]
  }
 ]

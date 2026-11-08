@@ -9,3 +9,7 @@
 - browser-f F12: randevu formundaki işlem seçici adı "İşlem" → "İşlemler (isteğe bağlı)" (ADR-107 kabul değişikliği; ölçüt aynı: > 50 seçenek, fiyat görünür, tek seçici).
 - round.sh: i-cases.mjs eklendi (I01–I06). tur-final.sh: R07 için rls-0811.sql (önceki kontroller + appointment_procedures).
 - i-cases: koşuya özel hekim ("Zz Dt. QA I …"), F01 ile aynı gerekçe (seed/E2E randevularıyla saat çakışması).
+
+## Tur 2 (6d31dbd, temiz seed) — 76/79 PASS
+- QA-501 VERIFIED (N06 iki profilde axe ciddi/kritik 0), QA-502 VERIFIED (0411 Panel telefon-360 geçti).
+- **QA-503 (S3, FLAKY, AÇIK)** — geri-bildirim-0811 "Randevu ver" telefon-360'ta zaman aşımı (tur 1'de geçmişti). İz: sayfa geneli "Hekim" seçicisi Randevular süzgecini de sayıyor (7 seçenek) → formdaki 3 seçenekli listede indeks 6 bekleniyor. Test kodu yarışı; ürün davranışı değil. Devir fix2.md. I08, R04, R05 bu nedenle FAIL.

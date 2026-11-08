@@ -1,0 +1,47 @@
+{
+ "at": "2026-11-08T16:29:43.589Z",
+ "results": [
+  {
+   "id": "I01",
+   "status": "PASS",
+   "summary": "4/4 kontrol: hepsi geçti",
+   "at": "2026-11-08T16:29:43.399Z",
+   "evidence": "I01-http.json"
+  },
+  {
+   "id": "I02",
+   "status": "PASS",
+   "summary": "12/12 kontrol: hepsi geçti",
+   "at": "2026-11-08T16:29:43.451Z",
+   "evidence": "I02-http.json"
+  },
+  {
+   "id": "I03",
+   "status": "PASS",
+   "summary": "9/9 kontrol: hepsi geçti",
+   "at": "2026-11-08T16:29:43.491Z",
+   "evidence": "I03-http.json"
+  },
+  {
+   "id": "I04",
+   "status": "PASS",
+   "summary": "5/5 kontrol: hepsi geçti",
+   "at": "2026-11-08T16:29:43.507Z",
+   "evidence": "I04-http.json"
+  },
+  {
+   "id": "I05",
+   "status": "PASS",
+   "summary": "8/8 kontrol: hepsi geçti",
+   "at": "2026-11-08T16:29:43.555Z",
+   "evidence": "I05-http.json"
+  },
+  {
+   "id": "I06",
+   "status": "PASS",
+   "summary": "5/5 kontrol: hepsi geçti",
+   "at": "2026-11-08T16:29:43.589Z",
+   "evidence": "I06-http.json"
+  }
+ ]
+}

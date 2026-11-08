@@ -1,0 +1,48 @@
+{
+ "checks": [
+  {
+   "check": "200 + dosya adı (200)",
+   "pass": true
+  },
+  {
+   "check": "tablo invoices",
+   "pass": true
+  },
+  {
+   "check": "tablo receipts",
+   "pass": true
+  },
+  {
+   "check": "tablo salary_payments",
+   "pass": true
+  },
+  {
+   "check": "tablo supplier_prices",
+   "pass": true
+  },
+  {
+   "check": "tablo patient_health_notes",
+   "pass": true
+  },
+  {
+   "check": "tablo message_rules",
+   "pass": true
+  },
+  {
+   "check": "tablo message_schedules",
+   "pass": true
+  },
+  {
+   "check": "sır yok",
+   "pass": true
+  },
+  {
+   "check": "sayılar tutarlı",
+   "pass": true
+  },
+  {
+   "check": "finans 403",
+   "pass": true
+  }
+ ]
+}
