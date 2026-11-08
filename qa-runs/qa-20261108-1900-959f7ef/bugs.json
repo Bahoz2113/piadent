@@ -1,1 +1,4 @@
-[]
+[
+ {"id":"QA-501","severity":"S2","state":"OPEN","title":"Panel bugünün randevuları: koyu/lacivert görünümde renk kontrastı (axe color-contrast)","evidence":"evidence/tur1/browser-n.log","cases":["N06"]},
+ {"id":"QA-502","severity":"S3","state":"OPEN","title":"geri-bildirim-0411 E2E telefon-360'ta İş akışı bağlantısına menü açmadan tıklıyor","evidence":"evidence/tur1/R04-R05-e2e-temiz-seed.log","cases":["R04","R05"]}
+]
