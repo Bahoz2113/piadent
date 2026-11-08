@@ -62,7 +62,9 @@ test("Randevu ver: işlemsiz kayıt ve birden fazla işlem (toplam, kaldır); ay
   await page.goto("/ajanda");
   await page.getByRole("button", { name: "Randevu ver" }).first().click();
   await expect(page.getByRole("heading", { name: "Randevu ver", level: 1 })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Ünite" })).toBeVisible();
+  // QA-503: seçiciler randevu formunun bölümlerine kapsanır; Randevular sayfasının hekim süzgeci sayıma girmez.
+  const form = page.getByRole("region", { name: "2 · İşlem, hekim ve gün", exact: true });
+  await expect(form.getByRole("combobox", { name: "Ünite" })).toBeVisible();
   await expect(page.getByText("Koltuk", { exact: true })).toHaveCount(0);
   // 1) işlemsiz randevu
   const mobile = info.project.name !== "masaustu";
@@ -73,10 +75,16 @@ test("Randevu ver: işlemsiz kayıt ve birden fazla işlem (toplam, kaldır); ay
   await page.getByRole("button", { name: /Yeni hasta oluştur/ }).click();
   await page.getByRole("dialog", { name: "Yeni hasta" }).getByRole("button", { name: "Hastayı kaydet" }).click();
   await expect(page.getByText("İşlem seçilmedi — randevu işlemsiz kaydedilebilir.")).toBeVisible();
-  const hekim = page.getByRole("combobox", { name: "Hekim" });
-  await hekim.selectOption({ index: (await hekim.locator("option").count()) - 1 });
-  await page.getByPlaceholder("gg.aa.yyyy").first().fill(target.tr);
-  const slots = page.getByRole("radiogroup", { name: "Uygun saatler" });
+  const hekim = form.getByRole("combobox", { name: "Hekim", exact: true });
+  const gun = form.getByRole("textbox", { name: "Gün", exact: true });
+  const slots = page.getByRole("region", { name: /^3 · Uygun saatler/ }).getByRole("radiogroup", { name: "Uygun saatler", exact: true });
+  const pickLastHekim = async () => {
+    await expect.poll(() => hekim.locator("option").count(), { timeout: 10_000 }).toBeGreaterThan(0);
+    const opts = hekim.locator("option");
+    await hekim.selectOption((await opts.nth((await opts.count()) - 1).getAttribute("value"))!);
+  };
+  await pickLastHekim();
+  await gun.fill(target.tr);
   await expect.poll(() => slots.getByRole("radio").count(), { timeout: 10_000 }).toBeGreaterThan(0);
   await slots.getByRole("radio").first().click();
   await page.getByRole("button", { name: "Randevuyu kaydet" }).click();
@@ -87,18 +95,18 @@ test("Randevu ver: işlemsiz kayıt ve birden fazla işlem (toplam, kaldır); ay
   await page.getByRole("textbox", { name: "Hasta", exact: true }).fill(`Çokİşlem ${tag}`);
   await page.getByRole("button", { name: /Yeni hasta oluştur/ }).click();
   await page.getByRole("dialog", { name: "Yeni hasta" }).getByRole("button", { name: "Hastayı kaydet" }).click();
-  const add = page.getByRole("combobox", { name: "İşlemler (isteğe bağlı)" });
+  const add = form.getByRole("combobox", { name: "İşlemler (isteğe bağlı)" });
   for (const name of ["Diş taşı temizliği", "Kompozit dolgu (tek yüz)", "Kontrol muayenesi"]) {
     await add.selectOption((await add.locator("option", { hasText: name }).first().getAttribute("value"))!);
   }
-  const chosen = page.getByRole("list", { name: "Seçilen işlemler" });
+  const chosen = form.getByRole("list", { name: "Seçilen işlemler" });
   await expect(chosen.getByRole("listitem")).toHaveCount(4); // 3 işlem + toplam
   await chosen.getByRole("button", { name: "Kontrol muayenesi işlemini kaldır" }).click();
   await expect(chosen.getByRole("listitem")).toHaveCount(3); // 2 işlem + toplam
   await expect(chosen).toContainText("Toplam");
   await expect(add.locator("option", { hasText: "Diş taşı temizliği" })).toHaveCount(0); // seçilen tekrar sunulmaz
-  await hekim.selectOption({ index: (await hekim.locator("option").count()) - 1 });
-  await page.getByPlaceholder("gg.aa.yyyy").first().fill(target.tr);
+  await pickLastHekim();
+  await gun.fill(target.tr);
   await expect.poll(() => slots.getByRole("radio").count(), { timeout: 10_000 }).toBeGreaterThan(0);
   await slots.getByRole("radio").first().click();
   await noHorizontalOverflow(page);
