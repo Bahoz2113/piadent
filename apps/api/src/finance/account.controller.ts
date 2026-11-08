@@ -10,7 +10,7 @@ import type { RequestContext } from "../infra/context.js";
 import { audit, enqueue } from "../audit/audit.js";
 import {
   activeAccount, allocate, cancelReceivable, cashMovement, checkEventTime, createReceivable, idempotent, liveAllocations, lockAccount,
-  refundPayment, requireKey, reverseAllocation,
+  recordPayment, refundPayment, requireKey, reverseAllocation,
 } from "./ledger.js";
 
 const id = new ParseUUIDPipe({ exceptionFactory: () => Errors.notFound() });
@@ -40,7 +40,7 @@ export class AccountController {
         `select p.id, p.amount::text, p.method, p.paid_at, p.note, ca.name as account_name, u.full_name as received_by,
                 coalesce((select sum(a.amount) from allocations a where a.payment_id = p.id), 0)::text as allocated,
                 coalesce((select sum(f.amount) from refunds f where f.payment_id = p.id), 0)::text as refunded,
-                rc.id as receipt_id, rc.receipt_no
+                rc.id as receipt_id, rc.receipt_no, p.pos_intent_id
            from payments p join cash_accounts ca on ca.id = p.cash_account_id join users u on u.id = p.received_by
            left join receipts rc on rc.kind = 'payment' and rc.payment_id = p.id
           where p.patient_id = $1 order by p.paid_at, p.id`,
@@ -68,7 +68,7 @@ export class AccountController {
       const payments = pay.rows.map((p) => ({
         id: p.id, amount: p.amount, method: p.method, paidAt: p.paid_at, note: p.note, accountName: p.account_name, receivedBy: p.received_by,
         allocated: p.allocated, refunded: p.refunded, available: fromMinor(toMinor(p.amount) - toMinor(p.refunded) - toMinor(p.allocated)),
-        receiptId: p.receipt_id ?? null, receiptNo: p.receipt_no ?? null,
+        receiptId: p.receipt_id ?? null, receiptNo: p.receipt_no ?? null, posIntentId: p.pos_intent_id ?? null,
       }));
       const active = receivables.filter((r) => r.status === "active");
       const totals = {
@@ -163,26 +163,8 @@ export class AccountController {
         if (!(await c.query("select 1 from patients where id = $1", [i.patientId])).rowCount) throw Errors.notFound("Hasta");
         await activeAccount(c, i.cashAccountId);
         await lockAccount(c, i.patientId);
-        if (i.appointmentId && !(await c.query("select 1 from appointments where id = $1 and patient_id = $2", [i.appointmentId, i.patientId])).rowCount) {
-          throw Errors.validation({ appointmentId: "Randevu bu hastaya ait değil." });
-        }
-        const p = await c.query(
-          `insert into payments(tenant_id, patient_id, amount, method, cash_account_id, paid_at, note, received_by, appointment_id)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
-          [ctx.tenantId, i.patientId, i.amount, i.method, i.cashAccountId, at, i.note ?? null, ctx.userId, i.appointmentId ?? null],
-        );
-        const pid = p.rows[0].id as string;
-        await cashMovement(c, ctx, { accountId: i.cashAccountId, amount: i.amount, source: "payment", sourceId: pid, at });
-        await audit(c, ctx, { action: "payment.create", entityType: "payment", entityId: pid, patientId: i.patientId,
-          changes: { amount: { from: null, to: i.amount }, method: { from: null, to: i.method }, ...(i.appointmentId ? { appointment_id: { from: null, to: i.appointmentId } } : {}) } });
-        await this.checkReceivables(c, i.patientId, i.allocations.map((a) => a.receivableId));
-        const allocationIds: string[] = [];
-        for (const a of [...i.allocations].sort((x, y) => x.receivableId.localeCompare(y.receivableId))) {
-          allocationIds.push(await allocate(c, ctx, pid, a.receivableId, a.amount));
-        }
-        await enqueue(c, ctx.tenantId, "via_net.changed", { patientId: i.patientId });
-        const rc = (await c.query("select id, receipt_no from receipts where kind = 'payment' and payment_id = $1", [pid])).rows[0];
-        return { id: pid, allocationIds, advance: fromMinor(toMinor(i.amount) - allocSum), receiptId: rc?.id ?? null, receiptNo: rc?.receipt_no ?? null };
+        return recordPayment(c, ctx, { patientId: i.patientId, amount: i.amount, method: i.method, cashAccountId: i.cashAccountId, at,
+          note: i.note, appointmentId: i.appointmentId, allocations: i.allocations });
       });
       replayHeader(res, r);
       return r.body;

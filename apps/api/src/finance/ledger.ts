@@ -7,8 +7,8 @@ import { createHash } from "node:crypto";
 import type pg from "pg";
 import { IDEMPOTENCY_KEY_RE, commissionAmount, fromMinor, localDate, toMinor } from "@viadent/contracts";
 import type { RequestContext } from "../infra/context.js";
-import { AppError } from "../infra/errors.js";
-import { audit } from "../audit/audit.js";
+import { AppError, Errors } from "../infra/errors.js";
+import { audit, enqueue } from "../audit/audit.js";
 
 type C = pg.PoolClient;
 
@@ -246,4 +246,46 @@ export async function refundPayment(c: C, ctx: RequestContext, paymentId: string
     changes: { amount: { from: null, to: r.amount }, payment_id: { from: null, to: paymentId }, reason: { from: null, to: r.reason },
       ...(r.source ? { source: { from: null, to: r.source } } : {}) } });
   return { id: fid, patientId: s.patient_id as string, reversedAllocations: reversed };
+}
+
+// ------------------------------------------------------------------ tahsilat çekirdeği (elle kayıt ve POS onayı ortak)
+/**
+ * Ödeme kaydı + kasa hareketi + açık dağıtımlar + audit + outbox. Çağıran hesabı kilitlemiş (lockAccount) ve kasayı
+ * doğrulamış olmalıdır. POS onayında `posIntentId` verilir (ödeme ↔ niyet bire bir, DB tekil indeksi).
+ */
+export async function recordPayment(c: C, ctx: RequestContext, i: {
+  patientId: string; amount: string; method: string; cashAccountId: string; at: Date; note?: string | null; appointmentId?: string | null;
+  allocations: { receivableId: string; amount: string }[]; posIntentId?: string | null; auditExtra?: Record<string, { from: unknown; to: unknown }>;
+}) {
+  const allocSum = i.allocations.reduce((s, a) => s + toMinor(a.amount), 0n);
+  if (allocSum > toMinor(i.amount)) throw Errors.validation({ allocations: "Dağıtım toplamı ödeme tutarını aşamaz." });
+  if (new Set(i.allocations.map((a) => a.receivableId)).size !== i.allocations.length) throw Errors.validation({ allocations: "Aynı alacak iki kez seçilmiş." });
+  if (i.appointmentId && !(await c.query("select 1 from appointments where id = $1 and patient_id = $2", [i.appointmentId, i.patientId])).rowCount) {
+    throw Errors.validation({ appointmentId: "Randevu bu hastaya ait değil." });
+  }
+  const p = await c.query(
+    `insert into payments(tenant_id, patient_id, amount, method, cash_account_id, paid_at, note, received_by, appointment_id, pos_intent_id)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id`,
+    [ctx.tenantId, i.patientId, i.amount, i.method, i.cashAccountId, i.at, i.note ?? null, ctx.userId, i.appointmentId ?? null, i.posIntentId ?? null],
+  );
+  const pid = p.rows[0].id as string;
+  await cashMovement(c, ctx, { accountId: i.cashAccountId, amount: i.amount, source: "payment", sourceId: pid, at: i.at });
+  await audit(c, ctx, { action: "payment.create", entityType: "payment", entityId: pid, patientId: i.patientId,
+    changes: { amount: { from: null, to: i.amount }, method: { from: null, to: i.method },
+      ...(i.appointmentId ? { appointment_id: { from: null, to: i.appointmentId } } : {}), ...(i.auditExtra ?? {}) } });
+  if (i.allocations.length) {
+    const r = await c.query("select id, patient_id, status from receivables where id = any($1::uuid[])", [i.allocations.map((a) => a.receivableId)]);
+    for (const a of i.allocations) {
+      const row = r.rows.find((x) => x.id === a.receivableId);
+      if (!row || row.patient_id !== i.patientId) throw Errors.validation({ allocations: "Seçilen alacak bu hastaya ait değil." });
+      if (row.status !== "active") throw new AppError(409, "RECEIVABLE_NOT_ACTIVE", "İptal edilmiş alacağa dağıtım yapılamaz.");
+    }
+  }
+  const allocationIds: string[] = [];
+  for (const a of [...i.allocations].sort((x, y) => x.receivableId.localeCompare(y.receivableId))) {
+    allocationIds.push(await allocate(c, ctx, pid, a.receivableId, a.amount));
+  }
+  await enqueue(c, ctx.tenantId, "via_net.changed", { patientId: i.patientId });
+  const rc = (await c.query("select id, receipt_no from receipts where kind = 'payment' and payment_id = $1", [pid])).rows[0];
+  return { id: pid, allocationIds, advance: fromMinor(toMinor(i.amount) - allocSum), receiptId: (rc?.id ?? null) as string | null, receiptNo: (rc?.receipt_no ?? null) as string | null };
 }

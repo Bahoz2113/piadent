@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDownLeft, CheckCircle2, FilePlus2, HandCoins, Info, ListTree, Printer, RotateCcw, Split, Undo2 } from "lucide-react";
+import { ArrowDownLeft, CheckCircle2, CreditCard, FilePlus2, HandCoins, Info, ListTree, Printer, RotateCcw, Split, Undo2 } from "lucide-react";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, formatTRY, type PaymentMethod } from "@viadent/contracts";
 import { api, ApiFailure, newIdempotencyKey } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -11,11 +11,12 @@ import { minor, money, parseMoneyInput } from "./money-input";
 import { OnlinePayments, ProviderRefundDrawer } from "./online-payments";
 import { printReceipt } from "./receipt-print";
 import { Invoices } from "./invoices";
+import { AuthCodeField, Last4Field, PosIntentPanel, installmentLabel, installmentOptions, usePosTerminals, type PosIntent } from "./pos";
 
 interface Receivable { id: string; source: string; description: string; amount: string; status: string; cancelReason: string | null; dueDate: string; createdAt: string;
   practitionerName: string | null; allocated: string; open: string }
 interface Payment { id: string; amount: string; method: PaymentMethod | "online"; paidAt: string; note: string | null; accountName: string; receivedBy: string;
-  allocated: string; refunded: string; available: string; receiptId: string | null; receiptNo: string | null }
+  allocated: string; refunded: string; available: string; receiptId: string | null; receiptNo: string | null; posIntentId?: string | null }
 interface Allocation { id: string; paymentId: string; receivableId: string; amount: string; reversesId: string | null; reason: string | null; at: string; by: string }
 interface LedgerRow { at: string; kind: string; ref: string; description: string; amount: string; openDebtAfter: string; advanceAfter: string }
 export interface Account {
@@ -117,7 +118,7 @@ export function AccountTab({ patientId, patientName }: { patientId: string; pati
                 {a.payments.map((p) => (
                   <tr key={p.id}>
                     <td>{fmtDateTime(p.paidAt)}<div className="small muted">{p.receivedBy}{p.receiptNo && <> · makbuz <span className="mono">{p.receiptNo}</span></>}</div></td>
-                    <td>{p.method === "online" ? <>Online <span className="badge badge-warning">Deneme sağlayıcı</span></> : PAYMENT_METHOD_LABELS[p.method]}</td>
+                    <td>{p.method === "online" ? <>Online <span className="badge badge-warning">Deneme sağlayıcı</span></> : p.posIntentId ? <>Kart (POS){p.note && <div className="small muted">{p.note}</div>}</> : PAYMENT_METHOD_LABELS[p.method]}</td>
                     <td>{p.accountName}</td>
                     <td className="money">{formatTRY(p.amount)}</td>
                     <td className="money">{formatTRY(p.allocated)}</td>
@@ -261,7 +262,8 @@ function toAllocations(lines: Record<string, string>) {
 
 function PaymentDrawer({ patientId, patientName, openRecs, onClose, onSaved }: { patientId: string; patientName: string; openRecs: Receivable[]; onClose: () => void; onSaved: (advance: string) => void }) {
   const accts = useCashAccounts();
-  const [key] = useState(newIdempotencyKey);
+  const pos = usePosTerminals();
+  const [key, setKey] = useState(newIdempotencyKey);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [account, setAccount] = useState("");
@@ -269,36 +271,94 @@ function PaymentDrawer({ patientId, patientName, openRecs, onClose, onSaved }: {
   const [lines, setLines] = useState<Record<string, string>>({});
   const [err, setErr] = useState<ApiFailure | null>(null);
   const [busy, setBusy] = useState(false);
+  // ADR-109: kartla tahsilat tanımlı POS terminali üzerinden (banka POS'u: elle eşleştirme; cihaz: tutar gönderilir).
+  const terminals = (pos.data?.items ?? []).filter((t) => t.active);
+  const [terminalId, setTerminalId] = useState("");
+  const [installments, setInstallments] = useState(1);
+  const [authCode, setAuthCode] = useState("");
+  const [last4, setLast4] = useState("");
+  const [intentId, setIntentId] = useState<string | null>(null);
   const parsed = parseMoneyInput(amount);
   const options = (accts.data?.items ?? []).filter((x) => x.active);
+  const viaPos = method === "card_manual" && terminals.length > 0;
+  const terminal = terminals.find((t) => t.id === terminalId);
   useEffect(() => {
     const want = METHOD_ACCOUNT[method];
     const pick = options.find((x) => x.kind === want) ?? options[0];
     if (pick) setAccount(pick.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [method, accts.data]);
+  useEffect(() => { if (!terminalId && terminals[0]) setTerminalId(terminals[0].id); }, [pos.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  const allocSum = toAllocations(lines).reduce((s, a) => s + minor(a.amount), 0n);
   async function save() {
     if (!parsed) { setErr(new ApiFailure(422, { code: "VALIDATION_FAILED", message: "Tutarı 1.250,00 biçiminde girin.", field_errors: { amount: "Geçerli tutar girin." } })); return; }
     setBusy(true); setErr(null);
     try {
+      if (viaPos && terminal) {
+        const r = await api<PosIntent>("/pos/intents", { body: { terminalId: terminal.id, patientId, amount: parsed, installments, note: note || undefined,
+          allocations: toAllocations(lines), mode: terminal.sendsAmount ? "device" : "manual", ...(terminal.sendsAmount ? {} : { authCode, cardLast4: last4 }) }, idempotencyKey: key });
+        if (r.status === "approved") onSaved(money(minor(parsed) - allocSum));
+        else setIntentId(r.id);
+        return;
+      }
       const r = await api<{ advance: string }>("/payments", { body: { patientId, amount: parsed, method, cashAccountId: account, note: note || undefined, allocations: toAllocations(lines) }, idempotencyKey: key });
       onSaved(r.advance);
     } catch (e) { setErr(e as ApiFailure); } finally { setBusy(false); }
   }
+  const busyIntent = (err?.code === "POS_TERMINAL_BUSY" ? ((err.body as { details?: { intentId?: string } }).details?.intentId ?? null) : null) ?? terminal?.openIntentId ?? null;
+  if (intentId) {
+    return (
+      <Drawer title="Kartla tahsilat" subtitle={`${patientName} · ${terminal?.name ?? "POS"}`} onClose={onClose}
+        footer={<button className="btn" onClick={onClose}>Kapat</button>}>
+        <PosIntentPanel intentId={intentId} onApproved={() => onSaved(parsed ? money(minor(parsed) - allocSum) : "0.00")}
+          onRetry={() => { setIntentId(null); setKey(newIdempotencyKey()); setErr(null); void pos.reload(); }} />
+      </Drawer>
+    );
+  }
+  const submitLabel = viaPos ? (terminal?.sendsAmount ? "Tutarı cihaza gönder" : "Çekimi kaydet") : "Kaydet";
+  const posReady = !viaPos || (!!terminal && !terminal.openIntentId && !terminal.dayClosed && (terminal.sendsAmount || (authCode.length >= 4 && last4.length === 4)));
   return (
     <Drawer title="Tahsilat al" subtitle={`${patientName} · TRY`} onClose={onClose} dirty={!!amount}
-      footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy || !account} onClick={() => void save()}><ArrowDownLeft size={15} aria-hidden />Kaydet</button></>}>
+      footer={<><button className="btn" onClick={onClose}>Vazgeç</button><button className="btn btn-primary" disabled={busy || (!viaPos && !account) || !posReady} onClick={() => void save()}>
+        {viaPos ? <CreditCard size={15} aria-hidden /> : <ArrowDownLeft size={15} aria-hidden />}{submitLabel}</button></>}>
       <div className="stack">
         {err && <Alert kind="error">{err.message}</Alert>}
         <TextField label="Tutar (₺)" required inputMode="decimal" placeholder="1.250,00" value={amount} onChange={(e) => setAmount(e.target.value)} error={err?.fieldErrors.amount}
           hint={parsed ? `Kaydedilecek: ${formatTRY(parsed)}` : "Para birimi: TRY (ilk kapsam)"} />
         <SelectField label="Yöntem" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-          {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>)}
+          {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m === "card_manual" && terminals.length ? "Kart (POS)" : PAYMENT_METHOD_LABELS[m]}</option>)}
         </SelectField>
-        {method === "card_manual" && <Alert kind="info">Bu, kartla alınmış bir ödemenin <strong>manuel kaydıdır</strong>. PİA-DENT sanal POS'a bağlı değildir; karttan çekim yapmaz ve sonucu doğrulamaz.</Alert>}
-        <SelectField label="Kasa / banka" required value={account} onChange={(e) => setAccount(e.target.value)} error={err?.fieldErrors.cashAccountId}>
-          {options.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-        </SelectField>
+        {method === "card_manual" && !viaPos && <Alert kind="info">Bu, kartla alınmış bir ödemenin <strong>manuel kaydıdır</strong>. PİA-DENT sanal POS'a bağlı değildir; karttan çekim yapmaz ve sonucu doğrulamaz.</Alert>}
+        {viaPos ? (
+          <>
+            <SelectField label="POS terminali" required value={terminalId} onChange={(e) => { setTerminalId(e.target.value); setErr(null); }} error={err?.fieldErrors.terminalId}>
+              {terminals.map((t) => <option key={t.id} value={t.id}>{t.name}{t.driver === "mock" ? " (DENEME)" : ""}</option>)}
+            </SelectField>
+            {terminal && (terminal.sendsAmount
+              ? <Alert kind="info">Tutar <strong>{terminal.name}</strong> cihazına gönderilir; hasta kartını cihaza okutur. {terminal.driver === "mock" && <><span className="badge badge-warning">DENEME</span> Gerçek çekim yapılmaz.</>}</Alert>
+              : <Alert kind="info">Bu terminal banka POS'udur: tutarı cihaza siz girersiniz. Çekim onaylandıktan sonra fişteki <strong>onay kodunu</strong> ve kartın <strong>son 4 hanesini</strong> girin.</Alert>)}
+            {terminal?.dayClosed && <Alert kind="warning">Bu terminalin bugünkü gün sonu alındı; başka terminal seçin.</Alert>}
+            {busyIntent && (
+              <Alert kind="warning" title="Terminalde sonuçlanmamış işlem var">
+                Çift çekimi önlemek için önce onu sonuçlandırın.
+                <div style={{ marginTop: 6 }}><button className="btn btn-sm" onClick={() => setIntentId(busyIntent)}>Açık işlemi göster</button></div>
+              </Alert>
+            )}
+            <SelectField label="Taksit" value={installments} onChange={(e) => setInstallments(Number(e.target.value))} error={err?.fieldErrors.installments}>
+              {installmentOptions.map((n) => <option key={n} value={n}>{installmentLabel(n)}</option>)}
+            </SelectField>
+            {terminal && !terminal.sendsAmount && (
+              <>
+                <AuthCodeField value={authCode} onChange={setAuthCode} error={err?.fieldErrors.authCode} />
+                <Last4Field value={last4} onChange={setLast4} error={err?.fieldErrors.cardLast4} />
+              </>
+            )}
+          </>
+        ) : (
+          <SelectField label="Kasa / banka" required value={account} onChange={(e) => setAccount(e.target.value)} error={err?.fieldErrors.cashAccountId}>
+            {options.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </SelectField>
+        )}
         <TextField label="Not" value={note} onChange={(e) => setNote(e.target.value)} />
         <AllocationLines recs={openRecs} lines={lines} setLines={setLines} budget={parsed ? minor(parsed) : 0n} />
       </div>
