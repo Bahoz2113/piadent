@@ -1,8 +1,8 @@
 # Bulgu defteri — qa-20261108-1900-959f7ef
 
 ## Tur 1 (959f7ef, temiz seed) — 76/79 PASS
-- **QA-501 (S2, AÇIK)** — N06 iki profilde: koyu + lacivert görünümde `/bugun` axe color-contrast ciddi/kritik (yeni Bugünün randevuları listesi; iptal satırı soluk metin hipotezi). Kanıt evidence/tur1/browser-n.log, masaustu-N06-koyu-bugun.jpg. Devir fix1.md.
-- **QA-502 (S3, AÇIK)** — R04/R05: geri-bildirim-0411.spec.ts telefon-360'ta menü açılmadan İş akışı bağlantısı (zaman aşımı). Kanıt evidence/tur1/R04-R05-e2e-temiz-seed.log. Devir fix1.md.
+- **QA-501 (S2, FIX_READY 6d31dbd)** — N06 iki profilde: koyu + lacivert görünümde `/bugun` axe color-contrast ciddi/kritik (yeni Bugünün randevuları listesi; iptal satırı soluk metin hipotezi). Kanıt evidence/tur1/browser-n.log, masaustu-N06-koyu-bugun.jpg. Devir fix1.md.
+- **QA-502 (S3, FIX_READY 6d31dbd)** — R04/R05: geri-bildirim-0411.spec.ts telefon-360'ta menü açılmadan İş akışı bağlantısı (zaman aşımı). Kanıt evidence/tur1/R04-R05-e2e-temiz-seed.log. Devir fix1.md.
 - I01–I09 hepsi PASS; API, contracts, web birim, typecheck, V06, R07 PASS.
 
 ## Tester betiği düzeltmeleri (ürün kodu değil)
