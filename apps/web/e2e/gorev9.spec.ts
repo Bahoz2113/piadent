@@ -16,7 +16,7 @@ test("yönetici parola sıfırlar → kullanıcı geçici parolayla girer → He
   const email = "asistan@demo-yesil.test";
   const a = await browser.newContext(); const admin = await a.newPage();
   await login(admin, "yonetici@demo-yesil.test");
-  await expect(admin.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
+  await expect(admin.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
   await admin.goto("/yonetim?sekme=ekip");
   const row = admin.getByRole("row").filter({ hasText: email });
   await row.getByRole("button", { name: "Parola sıfırla" }).click();
@@ -45,6 +45,6 @@ test("yönetici parola sıfırlar → kullanıcı geçici parolayla girer → He
   await page.getByLabel("Yeni parola", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Yeni parola (tekrar)").fill(PASSWORD);
   await page.getByRole("button", { name: "Parolayı değiştir" }).click();
-  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
   await u.close();
 });

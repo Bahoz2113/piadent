@@ -63,7 +63,7 @@ test("pilot günü provası: veri taşıma → randevu → tedavi görünümü �
   await expect(sec.getByRole("heading", { name: "Randevu ver", level: 1 })).toBeVisible();
   const ap = sec.locator("main");
   await expect(ap.getByText(`${first} ${last}`)).toBeVisible();
-  const sel = ap.getByRole("combobox", { name: "İşlem", exact: true });
+  const sel = ap.getByRole("combobox", { name: "İşlemler (isteğe bağlı)" });
   await sel.selectOption((await sel.locator("option", { hasText: "Kontrol muayenesi" }).first().getAttribute("value"))!);
   await ap.getByRole("textbox", { name: "Gün", exact: true }).fill(trDay(40 + (Date.now() % 200)));
   await ap.getByText("Listede olmayan bir saat gir").click();

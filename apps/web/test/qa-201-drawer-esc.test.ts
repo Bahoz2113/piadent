@@ -108,6 +108,7 @@ describe("QA-201/202 bağlantı (kaynak düzeyi)", () => {
     // 07.11.2026: randevu verme tam sayfaya taşındı (components/appointment/new-appointment-page.tsx); kural aynı.
     const page = readFileSync(new URL("../components/appointment/new-appointment-page.tsx", import.meta.url), "utf8");
     expect(page).not.toMatch(/dirty=\{!!patient \|\| !!f\.reason\}/);
-    expect(page).toMatch(/\.some\(\(k\) => f\[k\] !== initialF\[k\]\)/);
+    // 08.11.2026 (ADR-107): işlem listesi dizi olduğundan alanlar değerce (JSON) karşılaştırılır; kural aynı: açılıştan sapan her alan.
+    expect(page).toMatch(/\.some\(\(k\) => JSON\.stringify\(f\[k\]\) !== JSON\.stringify\(initialF\[k\]\)\)/);
   });
 });

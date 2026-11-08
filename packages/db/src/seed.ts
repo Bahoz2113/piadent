@@ -56,11 +56,11 @@ export async function seed(connectionString: string, opts: { password?: string; 
       { key: "A", slug: "demo-yesil", name: "Yeşilvadi Ağız ve Diş Sağlığı (Demo)", patients: 24,
         members: [["a_admin", "clinic_admin"], ["a_dentist", "dentist"], ["a_dentist2", "dentist"], ["a_secretary", "secretary"], ["a_assistant", "assistant"], ["a_finance", "finance"], ["multi", "dentist"]],
         practitioners: [["a_dentist", "Dt. Elif Aras"], ["a_dentist2", "Dt. Kerem Tunç"], ["multi", "Dt. Murat İnce"]],
-        chairs: ["Koltuk 1", "Koltuk 2", "Koltuk 3"] },
+        chairs: ["Ünite A", "Ünite B", "Ünite C"] },
       { key: "B", slug: "demo-mavi", name: "Mavikent Diş Kliniği (Demo)", patients: 8,
         members: [["b_admin", "clinic_admin"], ["b_dentist", "dentist"], ["multi", "clinic_admin"]],
         practitioners: [["b_dentist", "Dt. Lale Önal"]],
-        chairs: ["Ünit A", "Ünit B"] },
+        chairs: ["Ünite A", "Ünite B"] },
     ] as const;
 
     let phoneSeq = 0;

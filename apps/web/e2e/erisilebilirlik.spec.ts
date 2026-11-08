@@ -35,6 +35,7 @@ test("sekreter: bugün, ajanda, hasta 360", async ({ page }) => {
   test.setTimeout(180_000);
   await login(page, "sekreter@demo-yesil.test");
   await page.goto("/bugun"); await scan(page, "bugün");
+  await page.goto("/is-akisi"); await scan(page, "iş akışı");
   await page.goto("/ajanda"); await scan(page, "ajanda");
   await page.goto("/hastalar");
   await page.locator("table tbody tr a.rowlink").first().click();

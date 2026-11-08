@@ -93,7 +93,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       body = { code: "VALIDATION_FAILED", message: "Aynı güne ait çalışma blokları çakışıyor.", field_errors: { blocks: "Bloklar çakışmamalı." }, correlation_id };
     } else if (pg?.code === "23P01") {
       status = 409;
-      const resource = pg.constraint?.includes("chair") ? "koltuk" : "hekim";
+      const resource = pg.constraint?.includes("chair") ? "ünite" : "hekim";
       body = { code: "APPOINTMENT_CONFLICT", message: `Seçilen saatte ${resource} dolu. Başka bir saat veya ${resource} seçin.`, details: { resource }, correlation_id };
     } else if (pg?.code === "23505") {
       status = 409;

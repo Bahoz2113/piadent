@@ -59,17 +59,17 @@ export function ResourcesPanel({ notify }: { notify: (k: "success" | "error", t:
         </ul>
       </section>
       <section className="card">
-        <div className="card-head"><h2>Koltuklar / ünitler</h2></div>
+        <div className="card-head"><h2>Üniteler</h2></div>
         <ul className="list">
           {d.chairs.map((c) => (
             <li key={c.id} className="row" style={{ padding: "10px 20px", justifyContent: "space-between" }}>
               <span><strong>{c.name}</strong> {!c.active && <span className="badge badge-neutral">Pasif</span>}</span>
-              <button className="btn btn-sm" disabled={busy === c.id} onClick={() => void act(c.id, () => api(`/chairs/${c.id}`, { method: "PATCH", body: { name: c.name, active: !c.active } }), c.active ? "Koltuk pasifleştirildi." : "Koltuk etkinleştirildi.")}>{c.active ? "Pasifleştir" : "Etkinleştir"}</button>
+              <button className="btn btn-sm" disabled={busy === c.id} onClick={() => void act(c.id, () => api(`/chairs/${c.id}`, { method: "PATCH", body: { name: c.name, active: !c.active } }), c.active ? "Ünite pasifleştirildi." : "Ünite etkinleştirildi.")}>{c.active ? "Pasifleştir" : "Etkinleştir"}</button>
             </li>
           ))}
         </ul>
-        <form className="row card-pad" onSubmit={(e) => { e.preventDefault(); if (chairName.trim()) void act("chair", () => api("/chairs", { body: { name: chairName } }), "Koltuk eklendi.").then(() => setChairName("")); }}>
-          <TextField label="Yeni koltuk adı" value={chairName} onChange={(e) => setChairName(e.target.value)} className="grow" />
+        <form className="row card-pad" onSubmit={(e) => { e.preventDefault(); if (chairName.trim()) void act("chair", () => api("/chairs", { body: { name: chairName } }), "Ünite eklendi.").then(() => setChairName("")); }}>
+          <TextField label="Yeni ünite adı" placeholder="ör. Ünite C" value={chairName} onChange={(e) => setChairName(e.target.value)} className="grow" />
           <button className="btn" type="submit" disabled={busy === "chair"} style={{ alignSelf: "flex-end" }}>Ekle</button>
         </form>
       </section>

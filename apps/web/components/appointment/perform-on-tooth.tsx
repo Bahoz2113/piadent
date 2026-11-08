@@ -17,7 +17,7 @@ import type { ChartLike } from "@/components/treatment/tooth-model";
 
 interface Proc { id: string; code: string; name: string; toothScope: ToothScope; active?: boolean }
 
-export function PerformOnTooth({ appointmentId, patientId, procedureId, onSaved }: { appointmentId: string; patientId: string; procedureId?: string | null; onSaved?: (m: string) => void }) {
+export function PerformOnTooth({ appointmentId, patientId, procedureId, plannedIds, onSaved }: { appointmentId: string; patientId: string; procedureId?: string | null; plannedIds?: string[]; onSaved?: (m: string) => void }) {
   const { can } = useSession();
   const allowed = can("procedure.complete") && can("patient.health.read");
   const chart = useData<ChartLike>(allowed ? `/patients/${patientId}/chart` : null);
@@ -35,7 +35,9 @@ export function PerformOnTooth({ appointmentId, patientId, procedureId, onSaved 
   if ((chart.loading && !chart.data) || (procs.loading && !procs.data)) return <Loading rows={1} />;
   if (chart.error || procs.error) return null;
 
-  const effectiveId = procId || (procedureId && toothProcs.some((p) => p.id === procedureId) ? procedureId : "");
+  // ADR-107: randevuda birden fazla planlanan işlem olabilir; dişe bağlananlar hızlı seçim olarak sunulur, ilki varsayılandır.
+  const planned = (plannedIds ?? (procedureId ? [procedureId] : [])).map((id) => toothProcs.find((p) => p.id === id)).filter((p): p is Proc => !!p);
+  const effectiveId = procId || planned[0]?.id || "";
   const proc = toothProcs.find((p) => p.id === effectiveId);
   const needSurface = proc?.toothScope === "surface";
   const effects = proc ? procedureToothEffects(proc.code, proc.name) : [];
@@ -57,9 +59,17 @@ export function PerformOnTooth({ appointmentId, patientId, procedureId, onSaved 
   return (
     <section className="stack" style={{ gap: 8 }} aria-label="Yapılan işlemi dişe işle">
       <h3 className="row" style={{ gap: 6 }}><Stethoscope size={16} aria-hidden />Yapılan işlemi dişe işle</h3>
-      <p className="small muted">İşlemi seçin, şemada dişe dokunun{needSurface ? ", sonra seçili dişte yüzey(ler)e dokunun" : ""}. Kayıt hasta kartındaki diş şemasına kendiliğinden yansır ve hasta hesabına işlenir.</p>
+      <p className="small muted">İşlemi seçin, şemada dişe dokunun{needSurface ? ", sonra seçili dişte yüzey(ler)e dokunun" : ""}. Kayıt hasta kartındaki diş şemasına kendiliğinden yansır ve hasta hesabına işlenir. Birden fazla işlem için her kayıttan sonra sıradakini seçin.</p>
       {err && <Alert kind="error">{err.message}</Alert>}
       {ok && <Alert kind="success">{ok}</Alert>}
+      {planned.length > 1 && (
+        <div className="row" role="group" aria-label="Planlanan işlemler" style={{ gap: 6, flexWrap: "wrap" }}>
+          <span className="small muted">Planlanan:</span>
+          {planned.map((p) => (
+            <button key={p.id} type="button" className={`btn btn-sm ${effectiveId === p.id ? "btn-primary" : ""}`} aria-pressed={effectiveId === p.id}
+              onClick={() => { setProcId(p.id); setSurfaces([]); setErr(null); }}>{p.name}</button>))}
+        </div>
+      )}
       <SelectField label="İşlem" value={effectiveId} onChange={(e) => { setProcId(e.target.value); setSurfaces([]); setErr(null); }}
         hint={proc ? (effects.length ? `Şemada: ${effects.map((x) => TOOTH_EFFECT_LABELS[x]).join(" + ")}` : "Şemada işaret yok; dişin işlem geçmişinde görünür.") : undefined}>
         <option value="">Seçin</option>

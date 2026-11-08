@@ -38,8 +38,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "appointment.contact": "İletişim sonucu kaydedildi",
   "appointment_type.create": "Randevu türü eklendi",
   "appointment_type.update": "Randevu türü güncellendi",
-  "chair.create": "Koltuk eklendi",
-  "chair.update": "Koltuk güncellendi",
+  "chair.create": "Ünite eklendi",
+  "chair.update": "Ünite güncellendi",
   "practitioner.create": "Hekim kaydı eklendi",
   "practitioner.update": "Hekim kaydı güncellendi",
   "schedule.replace": "Çalışma çizelgesi güncellendi",
@@ -217,7 +217,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   email: "E-posta", city: "Şehir", primary_practitioner_id: "Sorumlu hekim", referral_source: "Nereden duydu", field: "Alan",
   relation: "Yakınlık", is_legal_representative: "Yasal temsilci", can_receive_info: "Bilgi alabilir", ended_reason: "Sonlandırma nedeni",
   // Randevu ve kaynaklar
-  starts_at: "Randevu zamanı", practitioner_id: "Hekim", chair_id: "Koltuk", status: "Durum", contact_outcome: "İletişim sonucu",
+  starts_at: "Randevu zamanı", practitioner_id: "Hekim", chair_id: "Ünite", status: "Durum", contact_outcome: "İletişim sonucu",
   cancel_reason: "İptal nedeni", reason: "Gerekçe", display_name: "Görünen ad", title: "Unvan / başlık", membership_id: "Ekip üyesi",
   default_minutes: "Varsayılan süre (dk)", blocks: "Çizelge bloğu sayısı", affected: "Etkilenen randevu", scope: "Kapsam", active: "Aktif",
   outside_working_hours: "Mesai dışı randevu", backdated: "Geriye dönük kayıt", backdate_reason: "Geriye dönük kayıt gerekçesi",
@@ -232,7 +232,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
   purpose: "Amaç", channel: "Kanal", due_date: "Vade", sha256: "Dosya özeti (SHA-256)", file_sha256: "Dosya özeti (SHA-256)",
-  types: "Eklenen belge türü", templates: "Eklenen şablon", replaced: "Yenilenen yer tutucu metin",
+  procedure_ids: "Planlanan işlemler", types: "Eklenen belge türü", templates: "Eklenen şablon", replaced: "Yenilenen yer tutucu metin",
   // Laboratuvar, stok, cari
   supplier_id: "Tedarikçi", work_type: "İş türü", order_no: "İş emri no", stage: "Aşama", teeth: "Dişler", shade: "Renk",
   instructions: "Talimatlar", target_date: "Hedef tarih", appointment_id: "Randevu", item_id: "Stok kalemi", quantity: "Miktar",
@@ -250,7 +250,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
 /** Denetim kaydı türü (entity_type) → Türkçe ad. LOG sorgulamada ham İngilizce tür gösterilmez (07.11.2026 geri bildirimi). */
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   patient: "Hasta", patient_relation: "Hasta yakını", communication_preference: "İletişim tercihi", appointment: "Randevu", appointment_type: "Randevu türü",
-  practitioner: "Hekim", practitioner_compensation: "Hekim ücret modeli", chair: "Koltuk", closure: "Kapatma / izin", procedure: "İşlem",
+  practitioner: "Hekim", practitioner_compensation: "Hekim ücret modeli", chair: "Ünite", closure: "Kapatma / izin", procedure: "İşlem",
   tariff_version: "Fiyat listesi", treatment_plan: "Tedavi planı", plan_version: "Plan sürümü", performed_procedure: "Gerçekleşen işlem",
   clinical_chart: "Diş şeması", clinical_note: "Klinik not", anamnesis: "Anamnez", anamnesis_template: "Anamnez şablonu", follow_up: "Kontrol",
   payment: "Tahsilat", refund: "İade", receipt: "Makbuz", receivable: "Alacak", allocation: "Ödeme dağıtımı", invoice: "Fatura taslağı",
@@ -304,7 +304,7 @@ const KIND_LABELS: Record<string, string> = {
   anamnesis: "Anamnez", document: "Belge", document_type: "Belge türü",
 };
 const APPROVAL_LABELS: Record<string, string> = { pending: "Onay bekliyor", approved: "Onaylandı", rejected: "Reddedildi", not_required: "Onay gerekmez" };
-const SCOPE_LABELS: Record<string, string> = { clinic: "Tüm klinik", practitioner: "Hekim", chair: "Koltuk" };
+const SCOPE_LABELS: Record<string, string> = { clinic: "Tüm klinik", practitioner: "Hekim", chair: "Ünite" };
 const ENUM_BY_FIELD: Record<string, Record<string, string>> = {
   method: PAYMENT_METHOD_LABELS, source: SOURCE_LABELS, kind: KIND_LABELS, gender: GENDER_LABELS, contact_outcome: CONTACT_OUTCOME_LABELS,
   relation: RELATION_LABELS, decision: DECISION_LABELS, basis: COMMISSION_BASIS_LABELS, pay_model: PAY_MODEL_LABELS, stage: LAB_COST_STAGE_LABELS, role: ROLE_LABELS,

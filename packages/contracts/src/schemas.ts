@@ -93,11 +93,19 @@ export const CONTACT_OUTCOME_LABELS: Record<(typeof CONTACT_OUTCOMES)[number], s
 
 /** Geçmişe randevu: başlangıç şimdiden bu kadar dakika önceyse yeni randevu reddedilir (ADR-094); yürüyerek gelen hasta için kısa tolerans. */
 export const APPOINTMENT_PAST_GRACE_MINUTES = 10;
+/** Bir randevuya bağlanabilecek en çok planlanan işlem (ADR-107). */
+export const APPOINTMENT_MAX_PROCEDURES = 10;
 export const AppointmentCreate = z.object({
   patientId: uuid,
   appointmentTypeId: uuid.optional(),
-  /** Planlanan katalog işlemi; fiyat tarifeden gösterilir, tahakkuk yalnız gerçekleşen işlemden doğar. */
+  /** Planlanan katalog işlemi; fiyat tarifeden gösterilir, tahakkuk yalnız gerçekleşen işlemden doğar. Eski istemciler için; yeni istemci `procedureIds`. */
   procedureId: uuid.optional(),
+  /**
+   * 08.11.2026 (ADR-107): planlanan işlemler (sıralı, en çok 10, tekrar yok). İSTEĞE BAĞLI — randevu verirken sekreter işlemi/tanıyı
+   * bilmeyebilir; hekim muayenede belirler. Verilirse `procedureId` yok sayılır.
+   */
+  procedureIds: z.array(uuid).max(APPOINTMENT_MAX_PROCEDURES, `En çok ${APPOINTMENT_MAX_PROCEDURES} işlem`)
+    .refine((a) => new Set(a).size === a.length, "Aynı işlem iki kez seçilemez").optional(),
   /** Geriye dönük düzeltme kaydı (yalnız schedule.manage, gerekçe zorunlu, denetime yazılır). Arayüz yeni randevuda sunmaz. */
   backdateReason: optionalText(300),
   /** Çalışma saati dışı uyarısını gördükten sonra bilinçli kayıt (audit'e yazılır). Kapatma bunu aşamaz. */
@@ -179,7 +187,7 @@ export const ClosureCreate = z
     reason: trimmed(300).min(2, "Neden gerekli"),
   })
   .refine((v) => v.scope !== "practitioner" || !!v.practitionerId, { message: "Hekim seçin", path: ["practitionerId"] })
-  .refine((v) => v.scope !== "chair" || !!v.chairId, { message: "Koltuk seçin", path: ["chairId"] })
+  .refine((v) => v.scope !== "chair" || !!v.chairId, { message: "Ünite seçin", path: ["chairId"] })
   .refine((v) => v.kind !== "public_holiday" || v.scope === "clinic", { message: "Resmî tatil tüm kliniği kapatır", path: ["scope"] })
   .refine((v) => (v.kind !== "sick_leave" && v.kind !== "leave") || v.scope === "practitioner", { message: "Rapor ve izin bir hekim için girilir", path: ["practitionerId"] });
 

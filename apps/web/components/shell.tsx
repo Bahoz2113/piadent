@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   BarChart3, BriefcaseMedical, Building2, CalendarDays, ChevronsLeft, ClipboardList, LayoutDashboard, LogOut, Menu, Palette, Search, Settings2, Stethoscope, Users, Wallet, RefreshCw, UserCog, MessageSquare,
+  ListChecks,
 } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { AppearanceDrawer } from "@/components/appearance-drawer";
@@ -13,6 +14,7 @@ import { DialogHost } from "@/components/dialogs";
 
 const NAV = [
   { href: "/bugun", label: "Panel", icon: LayoutDashboard },
+  { href: "/is-akisi", label: "İş akışı", icon: ListChecks },
   { href: "/hastalar", label: "Hastalar", icon: Users },
   { href: "/ajanda", label: "Randevular", icon: CalendarDays },
   { href: "/hekimler", label: "Hekimler", icon: BriefcaseMedical },

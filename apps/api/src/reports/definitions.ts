@@ -757,7 +757,7 @@ const isletme: Runner = async (a) => {
     rows: metrics.map((x) => ({ key: x.key, label: x.label, value: x.value, valueType: x.type, display: x.value, definition: x.definition, ...(x.drill ? { _drill: x.drill } : {}) })),
     totals: {},
     totalLabels: {},
-    notes: ["Koltuk doluluğu henüz ölçülmüyor: planlı kullanılabilir süre (çalışma saati − kapatma) ile kullanılan süre ayrımı sonraki sürümde (sözlükte tanımlı, uydurulmaz).",
+    notes: ["Ünite doluluğu henüz ölçülmüyor: planlı kullanılabilir süre (çalışma saati − kapatma) ile kullanılan süre ayrımı sonraki sürümde (sözlükte tanımlı, uydurulmaz).",
       "Tutarlar KDV ayrımı yapılmadan kayıtlı tutardır; vergi gösterimi mali müşavir onayı bekliyor."],
   };
 };

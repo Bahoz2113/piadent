@@ -14,7 +14,7 @@ import { SecurityPanel } from "@/components/admin/security";
 
 const TABS = [
   { id: "ekip", label: "Ekip ve davet", perm: "team.manage" },
-  { id: "kaynaklar", label: "Hekim ve koltuklar", perm: "schedule.manage" },
+  { id: "kaynaklar", label: "Hekim ve üniteler", perm: "schedule.manage" },
   { id: "turler", label: "İşlem türleri", perm: "treatment.read" },
   { id: "katalog", label: "Katalog ve tarife", perm: "catalog.manage" },
   { id: "belge", label: "Belge şablonları", perm: "template.manage" },

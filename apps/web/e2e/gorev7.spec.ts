@@ -12,7 +12,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("E-posta").fill(email);
   await page.getByLabel("Parola").fill(PASSWORD);
   await page.getByRole("button", { name: "Giriş yap" }).click();
-  await expect(page.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
 }
 const noOverflow = async (page: Page) => {
   const vw = page.viewportSize()!.width;
@@ -111,7 +111,7 @@ test("iki adımlı doğrulama: kurulum → kodla giriş → yönetici sıfırlam
   // etkinleştirmede kullanılan adımdan sonraki kod
   await p2.getByLabel("Doğrulama kodu").fill(totp(secret, Math.floor(Date.now() / 30000) + 1));
   await p2.getByRole("button", { name: "Doğrula ve giriş yap" }).click();
-  await expect(p2.getByRole("heading", { name: "Panel", level: 1 })).toBeVisible();
+  await expect(p2.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
   await ctx2.close();
 
   const ctx3 = await browser.newContext();
