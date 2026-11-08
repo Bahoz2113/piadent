@@ -14,6 +14,7 @@ for p in file-sensitivity-probe file-trace-probe evidence-file-probe quarantine-
 node qa-runs/.scripts/f-cases.mjs > $OUT/f.log 2>&1
 WORKER_URL="$WORKER_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/tsx qa-runs/.scripts/g-cases.mjs > $OUT/g.log 2>&1
 WORKER_URL="$WORKER_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/tsx qa-runs/.scripts/h-cases.mjs > $OUT/h.log 2>&1
+WORKER_URL="$WORKER_DATABASE_URL" OUT=$(pwd)/$OUT packages/db/node_modules/.bin/tsx qa-runs/.scripts/i-cases.mjs > $OUT/i.log 2>&1
 cd apps/web
 for s in browser-cases browser-n browser-f; do cp ../../qa-runs/.scripts/$s.mjs ./.qa-$s.mjs; done
 W=../../$OUT
