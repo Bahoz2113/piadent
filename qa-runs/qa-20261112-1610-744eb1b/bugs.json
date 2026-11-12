@@ -1,6 +1,27 @@
 [
- {"id": "QA-801", "severity": "S3", "state": "OPEN", "title": "Çalışma listesi audit kaydındaki 'outside_appointments' alanının Türkçe etiketi yok (işlem kayıtlarında ham anahtar görünür)",
-  "evidence": "evidence/tur1/R03-web.log", "retestEvidence": null, "cases": ["R03", "M01"], "fixRev": null},
- {"id": "QA-802", "severity": "S3", "state": "OPEN", "title": "Yeni API testi roster-1211 demo kiracısına kalıcı ünite ('Ünite L …') ekliyor; aynı turdaki geri-bildirim-0811 'Ünite A/B/C' testi sıraya bağlı olarak düşüyor (test yalıtımı)",
-  "evidence": "evidence/tur1/R01-api.log", "retestEvidence": null, "cases": ["R01"], "fixRev": null}
+ {
+  "id": "QA-801",
+  "severity": "S3",
+  "state": "FIX_READY",
+  "title": "Çalışma listesi audit kaydındaki 'outside_appointments' alanının Türkçe etiketi yok (işlem kayıtlarında ham anahtar görünür)",
+  "evidence": "evidence/tur1/R03-web.log",
+  "retestEvidence": null,
+  "cases": [
+   "R03",
+   "M01"
+  ],
+  "fixRev": "54b3a3a"
+ },
+ {
+  "id": "QA-802",
+  "severity": "S3",
+  "state": "FIX_READY",
+  "title": "Yeni API testi roster-1211 demo kiracısına kalıcı ünite ('Ünite L …') ekliyor; aynı turdaki geri-bildirim-0811 'Ünite A/B/C' testi sıraya bağlı olarak düşüyor (test yalıtımı)",
+  "evidence": "evidence/tur1/R01-api.log",
+  "retestEvidence": null,
+  "cases": [
+   "R01"
+  ],
+  "fixRev": "54b3a3a"
+ }
 ]
