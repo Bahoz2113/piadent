@@ -14,6 +14,7 @@ import { useData } from "@/lib/use-data";
 import { fmtDate, fmtDateTime, todayIn } from "@/lib/format";
 import { Alert, DateField, Drawer, EmptyState, ErrorState, Loading, SelectField, TextField, useToast } from "@/components/ui";
 import { LeavesCard } from "@/components/admin/leaves";
+import { WorkRoster } from "@/components/admin/work-roster";
 import { PractitionerDrawer, ScheduleDrawer, useAdminResources, type Prac } from "@/components/admin/resources";
 import { parseMoneyInput } from "@/components/finance/money-input";
 import { alertDialog, promptDialog } from "@/components/dialogs";
@@ -56,6 +57,9 @@ function Inner() {
   const [schedule, setSchedule] = useState<Prac | null>(null);
   const finance = can("finance.read");
   const select = (id: string | null) => router.replace(id ? `/hekimler?hekim=${id}` : "/hekimler", { scroll: false });
+  // ADR-110 (12.11.2026): "Çalışma listesi" sekmesi — aylık hekim çalışma tablosu.
+  const tab = params.get("sekme") === "calisma" ? "calisma" : "liste";
+  const setTab = (t: "liste" | "calisma") => router.replace(t === "calisma" ? "/hekimler?sekme=calisma" : "/hekimler", { scroll: false });
   const pracFor = (id: string) => admin.data?.practitioners.find((p) => p.id === id) ?? null;
   const reloadAll = () => { void list.reload(); void admin.reload(); };
 
@@ -71,9 +75,14 @@ function Inner() {
           <h1>Hekimler</h1>
           <p className="muted">Hekim kartları, ücret modeli, prim ve maaş hakedişi · {monthLabel(list.data!.month)}</p>
         </div>
-        {can("schedule.manage") && <button className="btn btn-primary" onClick={() => setEditing("new")}><Plus size={17} aria-hidden />Hekim ekle</button>}
+        {can("schedule.manage") && tab === "liste" && <button className="btn btn-primary" onClick={() => setEditing("new")}><Plus size={17} aria-hidden />Hekim ekle</button>}
       </div>
       {toast.node}
+      <div className="subtabs no-print" role="tablist" aria-label="Hekimler bölümleri">
+        {([["liste", "Hekim listesi"], ["calisma", "Çalışma listesi"]] as const).map(([id, l]) => (
+          <button key={id} role="tab" aria-selected={tab === id} className={`btn btn-sm ${tab === id ? "btn-primary" : ""}`} onClick={() => setTab(id)}>{l}</button>))}
+      </div>
+      {tab === "calisma" ? <WorkRoster notify={toast.show} /> : <>
 
       <section className="card" style={{ marginBottom: 16 }}>
         {items.length === 0 ? <EmptyState icon={<BriefcaseMedical size={28} />} title="Henüz hekim yok">Randevu verebilmek için önce hekim ekleyin.</EmptyState> : (
@@ -115,6 +124,7 @@ function Inner() {
             : <Alert kind="info">Ücret, prim ve maaş bilgileri yalnız finans yetkisi olan kullanıcılara görünür.</Alert>}
         </section>
       ) : items.length > 0 && <p className="muted small">Ayrıntı, ücret modeli ve hakediş için listeden bir hekim seçin.</p>}
+      </>}
 
       {editing && <PractitionerDrawer p={editing === "new" ? null : editing} dentists={admin.data?.dentistMemberships ?? []} onClose={() => setEditing(null)}
         onSaved={(m) => { setEditing(null); toast.show("success", m); reloadAll(); }} />}

@@ -27,3 +27,17 @@ describe("Anasayfa (12.11.2026)", () => {
     expect(home).toMatch(/"Aktif hekim"/);
   });
 });
+
+const roster = readFileSync(new URL("../components/admin/work-roster.tsx", import.meta.url), "utf8");
+const hek = readFileSync(new URL("../app/(app)/hekimler/page.tsx", import.meta.url), "utf8");
+describe("Hekimler → Çalışma listesi (ADR-110)", () => {
+  it("sekme, düzenleme yalnız schedule.manage, toplu planlama, yazdırma, plan dışı randevu onayı", () => {
+    expect(hek).toMatch(/\["calisma", "Çalışma listesi"\]/);
+    expect(hek).toMatch(/<WorkRoster notify=/);
+    expect(roster).toMatch(/const edit = can\("schedule\.manage"\)/);
+    expect(roster).toMatch(/Toplu planla/);
+    expect(roster).toMatch(/window\.print\(\)/);
+    expect(roster).toMatch(/ROSTER_APPOINTMENTS_OUTSIDE/);
+    expect(roster).toMatch(/Randevuları bilerek kaydet/);
+  });
+});

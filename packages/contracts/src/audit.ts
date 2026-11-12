@@ -131,6 +131,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "file.upload": "Dosya yüklendi",
   "file.delete": "Dosya silindi",
 
+  // Aylık çalışma listesi (ADR-110)
+  "work_roster.save": "Çalışma listesi güncellendi", "work_roster.clear": "Çalışma listesi günü şablona döndü",
+
   // Laboratuvar, stok ve cari
   "lab_order.create": "Laboratuvar iş emri oluşturuldu",
   "purchase_order.create": "Malzeme siparişi oluşturuldu", "purchase_order.send": "Malzeme siparişi tedarikçiye gönderildi",
@@ -234,7 +237,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
   purpose: "Amaç", channel: "Kanal", due_date: "Vade", sha256: "Dosya özeti (SHA-256)", file_sha256: "Dosya özeti (SHA-256)",
-  procedure_ids: "Planlanan işlemler", impression_type: "Ölçü türü", impression_taken_on: "Ölçü tarihi", material: "İstenen malzeme",
+  procedure_ids: "Planlanan işlemler", work_date: "Gün", cells: "Günler", impression_type: "Ölçü türü", impression_taken_on: "Ölçü tarihi", material: "İstenen malzeme",
   expected_date: "Beklenen teslim", received_lines: "Teslim alınan kalemler", bill_id: "Cari fatura", types: "Eklenen belge türü", templates: "Eklenen şablon", replaced: "Yenilenen yer tutucu metin",
   // Laboratuvar, stok, cari
   supplier_id: "Tedarikçi", work_type: "İş türü", order_no: "İş emri no", stage: "Aşama", teeth: "Dişler", shade: "Renk",
@@ -259,7 +262,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   payment: "Tahsilat", refund: "İade", receipt: "Makbuz", receivable: "Alacak", allocation: "Ödeme dağıtımı", invoice: "Fatura taslağı",
   expense: "Gider", cash_account: "Kasa / banka", commission_rule_version: "Prim kuralı", commission_payout: "Prim ödemesi", salary_payment: "Maaş ödemesi",
   online_payment_request: "Online ödeme isteği", supplier: "Tedarikçi", supplier_entry: "Cari hareket", supplier_price: "Tedarikçi fiyatı",
-  stock_item: "Stok kalemi", stock_movement: "Stok hareketi", lab_order: "Laboratuvar iş emri", purchase_order: "Malzeme siparişi", lab_cost: "Laboratuvar maliyeti",
+  stock_item: "Stok kalemi", stock_movement: "Stok hareketi", lab_order: "Laboratuvar iş emri", purchase_order: "Malzeme siparişi", work_roster: "Çalışma listesi", lab_cost: "Laboratuvar maliyeti",
   template: "Şablon", template_version: "Şablon sürümü", document_type: "Belge türü", patient_document: "Hasta belgesi", readiness_rule: "Hazırlık kuralı",
   file: "Dosya", message: "Mesaj", task: "Görev", membership: "Ekip üyeliği", invitation: "Davet", tenant: "Klinik", report: "Rapor",
   integration_connection: "Entegrasyon bağlantısı", integration_job: "Entegrasyon işi", import_batch: "Veri aktarımı",
@@ -282,7 +285,7 @@ export function auditFieldLabel(field: string): string {
 
 const MONEY_FIELDS = new Set(["amount", "unit_price", "unit_cost", "discount", "grand_total", "monthly_salary"]);
 const DATETIME_FIELDS = new Set(["starts_at", "expires_at"]);
-const DATE_FIELDS = new Set(["birth_date", "due_date", "valid_from", "target_date"]);
+const DATE_FIELDS = new Set(["work_date", "birth_date", "due_date", "valid_from", "target_date"]);
 const HASH_FIELDS = new Set(["body_hash", "content_hash", "sha256", "file_sha256"]);
 const ID_FIELDS = new Set(["corrects_id", "corrects_note_id", "reverses_id"]);
 

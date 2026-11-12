@@ -207,11 +207,8 @@ export class SchedulingService {
   async availability(ctx: RequestContext, practitionerId: string, date: string, minutes: number, chairId: string | null) {
     return this.db.tx(ctx, async (c) => {
       if (!(await c.query("select 1 from practitioners where id = $1 and active", [practitionerId])).rowCount) throw Errors.validation({ practitionerId: "Hekim bulunamadı veya pasif." });
-      const wd = (await c.query("select extract(isodow from $1::date)::int as wd", [date])).rows[0].wd as number;
-      const defined = !!(await c.query("select 1 from work_schedules where practitioner_id = $1 limit 1", [practitionerId])).rowCount;
-      const blocks = defined
-        ? (await c.query("select start_min, end_min from work_schedules where practitioner_id = $1 and weekday = $2 order by start_min", [practitionerId, wd])).rows.map((b) => ({ start: b.start_min as number, end: b.end_min as number }))
-        : [{ start: 9 * 60, end: 19 * 60 }];
+      const plan = await dayPlan(c, practitionerId, date);
+      const { defined, blocks } = plan;
       const { from, to } = dayRangeUtc(date, ctx.timezone);
       const busy = await c.query(
         `select starts_at, ends_at from appointments where starts_at < $2 and ends_at > $1 and status not in ('cancelled', 'no_show')
@@ -236,7 +233,7 @@ export class SchedulingService {
           slots.push(hh);
         }
       }
-      return { date, minutes, workingHoursDefined: defined, blocks, slots, closedAllDay: closures.rows[0] ? { reason: closures.rows[0].reason, kind: closures.rows[0].kind } : null };
+      return { date, minutes, workingHoursDefined: defined, planSource: plan.source, rosterOff: plan.source === "roster" && blocks.length === 0, blocks, slots, closedAllDay: closures.rows[0] ? { reason: closures.rows[0].reason, kind: closures.rows[0].kind } : null };
     });
   }
 
@@ -247,7 +244,10 @@ export class SchedulingService {
 
   /** Hekimin çalışma saati tanımı varsa ve aralık hiçbir bloğa tam sığmıyorsa o günün bloklarını döner. */
   private async outsideHours(c: import("pg").PoolClient, tz: string, practitionerId: string, start: Date, end: Date) {
-    const any = await c.query("select 1 from work_schedules where practitioner_id = $1 limit 1", [practitionerId]);
+    // ADR-110: o gün için aylık çalışma listesi kaydı varsa haftalık şablonun yerine geçer.
+    const localDay = (await c.query("select ($2::timestamptz at time zone $1)::date::text as d", [tz, start])).rows[0].d as string;
+    const roster = (await c.query("select kind, start_min, end_min from work_rosters where practitioner_id = $1 and work_date = $2", [practitionerId, localDay])).rows[0];
+    const any = roster ? { rowCount: 1 } : await c.query("select 1 from work_schedules where practitioner_id = $1 limit 1", [practitionerId]);
     if (!any.rowCount) return null; // tanımsız: kısıt yok (yönetim ekranında uyarı gösterilir)
     const r = await c.query(
       `select extract(isodow from $2::timestamptz at time zone $1)::int as wd,
@@ -258,7 +258,9 @@ export class SchedulingService {
     );
     const { wd, s, e, span_days } = r.rows[0];
     const endMin = span_days === 1 && e === 0 ? 1440 : span_days > 0 ? 99999 : e;
-    const blocks = await c.query("select start_min, end_min from work_schedules where practitioner_id = $1 and weekday = $2 order by start_min", [practitionerId, wd]);
+    const blocks = roster
+      ? { rows: roster.kind === "work" ? [{ start_min: roster.start_min as number, end_min: roster.end_min as number }] : [] }
+      : await c.query("select start_min, end_min from work_schedules where practitioner_id = $1 and weekday = $2 order by start_min", [practitionerId, wd]);
     const fits = blocks.rows.some((b) => b.start_min <= s && b.end_min >= endMin);
     return fits ? null : { blocks: blocks.rows.map((b) => ({ start: b.start_min, end: b.end_min })) };
   }
@@ -312,4 +314,22 @@ export class SchedulingService {
       return presentAppointment(await this.loadOne(c, ctx, id));
     });
   }
+}
+
+/**
+ * ADR-110: hekimin bir gündeki çalışma planı. Aylık çalışma listesi kaydı varsa o (çalışmıyor = blok yok), yoksa haftalık şablon,
+ * o da tanımsızsa gösterim için 09:00–19:00 (kayıtta kısıt yok).
+ */
+export async function dayPlan(c: import("pg").PoolClient, practitionerId: string, date: string) {
+  const r = (await c.query("select kind, start_min, end_min, chair_id from work_rosters where practitioner_id = $1 and work_date = $2", [practitionerId, date])).rows[0];
+  if (r) {
+    return { source: "roster" as const, defined: true, chairId: (r.chair_id ?? null) as string | null,
+      blocks: r.kind === "work" ? [{ start: r.start_min as number, end: r.end_min as number }] : [] };
+  }
+  const wd = (await c.query("select extract(isodow from $1::date)::int as wd", [date])).rows[0].wd as number;
+  const defined = !!(await c.query("select 1 from work_schedules where practitioner_id = $1 limit 1", [practitionerId])).rowCount;
+  const blocks = defined
+    ? (await c.query("select start_min, end_min from work_schedules where practitioner_id = $1 and weekday = $2 order by start_min", [practitionerId, wd])).rows.map((b) => ({ start: b.start_min as number, end: b.end_min as number }))
+    : [{ start: 9 * 60, end: 19 * 60 }];
+  return { source: defined ? ("weekly" as const) : ("default" as const), defined, chairId: null, blocks };
 }

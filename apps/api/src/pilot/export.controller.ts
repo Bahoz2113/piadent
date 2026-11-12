@@ -21,7 +21,7 @@ export const EXPORT_FORMAT = { format: "viadent-export", version: 1 } as const;
 
 /** Klinik dışa aktarımına giren tablolar (sıra: bağımlılık sırasına yakın). Hariç sütunlar sırdır veya iç durumdur. */
 const CLINIC_TABLES: [string, string[]][] = [
-  ["branches", []], ["practitioners", []], ["chairs", []], ["appointment_types", []], ["work_schedules", []], ["closures", []],
+  ["branches", []], ["practitioners", []], ["chairs", []], ["appointment_types", []], ["work_schedules", []], ["work_rosters", []], ["closures", []],
   ["memberships", []], ["patients", ["search_text", "phone_digits"]], ["patient_relations", []], ["anamnesis_versions", []], ["anamnesis_reviews", []],
   ["appointments", []], ["clinical_notes", []], ["procedures", []], ["tariff_versions", []], ["tariff_items", []], ["odontogram_findings", []], ["diagnoses", []],
   ["treatment_plans", []], ["plan_versions", []], ["plan_items", []], ["plan_decisions", []], ["performed_procedures", []],

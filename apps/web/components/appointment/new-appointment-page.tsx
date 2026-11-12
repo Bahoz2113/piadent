@@ -18,7 +18,7 @@ import { appointmentPastState, APPOINTMENT_IN_PAST_MESSAGE, PAST_DAY_ERROR, PAST
 
 export interface Prefill { date: string; time?: string; practitionerId?: string; chairId?: string; patientId?: string }
 interface Proc { id: string; code: string; name: string; category: string | null; defaultMinutes: number | null; price: string | null }
-interface Availability { slots: string[]; blocks: { start: number; end: number }[]; workingHoursDefined: boolean; closedAllDay: { reason: string; kind: string } | null }
+interface Availability { slots: string[]; blocks: { start: number; end: number }[]; workingHoursDefined: boolean; planSource?: "roster" | "weekly" | "default"; rosterOff?: boolean; closedAllDay: { reason: string; kind: string } | null }
 type PayMode = "none" | "partial" | "full";
 const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
@@ -247,7 +247,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
           <h2 id="ra-saat">3 · Uygun saatler <span className="muted small" style={{ fontWeight: 400 }}>· {fmtDate(f.date)}, {f.durationMinutes} dk</span></h2>
           {pastDay ? <Alert kind="warning" title="Geçmiş gün">{PAST_DAY_SLOTS_NOTE}</Alert> : avail.loading && !avail.data ? <p className="muted small">Boş saatler hesaplanıyor…</p> : avail.error ? <Alert kind="error">{avail.error.message}</Alert> : avail.data && (
             avail.data.closedAllDay ? <Alert kind="warning" title="Bu gün kapalı">{avail.data.closedAllDay.reason}. Başka gün seçin.</Alert>
-            : avail.data.slots.length === 0 ? <Alert kind="info">Bu gün seçilen süre için boş saat yok{avail.data.blocks.length === 0 ? " (hekim bu gün çalışmıyor)" : ""}. Başka gün veya hekim seçin.</Alert>
+            : avail.data.slots.length === 0 ? <Alert kind="info">Bu gün seçilen süre için boş saat yok{avail.data.rosterOff ? " (çalışma listesine göre hekim bu gün çalışmıyor)" : avail.data.blocks.length === 0 ? " (hekim bu gün çalışmıyor)" : ""}. Başka gün veya hekim seçin.</Alert>
             : (
               <div className="slot-grid" role="radiogroup" aria-label="Uygun saatler">
                 {avail.data.slots.map((t) => (
@@ -256,6 +256,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
               </div>
             ))}
           {!pastDay && avail.data && !avail.data.workingHoursDefined && <p className="small muted">Hekimin çalışma saati tanımlı değil; 09:00–19:00 arası gösteriliyor.</p>}
+          {!pastDay && avail.data?.planSource === "roster" && !avail.data.rosterOff && <p className="small muted">Saatler aylık çalışma listesine göre ({avail.data.blocks.map((b) => `${String(Math.floor(b.start / 60)).padStart(2, "0")}:${String(b.start % 60).padStart(2, "0")}–${String(Math.floor(b.end / 60)).padStart(2, "0")}:${String(b.end % 60).padStart(2, "0")}`).join(", ")}).</p>}
           {err?.fieldErrors.startTime && !manualTime && <span className="err">{err.fieldErrors.startTime}</span>}
           <details>
             <summary className="small"><Clock size={13} aria-hidden style={{ verticalAlign: "-2px" }} /> Listede olmayan bir saat gir</summary>
