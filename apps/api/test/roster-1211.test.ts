@@ -35,7 +35,15 @@ beforeAll(async () => {
   chairX = (await admin.post("/chairs", { name: `Ünite L ${tag}` }).expect(201)).body.id;
   patientId = (await sec.post("/patients", { firstName: "Liste", lastName: `Hasta${tag}`, birthDate: "1990-05-06", acknowledgeDuplicates: true }).expect(201)).body.patient.id;
 });
-afterAll(async () => { await app.close(); });
+afterAll(async () => {
+  // QA-802: demo A kiracısının aktif ünite listesini (Ünite A/B/C) kirletme — eklenen üniteyi pasifleştir.
+  if (chairX) {
+    await admin.patch(`/chairs/${chairX}`, { name: `Ünite L ${tag}`, active: false }).expect(200);
+    const left = (await sec.get("/resources").expect(200)).body.chairs as { name: string }[];
+    expect(left.filter((c) => c.name.endsWith(tag))).toEqual([]);
+  }
+  await app.close();
+});
 
 describe("okuma ve yetki", () => {
   it("ay görünümü: günler, hekimler (haftalık şablonla), üniteler; sekreter ve hekim okur, yazamaz; ay biçimi 422", async () => {

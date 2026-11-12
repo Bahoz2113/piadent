@@ -237,7 +237,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   // Belge, dosya, iletişim
   template_version_id: "Şablon sürümü", body_hash: "İçerik özeti", content_hash: "İçerik özeti", request_status: "Onam talebi durumu",
   purpose: "Amaç", channel: "Kanal", due_date: "Vade", sha256: "Dosya özeti (SHA-256)", file_sha256: "Dosya özeti (SHA-256)",
-  procedure_ids: "Planlanan işlemler", work_date: "Gün", cells: "Günler", impression_type: "Ölçü türü", impression_taken_on: "Ölçü tarihi", material: "İstenen malzeme",
+  procedure_ids: "Planlanan işlemler", work_date: "Gün", cells: "Günler", outside_appointments: "Plan dışında kalan randevu", impression_type: "Ölçü türü", impression_taken_on: "Ölçü tarihi", material: "İstenen malzeme",
   expected_date: "Beklenen teslim", received_lines: "Teslim alınan kalemler", bill_id: "Cari fatura", types: "Eklenen belge türü", templates: "Eklenen şablon", replaced: "Yenilenen yer tutucu metin",
   // Laboratuvar, stok, cari
   supplier_id: "Tedarikçi", work_type: "İş türü", order_no: "İş emri no", stage: "Aşama", teeth: "Dişler", shade: "Renk",
