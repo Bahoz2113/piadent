@@ -1,0 +1,160 @@
+{
+ "checks": [
+  {
+   "check": "admin: kartta tam telefon",
+   "pass": true
+  },
+  {
+   "check": "admin: kimlik no maskeli",
+   "pass": true
+  },
+  {
+   "check": "admin: listede tam telefon",
+   "pass": true
+  },
+  {
+   "check": "dentist: kartta tam telefon",
+   "pass": true
+  },
+  {
+   "check": "dentist: kimlik no maskeli",
+   "pass": true
+  },
+  {
+   "check": "dentist: listede tam telefon",
+   "pass": true
+  },
+  {
+   "check": "sec: kartta tam telefon",
+   "pass": true
+  },
+  {
+   "check": "sec: kimlik no maskeli",
+   "pass": true
+  },
+  {
+   "check": "sec: listede tam telefon",
+   "pass": true
+  },
+  {
+   "check": "asst: kartta tam telefon",
+   "pass": true
+  },
+  {
+   "check": "asst: kimlik no maskeli",
+   "pass": true
+  },
+  {
+   "check": "asst: listede tam telefon",
+   "pass": true
+  },
+  {
+   "check": "fin: kartta tam telefon",
+   "pass": true
+  },
+  {
+   "check": "fin: kimlik no maskeli",
+   "pass": true
+  },
+  {
+   "check": "fin: listede tam telefon",
+   "pass": true
+  },
+  {
+   "check": "telefon \"05321234567\" → 201 (beklenen 201)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"0532123456\" → 422 (beklenen 422)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"053212345678\" → 422 (beklenen 422)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"5321234567\" → 201 (beklenen 201)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"532123456\" → 422 (beklenen 422)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"53212345678\" → 422 (beklenen 422)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"+905321234567\" → 201 (beklenen 201)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"00905321234567\" → 201 (beklenen 201)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"0532abc4567\" → 422 (beklenen 422)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"٠٥٣٢١٢٣٤٥٦٧\" → 422 (beklenen 422)",
+   "pass": true
+  },
+  {
+   "check": "telefon \"0 (532) 123 45 67\" → 201 (beklenen 201)",
+   "pass": true
+  }
+ ],
+ "digits": [
+  {
+   "phone": "05321234567",
+   "status": 201
+  },
+  {
+   "phone": "0532123456",
+   "status": 422,
+   "message": "Telefon 0 ile başlıyorsa 11, 0 olmadan 10 hane olmalı (ör. 0555 123 45 67). Yurt dışı numarayı + ile yazın."
+  },
+  {
+   "phone": "053212345678",
+   "status": 422,
+   "message": "Telefon 0 ile başlıyorsa 11, 0 olmadan 10 hane olmalı (ör. 0555 123 45 67). Yurt dışı numarayı + ile yazın."
+  },
+  {
+   "phone": "5321234567",
+   "status": 201
+  },
+  {
+   "phone": "532123456",
+   "status": 422,
+   "message": "Telefon 0 ile başlıyorsa 11, 0 olmadan 10 hane olmalı (ör. 0555 123 45 67). Yurt dışı numarayı + ile yazın."
+  },
+  {
+   "phone": "53212345678",
+   "status": 422,
+   "message": "Telefon 0 ile başlıyorsa 11, 0 olmadan 10 hane olmalı (ör. 0555 123 45 67). Yurt dışı numarayı + ile yazın."
+  },
+  {
+   "phone": "+905321234567",
+   "status": 201
+  },
+  {
+   "phone": "00905321234567",
+   "status": 201
+  },
+  {
+   "phone": "0532abc4567",
+   "status": 422,
+   "message": "Telefon 0 ile başlıyorsa 11, 0 olmadan 10 hane olmalı (ör. 0555 123 45 67). Yurt dışı numarayı + ile yazın."
+  },
+  {
+   "phone": "٠٥٣٢١٢٣٤٥٦٧",
+   "status": 422,
+   "message": "Telefon 0 ile başlıyorsa 11, 0 olmadan 10 hane olmalı (ör. 0555 123 45 67). Yurt dışı numarayı + ile yazın."
+  },
+  {
+   "phone": "0 (532) 123 45 67",
+   "status": 201
+  }
+ ]
+}
