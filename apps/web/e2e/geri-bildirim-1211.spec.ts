@@ -4,6 +4,8 @@ import { expect, test, type Page } from "@playwright/test";
  * Ürün sahibi geri bildirimi 12.11.2026: Randevu ver → 5 · Ödeme planı → "Tamamı" seçilince işlem fiyatı tanımsızsa
  * (işlem seçilmedi / fiyat yok) "Alınan tutar" kutusunda "Fiyat tanımsız" yazmamalı; boş açılmalı ve elle girilebilmeli.
  * Girilen tutar gerçekten tahsil edilir (avans). Fiyat tanımlıysa "Tamamı" fiyatı gösterir.
+ * Aynı gün 2. geri bildirim: Anasayfa'dan Bekleyen hasta, Bugünkü tahsilat, Bekleyen tahsilat kartları ve Aylık gelir grafiği
+ * çıkarıldı; menüde "Panel" adı "Anasayfa" oldu (sekme başlığı da).
  */
 const PASSWORD = process.env.E2E_PASSWORD ?? "";
 test.skip(!PASSWORD, "E2E_PASSWORD (sentetik demo parolası) tanımlı değil");
@@ -40,4 +42,26 @@ test("Tamamı: fiyat tanımsızken tutar kutusu boş açılır, elle girilen tut
   await amount.fill("1.250,00");
   await page.getByRole("button", { name: "Randevuyu kaydet" }).click();
   await expect(page.getByText(/Randevu oluşturuldu; .*1\.250,00.* ödeme alındı/)).toBeVisible();
+});
+
+test("Anasayfa: menü adı ve sekme başlığı Anasayfa; para kartları, bekleyen hasta ve aylık gelir yok", async ({ page }) => {
+  await login(page, "yonetici@demo-yesil.test");
+  await expect(page).toHaveTitle(/^Anasayfa/);
+  const menu = page.getByRole("button", { name: "Menüyü aç" });
+  if (await menu.isVisible()) await menu.click();
+  const nav = page.getByRole("navigation").first();
+  await expect(nav.getByRole("link", { name: "Anasayfa" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Panel", exact: true })).toHaveCount(0);
+  if (await menu.isVisible()) await page.keyboard.press("Escape");
+  await page.goto("/bugun");
+  const kpis = page.getByRole("region", { name: "Günün özeti" });
+  await expect(kpis.getByText("Bugünkü randevular")).toBeVisible();
+  await expect(kpis.getByText("Aktif hekim")).toBeVisible();
+  for (const gone of ["Bekleyen hasta", "Bugünkü tahsilat", "Bekleyen tahsilat"]) await expect(kpis.getByText(gone)).toHaveCount(0);
+  await expect(kpis.locator(".kpi")).toHaveCount(2);
+  await expect(page.getByRole("heading", { name: "Aylık gelir" })).toHaveCount(0);
+  for (const keep of ["Randevu yoğunluğu", "Tedavi dağılımı", "Yeni hasta sayısı"]) await expect(page.getByRole("heading", { name: keep })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bugünün randevuları", level: 2 })).toBeVisible();
+  const vw = page.viewportSize()!.width;
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), "yatay taşma").toBeLessThanOrEqual(vw + 1);
 });

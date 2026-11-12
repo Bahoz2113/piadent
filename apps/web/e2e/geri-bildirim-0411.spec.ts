@@ -26,7 +26,8 @@ const nav = (page: Page) => page.getByRole("navigation").first();
 test("Panel: menü adları, sayaçlar, grafikler ve tablo görünümü; sekreterde para kartları yok", async ({ page }, info) => {
   await login(page, "yonetici@demo-yesil.test");
   if (info.project.name === "telefon-360") await page.getByRole("button", { name: /Menüyü aç|Menü/ }).first().click().catch(() => {});
-  await expect(nav(page).getByRole("link", { name: "Panel" })).toBeVisible();
+  // 12.11.2026: menüde "Panel" → "Anasayfa" (geri-bildirim-1211.spec.ts).
+  await expect(nav(page).getByRole("link", { name: "Anasayfa" })).toBeVisible();
   await expect(nav(page).getByRole("link", { name: "Randevular" })).toBeVisible();
   await expect(nav(page).getByRole("link", { name: "Hekimler" })).toBeVisible();
   await expect(nav(page).getByRole("link", { name: "Bugün" })).toHaveCount(0);
@@ -34,7 +35,9 @@ test("Panel: menü adları, sayaçlar, grafikler ve tablo görünümü; sekreter
   await page.goto("/bugun");
   const kpis = page.getByRole("region", { name: "Günün özeti" });
   await expect(kpis.getByText("Bugünkü randevular")).toBeVisible();
-  await expect(kpis.getByText("Bekleyen tahsilat")).toBeVisible();
+  // 12.11.2026: para kartları ve Aylık gelir grafiği Anasayfa'dan kaldırıldı (yöneticide de yok).
+  await expect(kpis.getByText("Bekleyen tahsilat")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Aylık gelir" })).toHaveCount(0);
   const chart = page.locator("section", { has: page.getByRole("heading", { name: "Randevu yoğunluğu" }) });
   await expect(chart.getByRole("img")).toBeVisible();
   await chart.getByRole("button", { name: "Tablo" }).click();
