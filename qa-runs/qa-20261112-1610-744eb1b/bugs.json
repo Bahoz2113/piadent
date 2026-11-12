@@ -27,13 +27,13 @@
  {
   "id": "QA-803",
   "severity": "S3",
-  "state": "OPEN",
+  "state": "FIX_READY",
   "title": "API test takımı dosya sırasına bağlı: messaging-0711.test.ts gorev5.test.ts'ten önce koşarsa gorev5 (SMS teslim/yeniden deneme) 8 testi düşer — bu sürümden önce var (iki dosya 07.11'den beri değişmedi)",
   "evidence": "evidence/tur2/QA-802-api-shuffle-seed3.log, evidence/tur2/QA-803-messaging-then-gorev5.log",
   "retestEvidence": null,
   "cases": [
    "R01"
   ],
-  "fixRev": null
+  "fixRev": "0d3a235"
  }
 ]
