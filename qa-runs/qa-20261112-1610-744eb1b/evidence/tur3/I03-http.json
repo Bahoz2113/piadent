@@ -1,0 +1,40 @@
+{
+ "checks": [
+  {
+   "check": "aynı işlem iki kez → 422",
+   "pass": true
+  },
+  {
+   "check": "11 işlem → 422",
+   "pass": true
+  },
+  {
+   "check": "bilinmeyen işlem → 422",
+   "pass": true
+  },
+  {
+   "check": "uuid olmayan → 422",
+   "pass": true
+  },
+  {
+   "check": "dizi değil → 422",
+   "pass": true
+  },
+  {
+   "check": "null öğe → 422",
+   "pass": true
+  },
+  {
+   "check": "pasif işlem → 422",
+   "pass": true
+  },
+  {
+   "check": "B kiracısının işlemi → 422",
+   "pass": true
+  },
+  {
+   "check": "hiç randevu yazılmadı",
+   "pass": true
+  }
+ ]
+}

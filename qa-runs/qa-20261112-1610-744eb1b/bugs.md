@@ -10,7 +10,7 @@
 - **Beklenen:** yeni test mevcut testlerin varsayımlarını bozmaz (yalıtım). **Gözlenen:** kalıcı yan etki.
 - **Etki:** düşük — ürün davranışı değil, test takımı güvenilirliği (regresyon kapısını düşürür). **Sorumlu:** cezeri-duzeltici. Not: 0811 testinin beklentisi gevşetilmemeli; düzeltme yeni testte.
 
-## QA-803 — S3 — API test takımı dosya sırasına bağlı (messaging-0711 → gorev5) — mevcut kusur
+## QA-803 — S3 — API test takımı dosya sırasına bağlı (messaging-0711 → gorev5) — mevcut kusur — VERIFIED (0d3a235, tur 3)
 - **Bulunuş:** QA-802 yeniden sınamasında tam API takımı `--sequence.shuffle.files --sequence.seed=3` ile koşuldu (tur 2 sonrası, 5e55ec1 = ürün 54b3a3a): 445'ten 8'i düştü, hepsi `test/gorev5.test.ts` (SMS teslim bildirimi, zaman aşımı/yeniden deneme/dead-letter). Kanıt `evidence/tur2/QA-802-api-shuffle-seed3.log`.
 - **Daraltma:** gorev5 tek başına yanındaki dört aday dosyayla (messaging-0711, gorev8, security, adapter-contract) 4'er seed ile koşuldu; yalnız **messaging-0711 önce** koşunca 8 test düşüyor (`evidence/tur2/QA-803-messaging-then-gorev5.log`). İki dosya da 07.11'den (6124aa2) beri değişmedi → bu sürümden önce var; ADR-110/Anasayfa değişikliğiyle ilgisi yok. Normal sırada (tur 1–2 R01) geçiyor.
 - **Etki:** düşük — ürün davranışı değil; regresyon kapısının güvenilirliği (sıra değişirse sahte kırmızı / gizlenen kusur). **Sorumlu:** cezeri-duzeltici. gorev5 beklentileri gevşetilmemeli; messaging-0711 yan etkisini temizlemeli.

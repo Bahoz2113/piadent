@@ -1,0 +1,33 @@
+{
+ "at": "2026-11-12T13:04:47.517Z",
+ "results": [
+  {
+   "id": "J01",
+   "status": "PASS",
+   "summary": "11/11 kontrol: hepsi geçti",
+   "at": "2026-11-12T13:04:47.133Z",
+   "evidence": "J01-http.json"
+  },
+  {
+   "id": "J02",
+   "status": "PASS",
+   "summary": "16/16 kontrol: hepsi geçti",
+   "at": "2026-11-12T13:04:47.321Z",
+   "evidence": "J02-http.json"
+  },
+  {
+   "id": "J03",
+   "status": "PASS",
+   "summary": "7/7 kontrol: hepsi geçti",
+   "at": "2026-11-12T13:04:47.353Z",
+   "evidence": "J03-http.json"
+  },
+  {
+   "id": "J04",
+   "status": "PASS",
+   "summary": "4/4 kontrol: hepsi geçti",
+   "at": "2026-11-12T13:04:47.517Z",
+   "evidence": "J04-http.json"
+  }
+ ]
+}

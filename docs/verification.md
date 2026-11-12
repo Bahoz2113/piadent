@@ -15,6 +15,9 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
+## CEZERİ teslim testi (12.11.2026, sürüm 0d09b1a) — Anasayfa + ADR-110 çalışma listesi
+Koşu `qa-runs/qa-20261112-1610-744eb1b/` (91 zorunlu vaka = 87 + L02–L04 + M01). Tur 1: 89/91 (QA-801 audit etiketi, QA-802 test yalıtımı — S3) → düzeltme 54b3a3a; tur 2: 91/91, karışık sıra denetiminde QA-803 (S3, önceden var olan test sırası bağımlılığı messaging-0711 → gorev5) → düzeltme 0d3a235; tur 3 (temiz seed): 91/91 PASS, API 445/445 (normal ve karışık sıra seed=3), web 131/131, E2E 138 geçti 0 hata; gate `TESLİME ADAY`. Hipotez H-01 (/messages SMS yedeği) ölçülmedi, sonraki koşuya.
+
 ## CEZERİ teslim testi (12.11.2026, sürüm 17b7ab0) — Ödeme planı "Tamamı" fiyat tanımsız → elle tutar
 Koşu `qa-runs/qa-20261112-1400-17b7ab0/` (87 zorunlu vaka = önceki 86 + L01). Tur 1 (temiz seed): 87/87 PASS; API 438/438, web 128/128, E2E tam regresyon geçti; gate `TESLİME ADAY`. Bulgu yok.
 
