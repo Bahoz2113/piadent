@@ -13,6 +13,7 @@ import { Alert, DateField, SelectField, TextAreaField, TextField } from "@/compo
 import { confirmDialog } from "@/components/dialogs";
 import { NewPatientDrawer } from "@/components/patient-form";
 import { HealthAlert, useHealthNotes } from "@/components/patient/health-notes";
+import { parseMoneyInput } from "@/components/finance/money-input";
 import { appointmentPastState, APPOINTMENT_IN_PAST_MESSAGE, PAST_DAY_ERROR, PAST_DAY_SLOTS_NOTE, PAST_TIME_ERROR } from "./past-guard";
 
 export interface Prefill { date: string; time?: string; practitionerId?: string; chairId?: string; patientId?: string }
@@ -81,7 +82,10 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
   useEffect(() => { if (f.startTime && avail.data && !avail.data.slots.includes(f.startTime) && !manualTime) setF((x) => ({ ...x, startTime: "" })); }, [avail.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const effectivePrice = chosen.length && chosen.every((p) => priceOf(p)) ? addMoney(...chosen.map((p) => priceOf(p)!)) : null;
-  const payAmount = pay.mode === "full" ? (effectivePrice ?? "") : pay.mode === "partial" ? pay.amount.replace(",", ".") : "";
+  // Ürün sahibi 12.11.2026: fiyat tanımsızsa "Tamamı"nda da tutar kutusu boş açılır, elle girilir.
+  const manualAmount = parseMoneyInput(pay.amount) ?? "";
+  const priceKnown = !!effectivePrice;
+  const payAmount = pay.mode === "full" ? (effectivePrice ?? manualAmount) : pay.mode === "partial" ? manualAmount : "";
   const durations = useMemo(() => Array.from(new Set([15, 20, 30, 45, 60, 90, 120, Number(f.durationMinutes)])).sort((a, b) => a - b), [f.durationMinutes]);
   const dirty = !created && ((patient?.id ?? null) !== (pre.data?.id ?? null) || q.trim() !== "" || pay.mode !== "none"
     || (Object.keys(initialF) as (keyof typeof initialF)[]).some((k) => JSON.stringify(f[k]) !== JSON.stringify(initialF[k])));
@@ -107,7 +111,7 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
   function payError(): string | null {
     if (pay.mode === "none") return null;
     if (!pay.cashAccountId) return "Kasa / banka seçin.";
-    if (!payAmount || !isMoney(payAmount) || toMinor(payAmount) <= 0n) return pay.mode === "full" ? "Tam ödeme için işlem seçilmeli ve seçilen her işlemin fiyatı tanımlı olmalı." : "Geçerli bir tutar girin (ör. 500,00).";
+    if (!payAmount || !isMoney(payAmount) || toMinor(payAmount) <= 0n) return "Alınan tutarı girin (ör. 500,00).";
     if (pay.mode === "partial" && effectivePrice && toMinor(payAmount) >= toMinor(effectivePrice)) return "Kısmi ödeme işlem fiyatından az olmalı; tamamı için “Tamamı”nı seçin.";
     return null;
   }
@@ -288,9 +292,10 @@ export function NewAppointmentPage({ prefill, resources, onCancel, onCreated }: 
               </div>
               {pay.mode !== "none" && (
                 <div className="form-grid">
-                  {pay.mode === "partial"
-                    ? <TextField label="Alınan tutar (₺)" required inputMode="decimal" value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value })} placeholder="ör. 500,00" error={err?.fieldErrors.payment} />
-                    : <TextField label="Alınan tutar (₺)" value={effectivePrice ? formatTRY(effectivePrice) : "Fiyat tanımsız"} readOnly error={err?.fieldErrors.payment} />}
+                  {pay.mode === "full" && priceKnown
+                    ? <TextField label="Alınan tutar (₺)" value={formatTRY(effectivePrice!)} readOnly error={err?.fieldErrors.payment} />
+                    : <TextField label="Alınan tutar (₺)" required inputMode="decimal" value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value })} placeholder="ör. 500,00"
+                        hint={pay.mode === "full" ? "İşlem fiyatı tanımlı değil; hastadan alınan tutarı yazın." : manualAmount ? `Kaydedilecek: ${formatTRY(manualAmount)}` : undefined} error={err?.fieldErrors.payment} />}
                   <SelectField label="Ödeme yöntemi" value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value as PaymentMethod })}>
                     {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>)}
                   </SelectField>
