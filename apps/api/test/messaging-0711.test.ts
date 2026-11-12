@@ -29,7 +29,17 @@ beforeAll(async () => {
   [admin, dentist, sec, fin] = await Promise.all([login(app, EMAILS.aAdmin), login(app, EMAILS.aDentist), login(app, EMAILS.aSecretary), login(app, EMAILS.aFinance)]);
   tenantA = admin.session.activeMembership.tenantId;
 });
-afterAll(async () => app.close());
+// QA-803: Bu dosyanın açtığı Netgsm bağlantısı (kind=sms, status=active) kalıcı DB durumu olarak kalırsa, sonra koşan dosyalarda
+// MOCK SMS bağlantısı devre dışıyken /messages bu bağlantıya düşer; gorev5 sıra değişince kırılıyordu. Yalnız burada açılanı sil.
+let createdNetgsm: string | null = null;
+afterAll(async () => {
+  try {
+    if (createdNetgsm) {
+      await ownerQuery(tenantA, "delete from integration_connections where id = $1", [createdNetgsm]);
+      expect(await ownerQuery(tenantA, "select id from integration_connections where id = $1", [createdNetgsm])).toEqual([]);
+    }
+  } finally { await app.close(); }
+});
 
 describe("Netgsm adaptörü (sahte fetch; gerçek istek yok)", () => {
   const env = { usercode: "8500000000", password: "test-parola", msgheader: "PIADENT" };
@@ -138,6 +148,7 @@ describe("Mesajlar sekmesi API", () => {
     expect(h.every((x) => /Deneme|Netgsm/.test(x.provider) && /Elle|Zamanlanmış|Otomatik/.test(x.source))).toBe(true);
     const r = await admin.post("/integrations/connections/netgsm", { usercode: "yok-sayilir" });
     expect([201, 409]).toContain(r.status);
+    if (r.status === 201) createdNetgsm = r.body.id;
     const cfg = await ownerQuery(tenantA, "select config::text as c, mode from integration_connections where provider = 'netgsm'");
     expect(cfg[0]).toMatchObject({ mode: "live", c: "{}" });
     expect((await sec.get("/messaging/status").expect(200)).body.realSending).toBe(false);
