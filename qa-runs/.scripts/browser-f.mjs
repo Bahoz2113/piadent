@@ -49,17 +49,19 @@ for (const profile of ["masaustu", "mobil"]) {
     await page.waitForFunction(() => ![...document.querySelectorAll(".kpi-value")].some((e) => e.textContent.trim() === "–"), null, { timeout: 10000 });
     const kpi = page.getByRole("region", { name: "Günün özeti" });
     const appt = (await kpi.locator(".kpi", { hasText: "Bugünkü randevular" }).locator(".kpi-value").innerText()).trim();
-    const coll = (await kpi.locator(".kpi", { hasText: "Bugünkü tahsilat" }).locator(".kpi-value").innerText()).replace(/\s/g, " ").trim();
-    const open = (await kpi.locator(".kpi", { hasText: "Bekleyen tahsilat" }).locator(".kpi-value").innerText()).replace(/\s/g, " ").trim();
+    // Kabul değişikliği 12.11.2026 (ürün sahibi): menüde "Anasayfa"; para kartları, Bekleyen hasta ve Aylık gelir kaldırıldı.
+    const hek = (await kpi.locator(".kpi", { hasText: "Aktif hekim" }).locator(".kpi-value").innerText()).trim();
+    const gone = await kpi.locator(".kpi", { hasText: /Bugünkü tahsilat|Bekleyen tahsilat|Bekleyen hasta/ }).count();
+    const income = await page.getByRole("heading", { name: "Aylık gelir" }).count();
     const chart = page.locator("section", { has: page.getByRole("heading", { name: "Randevu yoğunluğu" }) });
     await chart.getByRole("button", { name: "Tablo" }).click();
     const rows = await chart.locator("tbody tr").count();
     const ov = await overflow(page);
     const ev = await shot(page, profile, "F06-panel");
     const title = await page.title();
-    const pass = has("Panel") && has("Randevular") && has("Hekimler") && !has("Bugün") && !has("Ajanda") && appt === String(d.today.appointments)
-      && same(coll, d.money.todayCollections) && same(open, d.money.openReceivables) && rows === 30 && ov <= 1 && /Panel/.test(title);
-    return { pass, summary: `menü [${names.map((x) => x.trim()).filter(Boolean).join(", ")}], başlık "${title}", KPI randevu ${appt}=${d.today.appointments}, tahsilat ${coll} / API ${d.money.todayCollections}, açık ${open} / API ${d.money.openReceivables}, tablo satırı ${rows}, taşma ${ov}`, evidence: ev };
+    const pass = has("Anasayfa") && !has("Panel") && has("Randevular") && has("Hekimler") && !has("Bugün") && !has("Ajanda") && appt === String(d.today.appointments)
+      && hek === String(d.today.activePractitioners) && gone === 0 && income === 0 && rows === 30 && ov <= 1 && /^Anasayfa/.test(title);
+    return { pass, summary: `menü [${names.map((x) => x.trim()).filter(Boolean).join(", ")}], başlık "${title}", KPI randevu ${appt}=${d.today.appointments}, aktif hekim ${hek}=${d.today.activePractitioners}, kaldırılan kart ${gone}, Aylık gelir grafiği ${income}, tablo satırı ${rows}, taşma ${ov}`, evidence: ev };
   });
 
   await tryCase(profile, "F01", async () => {
