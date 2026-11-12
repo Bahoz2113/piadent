@@ -1,0 +1,139 @@
+{
+ "checks": [
+  {
+   "check": "planlı randevu 409",
+   "pass": true
+  },
+  {
+   "check": "malzeme boş liste → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme miktar 0 → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme negatif → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme 4 ondalık → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme 31 kalem → 422",
+   "pass": true
+  },
+  {
+   "check": "malzeme geçersiz kimlik → 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter 403",
+   "pass": true
+  },
+  {
+   "check": "eksi stok 409, hiçbir satır yazılmadı",
+   "pass": true
+  },
+  {
+   "check": "idempotent",
+   "pass": true
+  },
+  {
+   "check": "hasta+randevu bağlı",
+   "pass": true
+  },
+  {
+   "check": "snapshot 100,00 / fiyatsız null",
+   "pass": true
+  },
+  {
+   "check": "gider 150.00, fiyatsız 1, asistan bedel görmez",
+   "pass": true
+  },
+  {
+   "check": "ters kayıt 201; finans bedel 0.00, katkı 0.00",
+   "pass": true
+  },
+  {
+   "check": "gider API 0.00 = DB 0.00",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı 404",
+   "pass": true
+  },
+  {
+   "check": "stok bakiyesi API 10.000 = DB 10.000",
+   "pass": true
+  }
+ ],
+ "materials": {
+  "appointmentId": "2f7cf50b-9c40-4354-8a6f-fa2bde1e9d2e",
+  "status": "checked_in",
+  "editable": false,
+  "items": [
+   {
+    "id": "f06cd091-c613-4425-96fd-d96e669ade95",
+    "itemId": "0dc72323-d3d1-4ce3-995e-c496ca51ea8f",
+    "code": "QA-Gibpnk",
+    "name": "‹name:18›",
+    "unit": "paket",
+    "quantity": "2.000",
+    "unitCost": null,
+    "lineCost": null,
+    "lotNo": null,
+    "source": "manual",
+    "procedure": null,
+    "at": "2026-11-12T12:11:26.930Z",
+    "by": "‹by:7›",
+    "reversal": false,
+    "reversed": false,
+    "reason": "Randevuda ek malzeme · QA ek sarf — ğüş"
+   },
+   {
+    "id": "f7943e93-9179-4fd8-a7ac-771da9af359f",
+    "itemId": "56244060-1bbd-46a3-b1e9-a721b29b8fca",
+    "code": "QA-Eibpnk",
+    "name": "‹name:16›",
+    "unit": "kutu",
+    "quantity": "1.500",
+    "unitCost": "100.00",
+    "lineCost": "150.00",
+    "lotNo": null,
+    "source": "manual",
+    "procedure": null,
+    "at": "2026-11-12T12:11:26.930Z",
+    "by": "‹by:7›",
+    "reversal": false,
+    "reversed": true,
+    "reason": "Randevuda ek malzeme · QA ek sarf — ğüş"
+   },
+   {
+    "id": "10bdaffd-421d-4397-bfe9-47d522b1227c",
+    "itemId": "56244060-1bbd-46a3-b1e9-a721b29b8fca",
+    "code": "QA-Eibpnk",
+    "name": "‹name:16›",
+    "unit": "kutu",
+    "quantity": "-1.500",
+    "unitCost": "100.00",
+    "lineCost": "-150.00",
+    "lotNo": null,
+    "source": "manual",
+    "procedure": null,
+    "at": "2026-11-12T12:11:26.974Z",
+    "by": "‹by:7›",
+    "reversal": true,
+    "reversed": false,
+    "reason": "Ters kayıt: QA ters kayıt"
+   }
+  ],
+  "totals": {
+   "materialCost": "0.00",
+   "unknownCostLines": 1
+  },
+  "revenue": "0.00",
+  "contribution": "0.00"
+ }
+}

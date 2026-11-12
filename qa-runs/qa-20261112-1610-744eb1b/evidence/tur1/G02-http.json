@@ -1,0 +1,24 @@
+{
+ "checks": [
+  {
+   "check": "sekreter diş şeması 403",
+   "pass": true
+  },
+  {
+   "check": "finans diş şeması 403",
+   "pass": true
+  },
+  {
+   "check": "hekim gelir raporu 403",
+   "pass": true
+  },
+  {
+   "check": "asistan mesaj 403",
+   "pass": true
+  },
+  {
+   "check": "sekreter Netgsm bağlantısı 403",
+   "pass": true
+  }
+ ]
+}

@@ -1,0 +1,24 @@
+{
+ "checks": [
+  {
+   "check": "şablonu kaldırılan 2 tür ilk açılışta yeniden şablonlu (1/1)",
+   "pass": true
+  },
+  {
+   "check": "ikinci açılış yazmaz",
+   "pass": true
+  },
+  {
+   "check": "denetim olayı",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı değişmedi",
+   "pass": true
+  },
+  {
+   "check": "yeni şablon önizlenir 200",
+   "pass": true
+  }
+ ]
+}

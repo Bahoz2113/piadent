@@ -1,0 +1,48 @@
+{
+ "checks": [
+  {
+   "check": "oluştur 201",
+   "pass": true
+  },
+  {
+   "check": "ayrıntı silicone/2026-11-11/pfm",
+   "pass": true
+  },
+  {
+   "check": "föyde ölçü+malzeme, hasta adı yok",
+   "pass": true
+  },
+  {
+   "check": "ileri tarih → 422",
+   "pass": true
+  },
+  {
+   "check": "türsüz tarih → 422",
+   "pass": true
+  },
+  {
+   "check": "bilinmeyen tür → 422",
+   "pass": true
+  },
+  {
+   "check": "bilinmeyen malzeme → 422",
+   "pass": true
+  },
+  {
+   "check": "tarih biçimi → 422",
+   "pass": true
+  },
+  {
+   "check": "taslakta malzeme değişir 200",
+   "pass": true
+  },
+  {
+   "check": "gönderilmiş işte ölçü kilitli 409",
+   "pass": true
+  },
+  {
+   "check": "finans iş emri açamaz 403",
+   "pass": true
+  }
+ ]
+}

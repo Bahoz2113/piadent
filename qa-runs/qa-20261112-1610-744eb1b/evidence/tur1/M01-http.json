@@ -1,0 +1,132 @@
+{
+ "checks": [
+  {
+   "check": "sekreter okur 200",
+   "pass": true
+  },
+  {
+   "check": "hekim okur 200",
+   "pass": true
+  },
+  {
+   "check": "asistan okur 200",
+   "pass": true
+  },
+  {
+   "check": "finans okur 200",
+   "pass": true
+  },
+  {
+   "check": "ay biçimi 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter yazamaz",
+   "pass": true
+  },
+  {
+   "check": "hekim yazamaz",
+   "pass": true
+  },
+  {
+   "check": "finans yazamaz",
+   "pass": true
+  },
+  {
+   "check": "bitiş<başlangıç → 422",
+   "pass": true
+  },
+  {
+   "check": "15 dk dışı → 422",
+   "pass": true
+  },
+  {
+   "check": "çalışmıyor+saat → 422",
+   "pass": true
+  },
+  {
+   "check": "Unicode tür → 422",
+   "pass": true
+  },
+  {
+   "check": "boş saat → 422",
+   "pass": true
+  },
+  {
+   "check": "hekim yok → 422",
+   "pass": true
+  },
+  {
+   "check": "çalışıyor kaydı 200",
+   "pass": true
+  },
+  {
+   "check": "uygun saatler listeden 14:00…18:00",
+   "pass": true
+  },
+  {
+   "check": "liste dışı randevu 422/OUTSIDE_WORKING_HOURS",
+   "pass": true
+  },
+  {
+   "check": "liste içi randevu 201",
+   "pass": true
+  },
+  {
+   "check": "randevulu güne çalışmıyor → 409",
+   "pass": true
+  },
+  {
+   "check": "onaysız 409 sonrası DB değişmedi (work)",
+   "pass": true
+  },
+  {
+   "check": "bilinçli onay 200",
+   "pass": true
+  },
+  {
+   "check": "randevu silinmedi (planned)",
+   "pass": true
+  },
+  {
+   "check": "çalışmıyor → boş saat yok",
+   "pass": true
+  },
+  {
+   "check": "ünite çakışması 409",
+   "pass": true
+  },
+  {
+   "check": "ardışık saat aynı ünite olur",
+   "pass": true
+  },
+  {
+   "check": "toplu 2 gün 200",
+   "pass": true
+  },
+  {
+   "check": "hekim listede çalışmıyor günü görür",
+   "pass": true
+  },
+  {
+   "check": "şablona dönüş (default)",
+   "pass": true
+  },
+  {
+   "check": "audit save=6 clear=1",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı A listesini görmez",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı A hekimine yazamaz",
+   "pass": true
+  },
+  {
+   "check": "FORCE RLS",
+   "pass": true
+  }
+ ]
+}
