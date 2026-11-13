@@ -91,6 +91,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (pg?.code === "23P01" && pg.constraint === "work_schedules_no_overlap") {
       status = 422;
       body = { code: "VALIDATION_FAILED", message: "Aynı güne ait çalışma blokları çakışıyor.", field_errors: { blocks: "Bloklar çakışmamalı." }, correlation_id };
+    } else if (pg?.code === "23P01" && pg.constraint === "work_rosters_chair_no_overlap") {
+      status = 409;
+      body = { code: "CHAIR_ROSTER_CONFLICT", message: "Bu ünite o gün çakışan saatlerde başka bir hekime verilmiş. Başka ünite veya saat seçin.", details: { resource: "ünite" }, correlation_id };
     } else if (pg?.code === "23P01") {
       status = 409;
       const resource = pg.constraint?.includes("chair") ? "ünite" : "hekim";

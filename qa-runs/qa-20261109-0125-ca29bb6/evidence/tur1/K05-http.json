@@ -1,0 +1,80 @@
+{
+ "checks": [
+  {
+   "check": "sistem 3/500.00 = DB 3/500.00",
+   "pass": true
+  },
+  {
+   "check": "açık 1, işlem 5",
+   "pass": true
+  },
+  {
+   "check": "açık işlemle kapanmaz 409",
+   "pass": true
+  },
+  {
+   "check": "fark açıklamasız (tutar) → 422",
+   "pass": true
+  },
+  {
+   "check": "fark açıklamasız (adet) → 422",
+   "pass": true
+  },
+  {
+   "check": "ileri tarih → 422",
+   "pass": true
+  },
+  {
+   "check": "32 gün önce → 422",
+   "pass": true
+  },
+  {
+   "check": "adet negatif → 422",
+   "pass": true
+  },
+  {
+   "check": "tutar biçimi → 422",
+   "pass": true
+  },
+  {
+   "check": "tarih biçimi → 422",
+   "pass": true
+  },
+  {
+   "check": "hekim kapatamaz",
+   "pass": true
+  },
+  {
+   "check": "hekim gün sonunu göremez",
+   "pass": true
+  },
+  {
+   "check": "ileri gün sorgusu 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter eşleşen gün sonu 201",
+   "pass": true
+  },
+  {
+   "check": "ikinci kez 409",
+   "pass": true
+  },
+  {
+   "check": "kapalı güne çekim 409",
+   "pass": true
+  },
+  {
+   "check": "açıklamalı fark kapanır, eşleşmedi",
+   "pass": true
+  },
+  {
+   "check": "gün listesinde fark görünür",
+   "pass": true
+  },
+  {
+   "check": "uygulama rolünün gün sonunda güncelleme yetkisi yok (0); sahip güncellemesi yapılabilir (yalnız sahip rolü)",
+   "pass": true
+  }
+ ]
+}

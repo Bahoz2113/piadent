@@ -14,7 +14,7 @@ import { TableLabels } from "@/components/table-labels";
 import { DialogHost } from "@/components/dialogs";
 
 const NAV = [
-  { href: "/bugun", label: "Panel", icon: LayoutDashboard },
+  { href: "/bugun", label: "Anasayfa", icon: LayoutDashboard },
   { href: "/is-akisi", label: "İş akışı", icon: ListChecks },
   { href: "/hastalar", label: "Hastalar", icon: Users },
   { href: "/ajanda", label: "Randevular", icon: CalendarDays },

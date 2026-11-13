@@ -1,0 +1,52 @@
+{
+ "checks": [
+  {
+   "check": "kayıt 201",
+   "pass": true
+  },
+  {
+   "check": "sıra korunur",
+   "pass": true
+  },
+  {
+   "check": "procedureId = ilk işlem",
+   "pass": true
+  },
+  {
+   "check": "işlem fiyatları = /price [\"4500.00\",\"3000.00\",\"1500.00\"]",
+   "pass": true
+  },
+  {
+   "check": "toplam 9000.00 = 9000",
+   "pass": true
+  },
+  {
+   "check": "neden Apikal rezeksiyon, Diş çekimi (cerrahi), Diş çekimi (basit)",
+   "pass": true
+  },
+  {
+   "check": "DB sıra 1..3",
+   "pass": true
+  },
+  {
+   "check": "denetim procedure_ids",
+   "pass": true
+  },
+  {
+   "check": "gün listesi aynı",
+   "pass": true
+  },
+  {
+   "check": "hasta randevuları aynı",
+   "pass": true
+  },
+  {
+   "check": "10 işlem sınırı 201",
+   "pass": true
+  },
+  {
+   "check": "neden ≤ 120",
+   "pass": true
+  }
+ ]
+}

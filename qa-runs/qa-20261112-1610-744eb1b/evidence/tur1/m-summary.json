@@ -1,0 +1,12 @@
+{
+ "at": "2026-11-12T12:11:35.783Z",
+ "results": [
+  {
+   "id": "M01",
+   "status": "PASS",
+   "summary": "32/32 kontrol: hepsi geçti",
+   "at": "2026-11-12T12:11:35.782Z",
+   "evidence": "M01-http.json"
+  }
+ ]
+}

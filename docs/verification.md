@@ -15,6 +15,18 @@ cd apps/web && E2E_PASSWORD=<.demo-credentials> npx playwright test
 ```
 API entegrasyon testleri her koşuda `viadent_test` veritabanını **silip yeniden kurar** (migration + sentetik seed), sonra uygulamayı kısıtlı `viadent_app` rolüyle başlatır.
 
+## CEZERİ teslim testi (12.11.2026, sürüm 0d09b1a) — Anasayfa + ADR-110 çalışma listesi
+Koşu `qa-runs/qa-20261112-1610-744eb1b/` (91 zorunlu vaka = 87 + L02–L04 + M01). Tur 1: 89/91 (QA-801 audit etiketi, QA-802 test yalıtımı — S3) → düzeltme 54b3a3a; tur 2: 91/91, karışık sıra denetiminde QA-803 (S3, önceden var olan test sırası bağımlılığı messaging-0711 → gorev5) → düzeltme 0d3a235; tur 3 (temiz seed): 91/91 PASS, API 445/445 (normal ve karışık sıra seed=3), web 131/131, E2E 138 geçti 0 hata; gate `TESLİME ADAY`. Hipotez H-01 (/messages SMS yedeği) ölçülmedi, sonraki koşuya.
+
+## CEZERİ teslim testi (12.11.2026, sürüm 17b7ab0) — Ödeme planı "Tamamı" fiyat tanımsız → elle tutar
+Koşu `qa-runs/qa-20261112-1400-17b7ab0/` (87 zorunlu vaka = önceki 86 + L01). Tur 1 (temiz seed): 87/87 PASS; API 438/438, web 128/128, E2E tam regresyon geçti; gate `TESLİME ADAY`. Bulgu yok.
+
+## CEZERİ teslim testi (09.11.2026, sürüm ca29bb6) — İPTAL
+ADR-109 POS Faz 0 koşusu `qa-runs/qa-20261109-0125-ca29bb6/` tur 1 sırasında ürün sahibi kararıyla durduruldu; teslim kararı yok. Kod geri alındı; ürün ağacı `db5c4ff` ile aynı (aşağıdaki TESLİME ADAY kaydı geçerli). Geri alma sonrası yerel doğrulama bu oturumda (tip denetimi + API/web birim testleri) aşağıda değil, commit mesajında.
+
+## CEZERİ teslim testi (09.11.2026, sürüm db5c4ff) — ADR-107 + ADR-108 Laboratuvar
+Koşu klasörü `qa-runs/qa-20261109-0040-9a6382e/` (plan.json kilitli 86 zorunlu vaka: önceki 79 + J01–J07; bugs.md QA-601; fix1.md + dönüş; release.md; evidence/tur1–tur2). Karar: `gate.cjs … db5c4ff → TESLİME ADAY`. Son tur (2, temiz seed, gece penceresi): 86/86 PASS; API **438/438**; contracts 21; web 127; E2E **130 geçti**, 0 hata; V06 EŞLEŞTİ; R07 (purchase_* FORCE RLS, tablo düzeyinde yazma yok, sütun düzeyinde yalnız received_qty). Canlıda oturumsuz duman testi (`deployment.md` §11d).
+
 ## CEZERİ teslim testi (08.11.2026, sürüm f3e5d5e) — ADR-107 (çoklu işlem/tanı, Ünite, Panel, İş akışı)
 Koşu klasörü `qa-runs/qa-20261108-1900-959f7ef/` (plan.json kilitli 79 zorunlu vaka: önceki 70 + I01–I09; results.json; bugs.md QA-501…503; fix1–2.md + dönüşleri; release.md; evidence/tur1…tur3 maskeli). Karar: `node qa/cezeri/gate.cjs … f3e5d5e → TESLİME ADAY` (çıkış 0). Son tur (3, temiz seed, çalışan süreç `evidence/tur3/stack-version.txt`): 79/79 PASS, 0 FLAKY/NOT_RUN; API **425/425**; contracts 21; web 122; typecheck; audit 0; **E2E 124 geçti + 10 atlama, 0 hata**; V06 EŞLEŞTİ; R07 (appointment_procedures FORCE RLS, uygulama rolünde UPDATE/DELETE yok). Canlıda koşulmadı (canlıya alma bekliyor).
 

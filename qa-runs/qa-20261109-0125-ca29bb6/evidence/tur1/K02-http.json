@@ -1,0 +1,144 @@
+{
+ "checks": [
+  {
+   "check": "tutar 0 → 422",
+   "pass": true
+  },
+  {
+   "check": "tutar negatif → 422",
+   "pass": true
+  },
+  {
+   "check": "tutar 3 ondalık → 422",
+   "pass": true
+  },
+  {
+   "check": "tutar metin → 422",
+   "pass": true
+  },
+  {
+   "check": "taksit 0 → 422",
+   "pass": true
+  },
+  {
+   "check": "taksit 13 → 422",
+   "pass": true
+  },
+  {
+   "check": "taksit metin → 422",
+   "pass": true
+  },
+  {
+   "check": "onay kodu 3 → 422",
+   "pass": true
+  },
+  {
+   "check": "onay kodu 13 → 422",
+   "pass": true
+  },
+  {
+   "check": "onay kodu Unicode → 422",
+   "pass": true
+  },
+  {
+   "check": "onay kodu boşluk → 422",
+   "pass": true
+  },
+  {
+   "check": "son4 3 hane → 422",
+   "pass": true
+  },
+  {
+   "check": "son4 5 hane → 422",
+   "pass": true
+  },
+  {
+   "check": "son4 tam kart no → 422",
+   "pass": true
+  },
+  {
+   "check": "son4 harf → 422",
+   "pass": true
+  },
+  {
+   "check": "onay kodu yok → 422",
+   "pass": true
+  },
+  {
+   "check": "son4 yok → 422",
+   "pass": true
+  },
+  {
+   "check": "hasta kimliği bozuk → 422",
+   "pass": true
+  },
+  {
+   "check": "mod bilinmeyen → 422",
+   "pass": true
+  },
+  {
+   "check": "Idempotency-Key yok → 428",
+   "pass": true
+  },
+  {
+   "check": "banka POS'una cihaz modu 422/POS_DRIVER_NO_DEVICE",
+   "pass": true
+  },
+  {
+   "check": "dağıtım tutarı aşar 422",
+   "pass": true
+  },
+  {
+   "check": "başka hastanın alacağı 422",
+   "pass": true
+  },
+  {
+   "check": "reddedilen istekler niyet yazmadı (transaction geri alındı)",
+   "pass": true
+  },
+  {
+   "check": "sınır 0.01/1 → 201",
+   "pass": true
+  },
+  {
+   "check": "sınır 99999.99/12 → 201",
+   "pass": true
+  },
+  {
+   "check": "onay 201 QA9Z87 •••• 5678",
+   "pass": true
+  },
+  {
+   "check": "tahsilat: kart, POS kasası, tutar, niyet bağı",
+   "pass": true
+  },
+  {
+   "check": "POS kasasına tek hareket",
+   "pass": true
+  },
+  {
+   "check": "makbuz TM-2026-000017",
+   "pass": true
+  },
+  {
+   "check": "dağıtım 400.00",
+   "pass": true
+  },
+  {
+   "check": "hesap mutabık, avans 250.00, not taksitli",
+   "pass": true
+  },
+  {
+   "check": "aynı anahtar tekrar → aynı yanıt",
+   "pass": true
+  },
+  {
+   "check": "aynı anahtar farklı içerik 409",
+   "pass": true
+  },
+  {
+   "check": "tek tahsilat",
+   "pass": true
+  }
+ ]
+}

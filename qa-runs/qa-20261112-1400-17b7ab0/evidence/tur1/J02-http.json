@@ -1,0 +1,68 @@
+{
+ "checks": [
+  {
+   "check": "idempotent oluştur 201/true",
+   "pass": true
+  },
+  {
+   "check": "tek sipariş",
+   "pass": true
+  },
+  {
+   "check": "taslak toplam 2023.29",
+   "pass": true
+  },
+  {
+   "check": "taslak teslim alınamaz",
+   "pass": true
+  },
+  {
+   "check": "gönder",
+   "pass": true
+  },
+  {
+   "check": "eski sürüm 409",
+   "pass": true
+  },
+  {
+   "check": "fazla teslim 422, stok değişmedi (422)",
+   "pass": true
+  },
+  {
+   "check": "lotsuz implant 422 (422)",
+   "pass": true
+  },
+  {
+   "check": "asistan cari borç yazamaz 403",
+   "pass": true
+  },
+  {
+   "check": "kısmi teslim 201/partial; tekrar true",
+   "pass": true
+  },
+  {
+   "check": "stok +2,5 (tekrar çift yazmadı): 2.5",
+   "pass": true
+  },
+  {
+   "check": "kalan + borç 201",
+   "pass": true
+  },
+  {
+   "check": "borç 2014.97 = 4,5×3,33 + 2×999,99 = 2014,97 (yuvarlama satır başına)",
+   "pass": true
+  },
+  {
+   "check": "hareket birim maliyetleri 3.33,999.99,3.33",
+   "pass": true
+  },
+  {
+   "check": "denetim purchase_order.create,purchase_order.send,purchase_order.receive,purchase_order.receive",
+   "pass": true
+  },
+  {
+   "check": "teslim alınan iptal edilemez",
+   "pass": true
+  }
+ ]
+}

@@ -1,0 +1,66 @@
+{
+ "case": "V02",
+ "run": "mw8efbyq",
+ "finding": 201,
+ "diagnosis": 201,
+ "appointment": 201,
+ "checkin": 200,
+ "performed": 201,
+ "performedBody": {
+  "id": "f9a5bce4-e90c-4f25-b3d0-3586df42380c",
+  "amount": "1800.00",
+  "priceBasis": "tariff",
+  "receivableId": "a66fc3cb-2c9e-408e-8468-850baf2660e4",
+  "consumables": {
+   "used": 0,
+   "shortages": 0
+  }
+ },
+ "tooth16": [
+  {
+   "id": "906981ca-bbda-4c38-abef-b59bc222069f",
+   "tooth": "16",
+   "surfaces": [
+    "O",
+    "M"
+   ],
+   "type": "caries",
+   "note": "‹note:6›",
+   "status": "current",
+   "at": "2026-11-08T22:23:24.706Z",
+   "by": "‹by:13›"
+  }
+ ],
+ "performed16": [
+  {
+   "id": "f9a5bce4-e90c-4f25-b3d0-3586df42380c",
+   "code": "DOL-01",
+   "name": "‹name:24›",
+   "location": {
+    "kind": "tooth",
+    "tooth": "16",
+    "surfaces": [
+     "O",
+     "M"
+    ],
+    "quadrant": null,
+    "arch": null
+   },
+   "quantity": 1,
+   "amount": "1800.00",
+   "priceBasis": "tariff",
+   "status": "completed",
+   "statusReason": null,
+   "at": "2026-11-08T22:23:24.779Z",
+   "planItemId": null,
+   "correctsId": null,
+   "note": null,
+   "practitioner": "Dt. Elif Aras",
+   "visitAt": "2027-01-11T11:00:00.000Z",
+   "imported": false
+  }
+ ],
+ "otherTeethUnchanged": true,
+ "otherPatientUnchanged": true,
+ "verdict": "PASS"
+}

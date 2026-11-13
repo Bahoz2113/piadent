@@ -1,0 +1,1 @@
+QA Ön Büro Çağrı – şube efptb|∅|∅|f|{"name": {"to": "QA Ön Büro Çağrı – şube efptb", "from": "QA Ön Büro Çağrı – şube efptb"}, "active": {"to": false, "from": true}, "terminal_ref": {"to": null, "from": "TID 0042"}}

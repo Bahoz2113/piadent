@@ -1,0 +1,20 @@
+{
+ "checks": [
+  {
+   "check": "görev açık (open, assistant)",
+   "pass": true
+  },
+  {
+   "check": "gecikmiş süzgeç",
+   "pass": true
+  },
+  {
+   "check": "asistan görevi görür; hasta adı yok",
+   "pass": true
+  },
+  {
+   "check": "teslimle kapandı",
+   "pass": true
+  }
+ ]
+}

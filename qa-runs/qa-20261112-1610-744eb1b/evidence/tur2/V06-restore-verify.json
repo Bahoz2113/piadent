@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "target": "viadent_qa_restore_tur2",
+  "kept": true,
+  "differences": [],
+  "timingsMs": {
+    "decrypt": 224,
+    "restore": 1743,
+    "verify": 96,
+    "total": 2063
+  },
+  "backupAgeMinutes": 0,
+  "files": {
+    "referenced": 5,
+    "present": 5,
+    "missing": 0,
+    "digest": "19c923b62bf2a86c8ea9b5a939d9edee6bbcc38689d0da3e2e1245b682bd3749"
+  }
+}

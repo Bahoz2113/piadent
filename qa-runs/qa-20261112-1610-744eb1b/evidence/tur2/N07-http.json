@@ -1,0 +1,33 @@
+{
+ "limits": [
+  422,
+  422,
+  422
+ ],
+ "drPut": 403,
+ "set": 200,
+ "refresh": 200,
+ "oneHour": {
+  "id": "2e91138d-e640-42ea-89a4-60e45fdaf820",
+  "escalated_to_role": null,
+  "assignee_role": "secretary"
+ },
+ "threeHours": {
+  "id": "32848708-4839-4eaf-9139-f50645630d3b",
+  "escalated_to_role": "clinic_admin",
+  "assignee_role": "secretary"
+ },
+ "adminTask": {
+  "id": "af09a3f0-46e4-4dec-9054-10a6d7ec070a",
+  "escalated_to_role": null,
+  "assignee_role": "clinic_admin"
+ },
+ "adminView": {
+  "mine": true,
+  "escalated": true
+ },
+ "secView": {
+  "mine": true
+ },
+ "copies": 1
+}

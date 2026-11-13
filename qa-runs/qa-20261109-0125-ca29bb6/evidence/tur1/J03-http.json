@@ -1,0 +1,32 @@
+{
+ "checks": [
+  {
+   "check": "sekreter liste 403",
+   "pass": true
+  },
+  {
+   "check": "sekreter oluştur 403",
+   "pass": true
+  },
+  {
+   "check": "B listesinde A siparişi yok",
+   "pass": true
+  },
+  {
+   "check": "B bağlamında A satırı yok (RLS)",
+   "pass": true
+  },
+  {
+   "check": "UPDATE yalnız received_qty (received_qty)",
+   "pass": true
+  },
+  {
+   "check": "silme/truncate yetkisi yok",
+   "pass": true
+  },
+  {
+   "check": "teslim azalamaz (PURCHASE_RECEIVED_DECREASE)",
+   "pass": true
+  }
+ ]
+}

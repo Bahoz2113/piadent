@@ -1,0 +1,39 @@
+[
+ {
+  "id": "QA-801",
+  "severity": "S3",
+  "state": "VERIFIED",
+  "title": "Çalışma listesi audit kaydındaki 'outside_appointments' alanının Türkçe etiketi yok (işlem kayıtlarında ham anahtar görünür)",
+  "evidence": "evidence/tur1/R03-web.log",
+  "retestEvidence": "evidence/tur3/R03-web.log",
+  "cases": [
+   "R03",
+   "M01"
+  ],
+  "fixRev": "54b3a3a"
+ },
+ {
+  "id": "QA-802",
+  "severity": "S3",
+  "state": "VERIFIED",
+  "title": "Yeni API testi roster-1211 demo kiracısına kalıcı ünite ('Ünite L …') ekliyor; aynı turdaki geri-bildirim-0811 'Ünite A/B/C' testi sıraya bağlı olarak düşüyor (test yalıtımı)",
+  "evidence": "evidence/tur1/R01-api.log",
+  "retestEvidence": "evidence/tur3/QA-803-api-shuffle-seed3.log",
+  "cases": [
+   "R01"
+  ],
+  "fixRev": "54b3a3a"
+ },
+ {
+  "id": "QA-803",
+  "severity": "S3",
+  "state": "VERIFIED",
+  "title": "API test takımı dosya sırasına bağlı: messaging-0711.test.ts gorev5.test.ts'ten önce koşarsa gorev5 (SMS teslim/yeniden deneme) 8 testi düşer — bu sürümden önce var (iki dosya 07.11'den beri değişmedi)",
+  "evidence": "evidence/tur2/QA-802-api-shuffle-seed3.log, evidence/tur2/QA-803-messaging-then-gorev5.log",
+  "retestEvidence": "evidence/tur3/QA-803-api-shuffle-seed3.log",
+  "cases": [
+   "R01"
+  ],
+  "fixRev": "0d3a235"
+ }
+]

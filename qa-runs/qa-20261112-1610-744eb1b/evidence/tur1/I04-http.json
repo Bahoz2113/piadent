@@ -1,0 +1,24 @@
+{
+ "checks": [
+  {
+   "check": "ENABLE + FORCE RLS",
+   "pass": true
+  },
+  {
+   "check": "uygulama rolü yetkileri INSERT,SELECT",
+   "pass": true
+  },
+  {
+   "check": "A satırları 16, B'den görünen 0",
+   "pass": true
+  },
+  {
+   "check": "B gün listesinde A randevusu yok",
+   "pass": true
+  },
+  {
+   "check": "finans randevu veremez → 403",
+   "pass": true
+  }
+ ]
+}

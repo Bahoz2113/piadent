@@ -1,0 +1,92 @@
+{
+ "checks": [
+  {
+   "check": "doğrulama bağlamı: hasta DB'de görünür (pozitif kontrol)",
+   "pass": true
+  },
+  {
+   "check": "dün → 422 APPOINTMENT_IN_PAST + alan hatası",
+   "pass": true
+  },
+  {
+   "check": "2 saat önce → 422",
+   "pass": true
+  },
+  {
+   "check": "reddedilen istek satır yazmadı",
+   "pass": true
+  },
+  {
+   "check": "reddedilen istek denetim yazmadı",
+   "pass": true
+  },
+  {
+   "check": "tolerans içi (−5 dk) → 201",
+   "pass": true
+  },
+  {
+   "check": "tolerans dışı (−11 dk) → 422",
+   "pass": true
+  },
+  {
+   "check": "sekreter gerekçeyle geriye dönük → 403",
+   "pass": true
+  },
+  {
+   "check": "yönetici gerekçesiz → 422",
+   "pass": true
+  },
+  {
+   "check": "gerekçe 301 karakter → 422",
+   "pass": true
+  },
+  {
+   "check": "yönetici gerekçeyle 201 + denetimde backdated/gerekçe (Unicode)",
+   "pass": true
+  },
+  {
+   "check": "saat 25:00 → 422",
+   "pass": true
+  },
+  {
+   "check": "saat 9:5 → 422",
+   "pass": true
+  },
+  {
+   "check": "tarih 2026-02-30 → 422",
+   "pass": true
+  },
+  {
+   "check": "tarih boş → 422",
+   "pass": true
+  },
+  {
+   "check": "ileri tarih → 201",
+   "pass": true
+  }
+ ],
+ "samples": {
+  "yesterday": {
+   "code": "APPOINTMENT_IN_PAST",
+   "message": "Geçmiş bir tarih veya saate randevu oluşturulamaz. Lütfen ileri bir saat seçin.",
+   "field_errors": {
+    "date": "Geçmiş tarih/saat seçilemez."
+   },
+   "correlation_id": "6b5f2c27-1c40-48f4-b7f3-958325bf751b"
+  },
+  "twoHours": {
+   "code": "APPOINTMENT_IN_PAST",
+   "message": "Geçmiş bir tarih veya saate randevu oluşturulamaz. Lütfen ileri bir saat seçin.",
+   "field_errors": {
+    "date": "Geçmiş tarih/saat seçilemez."
+   },
+   "correlation_id": "d44a1dc0-0943-45fe-a4e1-0c8a6a810ee2"
+  },
+  "sec403": {
+   "code": "FORBIDDEN",
+   "message": "Bu işlem için yetkiniz yok.",
+   "correlation_id": "e35bd5e5-4ec2-4e89-9e1b-4c9e48e4ad42"
+  },
+  "adminNoReason": "APPOINTMENT_IN_PAST"
+ }
+}

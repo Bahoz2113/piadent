@@ -1,0 +1,74 @@
+{
+ "run": "mwdj3w24",
+ "started": "2026-11-12T12:33:19.372Z",
+ "finished": "2026-11-12T12:33:21.102Z",
+ "base": "http://127.0.0.1:4000",
+ "patient": "bcc51417-b5a4-40c3-9bc8-dc4a0801c5c7",
+ "results": [
+  {
+   "id": "V01",
+   "status": "PASS",
+   "at": "2026-11-12T12:33:20.038Z",
+   "profile": "http",
+   "evidence": "evidence/V01-http.json",
+   "summary": "10 istek; B erişimleri reddedildi (404/403, önizleme yok); arama 0 sonuç; A kendi kaydını okudu"
+  },
+  {
+   "id": "V02",
+   "status": "PASS",
+   "at": "2026-11-12T12:33:20.226Z",
+   "profile": "http",
+   "evidence": "evidence/V02-http.json",
+   "summary": "bulgu 201, tanı 201, işlem 201; diş 16 yüzeyler M,O; diğer diş/hasta değişmedi=true"
+  },
+  {
+   "id": "V03",
+   "status": "PASS",
+   "at": "2026-11-12T12:33:20.273Z",
+   "profile": "http",
+   "evidence": "evidence/V03-http.json",
+   "summary": "eşzamanlı yanıtlar 201/409; 11:00'de 1 kayıt; ret kodu APPOINTMENT_CONFLICT"
+  },
+  {
+   "id": "V04",
+   "status": "PASS",
+   "at": "2026-11-12T12:33:20.392Z",
+   "profile": "http",
+   "evidence": "evidence/V04-http.json",
+   "summary": "eşzamanlı 201/201, tekrar 201, tek ödeme=true, 300'lük ödeme sayısı 1, açık borç 1800.00→2500.00 (beklenen +700), replay başlığı 2/2, iade 201 (ters kayıt 201)"
+  },
+  {
+   "id": "V05",
+   "status": "PASS",
+   "at": "2026-11-12T12:33:20.458Z",
+   "profile": "http",
+   "evidence": "evidence/V05-http.json",
+   "summary": "sekreter düzeltme 403, hekim düzeltme 200; eski=corrected yeni=completed; geçmişte 2 olay (aktör+zaman=true); sekreter geçmişinde klinik bulgu olayı: 0, finans: 0"
+  },
+  {
+   "id": "P01",
+   "status": "PASS",
+   "at": "2026-11-12T12:33:20.762Z",
+   "profile": "http",
+   "evidence": "evidence/P01-http.json",
+   "summary": "14 değer; kabul: 0.01, 999.99, 1000.00 (=borç); kasa hareketi farkı 3; mutabık=true"
+  },
+  {
+   "id": "P02",
+   "status": "PASS",
+   "at": "2026-11-12T12:33:20.934Z",
+   "profile": "http",
+   "evidence": "evidence/P02-http.json",
+   "summary": "28 deneme, 0 beklenmedik"
+  },
+  {
+   "id": "P03",
+   "status": "PASS",
+   "at": "2026-11-12T12:33:21.101Z",
+   "profile": "http",
+   "evidence": "evidence/P03-http.json",
+   "summary": "8 kontrol, 0 beklenmedik"
+  }
+ ],
+ "bugs": []
+}

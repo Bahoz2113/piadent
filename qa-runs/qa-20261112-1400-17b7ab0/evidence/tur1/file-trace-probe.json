@@ -1,0 +1,14 @@
+{
+ "initiate": 201,
+ "upload": 200,
+ "dentistHistoryFileEvents": [
+  "file.upload"
+ ],
+ "secretaryHistoryFileEvents": [],
+ "adminHistoryFileEvents": [
+  "file.upload"
+ ],
+ "adminExportFilesHasIt": true,
+ "adminExportAccessLogFileRows": 1,
+ "adminExportAccessLogMentionsFid": false
+}

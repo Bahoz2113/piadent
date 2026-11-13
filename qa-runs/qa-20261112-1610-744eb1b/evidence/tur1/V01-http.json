@@ -1,0 +1,93 @@
+{
+ "case": "V01",
+ "run": "mwdibfeg",
+ "steps": [
+  {
+   "label": "B yönetici → A hastası GET",
+   "role": "B-yonetici",
+   "method": "GET",
+   "path": "/patients/<A-hasta>",
+   "status": 404,
+   "code": "NOT_FOUND",
+   "leak": false
+  },
+  {
+   "label": "B hekim → A hastası GET",
+   "role": "B-hekim",
+   "method": "GET",
+   "path": "/patients/<A-hasta>",
+   "status": 404,
+   "code": "NOT_FOUND",
+   "leak": false
+  },
+  {
+   "label": "B hekim → A hastası chart",
+   "role": "B-hekim",
+   "method": "GET",
+   "path": "/patients/<A-hasta>/chart",
+   "status": 404,
+   "code": "NOT_FOUND",
+   "leak": false
+  },
+  {
+   "label": "B yönetici → A hastası hesap",
+   "role": "B-yonetici",
+   "method": "GET",
+   "path": "/patients/<A-hasta>/account",
+   "status": 404,
+   "code": "NOT_FOUND",
+   "leak": false
+  },
+  {
+   "label": "B yönetici → A hastası dosyalar",
+   "role": "B-yonetici",
+   "method": "GET",
+   "path": "/patients/<A-hasta>/files",
+   "status": 404,
+   "code": "NOT_FOUND",
+   "leak": false
+  },
+  {
+   "label": "B yönetici → A hastası dışa aktarım",
+   "role": "B-yonetici",
+   "method": "POST",
+   "path": "/patients/<A-hasta>/export",
+   "status": 404,
+   "code": "NOT_FOUND",
+   "leak": false
+  },
+  {
+   "label": "B yönetici → A hastası geçmiş",
+   "role": "B-yonetici",
+   "method": "GET",
+   "path": "/patients/<A-hasta>/history",
+   "status": 404,
+   "code": "NOT_FOUND",
+   "leak": false
+  },
+  {
+   "label": "B yönetici → arama (A soyadı)",
+   "role": "B-yonetici",
+   "method": "GET",
+   "path": "/patients?q=Hastamwdibfeg",
+   "status": 200,
+   "leak": false
+  },
+  {
+   "label": "B çerezi + A bağlam başlığı (taklit)",
+   "status": 409,
+   "code": "CONTEXT_CHANGED",
+   "leak": false
+  },
+  {
+   "label": "A sekreter → kendi hastası GET",
+   "role": "A-sekreter",
+   "method": "GET",
+   "path": "/patients/<A-hasta>",
+   "status": 200,
+   "leak": true
+  }
+ ],
+ "searchItems": 0,
+ "verdict": "PASS"
+}

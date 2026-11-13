@@ -1,0 +1,108 @@
+{
+ "checks": [
+  {
+   "check": "gönder 201 awaiting_card",
+   "pass": true
+  },
+  {
+   "check": "çift çekim koruması 409",
+   "pass": true
+  },
+  {
+   "check": "terminal listesinde açık işlem",
+   "pass": true
+  },
+  {
+   "check": "onay öncesi tahsilat yok",
+   "pass": true
+  },
+  {
+   "check": "onay 200",
+   "pass": true
+  },
+  {
+   "check": "tahsilat 120.00",
+   "pass": true
+  },
+  {
+   "check": "onaylıya benzetim 409",
+   "pass": true
+  },
+  {
+   "check": "onaylıyı iptal 409",
+   "pass": true
+  },
+  {
+   "check": "onaylıyı çözme 409",
+   "pass": true
+  },
+  {
+   "check": "ret → tahsilat yok",
+   "pass": true
+  },
+  {
+   "check": "bilinmeyen benzetim sonucu 422",
+   "pass": true
+  },
+  {
+   "check": "yanıt yok → unknown",
+   "pass": true
+  },
+  {
+   "check": "sonuç bilinmiyor iptal edilemez 409",
+   "pass": true
+  },
+  {
+   "check": "sonuç bilinmiyorken yeni çekim 409",
+   "pass": true
+  },
+  {
+   "check": "onay çözümü son 4 hanesiz 422",
+   "pass": true
+  },
+  {
+   "check": "ret çözümü kısa gerekçe 422",
+   "pass": true
+  },
+  {
+   "check": "hekim çözemez 403",
+   "pass": true
+  },
+  {
+   "check": "fişe göre onay 201",
+   "pass": true
+  },
+  {
+   "check": "fişteki taksit tahsilat notunda",
+   "pass": true
+  },
+  {
+   "check": "fişe göre ret",
+   "pass": true
+  },
+  {
+   "check": "süre aşımı → unknown, denetimli",
+   "pass": true
+  },
+  {
+   "check": "süresi dolana benzetim 409",
+   "pass": true
+  },
+  {
+   "check": "kart bekleniyorken iptal",
+   "pass": true
+  },
+  {
+   "check": "banka POS'unda benzetim 409",
+   "pass": true
+  },
+  {
+   "check": "audit izi pos_intent.create,pos_intent.send,pos_intent.unknown,pos_intent.resolve,pos_intent.approve,pos_intent.resolve",
+   "pass": true
+  },
+  {
+   "check": "B kiracısı işlemi göremez",
+   "pass": true
+  }
+ ]
+}
