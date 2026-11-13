@@ -125,6 +125,10 @@ Sınırlar: Supabase'de superuser olmadığı için `textlike` LEAKPROOF ayarı 
 - Doğrulama (oturumsuz duman, ~01:10): yeni derleme `/laboratuvar` 404 → 200 ile yayında (2 dk); `/giris`, `/bugun`, `/is-akisi`, `/laboratuvar`, `/operasyon`, `/ajanda`, `/hastalar` 200; `/api/v1/health/ready` ready + db ok; `purchase-orders`, `purchase-orders-summary`, `lab-orders`, `POST purchase-orders`, `POST appointments` 401 (oturumsuz). DB: dört yeni tablo FORCE RLS, lab_orders yeni 3 sütun, migration kaydı 0038–0041. Supabase postgres günlüğünde yayın penceresinde ERROR/FATAL yok.
 - Canlı demoda malzeme siparişi örneği yok (seed yalnız yerelde); ilk sipariş Laboratuvar → Malzeme siparişleri'nden açılır. Girişli uçtan uca tıklama ürün sahibine kaldı.
 
+## 11e. Canlı demo güncellemesi (13.11.2026) — 12.11 geri bildirimleri + ADR-110 + CEZERİ qa-20261112-1610 (TESLİME ADAY)
+- Ürün sahibi onayı: "Evet, hepsini canlıya al" (12.11 → 13.11.2026). Ürün = CEZERİ tur 3'te sınanan ağaç (ürün kodu `0d3a235`; HEAD `87bd224` yalnız qa/docs ekler): Randevu ver → ödeme planı "Tamamı" fiyat tanımsızken elle tutar; Anasayfa (Panel adı, para kartları, Bekleyen hasta ve Aylık gelir kaldırıldı); ADR-110 Hekimler → aylık çalışma listesi. Yayın commit'i `origin/main` @ `fa8d68c` (commit-tree, tek anlık görüntü; force-push yok).
+- Supabase `piadent-demo`: **0042** (`work_rosters`, FORCE RLS, ünite çakışma exclusion, app select/insert/update/delete, worker select) tek transaction'da `set local role viadent_owner`; `schema_migrations` SHA-256 `a50f35fa…`. Doğrulama: RLS+FORCE açık, sahip viadent_owner, exclusion kısıtı var, yetkiler beklenen.
+- Duman testi aşağıda (yayın sonrası).
 ## 12. Netgsm SMS'i açma (07.11.2026, ADR-102)
 Kod hazır; gerçek SMS ancak aşağıdakiler tamamlanınca gider. Değerleri **ürün sahibi** girer; sohbete, depoya veya loga yazılmaz.
 1. Netgsm panelinde API alt kullanıcısı (kullanıcı kodu + API parolası) ve **onaylı gönderen adı (mesaj başlığı)**; gerekiyorsa API IP kısıtını Vercel çıkışına göre açın ya da kapatın.
